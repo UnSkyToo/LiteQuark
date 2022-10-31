@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
 
                     foreach (var Callback in CallbackList)
                     {
-                        LiteLog.Instance.Warning("LiteEngine", $"{Callback.Method.ReflectedType.Name} : {Callback.Method.Name} UnRegister");
+                        LLog.Warning($"{Callback.Method.ReflectedType.Name} : {Callback.Method.Name} UnRegister");
                     }
                 }
             }

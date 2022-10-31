@@ -10,8 +10,8 @@ namespace LiteQuark.Runtime
         public bool IsValid { get; set; }
         public BundleInfo[] BundleList { get; set; }
 
-        private Dictionary<string, BundleInfo> AssetPathToBundleCache_ = new ();
         private Dictionary<string, BundleInfo> BundlePathToBundleCache_ = new ();
+        private Dictionary<string, BundleInfo> AssetPathToBundleCache_ = new ();
 
         public BundlePackInfo()
         {
@@ -28,20 +28,23 @@ namespace LiteQuark.Runtime
 
         public void Initialize()
         {
+            BundlePathToBundleCache_.Clear();
             AssetPathToBundleCache_.Clear();
+            
             foreach (var bundle in BundleList)
             {
+                BundlePathToBundleCache_.Add(bundle.BundlePath, bundle);
+                
                 foreach (var assetPath in bundle.AssetList)
                 {
                     AssetPathToBundleCache_.Add(assetPath, bundle);
                 }
             }
-            
-            BundlePathToBundleCache_.Clear();
-            foreach (var bundle in BundleList)
-            {
-                BundlePathToBundleCache_.Add(bundle.BundlePath, bundle);
-            }
+        }
+        
+        public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
+        {
+            return BundlePathToBundleCache_.TryGetValue(bundlePath, out var info) ? info : null;
         }
 
         public BundleInfo GetBundleInfoFromAssetPath(string assetPath)
@@ -49,11 +52,6 @@ namespace LiteQuark.Runtime
             return AssetPathToBundleCache_.TryGetValue(assetPath, out var info) ? info : null;
         }
 
-        public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
-        {
-            return BundlePathToBundleCache_.TryGetValue(bundlePath, out var info) ? info : null;
-        }
-        
         public string ToJson()
         {
             var jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(this);

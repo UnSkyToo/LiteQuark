@@ -13,7 +13,7 @@ namespace LiteQuark.Runtime
             {
                 if (string.IsNullOrWhiteSpace(LogicClassName))
                 {
-                    throw new Exception("please select logic entry in <LiteLauncher>");
+                    throw new Exception($"please select logic entry in <{nameof(LiteLauncher)}>");
                 }
                 
                 var logicType = Type.GetType(LogicClassName);
@@ -24,14 +24,14 @@ namespace LiteQuark.Runtime
 
                 if (Activator.CreateInstance(logicType) is not IGameLogic logic)
                 {
-                    throw new Exception("LiteMain Logic must not be null");
+                    throw new Exception("Game Logic must not be null");
                 }
 
                 LiteRuntime.Instance.Startup(this, logic);
             }
             catch (Exception ex)
             {
-                LiteLog.Instance.Error("LiteEngine", $"{ex.Message}\n{ex.StackTrace}");
+                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LiteLog.Instance.Error("LiteEngine", $"{ex.Message}\n{ex.StackTrace}");
+                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
             }
 
 #if UNITY_EDITOR
@@ -70,7 +70,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LiteLog.Instance.Error("LiteEngine", $"{ex.Message}\n{ex.StackTrace}");
+                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
             }
         }
 

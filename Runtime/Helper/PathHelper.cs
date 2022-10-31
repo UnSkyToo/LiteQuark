@@ -143,7 +143,7 @@ namespace LiteQuark.Runtime
             {
                 if (!Directory.CreateDirectory(path).Exists)
                 {
-                    LiteLog.Instance.Warning($"can't create directory : {path}");
+                    LLog.Warning($"can't create directory : {path}");
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace LiteQuark.Runtime
             sourcePath = UnifyPath(sourcePath);
             destPath = UnifyPath(destPath);
             
-            if (!Directory.Exists(sourcePath))
+            if (!DirectoryExists(sourcePath))
             {
                 return;
             }
@@ -182,11 +182,7 @@ namespace LiteQuark.Runtime
             if (filePathList.Length > 0)
             {
                 var isEmptyFolder = true;
-                
-                if (!Directory.Exists(destPath))
-                {
-                    Directory.CreateDirectory(destPath);
-                }
+                CreateDirectory(destPath);
                 
                 foreach (var filePath in filePathList)
                 {

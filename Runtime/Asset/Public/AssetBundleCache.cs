@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                LiteLog.Instance.Error("LiteEngine", $"load asset bundle failed : {path}");
+                LLog.Error($"load asset bundle failed : {path}");
                 callback?.Invoke(false);
             }
         }
@@ -64,7 +64,7 @@ namespace LiteQuark.Runtime
         {
             if (RefCount_ > 0)
             {
-                LiteLog.Instance.Warning("LiteEngine", $"unload bundle leak : {Info_.BundlePath}({RefCount_})");
+                LLog.Warning($"unload bundle leak : {Info_.BundlePath}({RefCount_})");
             }
 
             foreach (var asset in AssetCache_)

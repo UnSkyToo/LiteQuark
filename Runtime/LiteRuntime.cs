@@ -17,7 +17,6 @@ namespace LiteQuark.Runtime
         public MonoBehaviour MonoBehaviourInstance { get; private set; }
         
         private float EnterBackgroundTime_ = 0.0f;
-
         private IGameLogic MainLogic_;
 
         public LiteRuntime()
@@ -32,7 +31,7 @@ namespace LiteQuark.Runtime
             TimeScale = 1.0f;
             MonoBehaviourInstance = instance;
 
-            LiteLog.Instance.Info("LiteEngine", "Lite Engine Startup");
+            LLog.Info("Lite Runtime Startup");
 
             if (!EventManager.Instance.Startup())
             {
@@ -52,7 +51,7 @@ namespace LiteQuark.Runtime
             MainLogic_ = logic;
             if (MainLogic_ == null || !MainLogic_.Startup())
             {
-                LiteLog.Instance.Error("LiteEngine", "Logic Startup Failed");
+                LLog.Error("Logic Startup Failed");
                 return false;
             }
 
@@ -76,7 +75,7 @@ namespace LiteQuark.Runtime
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
 
-            LiteLog.Instance.Info("LiteEngine", "Lite Engine Shutdown");
+            LLog.Info("Lite Runtime Shutdown");
         }
 
         public void Tick(float deltaTime)
@@ -150,7 +149,7 @@ namespace LiteQuark.Runtime
             IsPause = false;
             IsFocus = true;
 
-            LiteLog.Instance.Warning("LiteEngine", "OnEnterForeground");
+            LLog.Warning("OnEnterForeground");
             EventManager.Instance.Send<EnterForegroundEvent>();
 
             if (LiteConst.EnterBackgroundAutoRestart && Time.realtimeSinceStartup - EnterBackgroundTime_ >= LiteConst.EnterBackgroundMaxTime)
@@ -170,8 +169,8 @@ namespace LiteQuark.Runtime
             }
             IsPause = true;
             IsFocus = false;
-
-            LiteLog.Instance.Warning("LiteEngine", "OnEnterBackground");
+ 
+            LLog.Warning("OnEnterBackground");
             EventManager.Instance.Send<EnterBackgroundEvent>();
             EnterBackgroundTime_ = Time.realtimeSinceStartup;
         }

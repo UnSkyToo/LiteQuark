@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class LiteLog : Singleton<LiteLog>
+    public sealed class LiteLog : Singleton<LiteLog>
     {
         private const string DefaultTag = "Default";
         
@@ -34,6 +34,26 @@ namespace LiteQuark.Runtime
         public void Error(string tag, string msg)
         {
             Debug.LogError(msg);
+        }
+    }
+
+    internal static class LLog
+    {
+        private const string Tag = "LiteQuark";
+        
+        internal static void Info(string msg)
+        {
+            LiteLog.Instance.Info(Tag, msg);
+        }
+
+        internal static void Warning(string msg)
+        {
+            LiteLog.Instance.Warning(Tag, msg);
+        }
+
+        internal static void Error(string msg)
+        {
+            LiteLog.Instance.Error(Tag, msg);
         }
     }
 }

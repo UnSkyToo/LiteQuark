@@ -19,13 +19,18 @@ namespace LiteQuark.Runtime
         {
         }
 
+        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
+        {
+            callback?.Invoke(true);
+        }
+
         public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var fullPath = PathHelper.GetFullPathInAssetRoot(assetPath);
             var asset = AssetDatabase.LoadAssetAtPath<T>(fullPath);
             if (asset == null)
             {
-                LiteLog.Instance.Error("LiteEngine", $"can't load asset : {fullPath}");
+                LLog.Error($"can't load asset : {fullPath}");
             }
             callback?.Invoke(asset);
         }
