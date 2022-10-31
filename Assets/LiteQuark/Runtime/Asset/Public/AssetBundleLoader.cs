@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                LiteLog.Instance.Error("LiteEngine", $"load bundle package error\n{request.error}");
+                LLog.Error($"load bundle package error\n{request.error}");
                 return null;
             }
 
@@ -65,33 +65,33 @@ namespace LiteQuark.Runtime
             return info;
         }
 
+        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
+        {
+            LoadBundleCache(assetPath, (bundleCache) =>
+            {
+                callback?.Invoke(bundleCache != null);
+            });
+        }
+
         public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        {
+            LoadBundleCache(assetPath, (bundleCache) =>
+            {
+                bundleCache?.LoadAsset(assetPath, callback);
+            });
+        }
+
+        private void LoadBundleCache(string assetPath, Action<AssetBundleCache> callback)
         {
             var bundleInfo = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
             {
+                LLog.Error($"can't get bundle info : {assetPath}");
                 callback?.Invoke(null);
                 return;
             }
             
-            if (BundleCache_.TryGetValue(bundleInfo.BundlePath, out var bundle))
-            {
-                bundle.LoadAsset<T>(assetPath, callback);
-            }
-            else
-            {
-                LoadBundleCache(bundleInfo, (bundleCache) =>
-                {
-                    if (bundleCache != null)
-                    {
-                        bundleCache.LoadAsset(assetPath, callback);
-                    }
-                    else
-                    {
-                        LiteLog.Instance.Error("LiteEngine", $"load bundle error : {bundleInfo.BundlePath}");
-                    }
-                });
-            }
+            LoadBundleCache(bundleInfo, callback);
         }
 
         private void LoadBundleCache(BundleInfo info, Action<AssetBundleCache> callback)
@@ -148,7 +148,7 @@ namespace LiteQuark.Runtime
                 var dependencyInfo = PackInfo_.GetBundleInfoFromBundlePath(bundlePath);
                 if (dependencyInfo == null)
                 {
-                    LiteLog.Instance.Error("LiteEngine", $"can't get dependency bundle info : {bundlePath}");
+                    LLog.Error($"can't get dependency bundle info : {bundlePath}");
                     callback?.Invoke(false);
                     return;
                 }
@@ -178,6 +178,7 @@ namespace LiteQuark.Runtime
             {
                 if (!isLoaded)
                 {
+                    LLog.Error($"load bundle error : {info.BundlePath}");
                     callback?.Invoke(null);
                     return;
                 }

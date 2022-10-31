@@ -13,8 +13,8 @@ namespace LiteQuark.Runtime
 // #else
 //             Loader_ = new AssetBundleLoader();
 // #endif
-            // Loader_ = new AssetBundleLoader();
-            Loader_ = new AssetDatabaseLoader();
+            Loader_ = new AssetBundleLoader();
+            // Loader_ = new AssetDatabaseLoader();
             return Loader_.Initialize();
         }
 
