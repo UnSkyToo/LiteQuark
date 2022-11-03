@@ -41,5 +41,11 @@ namespace LiteQuark.Runtime
             var formatPath = FormatPath(assetPath).ToLower();
             Loader_?.LoadAssetAsync<T>(formatPath, callback);
         }
+
+        public void UnloadAsset(string assetPath)
+        {
+            var formatPath = FormatPath(assetPath).ToLower();
+            Loader_?.UnloadAsset(assetPath);
+        }
     }
 }

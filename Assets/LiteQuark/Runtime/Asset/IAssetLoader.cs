@@ -9,5 +9,7 @@ namespace LiteQuark.Runtime
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
         
         void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object;
+
+        void UnloadAsset(string assetPath);
     }
 }
