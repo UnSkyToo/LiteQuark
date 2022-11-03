@@ -13,7 +13,7 @@ namespace LiteQuark.Runtime
 
         public bool Startup()
         {
-            MonoBehaviourInstance = LiteRuntime.Instance.MonoBehaviourInstance;
+            MonoBehaviourInstance = LiteRuntime.Instance.Launcher;
             TaskList_.Clear();
             MainThreadTaskList_.Clear();
             return true;

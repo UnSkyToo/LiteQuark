@@ -8,13 +8,20 @@ namespace LiteQuark.Runtime
 
         public bool Startup()
         {
-// #if UNITY_EDITOR
-//             Loader_ = new AssetDatabaseLoader();
-// #else
-//             Loader_ = new AssetBundleLoader();
-// #endif
-            Loader_ = new AssetBundleLoader();
-            // Loader_ = new AssetDatabaseLoader();
+            switch (LiteRuntime.Instance.AssetMode)
+            {
+#if UNITY_EDITOR
+                case AssetLoaderMode.Internal:
+                    Loader_ = new AssetDatabaseLoader();
+                    break;
+#endif
+                case AssetLoaderMode.Bundle:
+                    Loader_ = new AssetBundleLoader();
+                    break;
+                default:
+                    throw new ArgumentException($"error {nameof(AssetLoaderMode)} : {LiteRuntime.Instance.AssetMode}");
+            }
+            
             return Loader_.Initialize();
         }
 
@@ -32,7 +39,7 @@ namespace LiteQuark.Runtime
         public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath).ToLower();
-            Loader_?.LoadAsset<T>(formatPath, callback);
+            Loader_?.LoadAssetAsync<T>(formatPath, callback);
         }
     }
 }

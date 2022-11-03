@@ -6,6 +6,7 @@ namespace LiteQuark.Runtime
     public class LiteLauncher : MonoBehaviour
     {
         public string LogicClassName;
+        public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
 
         void Awake()
         {
@@ -15,8 +16,8 @@ namespace LiteQuark.Runtime
                 {
                     throw new Exception($"please select logic entry in <{nameof(LiteLauncher)}>");
                 }
-                
-                var logicType = Type.GetType(LogicClassName);
+
+                var logicType = TypeHelper.GetTypeWithLogicClassName(LogicClassName);
                 if (logicType == null)
                 {
                     throw new Exception($"can't not find game logic class type : {LogicClassName}");

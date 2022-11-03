@@ -8,11 +8,13 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteLauncher))]
     public sealed class LiteLauncherEditor : UnityEditor.Editor
     {
-        private SerializedProperty LogicNameProperty_;
+        private SerializedProperty LogicClassNameProperty_;
+        private SerializedProperty AssetModeProperty_;
         
         private void OnEnable()
         {
-            LogicNameProperty_ = serializedObject.FindProperty("LogicClassName");
+            LogicClassNameProperty_ = serializedObject.FindProperty("LogicClassName");
+            AssetModeProperty_ = serializedObject.FindProperty("AssetMode");
         }
 
         public override void OnInspectorGUI()
@@ -23,7 +25,7 @@ namespace LiteQuark.Editor
             var selectIndex = -1;
             for (var index = 0; index < typeList.Length; ++index)
             {
-                if (LogicNameProperty_.stringValue == typeList[index])
+                if (LogicClassNameProperty_.stringValue == typeList[index])
                 {
                     selectIndex = index;
                     break;
@@ -34,7 +36,15 @@ namespace LiteQuark.Editor
             selectIndex = EditorGUILayout.Popup(new GUIContent("Logic Entry"), selectIndex, typeList);
             if (EditorGUI.EndChangeCheck())
             {
-                LogicNameProperty_.stringValue = typeList[selectIndex];
+                LogicClassNameProperty_.stringValue = typeList[selectIndex];
+                serializedObject.ApplyModifiedProperties();
+            }
+            
+            EditorGUI.BeginChangeCheck();
+            var modeIndex = EditorGUILayout.Popup(new GUIContent("Asset Mode"), AssetModeProperty_.enumValueIndex, AssetModeProperty_.enumNames);
+            if (EditorGUI.EndChangeCheck())
+            {
+                AssetModeProperty_.enumValueIndex = modeIndex;
                 serializedObject.ApplyModifiedProperties();
             }
         }
@@ -46,7 +56,7 @@ namespace LiteQuark.Editor
 
             foreach (var type in typeList)
             {
-                nameList.Add(type.FullName);
+                nameList.Add($"{type.FullName}|{type.Assembly.FullName}");
             }
 
             return nameList.ToArray();

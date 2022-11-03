@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime.Internal;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -73,7 +74,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             LoadBundleCache(assetPath, (bundleCache) =>
             {

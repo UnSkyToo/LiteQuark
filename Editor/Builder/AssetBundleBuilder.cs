@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LiteQuark.Runtime;
+using LiteQuark.Runtime.Internal;
 using UnityEditor;
 using UnityEngine;
 

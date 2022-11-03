@@ -2,11 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
-namespace LiteQuark.Runtime
+namespace LiteQuark.Runtime.Internal
 {
-    public sealed class AssetBundleCache
+    internal sealed class AssetBundleCache
     {
         public bool IsLoad { get; private set; }
         public bool Unused => (RefCount_ <= 0 && IsLoad == true);
@@ -16,7 +15,7 @@ namespace LiteQuark.Runtime
         private AssetBundle Bundle_;
         private int RefCount_;
 
-        private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new Dictionary<string, Object>();
+        private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new ();
 
         public AssetBundleCache(BundleInfo info)
         {
@@ -93,7 +92,7 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(asset as T);
                 return;
             }
-            
+
             TaskManager.Instance.AddTask(LoadAssetAsync(assetPath, callback));
         }
 
