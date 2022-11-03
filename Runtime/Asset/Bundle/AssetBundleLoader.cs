@@ -68,93 +68,114 @@ namespace LiteQuark.Runtime
 
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
-            LoadBundleCache(assetPath, (bundleCache) =>
+            LoadBundleCacheAsync(assetPath, (cache) =>
             {
-                callback?.Invoke(bundleCache != null);
+                callback?.Invoke(cache != null);
             });
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
-            LoadBundleCache(assetPath, (bundleCache) =>
+            LoadBundleCacheAsync(assetPath, (cache) =>
             {
-                bundleCache?.LoadAsset(assetPath, callback);
+                if (cache == null)
+                {
+                    callback?.Invoke(null);
+                    return;
+                }
+                
+                cache.LoadAsset(assetPath, callback);
             });
         }
 
-        private void LoadBundleCache(string assetPath, Action<AssetBundleCache> callback)
+        public void UnloadAsset(string assetPath)
         {
-            var bundleInfo = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
-            if (bundleInfo == null)
+            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
+            if (info == null)
             {
-                LLog.Error($"can't get bundle info : {assetPath}");
+                return;
+            }
+
+            if (BundleCache_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoad)
+            {
+                cache.DecRef();
+            }
+        }
+
+        private void LoadBundleCacheAsync(string assetPath, Action<AssetBundleCache> callback)
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
+            LoadBundleCacheAsync(info, callback);
+        }
+
+        private void LoadBundleCacheAsync(BundleInfo info, Action<AssetBundleCache> callback)
+        {
+            if (info == null)
+            {
                 callback?.Invoke(null);
                 return;
             }
+
+            if (!BundleCache_.TryGetValue(info.BundlePath, out var cache))
+            {
+                cache = new AssetBundleCache(info);
+                BundleCache_.Add(info.BundlePath, cache);
+            }
             
-            LoadBundleCache(bundleInfo, callback);
+            LoadBundleCacheAsync(cache, callback);
         }
 
-        private void LoadBundleCache(BundleInfo info, Action<AssetBundleCache> callback)
+        private void LoadBundleCacheAsync(AssetBundleCache cache, Action<AssetBundleCache> callback)
         {
-            if (BundleCache_.TryGetValue(info.BundlePath, out var bundle))
+            if (cache.IsLoad)
             {
-                callback?.Invoke(bundle);
+                callback?.Invoke(cache);
                 return;
             }
-
-            if (BundleCacheLoaderCallback_.TryGetValue(info.BundlePath, out var list))
+            
+            if (BundleCacheLoaderCallback_.TryGetValue(cache.Info.BundlePath, out var list))
             {
                 list.Add(callback);
                 return;
             }
 
-            BundleCacheLoaderCallback_.Add(info.BundlePath, new List<Action<AssetBundleCache>> {callback});
+            BundleCacheLoaderCallback_.Add(cache.Info.BundlePath, new List<Action<AssetBundleCache>> {callback});
             
-            LoadDependencyBundleCache(info, (isLoaded) =>
+            LoadDependencyBundleCache(cache, (isLoaded) =>
             {
                 if (!isLoaded)
                 {
                     callback?.Invoke(null);
                     return;
                 }
-                
-                LoadBundleCacheInternal(info, (loadBundle) =>
+
+                LoadBundleCacheInternal(cache, (loadBundle) =>
                 {
-                    BundleCache_.Add(info.BundlePath, loadBundle);
-                    
-                    foreach (var loader in BundleCacheLoaderCallback_[info.BundlePath])
+                    foreach (var loader in BundleCacheLoaderCallback_[cache.Info.BundlePath])
                     {
                         loader?.Invoke(loadBundle);
                     }
                     
-                    BundleCacheLoaderCallback_.Remove(info.BundlePath);
+                    BundleCacheLoaderCallback_.Remove(cache.Info.BundlePath);
                 });
             });
         }
         
-        private void LoadDependencyBundleCache(BundleInfo info, Action<bool> callback)
+        private void LoadDependencyBundleCache(AssetBundleCache cache, Action<bool> callback)
         {
             var loadCompletedCount = 0;
+            var dependencyPathList = cache.GetDependencyPathList();
 
-            if (info.DependencyList.Length == 0)
+            if (dependencyPathList.Length == 0)
             {
                 callback?.Invoke(true);
                 return;
             }
 
-            foreach (var dependency in info.DependencyList)
+            foreach (var dependencyPath in dependencyPathList)
             {
-                var bundlePath = dependency;
-                var dependencyInfo = PackInfo_.GetBundleInfoFromBundlePath(bundlePath);
-                if (dependencyInfo == null)
-                {
-                    LLog.Error($"can't get dependency bundle info : {bundlePath}");
-                    callback?.Invoke(false);
-                    return;
-                }
-                
-                LoadBundleCache(dependencyInfo, (dependencyBundle) =>
+                var dependencyInfo = PackInfo_.GetBundleInfoFromBundlePath(dependencyPath);
+                LoadBundleCacheAsync(dependencyInfo, (dependencyBundle) =>
                 {
                     if (dependencyBundle == null)
                     {
@@ -162,9 +183,10 @@ namespace LiteQuark.Runtime
                         return;
                     }
                     
+                    cache.AddDependencyCache(dependencyBundle);
                     loadCompletedCount++;
 
-                    if (loadCompletedCount >= info.DependencyList.Length)
+                    if (loadCompletedCount >= dependencyPathList.Length)
                     {
                         callback?.Invoke(true);
                     }
@@ -172,14 +194,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void LoadBundleCacheInternal(BundleInfo info, Action<AssetBundleCache> callback)
+        private void LoadBundleCacheInternal(AssetBundleCache cache, Action<AssetBundleCache> callback)
         {
-            var cache = new AssetBundleCache(info);
             cache.Load((isLoaded) =>
             {
                 if (!isLoaded)
                 {
-                    LLog.Error($"load bundle error : {info.BundlePath}");
+                    BundleCache_.Remove(cache.Info.BundlePath);
+                    LLog.Error($"load bundle error : {cache.Info.BundlePath}");
                     callback?.Invoke(null);
                     return;
                 }

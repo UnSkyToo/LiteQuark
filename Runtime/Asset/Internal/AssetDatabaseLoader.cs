@@ -34,6 +34,10 @@ namespace LiteQuark.Runtime
             }
             callback?.Invoke(asset);
         }
+
+        public void UnloadAsset(string assetPath)
+        {
+        }
     }
 }
 #endif

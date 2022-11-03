@@ -44,12 +44,24 @@ namespace LiteQuark.Runtime.Internal
         
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
         {
-            return BundlePathToBundleCache_.TryGetValue(bundlePath, out var info) ? info : null;
+            if (BundlePathToBundleCache_.TryGetValue(bundlePath, out var info))
+            {
+                return info;
+            }
+
+            LLog.Error($"can't get bundle info : {bundlePath}");
+            return null;
         }
 
         public BundleInfo GetBundleInfoFromAssetPath(string assetPath)
         {
-            return AssetPathToBundleCache_.TryGetValue(assetPath, out var info) ? info : null;
+            if (AssetPathToBundleCache_.TryGetValue(assetPath, out var info))
+            {
+                return info;
+            }
+            
+            LLog.Error($"can't get bundle info : {assetPath}");
+            return null;
         }
 
         public string ToJson()

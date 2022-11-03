@@ -7,27 +7,33 @@ namespace LiteQuark.Runtime.Internal
 {
     internal sealed class AssetBundleCache
     {
+        public BundleInfo Info { get; }
         public bool IsLoad { get; private set; }
         public bool Unused => (RefCount_ <= 0 && IsLoad == true);
 
-        private readonly BundleInfo Info_;
         private AssetBundleCreateRequest Request_;
         private AssetBundle Bundle_;
         private int RefCount_;
 
-        private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new ();
+        private readonly List<AssetBundleCache> DependencyCacheList_ = new();
+        private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new();
 
         public AssetBundleCache(BundleInfo info)
         {
-            Info_ = info;
+            Info = info;
             Bundle_ = null;
             IsLoad = false;
             RefCount_ = 0;
         }
 
+        public string[] GetDependencyPathList()
+        {
+            return Info.DependencyList;
+        }
+
         public void Load(Action<bool> callback)
         {
-            TaskManager.Instance.AddTask(LoadAsync(Info_.BundlePath, callback));
+            TaskManager.Instance.AddTask(LoadAsync(Info.BundlePath, callback));
         }
 
         private IEnumerator LoadAsync(string path, Action<bool> callback)
@@ -63,8 +69,19 @@ namespace LiteQuark.Runtime.Internal
         {
             if (RefCount_ > 0)
             {
-                LLog.Warning($"unload bundle leak : {Info_.BundlePath}({RefCount_})");
+                LLog.Warning($"unload bundle leak : {Info.BundlePath}({RefCount_})");
             }
+
+            foreach (var cache in DependencyCacheList_)
+            {
+                cache.DecRef();
+
+                if (cache.Unused)
+                {
+                    cache.Unload();
+                }
+            }
+            DependencyCacheList_.Clear();
 
             foreach (var asset in AssetCache_)
             {
@@ -85,10 +102,27 @@ namespace LiteQuark.Runtime.Internal
             RefCount_ = 0;
         }
 
+        public void IncRef()
+        {
+            RefCount_++;
+        }
+
+        public void DecRef()
+        {
+            RefCount_--;
+        }
+
+        public void AddDependencyCache(AssetBundleCache cache)
+        {
+            cache.IncRef();
+            DependencyCacheList_.Add(cache);
+        }
+
         public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             if (AssetCache_.TryGetValue(assetPath, out var asset))
             {
+                IncRef();
                 callback?.Invoke(asset as T);
                 return;
             }
@@ -104,6 +138,7 @@ namespace LiteQuark.Runtime.Internal
             if (request.isDone)
             {
                 AssetCache_.Add(assetPath, request.asset);
+                IncRef();
                 callback?.Invoke(request.asset as T);
             }
             else
