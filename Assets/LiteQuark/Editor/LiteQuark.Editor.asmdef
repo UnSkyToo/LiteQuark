@@ -2,6 +2,7 @@
     "name": "LiteQuark.Editor",
     "rootNamespace": "",
     "references": [
+        "GUID:ca316b8de102bcd4ba4aa8abe91a0652",
         "GUID:4d0f6ef532c59e64a8bf7b34db570772"
     ],
     "includePlatforms": [

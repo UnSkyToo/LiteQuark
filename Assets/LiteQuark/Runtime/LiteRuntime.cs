@@ -5,7 +5,6 @@ namespace LiteQuark.Runtime
     public class LiteRuntime : Singleton<LiteRuntime>
     {
         public bool IsPause { get; set; }
-        public bool IsRestart { get; private set; }
         public bool IsFocus { get; private set; }
 
         public float TimeScale
@@ -14,22 +13,34 @@ namespace LiteQuark.Runtime
             set => Time.timeScale = value;
         }
 
-        public MonoBehaviour MonoBehaviourInstance { get; private set; }
-        
+        public LiteLauncher Launcher { get; private set; }
+        public AssetLoaderMode AssetMode
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return Launcher.AssetMode;
+#else
+                return AssetLoaderMode.Bundle;
+#endif
+            }
+        }
+
         private float EnterBackgroundTime_ = 0.0f;
+        private bool RestartWhenNextFrame_ = false;
         private IGameLogic MainLogic_;
 
         public LiteRuntime()
         {
         }
         
-        public bool Startup(MonoBehaviour instance, IGameLogic logic)
+        public bool Startup(LiteLauncher launcher, IGameLogic logic)
         {
             IsPause = true;
-            IsRestart = false;
+            RestartWhenNextFrame_ = false;
             IsFocus = true;
             TimeScale = 1.0f;
-            MonoBehaviourInstance = instance;
+            Launcher = launcher;
 
             LLog.Info("Lite Runtime Startup");
 
@@ -80,9 +91,9 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            if (IsRestart)
+            if (RestartWhenNextFrame_)
             {
-                RestartGameManager();
+                RestartRuntime();
                 return;
             }
 
@@ -106,32 +117,32 @@ namespace LiteQuark.Runtime
 
         public void Restart()
         {
-            IsRestart = true;
+            RestartWhenNextFrame_ = true;
         }
 
-        private void RestartGameManager()
+        private void RestartRuntime()
         {
-            IsRestart = false;
+            RestartWhenNextFrame_ = false;
             Debug.ClearDeveloperConsole();
             Shutdown();
-            IsPause = !Startup(MonoBehaviourInstance, MainLogic_);
+            IsPause = !Startup(Launcher, MainLogic_);
         }
 
         public T Attach<T>() where T : MonoBehaviour
         {
-            var Component = MonoBehaviourInstance?.gameObject.GetComponent<T>();
+            var Component = Launcher?.gameObject.GetComponent<T>();
 
             if (Component != null)
             {
                 return Component;
             }
 
-            return MonoBehaviourInstance?.gameObject.AddComponent<T>();
+            return Launcher?.gameObject.AddComponent<T>();
         }
 
         public void Detach<T>() where T : MonoBehaviour
         {
-            var Component = MonoBehaviourInstance?.gameObject.GetComponent<T>();
+            var Component = Launcher?.gameObject.GetComponent<T>();
 
             if (Component != null)
             {
@@ -149,7 +160,7 @@ namespace LiteQuark.Runtime
             IsPause = false;
             IsFocus = true;
 
-            LLog.Warning("OnEnterForeground");
+            LLog.Info("OnEnterForeground");
             EventManager.Instance.Send<EnterForegroundEvent>();
 
             if (LiteConst.EnterBackgroundAutoRestart && Time.realtimeSinceStartup - EnterBackgroundTime_ >= LiteConst.EnterBackgroundMaxTime)
@@ -170,7 +181,7 @@ namespace LiteQuark.Runtime
             IsPause = true;
             IsFocus = false;
  
-            LLog.Warning("OnEnterBackground");
+            LLog.Info("OnEnterBackground");
             EventManager.Instance.Send<EnterBackgroundEvent>();
             EnterBackgroundTime_ = Time.realtimeSinceStartup;
         }
