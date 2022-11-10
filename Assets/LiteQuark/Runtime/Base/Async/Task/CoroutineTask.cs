@@ -1,0 +1,49 @@
+﻿using System;
+using System.Collections;
+
+namespace LiteQuark.Runtime
+{
+    public sealed class CoroutineTask : TaskBase
+    {
+        private readonly IEnumerator Item_;
+        private Action Callback_;
+
+        public CoroutineTask(IEnumerator item, Action callback)
+            : base()
+        {
+            Item_ = item;
+            Callback_ = callback;
+        }
+
+        public override void Dispose()
+        {
+            Callback_ = null;
+        }
+
+        protected override void OnExecute()
+        {
+            TaskManager.Instance.MonoBehaviourInstance.StartCoroutine(ExecuteInternal());
+        }
+
+        private IEnumerator ExecuteInternal()
+        {
+            while (!IsEnd)
+            {
+                /*if (IsPause)
+                {
+                    yield return null;
+                }
+                else */if (Item_ != null && Item_.MoveNext())
+                {
+                    yield return Item_.Current;
+                }
+                else
+                {
+                    Stop();
+                }
+            }
+
+            Callback_?.Invoke();
+        }
+    }
+}
