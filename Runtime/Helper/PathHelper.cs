@@ -122,12 +122,13 @@ namespace LiteQuark.Runtime
         
         public static void CreateDirectory(string path)
         {
-            if (Directory.Exists(path))
+            if (!Directory.Exists(path))
             {
-                return;
+                if (!Directory.CreateDirectory(path).Exists)
+                {
+                    LLog.Warning($"can't create directory : {path}");
+                }
             }
-
-            Directory.CreateDirectory(path);
         }
 
         public static void DeleteDirectory(string path)
@@ -138,14 +139,6 @@ namespace LiteQuark.Runtime
             }
             
             Directory.Delete(path, true);
-            
-            if (!Directory.Exists(path))
-            {
-                if (!Directory.CreateDirectory(path).Exists)
-                {
-                    LLog.Warning($"can't create directory : {path}");
-                }
-            }
         }
 
         public static bool DirectoryExists(string path)
