@@ -10,11 +10,21 @@ namespace LiteQuark.Editor
     {
         private SerializedProperty LogicClassNameProperty_;
         private SerializedProperty AssetModeProperty_;
-        
+        private SerializedProperty TargetFrameRateProperty_;
+        private SerializedProperty MultiTouchProperty_;
+
+        private SerializedProperty AutoRestartInBackgroundProperty_;
+        private SerializedProperty BackgroundLimitTimeProperty_;
+
         private void OnEnable()
         {
             LogicClassNameProperty_ = serializedObject.FindProperty("LogicClassName");
             AssetModeProperty_ = serializedObject.FindProperty("AssetMode");
+            TargetFrameRateProperty_ = serializedObject.FindProperty("TargetFrameRate");
+            MultiTouchProperty_ = serializedObject.FindProperty("MultiTouch");
+
+            AutoRestartInBackgroundProperty_ = serializedObject.FindProperty("AutoRestartInBackground");
+            BackgroundLimitTimeProperty_ = serializedObject.FindProperty("BackgroundLimitTime");
         }
 
         public override void OnInspectorGUI()
@@ -37,16 +47,21 @@ namespace LiteQuark.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 LogicClassNameProperty_.stringValue = typeList[selectIndex];
-                serializedObject.ApplyModifiedProperties();
             }
             
-            EditorGUI.BeginChangeCheck();
-            var modeIndex = EditorGUILayout.Popup(new GUIContent("Asset Mode"), AssetModeProperty_.enumValueIndex, AssetModeProperty_.enumNames);
-            if (EditorGUI.EndChangeCheck())
+            EditorGUILayout.PropertyField(AssetModeProperty_);
+            
+            EditorGUILayout.PropertyField(TargetFrameRateProperty_);
+
+            EditorGUILayout.PropertyField(MultiTouchProperty_);
+            
+            EditorGUILayout.PropertyField(AutoRestartInBackgroundProperty_);
+            if(AutoRestartInBackgroundProperty_.boolValue)
             {
-                AssetModeProperty_.enumValueIndex = modeIndex;
-                serializedObject.ApplyModifiedProperties();
+                DrawSubProperty(BackgroundLimitTimeProperty_);
             }
+
+            serializedObject.ApplyModifiedProperties();
         }
 
         private string[] GetLogicTypeList()
@@ -60,6 +75,13 @@ namespace LiteQuark.Editor
             }
 
             return nameList.ToArray();
+        }
+        
+        private void DrawSubProperty(SerializedProperty property)
+        {
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(property);
+            EditorGUI.indentLevel--;
         }
     }
 }

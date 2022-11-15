@@ -1,12 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     public class LiteLauncher : MonoBehaviour
     {
-        public string LogicClassName;
-        public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
+        [SerializeField] [HideInInspector] public string LogicClassName;
+
+        [SerializeField] [HideInInspector] public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
+
+        [Header("Game Base Setting")]
+        [SerializeField] [HideInInspector] public int TargetFrameRate = 60;
+        
+        [SerializeField] [HideInInspector] public bool MultiTouch;
+
+        [SerializeField] [HideInInspector] public bool AutoRestartInBackground;
+
+        [SerializeField] [HideInInspector] public float BackgroundLimitTime = 90.0f;
 
         void Awake()
         {
@@ -25,7 +36,7 @@ namespace LiteQuark.Runtime
 
                 if (Activator.CreateInstance(logicType) is not IGameLogic logic)
                 {
-                    throw new Exception("Game Logic must not be null");
+                    throw new Exception($"please select the correct logic entry in <{nameof(LiteLauncher)}>");
                 }
 
                 LiteRuntime.Instance.Startup(this, logic);
