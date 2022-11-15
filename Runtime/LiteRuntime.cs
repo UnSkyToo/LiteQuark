@@ -109,8 +109,8 @@ namespace LiteQuark.Runtime
 
         private void InitConfigure()
         {
-            Application.targetFrameRate = 60;
-            Input.multiTouchEnabled = true;
+            Application.targetFrameRate = Launcher.TargetFrameRate;
+            Input.multiTouchEnabled = Launcher.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int) System.DateTime.Now.Ticks);
         }
@@ -163,7 +163,7 @@ namespace LiteQuark.Runtime
             LLog.Info("OnEnterForeground");
             EventManager.Instance.Send<EnterForegroundEvent>();
 
-            if (LiteConst.EnterBackgroundAutoRestart && Time.realtimeSinceStartup - EnterBackgroundTime_ >= LiteConst.EnterBackgroundMaxTime)
+            if (Launcher.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.BackgroundLimitTime)
             {
                 Restart();
                 return;
