@@ -1,6 +1,8 @@
-﻿namespace LiteQuark.Runtime
+﻿using LiteQuark.Runtime;
+
+namespace LiteQuark.Editor
 {
-    internal static class LLog
+    internal static class LLogEditor
     {
         private const string Tag = "LiteQuark";
         private static ILog Log_ = null;

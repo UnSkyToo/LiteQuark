@@ -32,7 +32,7 @@ namespace LiteQuark.Editor
             
             CopyBundleToStreamingPath(target);
 
-            LiteLog.Instance.Info("Build Success");
+            LLogEditor.Info("Build Success");
         }
 
         private void CleanBundleFile(BuildTarget target)
