@@ -1,35 +1,22 @@
-﻿using LiteQuark.Runtime;
+﻿using UnityEngine;
 
 namespace LiteQuark.Editor
 {
     internal static class LLogEditor
     {
-        private const string Tag = "LiteQuark";
-        private static ILog Log_ = null;
-        
-        private static ILog GetLog()
-        {
-            if (Log_ == null)
-            {
-                Log_ = LogManager.Instance.GetLogger(Tag);
-            }
-
-            return Log_;
-        }
-        
         internal static void Info(string msg)
         {
-            GetLog().Info(msg);
+            Debug.Log(msg);
         }
 
         internal static void Warning(string msg)
         {
-            GetLog().Warn(msg);
+            Debug.LogWarning(msg);
         }
 
         internal static void Error(string msg)
         {
-            GetLog().Error(msg);
+            Debug.LogError(msg);
         }
     }
 }
