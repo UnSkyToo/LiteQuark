@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
     public abstract class LoggerRepositoryBase : ILoggerRepository
     {

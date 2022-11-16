@@ -17,7 +17,7 @@
                 case LogLevel.Info:
                     UnityEngine.Debug.Log(msg);
                     break;
-                case LogLevel.Warning:
+                case LogLevel.Warn:
                     UnityEngine.Debug.LogWarning(msg);
                     break;
                 case LogLevel.Error:
