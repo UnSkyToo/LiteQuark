@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
-using LiteQuark.Runtime;
+﻿using LiteQuark.Runtime;
 using UnityEditor;
-using UnityEngine;
 
 namespace LiteQuark.Editor
 {
     [CustomEditor(typeof(LiteLauncher))]
     public sealed class LiteLauncherEditor : UnityEditor.Editor
     {
-        private SerializedProperty LogicClassNameProperty_;
+        private SerializedProperty LogicListProperty_;
         private SerializedProperty AssetModeProperty_;
         private SerializedProperty TargetFrameRateProperty_;
         private SerializedProperty MultiTouchProperty_;
@@ -18,7 +16,7 @@ namespace LiteQuark.Editor
 
         private void OnEnable()
         {
-            LogicClassNameProperty_ = serializedObject.FindProperty("LogicClassName");
+            LogicListProperty_ = serializedObject.FindProperty("LogicList");
             AssetModeProperty_ = serializedObject.FindProperty("AssetMode");
             TargetFrameRateProperty_ = serializedObject.FindProperty("TargetFrameRate");
             MultiTouchProperty_ = serializedObject.FindProperty("MultiTouch");
@@ -31,23 +29,7 @@ namespace LiteQuark.Editor
         {
             serializedObject.Update();
             
-            var typeList = GetLogicTypeList();
-            var selectIndex = -1;
-            for (var index = 0; index < typeList.Length; ++index)
-            {
-                if (LogicClassNameProperty_.stringValue == typeList[index])
-                {
-                    selectIndex = index;
-                    break;
-                }
-            }
-
-            EditorGUI.BeginChangeCheck();
-            selectIndex = EditorGUILayout.Popup(new GUIContent("Logic Entry"), selectIndex, typeList);
-            if (EditorGUI.EndChangeCheck())
-            {
-                LogicClassNameProperty_.stringValue = typeList[selectIndex];
-            }
+            EditorGUILayout.PropertyField(LogicListProperty_);
             
             EditorGUILayout.PropertyField(AssetModeProperty_);
             
@@ -64,19 +46,6 @@ namespace LiteQuark.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private string[] GetLogicTypeList()
-        {
-            var typeList = TypeCache.GetTypesDerivedFrom(typeof(IGameLogic));
-            var nameList = new List<string>();
-
-            foreach (var type in typeList)
-            {
-                nameList.Add($"{type.FullName}|{type.Assembly.FullName}");
-            }
-
-            return nameList.ToArray();
-        }
-        
         private void DrawSubProperty(SerializedProperty property)
         {
             EditorGUI.indentLevel++;

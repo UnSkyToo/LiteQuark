@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -28,19 +29,26 @@ namespace LiteQuark.Runtime
 
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
-        private IGameLogic MainLogic_;
+        private List<ILogic> LogicList_;
 
         public LiteRuntime()
         {
         }
         
-        public bool Startup(LiteLauncher launcher, IGameLogic logic)
+        public bool Startup(LiteLauncher launcher)
         {
             IsPause = true;
-            RestartWhenNextFrame_ = false;
             IsFocus = true;
             TimeScale = 1.0f;
+            EnterBackgroundTime_ = 0.0f;
+            RestartWhenNextFrame_ = false;
+            LogicList_ = new List<ILogic>();
             Launcher = launcher;
+
+            if (!LogManager.Instance.Startup())
+            {
+                return false;
+            }
 
             LLog.Info("Lite Runtime Startup");
 
@@ -58,12 +66,34 @@ namespace LiteQuark.Runtime
             {
                 return false;
             }
-
-            MainLogic_ = logic;
-            if (MainLogic_ == null || !MainLogic_.Startup())
+            
+            foreach (var logicEntry in Launcher.LogicList)
             {
-                LLog.Error("Logic Startup Failed");
-                return false;
+                if (logicEntry.Disabled)
+                {
+                    continue;
+                }
+
+                var logicType = TypeHelper.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
+                if (logicType == null)
+                {
+                    LLog.Error($"can't not find logic class type : {logicEntry.TypeName}");
+                    continue;
+                }
+
+                if (System.Activator.CreateInstance(logicType) is not ILogic logic)
+                {
+                    LLog.Error($"incorrect logic class type : {logicEntry.TypeName}");
+                    continue;
+                }
+
+                if (!logic.Startup())
+                {
+                    LLog.Error($"{logicEntry.TypeName} startup failed");
+                    continue;
+                }
+                
+                LogicList_.Add(logic);
             }
 
             InitConfigure();
@@ -75,7 +105,11 @@ namespace LiteQuark.Runtime
         {
             OnEnterBackground();
 
-            MainLogic_?.Shutdown();
+            foreach (var logic in LogicList_)
+            {
+                logic.Shutdown();
+            }
+            LogicList_.Clear();
 
             AssetManager.Instance.Shutdown();
             TaskManager.Instance.Shutdown();
@@ -87,6 +121,8 @@ namespace LiteQuark.Runtime
             System.GC.WaitForPendingFinalizers();
 
             LLog.Info("Lite Runtime Shutdown");
+            
+            LogManager.Instance.Shutdown();
         }
 
         public void Tick(float deltaTime)
@@ -104,7 +140,11 @@ namespace LiteQuark.Runtime
 
             var time = deltaTime * TimeScale;
             TaskManager.Instance.Tick(time);
-            MainLogic_?.Tick(time);
+
+            foreach (var logic in LogicList_)
+            {
+                logic.Tick(time);
+            }
         }
 
         private void InitConfigure()
@@ -125,7 +165,7 @@ namespace LiteQuark.Runtime
             RestartWhenNextFrame_ = false;
             Debug.ClearDeveloperConsole();
             Shutdown();
-            IsPause = !Startup(Launcher, MainLogic_);
+            IsPause = !Startup(Launcher);
         }
 
         public T Attach<T>() where T : MonoBehaviour
