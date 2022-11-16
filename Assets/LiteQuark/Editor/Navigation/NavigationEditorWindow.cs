@@ -8,6 +8,7 @@ namespace LiteQuark.Editor
     {
         private const string SubPath = "Navigation/PathList.json";
         private NavigationData Data_;
+        private Vector2 ScrollPos_;
         
         [MenuItem("Lite/Navigation")]
         private static void ShowWin()
@@ -20,6 +21,7 @@ namespace LiteQuark.Editor
         {
             var jsonPath = PathHelper.GetLiteQuarkRootPath(SubPath);
             Data_ = NavigationData.FromJson(jsonPath);
+            ScrollPos_ = Vector2.zero;
         }
 
         private void OnDisable()
@@ -30,6 +32,8 @@ namespace LiteQuark.Editor
 
         private void OnGUI()
         {
+            ScrollPos_ = EditorGUILayout.BeginScrollView(ScrollPos_);
+            
             using (new EditorGUILayout.VerticalScope())
             {
                 if (GUILayout.Button("PersistentData Path"))
@@ -65,6 +69,8 @@ namespace LiteQuark.Editor
                     }
                 }
             }
+            
+            EditorGUILayout.EndScrollView();
 
             GUILayout.FlexibleSpace();
 
