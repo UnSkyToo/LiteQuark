@@ -669,11 +669,20 @@ MonoBehaviour:
   - Disabled: 0
     AssemblyName: Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     TypeName: LiteGamePlay.MainLogic
+  - Disabled: 0
+    AssemblyName: LiteQuark.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    TypeName: LiteQuark.Runtime.LogRuntimeLogic
   AssetMode: 0
   TargetFrameRate: 60
   MultiTouch: 0
   AutoRestartInBackground: 0
   BackgroundLimitTime: 90
+  ReceiveLog: 1
+  LogInfo: 1
+  LogWarn: 1
+  LogError: 1
+  LogFatal: 1
+  ShowLogViewer: 1
 --- !u!4 &1881260859
 Transform:
   m_ObjectHideFlags: 0

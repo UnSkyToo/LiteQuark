@@ -14,6 +14,13 @@ namespace LiteQuark.Editor
         private SerializedProperty AutoRestartInBackgroundProperty_;
         private SerializedProperty BackgroundLimitTimeProperty_;
 
+        private SerializedProperty ReceiveLogProperty_;
+        private SerializedProperty LogInfoProperty_;
+        private SerializedProperty LogWarnProperty_;
+        private SerializedProperty LogErrorProperty_;
+        private SerializedProperty LogFatalProperty_;
+        private SerializedProperty ShowLogViewerProperty_;
+
         private void OnEnable()
         {
             LogicListProperty_ = serializedObject.FindProperty("LogicList");
@@ -23,6 +30,13 @@ namespace LiteQuark.Editor
 
             AutoRestartInBackgroundProperty_ = serializedObject.FindProperty("AutoRestartInBackground");
             BackgroundLimitTimeProperty_ = serializedObject.FindProperty("BackgroundLimitTime");
+
+            ReceiveLogProperty_ = serializedObject.FindProperty("ReceiveLog");
+            LogInfoProperty_ = serializedObject.FindProperty("LogInfo");
+            LogWarnProperty_ = serializedObject.FindProperty("LogWarn");
+            LogErrorProperty_ = serializedObject.FindProperty("LogError");
+            LogFatalProperty_ = serializedObject.FindProperty("LogFatal");
+            ShowLogViewerProperty_ = serializedObject.FindProperty("ShowLogViewer");
         }
 
         public override void OnInspectorGUI()
@@ -41,6 +55,16 @@ namespace LiteQuark.Editor
             if(AutoRestartInBackgroundProperty_.boolValue)
             {
                 DrawSubProperty(BackgroundLimitTimeProperty_);
+            }
+
+            EditorGUILayout.PropertyField(ReceiveLogProperty_);
+            if (ReceiveLogProperty_.boolValue)
+            {
+                DrawSubProperty(LogInfoProperty_);
+                DrawSubProperty(LogWarnProperty_);
+                DrawSubProperty(LogErrorProperty_);
+                DrawSubProperty(LogFatalProperty_);
+                DrawSubProperty(ShowLogViewerProperty_);
             }
 
             serializedObject.ApplyModifiedProperties();

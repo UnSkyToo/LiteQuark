@@ -28,6 +28,11 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public ILoggerRepository GetRepository()
+        {
+            return Repository_;
+        }
+
         public ILog GetLogger(Type type)
         {
             return GetLogger(type.FullName);

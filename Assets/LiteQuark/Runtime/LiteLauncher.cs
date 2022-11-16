@@ -16,8 +16,14 @@ namespace LiteQuark.Runtime
         [SerializeField] [HideInInspector] public bool MultiTouch;
 
         [SerializeField] [HideInInspector] public bool AutoRestartInBackground;
-
         [SerializeField] [HideInInspector] public float BackgroundLimitTime = 90.0f;
+
+        [SerializeField] [HideInInspector] public bool ReceiveLog = true;
+        [SerializeField] [HideInInspector] public bool LogInfo = true;
+        [SerializeField] [HideInInspector] public bool LogWarn = true;
+        [SerializeField] [HideInInspector] public bool LogError = true;
+        [SerializeField] [HideInInspector] public bool LogFatal = true;
+        [SerializeField] [HideInInspector] public bool ShowLogViewer = true;
 
         void Awake()
         {

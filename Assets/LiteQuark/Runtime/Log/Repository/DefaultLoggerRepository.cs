@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime
         public DefaultLoggerRepository()
             : this(new DefaultLoggerFactory())
         {
+            Name = "DefaultLoggerRepository";
         }
         
         public DefaultLoggerRepository(ILoggerFactory loggerFactory)

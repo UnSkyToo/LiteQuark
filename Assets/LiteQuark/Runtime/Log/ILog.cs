@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
         public ILogger Logger { get; }
 
         public bool IsInfoEnabled => Logger.IsLevelEnable(LogLevel.Info);
-        public bool IsWarnEnabled => Logger.IsLevelEnable(LogLevel.Warning);
+        public bool IsWarnEnabled => Logger.IsLevelEnable(LogLevel.Warn);
         public bool IsErrorEnabled => Logger.IsLevelEnable(LogLevel.Error);
         public bool IsFatalEnabled => Logger.IsLevelEnable(LogLevel.Fatal);
 
@@ -66,7 +66,7 @@ namespace LiteQuark.Runtime
         {
             if (IsWarnEnabled)
             {
-                Logger.Log(LogLevel.Warning, message, null);
+                Logger.Log(LogLevel.Warn, message, null);
             }
         }
 
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
         {
             if (IsWarnEnabled)
             {
-                Logger.Log(LogLevel.Warning, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                Logger.Log(LogLevel.Warn, string.Format(CultureInfo.InvariantCulture, format, args), null);
             }
         }
 
