@@ -209,7 +209,7 @@ namespace LiteQuark.Editor
 
         private string GetBundleOutputPath(BuildTarget target)
         {
-            return PathHelper.GetLiteRootPath($"BuildBundle/{target}");
+            return PathHelper.GetLiteQuarkRootPath($"BuildBundle/{target}");
         }
 
         private void GenerateBuildInfoFile(BuildTarget target, BundlePackInfo packInfo)

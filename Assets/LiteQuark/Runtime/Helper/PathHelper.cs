@@ -119,9 +119,19 @@ namespace LiteQuark.Runtime
         {
             return Path.GetFileName(path);
         }
+
+        public static string GetDirectoryName(string path)
+        {
+            return Path.GetDirectoryName(path);
+        }
         
         public static void CreateDirectory(string path)
         {
+            if (PathIsFile(path))
+            {
+                path = GetDirectoryName(path);
+            }
+            
             if (!Directory.Exists(path))
             {
                 if (!Directory.CreateDirectory(path).Exists)
@@ -208,11 +218,11 @@ namespace LiteQuark.Runtime
         }
 
 #if UNITY_EDITOR
-        public static string GetLiteRootPath(string subPath)
+        public static string GetLiteQuarkRootPath(string subPath)
         {
             var dataPath = UnifyPath(Application.dataPath);
             dataPath = dataPath.Replace($"{DirectorySeparatorChar}Assets", string.Empty);
-            return $"{dataPath}{DirectorySeparatorChar}Lite{DirectorySeparatorChar}{subPath}";
+            return $"{dataPath}{DirectorySeparatorChar}LiteQuark{DirectorySeparatorChar}{subPath}";
         }
 #endif
     }
