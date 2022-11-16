@@ -672,6 +672,9 @@ MonoBehaviour:
   - Disabled: 0
     AssemblyName: LiteQuark.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     TypeName: LiteQuark.Runtime.LogRuntimeLogic
+  - Disabled: 1
+    AssemblyName: LiteQuark.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    TypeName: LiteQuark.Runtime.FpsLogic
   AssetMode: 0
   TargetFrameRate: 60
   MultiTouch: 0

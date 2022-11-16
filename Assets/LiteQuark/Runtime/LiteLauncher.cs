@@ -64,6 +64,11 @@ namespace LiteQuark.Runtime
 #endif
         }
 
+        private void OnGUI()
+        {
+            LiteRuntime.Instance.OnGUI();
+        }
+
         void OnApplicationQuit()
         {
             try
