@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteGamePlay
 {
-    public class MainLogic : IGameLogic
+    public class MainLogic : ILogic
     {
         private int ChessWidth = 5;
         private int ChessHeight = 5;

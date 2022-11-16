@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public interface IGameLogic : ITick
+    public interface ILogic : ITick
     {
         bool Startup();
         void Shutdown();
