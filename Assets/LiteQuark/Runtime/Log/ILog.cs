@@ -24,6 +24,7 @@ namespace LiteQuark.Runtime
         void ErrorFormat(string format, params object[] args);
         
         void Fatal(string message);
+        void Fatal(string message, Exception exception);
         void FatalFormat(string format, params object[] args);
     }
     

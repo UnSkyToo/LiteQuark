@@ -64,6 +64,11 @@ namespace LiteQuark.Runtime
             return log;
         }
 
+        public void EnableLevel(LogLevel level, bool enabled)
+        {
+            CommonLogger_.EnableLevel(level, enabled);
+        }
+
         public void Info(string message)
         {
             CommonLogger_.Info(message);
@@ -97,6 +102,11 @@ namespace LiteQuark.Runtime
         public void Fatal(string message)
         {
             CommonLogger_.Fatal(message);
+        }
+
+        public void Fatal(string message, Exception exception)
+        {
+            CommonLogger_.Fatal(message, exception);
         }
 
         public void FatalFormat(string format, params object[] args)
