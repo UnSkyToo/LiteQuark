@@ -74,9 +74,9 @@ namespace LiteQuark.Runtime
             CommonLogger_.Info(message);
         }
 
-        public void InfoFormat(string format, params object[] args)
+        public void Info(string format, params object[] args)
         {
-            CommonLogger_.InfoFormat(format, args);
+            CommonLogger_.Info(format, args);
         }
 
         public void Warn(string message)
@@ -84,9 +84,9 @@ namespace LiteQuark.Runtime
             CommonLogger_.Warn(message);
         }
 
-        public void WarnFormat(string format, params object[] args)
+        public void Warn(string format, params object[] args)
         {
-            CommonLogger_.WarnFormat(format, args);
+            CommonLogger_.Warn(format, args);
         }
 
         public void Error(string message)
@@ -94,9 +94,9 @@ namespace LiteQuark.Runtime
             CommonLogger_.Error(message);
         }
 
-        public void ErrorFormat(string format, params object[] args)
+        public void Error(string format, params object[] args)
         {
-            CommonLogger_.ErrorFormat(format, args);
+            CommonLogger_.Error(format, args);
         }
 
         public void Fatal(string message)
@@ -109,9 +109,9 @@ namespace LiteQuark.Runtime
             CommonLogger_.Fatal(message, exception);
         }
 
-        public void FatalFormat(string format, params object[] args)
+        public void Fatal(string format, params object[] args)
         {
-            CommonLogger_.FatalFormat(format, args);
+            CommonLogger_.Fatal(format, args);
         }
     }
 }

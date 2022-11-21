@@ -15,17 +15,17 @@ namespace LiteQuark.Runtime
         public void EnableLevel(LogLevel level, bool enabled);
         
         void Info(string message);
-        void InfoFormat(string format, params object[] args);
+        void Info(string format, params object[] args);
         
         void Warn(string message);
-        void WarnFormat(string format, params object[] args);
+        void Warn(string format, params object[] args);
         
         void Error(string message);
-        void ErrorFormat(string format, params object[] args);
+        void Error(string format, params object[] args);
         
         void Fatal(string message);
         void Fatal(string message, Exception exception);
-        void FatalFormat(string format, params object[] args);
+        void Fatal(string format, params object[] args);
     }
     
     public sealed class LogImpl : ILog
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void InfoFormat(string format, params object[] args)
+        public void Info(string format, params object[] args)
         {
             if (IsInfoEnabled)
             {
@@ -71,7 +71,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void WarnFormat(string format, params object[] args)
+        public void Warn(string format, params object[] args)
         {
             if (IsWarnEnabled)
             {
@@ -87,7 +87,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void ErrorFormat(string format, params object[] args)
+        public void Error(string format, params object[] args)
         {
             if (IsErrorEnabled)
             {
@@ -111,7 +111,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void FatalFormat(string format, params object[] args)
+        public void Fatal(string format, params object[] args)
         {
             if (IsFatalEnabled)
             {
