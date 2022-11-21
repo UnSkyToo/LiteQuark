@@ -43,21 +43,21 @@ namespace LiteQuark.Editor
         {
             serializedObject.Update();
             
-            EditorGUILayout.PropertyField(LogicListProperty_);
+            DrawProperty(LogicListProperty_);
             
-            EditorGUILayout.PropertyField(AssetModeProperty_);
+            DrawProperty(AssetModeProperty_);
             
-            EditorGUILayout.PropertyField(TargetFrameRateProperty_);
+            DrawProperty(TargetFrameRateProperty_);
 
-            EditorGUILayout.PropertyField(MultiTouchProperty_);
+            DrawProperty(MultiTouchProperty_);
             
-            EditorGUILayout.PropertyField(AutoRestartInBackgroundProperty_);
+            DrawProperty(AutoRestartInBackgroundProperty_);
             if(AutoRestartInBackgroundProperty_.boolValue)
             {
                 DrawSubProperty(BackgroundLimitTimeProperty_);
             }
 
-            EditorGUILayout.PropertyField(ReceiveLogProperty_);
+            DrawProperty(ReceiveLogProperty_);
             if (ReceiveLogProperty_.boolValue)
             {
                 DrawSubProperty(LogInfoProperty_);
@@ -68,6 +68,11 @@ namespace LiteQuark.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawProperty(SerializedProperty property)
+        {
+            EditorGUILayout.PropertyField(property);
         }
 
         private void DrawSubProperty(SerializedProperty property)
