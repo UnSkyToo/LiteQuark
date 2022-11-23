@@ -4,6 +4,8 @@ namespace LiteQuark.Runtime
 {
     public class LogRuntimeLogic : ILogic
     {
+        private GameObject Go_;
+        
         public bool Startup()
         {
             var launcher = LiteRuntime.Instance.Launcher;
@@ -18,11 +20,10 @@ namespace LiteQuark.Runtime
             {
                 LogManager.Instance.GetRepository().EnableLevel(LogLevel.All, false);
             }
-
-            var go = GameObject.Find("IngameDebugConsole");
-            if (go != null)
+            
+            if (launcher.ReceiveLog && launcher.ShowLogViewer)
             {
-                go.SetActive(launcher.ReceiveLog && launcher.ShowLogViewer);
+                Go_ = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
             }
             
             return true;
@@ -30,6 +31,7 @@ namespace LiteQuark.Runtime
 
         public void Shutdown()
         {
+            Object.DestroyImmediate(Go_);
         }
         
         public void Tick(float deltaTime)

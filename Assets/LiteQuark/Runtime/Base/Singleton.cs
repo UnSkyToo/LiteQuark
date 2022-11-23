@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             }
             catch (MissingMethodException ex)
             {
-                throw new Exception($"{ex.Message}");
+                throw ex;
             }
         }
     }
