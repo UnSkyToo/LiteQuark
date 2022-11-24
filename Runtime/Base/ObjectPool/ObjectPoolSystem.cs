@@ -3,18 +3,16 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class ObjectPoolManager : Singleton<ObjectPoolManager>, IManager
+    public sealed class ObjectPoolSystem : IDisposable
     {
         private readonly Dictionary<object, IObjectPool> PoolCache_ = new ();
 
-        public bool Startup()
+        public ObjectPoolSystem()
         {
             PoolCache_.Clear();
-            
-            return true;
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             foreach (var current in PoolCache_)
             {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class EventManager : Singleton<EventManager>, IManager
+    public sealed class EventSystem : IDisposable
     {
         private abstract class EventListener
         {
@@ -41,13 +41,12 @@ namespace LiteQuark.Runtime
 
         private readonly Dictionary<string, EventListener> EventList_ = new Dictionary<string, EventListener>();
 
-        public bool Startup()
+        public EventSystem()
         {
             EventList_.Clear();
-            return true;
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
 #if UNITY_EDITOR
             foreach (var current in EventList_)

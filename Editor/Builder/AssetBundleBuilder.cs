@@ -11,7 +11,7 @@ namespace LiteQuark.Editor
 {
     public class AssetBundleBuilder
     {
-        [MenuItem("Lite/Build Asset")]
+        [MenuItem("Lite/Build/Bundle")]
         private static void Func()
         {
             new AssetBundleBuilder().Build(EditorUserBuildSettings.activeBuildTarget, BuildAssetBundleOptions.None);
@@ -32,7 +32,7 @@ namespace LiteQuark.Editor
             
             CopyBundleToStreamingPath(target);
 
-            LLogEditor.Info("Build Success");
+            LLogEditor.Info("Build AssetBundle Success");
         }
 
         private void CleanBundleFile(BuildTarget target)
