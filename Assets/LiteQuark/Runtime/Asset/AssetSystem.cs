@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public sealed class AssetSystem : IDisposable
+    public sealed class AssetSystem : IDispose
     {
         private IAssetLoader Loader_ = null;
 

@@ -10,7 +10,7 @@ namespace LiteGamePlay
         Black,
     }
     
-    public class Board : ISubstance
+    public class ChessBoard : ITick, IDispose
     {
         public int Width { get; }
         public int Height { get; }
@@ -19,7 +19,7 @@ namespace LiteGamePlay
         private ChessKind[,] Data_;
         private ChessKind CurrentKind_;
         
-        public Board(int width, int height)
+        public ChessBoard(int width, int height)
         {
             Width = width;
             Height = height;

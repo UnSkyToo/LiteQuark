@@ -3,12 +3,12 @@ using UnityEngine;
 
 namespace LiteGamePlay
 {
-    public class MainLogic : ILogic
+    public class ChessLogic : ILogic
     {
         private int ChessWidth = 5;
         private int ChessHeight = 5;
 
-        private Board Board_;
+        private ChessBoard Board_;
         
         public void Tick(float deltaTime)
         {
@@ -23,8 +23,8 @@ namespace LiteGamePlay
 
         public bool Startup()
         {
-            Board_ = new Board(ChessWidth, ChessHeight);
-            // AssetManager.Instance.LoadAsset<GameObject>("chessboard/prefab/board.prefab", (board) =>
+            Board_ = new ChessBoard(ChessWidth, ChessHeight);
+            // AssetManager.Instance.LoadAsset<GameObject>("chess/prefab/board.prefab", (board) =>
             // {
             //     Object.Instantiate(board);
             // });

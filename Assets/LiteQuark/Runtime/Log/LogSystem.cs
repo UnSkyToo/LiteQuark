@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LogSystem : IDisposable
+    public sealed class LogSystem : IDispose
     {
         private ILoggerRepository Repository_ = null;
         private Dictionary<string, ILog> LogCache_ = null;

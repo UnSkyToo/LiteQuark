@@ -5,10 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using LiteQuark.Runtime;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 
 public class Test : MonoBehaviour

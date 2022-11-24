@@ -25,7 +25,7 @@ namespace LiteGamePlay
             return new Vector2(worldX, worldY);
         }
 
-        public static void GenerateChessBoard(Transform board, int width, int height, string linePrefab = "chessboard/prefab/line.prefab")
+        public static void GenerateChessBoard(Transform board, int width, int height, string linePrefab = "chess/prefab/line.prefab")
         {
             LiteRuntime.GetAssetSystem().LoadAsset<GameObject>(linePrefab, (go) =>
             {
@@ -39,10 +39,10 @@ namespace LiteGamePlay
             switch (kind)
             {
                 case ChessKind.White:
-                    chessPrefab = "chessboard/prefab/chess_white.prefab";
+                    chessPrefab = "chess/prefab/chess_white.prefab";
                     break;
                 case ChessKind.Black:
-                    chessPrefab = "chessboard/prefab/chess_black.prefab";
+                    chessPrefab = "chess/prefab/chess_black.prefab";
                     break;
                 case ChessKind.None:
                     return;

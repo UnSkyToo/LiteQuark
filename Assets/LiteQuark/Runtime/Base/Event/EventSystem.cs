@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class EventSystem : IDisposable
+    public sealed class EventSystem : IDispose
     {
         private abstract class EventListener
         {
