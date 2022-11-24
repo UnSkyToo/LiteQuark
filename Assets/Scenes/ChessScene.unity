@@ -333,7 +333,7 @@ MonoBehaviour:
   LogicList:
   - Disabled: 0
     AssemblyName: Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    TypeName: LiteGamePlay.MainLogic
+    TypeName: LiteGamePlay.ChessLogic
   - Disabled: 0
     AssemblyName: LiteQuark.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     TypeName: LiteQuark.Runtime.LogRuntimeLogic

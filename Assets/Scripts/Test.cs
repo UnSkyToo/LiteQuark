@@ -72,48 +72,9 @@ public class Test : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
     }
     
     private void OnGUI()
     {
-        if (GUI.Button(new Rect(5, 5, 200, 120), "Test1"))
-        {
-            // AssetManager.Instance.LoadAsset<GameObject>("Prefab/Go1.prefab", (go) =>
-            // {
-            //     Instantiate(go);
-            // });
-
-            var text = new StringBuilder(10000);
-            
-            for (var i = 0; i < 10000; ++i)
-            {
-                text.Append("a");
-            }
-
-            text.Append("b");
-
-            var t = new WriteFileAsyncTask("C://Data//t.txt", Encoding.Default.GetBytes(text.ToString()), (suc) =>
-            {
-                Debug.Log(suc);
-            });
-            t.Execute();
-            Debug.Log("test1");
-        }
-        
-        if (GUI.Button(new Rect(5, 205, 200, 120), "Test2"))
-        {
-            // AssetManager.Instance.LoadAsset<GameObject>("Prefab/Go2.prefab", (go) =>
-            // {
-            //     Instantiate(go);
-            // });
-            
-            var t = new ReadFileAsyncTask("C://Data//t.txt", (suc) =>
-            {
-                Debug.Log(suc.Length);
-            });
-            t.Execute();
-            Debug.Log("test2");
-        }
     }
 }
