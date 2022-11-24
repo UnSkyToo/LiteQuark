@@ -27,7 +27,7 @@ namespace LiteGamePlay
 
         public static void GenerateChessBoard(Transform board, int width, int height, string linePrefab = "chessboard/prefab/line.prefab")
         {
-            AssetManager.Instance.LoadAsset<GameObject>(linePrefab, (go) =>
+            LiteRuntime.GetAssetSystem().LoadAsset<GameObject>(linePrefab, (go) =>
             {
                 CreateBoard(board, go, width, height);
             });
@@ -48,7 +48,7 @@ namespace LiteGamePlay
                     return;
             }
 
-            AssetManager.Instance.LoadAsset<GameObject>(chessPrefab, (go) =>
+            LiteRuntime.GetAssetSystem().LoadAsset<GameObject>(chessPrefab, (go) =>
             {
                 CreateChess(board, go, x, y, width, height);
             });

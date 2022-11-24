@@ -1,28 +1,31 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 
 public class Test : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
     {
-        LogManager.Instance.Startup();
+        var logSys = new LogSystem();
         // LogManager.Instance.Info("test info");
         // LogManager.Instance.Error("test error");
         //
         // LogManager.Instance.GetLogger("my logger").Fatal("my fatal");
 
-        var logger = LogManager.Instance.GetLogger(typeof(Test));
+        var logger = logSys.GetLogger(typeof(Test));
         logger.EnableLevel(LogLevel.Warn, false);
         
-        LogManager.Instance.EnableLevel(LogLevel.Error, false);
+        logSys.EnableLevel(LogLevel.Error, false);
         
         // LogManager.Instance.GetRepository().EnableLevel(LogLevel.All, false);
         
@@ -35,10 +38,10 @@ public class Test : MonoBehaviour
         logger.EnableLevel(LogLevel.Warn, true);
         logger.Warn("record warn 2");
         
-        LogManager.Instance.Info("c info");
-        LogManager.Instance.Warn("c warn");
-        LogManager.Instance.Error("c error");
-        LogManager.Instance.Fatal("c fatal");
+        logSys.Info("c info");
+        logSys.Warn("c warn");
+        logSys.Error("c error");
+        logSys.Fatal("c fatal");
 
         // var threads = new List<Thread>();
         // for (var i = 0; i < 32; i++)
@@ -61,18 +64,20 @@ public class Test : MonoBehaviour
         //         logger.Error($"thread<{Thread.CurrentThread.ManagedThreadId}> test error {i}");
         //     }
         // }
+        
+        logSys.Dispose();
     }
 
     private void OnDestroy()
     {
-        LogManager.Instance.Shutdown();
     }
 
     // Update is called once per frame
     void Update()
     {
+        
     }
-
+    
     private void OnGUI()
     {
         if (GUI.Button(new Rect(5, 5, 200, 120), "Test1"))
@@ -81,14 +86,14 @@ public class Test : MonoBehaviour
             // {
             //     Instantiate(go);
             // });
-            
+
             var text = new StringBuilder(10000);
             
             for (var i = 0; i < 10000; ++i)
             {
                 text.Append("a");
             }
-            
+
             text.Append("b");
 
             var t = new WriteFileAsyncTask("C://Data//t.txt", Encoding.Default.GetBytes(text.ToString()), (suc) =>

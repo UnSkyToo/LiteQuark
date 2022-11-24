@@ -15,17 +15,12 @@ namespace LiteQuark.Runtime
         }
 
         public LiteLauncher Launcher { get; private set; }
-        public AssetLoaderMode AssetMode
-        {
-            get
-            {
-#if UNITY_EDITOR
-                return Launcher.AssetMode;
-#else
-                return AssetLoaderMode.Bundle;
-#endif
-            }
-        }
+
+        private LogSystem LogSystem_ = null;
+        private ObjectPoolSystem ObjectPoolSystem_ = null;
+        private EventSystem EventSystem_ = null;
+        private TaskSystem TaskSystem_ = null;
+        private AssetSystem AssetSystem_ = null;
 
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
@@ -39,65 +34,26 @@ namespace LiteQuark.Runtime
         {
             IsPause = true;
             IsFocus = true;
-            TimeScale = 1.0f;
-            EnterBackgroundTime_ = 0.0f;
-            RestartWhenNextFrame_ = false;
-            LogicList_ = new List<ILogic>();
             Launcher = launcher;
 
-            if (!LogManager.Instance.Startup())
-            {
-                return false;
-            }
+            LogSystem_ = new LogSystem();
 
             LLog.Info("Lite Runtime Startup");
 
-            if (!EventManager.Instance.Startup())
+            if (!InitializeSystem())
             {
                 return false;
             }
+
+            if (!InitializeLogic())
+            {
+                return false;
+            }
+
+            InitializeConfigure();
             
-            if (!TaskManager.Instance.Startup())
-            {
-                return false;
-            }
-
-            if (!AssetManager.Instance.Startup())
-            {
-                return false;
-            }
-            
-            foreach (var logicEntry in Launcher.LogicList)
-            {
-                if (logicEntry.Disabled)
-                {
-                    continue;
-                }
-
-                var logicType = TypeHelper.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
-                if (logicType == null)
-                {
-                    LLog.Error($"can't not find logic class type : {logicEntry.TypeName}");
-                    continue;
-                }
-
-                if (System.Activator.CreateInstance(logicType) is not ILogic logic)
-                {
-                    LLog.Error($"incorrect logic class type : {logicEntry.TypeName}");
-                    continue;
-                }
-
-                if (!logic.Startup())
-                {
-                    LLog.Error($"{logicEntry.TypeName} startup failed");
-                    continue;
-                }
-                
-                LogicList_.Add(logic);
-            }
-
-            InitConfigure();
             IsPause = false;
+            
             return true;
         }
 
@@ -105,15 +61,8 @@ namespace LiteQuark.Runtime
         {
             OnEnterBackground();
 
-            foreach (var logic in LogicList_)
-            {
-                logic.Shutdown();
-            }
-            LogicList_.Clear();
-
-            AssetManager.Instance.Shutdown();
-            TaskManager.Instance.Shutdown();
-            EventManager.Instance.Shutdown();
+            UnInitializeLogic();
+            UnInitializeSystem();
 
             PlayerPrefs.Save();
             Resources.UnloadUnusedAssets();
@@ -122,7 +71,7 @@ namespace LiteQuark.Runtime
 
             LLog.Info("Lite Runtime Shutdown");
             
-            LogManager.Instance.Shutdown();
+            LogSystem_.Dispose();
         }
 
         public void Tick(float deltaTime)
@@ -139,7 +88,7 @@ namespace LiteQuark.Runtime
             }
 
             var time = deltaTime * TimeScale;
-            TaskManager.Instance.Tick(time);
+            TaskSystem_.Tick(time);
 
             foreach (var logic in LogicList_)
             {
@@ -157,13 +106,98 @@ namespace LiteQuark.Runtime
                 }
             }
         }
+
+        private bool InitializeSystem()
+        {
+            try
+            {
+                ObjectPoolSystem_ = new ObjectPoolSystem();
+                EventSystem_ = new EventSystem();
+                TaskSystem_ = new TaskSystem();
+
+#if UNITY_EDITOR
+                AssetSystem_ = new AssetSystem(Launcher.AssetMode);
+#else
+                AssetSystem_ = new AssetSystem(AssetLoaderMode.Bundle);
+#endif
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void UnInitializeSystem()
+        {
+            AssetSystem_.Dispose();
+            TaskSystem_.Dispose();
+            EventSystem_.Dispose();
+            ObjectPoolSystem_.Dispose();
+        }
+
+        private bool InitializeLogic()
+        {
+            try
+            {
+                LogicList_ = new List<ILogic>();
+                
+                foreach (var logicEntry in Launcher.LogicList)
+                {
+                    if (logicEntry.Disabled)
+                    {
+                        continue;
+                    }
+
+                    var logicType = TypeHelper.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
+                    if (logicType == null)
+                    {
+                        LLog.Error($"can't not find logic class type : {logicEntry.TypeName}");
+                        continue;
+                    }
+
+                    if (System.Activator.CreateInstance(logicType) is not ILogic logic)
+                    {
+                        LLog.Error($"incorrect logic class type : {logicEntry.TypeName}");
+                        continue;
+                    }
+
+                    if (!logic.Startup())
+                    {
+                        LLog.Error($"{logicEntry.TypeName} startup failed");
+                        continue;
+                    }
+
+                    LogicList_.Add(logic);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void UnInitializeLogic()
+        {
+            foreach (var logic in LogicList_)
+            {
+                logic.Shutdown();
+            }
+            LogicList_.Clear();
+        }
         
-        private void InitConfigure()
+        private void InitializeConfigure()
         {
             Application.targetFrameRate = Launcher.TargetFrameRate;
             Input.multiTouchEnabled = Launcher.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int) System.DateTime.Now.Ticks);
+            
+            TimeScale = 1.0f;
+            EnterBackgroundTime_ = 0.0f;
+            RestartWhenNextFrame_ = false;
         }
 
         public void Restart()
@@ -179,28 +213,6 @@ namespace LiteQuark.Runtime
             IsPause = !Startup(Launcher);
         }
 
-        public T Attach<T>() where T : MonoBehaviour
-        {
-            var Component = Launcher?.gameObject.GetComponent<T>();
-
-            if (Component != null)
-            {
-                return Component;
-            }
-
-            return Launcher?.gameObject.AddComponent<T>();
-        }
-
-        public void Detach<T>() where T : MonoBehaviour
-        {
-            var Component = Launcher?.gameObject.GetComponent<T>();
-
-            if (Component != null)
-            {
-                Object.DestroyImmediate(Component);
-            }
-        }
-
         public void OnEnterForeground()
         {
             if (IsFocus)
@@ -212,7 +224,7 @@ namespace LiteQuark.Runtime
             IsFocus = true;
 
             LLog.Info("OnEnterForeground");
-            EventManager.Instance.Send<EnterForegroundEvent>();
+            EventSystem_.Send<EnterForegroundEvent>();
 
             if (Launcher.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.BackgroundLimitTime)
             {
@@ -233,8 +245,33 @@ namespace LiteQuark.Runtime
             IsFocus = false;
  
             LLog.Info("OnEnterBackground");
-            EventManager.Instance.Send<EnterBackgroundEvent>();
+            EventSystem_.Send<EnterBackgroundEvent>();
             EnterBackgroundTime_ = Time.realtimeSinceStartup;
+        }
+
+        public static LogSystem GetLogSystem()
+        {
+            return Instance.LogSystem_;
+        }
+
+        public static ObjectPoolSystem GetObjectPoolSystem()
+        {
+            return Instance.ObjectPoolSystem_;
+        }
+
+        public static EventSystem GetEventSystem()
+        {
+            return Instance.EventSystem_;
+        }
+
+        public static TaskSystem GetTaskSystem()
+        {
+            return Instance.TaskSystem_;
+        }
+        
+        public static AssetSystem GetAssetSystem()
+        {
+            return Instance.AssetSystem_;
         }
     }
 }

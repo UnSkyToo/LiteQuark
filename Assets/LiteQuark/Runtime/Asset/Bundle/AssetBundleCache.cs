@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime.Internal
 
         public void Load(Action<bool> callback)
         {
-            TaskManager.Instance.AddTask(LoadAsync(Info.BundlePath, callback));
+            LiteRuntime.GetTaskSystem().AddTask(LoadAsync(Info.BundlePath, callback));
         }
 
         private IEnumerator LoadAsync(string path, Action<bool> callback)
@@ -127,7 +127,7 @@ namespace LiteQuark.Runtime.Internal
                 return;
             }
 
-            TaskManager.Instance.AddTask(LoadAssetAsync(assetPath, callback));
+            LiteRuntime.GetTaskSystem().AddTask(LoadAssetAsync(assetPath, callback));
         }
 
         private IEnumerator LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object

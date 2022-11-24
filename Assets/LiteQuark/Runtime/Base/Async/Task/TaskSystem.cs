@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace LiteQuark.Runtime
 {
-    public class TaskManager : Singleton<TaskManager>, IManager, ITick
+    public sealed class TaskSystem : ITick, IDisposable
     {
         public UnityEngine.MonoBehaviour MonoBehaviourInstance { get; private set; }
         
@@ -11,15 +11,14 @@ namespace LiteQuark.Runtime
         private readonly object MainThreadLock_ = new object();
         private readonly ListEx<MainThreadTask> MainThreadTaskList_ = new ListEx<MainThreadTask>();
 
-        public bool Startup()
+        public TaskSystem()
         {
             MonoBehaviourInstance = LiteRuntime.Instance.Launcher;
             TaskList_.Clear();
             MainThreadTaskList_.Clear();
-            return true;
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             MonoBehaviourInstance?.StopAllCoroutines();
             

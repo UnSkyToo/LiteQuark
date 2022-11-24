@@ -2,13 +2,13 @@
 
 namespace LiteQuark.Runtime
 {
-    public sealed class AssetManager : Singleton<AssetManager>, IManager
+    public sealed class AssetSystem : IDisposable
     {
         private IAssetLoader Loader_ = null;
 
-        public bool Startup()
+        public AssetSystem(AssetLoaderMode mode)
         {
-            switch (LiteRuntime.Instance.AssetMode)
+            switch (mode)
             {
 #if UNITY_EDITOR
                 case AssetLoaderMode.Internal:
@@ -19,13 +19,13 @@ namespace LiteQuark.Runtime
                     Loader_ = new AssetBundleLoader();
                     break;
                 default:
-                    throw new ArgumentException($"error {nameof(AssetLoaderMode)} : {LiteRuntime.Instance.AssetMode}");
+                    throw new ArgumentException($"error {nameof(AssetLoaderMode)} : {mode}");
             }
             
-            return Loader_.Initialize();
+            Loader_.Initialize();
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             Loader_?.Dispose();
             Loader_ = null;

@@ -3,21 +3,20 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LogManager : Singleton<LogManager>, IManager
+    public sealed class LogSystem : IDisposable
     {
         private ILoggerRepository Repository_ = null;
         private Dictionary<string, ILog> LogCache_ = null;
         private ILog CommonLogger_ = null;
 
-        public bool Startup()
+        public LogSystem()
         {
             Repository_ = new DefaultLoggerRepository();
             LogCache_ = new Dictionary<string, ILog>();
             CommonLogger_ = GetLogger("Default");
-            return true;
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             LogCache_.Clear();
             
