@@ -393,11 +393,7 @@ namespace IngameDebugConsole
 #if UNITY_EDITOR
 		private bool isQuittingApplication;
 #endif
-
-#if !UNITY_EDITOR && UNITY_ANDROID
-		private DebugLogLogcatListener logcatListener;
-#endif
-
+		
 		private void Awake()
 		{
 			// Only one instance of debug console is allowed
@@ -574,11 +570,6 @@ namespace IngameDebugConsole
 			if( !receiveLogsWhileInactive )
 				Application.logMessageReceivedThreaded -= ReceivedLog;
 
-#if !UNITY_EDITOR && UNITY_ANDROID
-			if( logcatListener != null )
-				logcatListener.Stop();
-#endif
-
 			DebugLogConsole.RemoveCommand( "logs.save" );
 
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
@@ -645,15 +636,6 @@ namespace IngameDebugConsole
 #endif
 #if !IDG_OMIT_FRAMECOUNT
 			lastFrameCount = Time.frameCount;
-#endif
-
-#if !UNITY_EDITOR && UNITY_ANDROID
-			if( logcatListener != null )
-			{
-				string log;
-				while( ( log = logcatListener.GetLog() ) != null )
-					ReceivedLog( "LOGCAT: " + log, string.Empty, LogType.Log );
-			}
 #endif
 
 #if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER

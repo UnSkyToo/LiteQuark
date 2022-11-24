@@ -62,7 +62,7 @@ namespace LiteQuark.Editor
 
             if (report.summary.result == BuildResult.Failed)
             {
-                LLogEditor.Info("Build App Failed");
+                LLogEditor.Error("Build App Failed");
             }
             
             AssetDatabase.Refresh();
