@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
-    public interface ILoggerRepository : IDisposable
+    public interface ILoggerRepository : IDispose
     {
         string Name { get; set; }
 
