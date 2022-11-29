@@ -2,12 +2,17 @@
 
 namespace LiteQuark.Runtime
 {
-    public sealed class AssetSystem : IDispose
+    public sealed class AssetSystem : ISystem
     {
         private IAssetLoader Loader_ = null;
 
-        public AssetSystem(AssetLoaderMode mode)
+        public AssetSystem()
         {
+#if UNITY_EDITOR
+            var mode = LiteRuntime.Instance.Launcher.AssetMode;
+#else
+            var mode = AssetLoaderMode.Bundle;
+#endif
             switch (mode)
             {
 #if UNITY_EDITOR

@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            LiteRuntime.GetTaskSystem().MonoBehaviourInstance.StartCoroutine(ExecuteInternal());
+            LiteRuntime.Get<TaskSystem>().MonoBehaviourInstance.StartCoroutine(ExecuteInternal());
         }
 
         private IEnumerator ExecuteInternal()

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class TimerSystem : ITick, IDispose
+    public sealed class TimerSystem : ISystem, ITick
     {
         public const int RepeatCountForever = -1;
         

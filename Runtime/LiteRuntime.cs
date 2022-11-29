@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -16,16 +17,13 @@ namespace LiteQuark.Runtime
 
         public LiteLauncher Launcher { get; private set; }
 
-        private LogSystem LogSystem_ = null;
-        private ObjectPoolSystem ObjectPoolSystem_ = null;
-        private EventSystem EventSystem_ = null;
-        private TaskSystem TaskSystem_ = null;
-        private TimerSystem TimerSystem_ = null;
-        private AssetSystem AssetSystem_ = null;
+        private List<ISystem> SystemList_;
+        private Dictionary<Type, ISystem> SystemTypeMap_;
 
+        private List<ILogic> LogicList_;
+        
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
-        private List<ILogic> LogicList_;
 
         public LiteRuntime()
         {
@@ -36,10 +34,6 @@ namespace LiteQuark.Runtime
             IsPause = true;
             IsFocus = true;
             Launcher = launcher;
-
-            LogSystem_ = new LogSystem();
-
-            LLog.Info("Lite Runtime Startup");
 
             if (!InitializeSystem())
             {
@@ -69,10 +63,6 @@ namespace LiteQuark.Runtime
             Resources.UnloadUnusedAssets();
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
-
-            LLog.Info("Lite Runtime Shutdown");
-            
-            LogSystem_.Dispose();
         }
 
         public void Tick(float deltaTime)
@@ -89,8 +79,14 @@ namespace LiteQuark.Runtime
             }
 
             var time = deltaTime * TimeScale;
-            TaskSystem_.Tick(time);
-            TimerSystem_.Tick(time);
+
+            foreach (var system in SystemList_)
+            {
+                if (system is ITick tickSys)
+                {
+                    tickSys.Tick(time);
+                }
+            }
 
             foreach (var logic in LogicList_)
             {
@@ -113,16 +109,18 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                ObjectPoolSystem_ = new ObjectPoolSystem();
-                EventSystem_ = new EventSystem();
-                TaskSystem_ = new TaskSystem();
-                TimerSystem_ = new TimerSystem();
+                SystemList_ = new List<ISystem>();
+                SystemTypeMap_ = new Dictionary<Type, ISystem>();
 
-#if UNITY_EDITOR
-                AssetSystem_ = new AssetSystem(Launcher.AssetMode);
-#else
-                AssetSystem_ = new AssetSystem(AssetLoaderMode.Bundle);
-#endif
+                foreach (var type in LiteConst.SystemTypeList)
+                {
+                    if (System.Activator.CreateInstance(type) is ISystem sys)
+                    {
+                        SystemList_.Add(sys);
+                        SystemTypeMap_.Add(type, sys);
+                    }
+                }
+
                 return true;
             }
             catch
@@ -133,11 +131,13 @@ namespace LiteQuark.Runtime
 
         private void UnInitializeSystem()
         {
-            AssetSystem_.Dispose();
-            TimerSystem_.Dispose();
-            TaskSystem_.Dispose();
-            EventSystem_.Dispose();
-            ObjectPoolSystem_.Dispose();
+            for (var index = SystemList_.Count - 1; index >= 0; --index)
+            {
+                SystemList_[index].Dispose();
+            }
+            
+            SystemList_.Clear();
+            SystemTypeMap_.Clear();
         }
 
         private bool InitializeLogic()
@@ -197,7 +197,7 @@ namespace LiteQuark.Runtime
             Application.targetFrameRate = Launcher.TargetFrameRate;
             Input.multiTouchEnabled = Launcher.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Random.InitState((int) System.DateTime.Now.Ticks);
+            UnityEngine.Random.InitState((int) System.DateTime.Now.Ticks);
             
             TimeScale = 1.0f;
             EnterBackgroundTime_ = 0.0f;
@@ -228,7 +228,7 @@ namespace LiteQuark.Runtime
             IsFocus = true;
 
             LLog.Info("OnEnterForeground");
-            EventSystem_.Send<EnterForegroundEvent>();
+            GetSystem<EventSystem>().Send<EnterForegroundEvent>();
 
             if (Launcher.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.BackgroundLimitTime)
             {
@@ -249,38 +249,26 @@ namespace LiteQuark.Runtime
             IsFocus = false;
  
             LLog.Info("OnEnterBackground");
-            EventSystem_.Send<EnterBackgroundEvent>();
+            GetSystem<EventSystem>().Send<EnterBackgroundEvent>();
             EnterBackgroundTime_ = Time.realtimeSinceStartup;
         }
 
-        public static LogSystem GetLogSystem()
+        public T GetSystem<T>() where T : ISystem
         {
-            return Instance.LogSystem_;
+            if (SystemTypeMap_.TryGetValue(typeof(T), out var system))
+            {
+                return (T) system;
+            }
+
+            return default;
         }
 
-        public static ObjectPoolSystem GetObjectPoolSystem()
+        /// <summary>
+        /// Get System
+        /// </summary>
+        public static T Get<T>() where T : ISystem
         {
-            return Instance.ObjectPoolSystem_;
-        }
-
-        public static EventSystem GetEventSystem()
-        {
-            return Instance.EventSystem_;
-        }
-
-        public static TaskSystem GetTaskSystem()
-        {
-            return Instance.TaskSystem_;
-        }
-
-        public static TimerSystem GetTimerSystem()
-        {
-            return Instance.TimerSystem_;
-        }
-        
-        public static AssetSystem GetAssetSystem()
-        {
-            return Instance.AssetSystem_;
+            return Instance.GetSystem<T>();
         }
     }
 }
