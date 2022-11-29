@@ -17,6 +17,11 @@ namespace LiteQuark.Editor
 #endif
         }
 
+        public static void GenerateCSharpProject()
+        {
+            Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
+        }
+
         public static void Ping(string path)
         {
             var obj = AssetDatabase.LoadMainAssetAtPath(path);

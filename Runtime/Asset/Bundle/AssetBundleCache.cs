@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LiteQuark.Runtime.Internal
+namespace LiteQuark.Runtime
 {
     internal sealed class AssetBundleCache
     {
