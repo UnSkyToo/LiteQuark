@@ -22,10 +22,7 @@ namespace LiteQuark.Runtime
         {
             MonoBehaviourInstance?.StopAllCoroutines();
             
-            foreach (var task in TaskList_)
-            {
-                task.Dispose();
-            }
+            TaskList_.Foreach((task) => task.Dispose());
             TaskList_.Clear();
 
             lock (MainThreadLock_)

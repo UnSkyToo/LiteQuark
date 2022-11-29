@@ -14,6 +14,7 @@ namespace LiteQuark.Runtime
             typeof(EventSystem),
             typeof(TaskSystem),
             typeof(TimerSystem),
+            typeof(GroupSystem),
             typeof(AssetSystem),
         };
     }
