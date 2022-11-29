@@ -21,9 +21,8 @@ public class Test : MonoBehaviour
 
         var logger = logSys.GetLogger(typeof(Test));
         logger.EnableLevel(LogLevel.Warn, false);
-        
         logSys.EnableLevel(LogLevel.Error, false);
-        
+
         // LogManager.Instance.GetRepository().EnableLevel(LogLevel.All, false);
         
         logger.Info("record info test");

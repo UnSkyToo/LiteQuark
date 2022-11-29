@@ -1,99 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using LiteQuark.Runtime;
-using LiteQuark.Runtime.Internal;
 using UnityEditor;
-using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    public class AssetBundleBuilder
+    /// <summary>
+    /// Collect asset bundle info and apply, write pack info to json
+    /// </summary>
+    internal sealed class ResCollectInfoStep : IBuildStep
     {
-        [MenuItem("Lite/Build/Bundle")]
-        private static void Func()
-        {
-            new AssetBundleBuilder().Build(EditorUserBuildSettings.activeBuildTarget, BuildAssetBundleOptions.None);
-        }
+        public string Name => "Res Collect Info Step";
         
         private string DefaultBundlePath => "default.ab";
-        
-        public void Build(BuildTarget target, BuildAssetBundleOptions options)
-        {
-            CleanBundleFile(target);
-            CleanBundleName();
 
-            var bundlePack = GenerateBundlePackInfo(target);
+        public void Execute(ProjectBuilder builder)
+        {
+            var bundlePack = GenerateBundlePackInfo(builder.Target);
             ApplyBundleInfo(bundlePack);
-            BuildAllBundle(target, options);
             
-            GenerateBuildInfoFile(target, bundlePack);
-            
-            CopyBundleToStreamingPath(target);
-
-            LLogEditor.Info("Build AssetBundle Success");
-        }
-
-        private void CleanBundleFile(BuildTarget target)
-        {
-            PathHelper.DeleteDirectory(GetBundleOutputPath(target));
-            PathHelper.DeleteDirectory(Application.streamingAssetsPath);
-            AssetDatabase.Refresh();
-        }
-
-        private void CleanBundleName()
-        {
-            var assetBundleNameList = AssetDatabase.GetAllAssetBundleNames();
-            foreach (var assetBundleName in assetBundleNameList)
-            {
-                var assetPathList = AssetDatabase.GetAssetPathsFromAssetBundle(assetBundleName);
-                foreach (var assetPath in assetPathList)
-                {
-                    var importer = AssetImporter.GetAtPath(assetPath);
-                    importer.SetAssetBundleNameAndVariant(string.Empty, string.Empty);
-                }
-            }
-            
-            AssetDatabase.RemoveUnusedAssetBundleNames();
-            AssetDatabase.Refresh();
-        }
-
-        private void ApplyBundleInfo(BundlePackInfo packInfo)
-        {
-            foreach (var buildInfo in packInfo.BundleList)
-            {
-                foreach (var assetPath in buildInfo.AssetList)
-                {
-                    var fullPath = PathHelper.GetFullPathInAssetRoot(assetPath);
-                    var importer = AssetImporter.GetAtPath(fullPath);
-                    importer.SetAssetBundleNameAndVariant(buildInfo.BundlePath, string.Empty);
-                }
-            }
-        }
-
-        private void BuildAllBundle(BuildTarget target, BuildAssetBundleOptions options)
-        {
-            var outputPath = GetBundleOutputPath(target);
-            PathHelper.CreateDirectory(outputPath);
-            BuildPipeline.BuildAssetBundles(outputPath, options, target);
-            AssetDatabase.Refresh();
-        }
-
-        private void CopyBundleToStreamingPath(BuildTarget target)
-        {
-            bool Filter(string path)
-            {
-                if (path.EndsWith(".manifest") || path.EndsWith(target.ToString()))
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            
-            PathHelper.CopyDirectory(GetBundleOutputPath(target), Application.streamingAssetsPath, Filter);
-            AssetDatabase.Refresh();
+            var jsonText = bundlePack.ToJson();
+            PathHelper.CreateDirectory(builder.GetResOutputPath());
+            System.IO.File.WriteAllText(PathHelper.ConcatPath(builder.GetResOutputPath(), LiteConst.BundlePackFileName), jsonText);
         }
 
         private BundlePackInfo GenerateBundlePackInfo(BuildTarget target)
@@ -101,7 +30,7 @@ namespace LiteQuark.Editor
             var bundleInfoList = CollectBundleInfo(LiteConst.AssetRootPath);
             return new BundlePackInfo(target.ToString(), bundleInfoList);
         }
-
+        
         private BundleInfo[] CollectBundleInfo(string rootPath)
         {
             rootPath = PathHelper.UnifyPath(rootPath);
@@ -128,7 +57,7 @@ namespace LiteQuark.Editor
 
             return infoList.ToArray();
         }
-
+        
         private BundleInfo CreateBundleInfo(string bundlePath)
         {
             var filePathList = PathHelper.GetFileList(bundlePath);
@@ -157,7 +86,7 @@ namespace LiteQuark.Editor
 
             return null;
         }
-
+        
         private string[] GetDependencyList(string assetPath)
         {
             var dependencyPathList = AssetDatabase.GetDependencies(assetPath);
@@ -194,10 +123,10 @@ namespace LiteQuark.Editor
 
             return $"{bundlePath}.ab";
         }
-
+        
         private bool AssetFilter(string filePath)
         {
-            var ext = Path.GetExtension(filePath);
+            var ext = System.IO.Path.GetExtension(filePath);
             
             if (ext is ".meta" or ".dll" or ".cs" or ".js" or ".boo")
             {
@@ -206,16 +135,20 @@ namespace LiteQuark.Editor
 
             return true;
         }
-
-        private string GetBundleOutputPath(BuildTarget target)
+        
+        private void ApplyBundleInfo(BundlePackInfo packInfo)
         {
-            return PathHelper.GetLiteQuarkRootPath($"BuildBundle/{target}");
-        }
-
-        private void GenerateBuildInfoFile(BuildTarget target, BundlePackInfo packInfo)
-        {
-            var jsonText = packInfo.ToJson();
-            File.WriteAllText(PathHelper.ConcatPath(GetBundleOutputPath(target), LiteConst.BundlePackFileName), jsonText);
+            foreach (var buildInfo in packInfo.BundleList)
+            {
+                foreach (var assetPath in buildInfo.AssetList)
+                {
+                    var fullPath = PathHelper.GetFullPathInAssetRoot(assetPath);
+                    var importer = AssetImporter.GetAtPath(fullPath);
+                    importer.SetAssetBundleNameAndVariant(buildInfo.BundlePath, string.Empty);
+                }
+            }
+            
+            AssetDatabase.Refresh();
         }
     }
 }

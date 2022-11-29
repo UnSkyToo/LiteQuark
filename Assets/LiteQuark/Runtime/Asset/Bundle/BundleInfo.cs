@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LiteQuark.Runtime.Internal
+namespace LiteQuark.Runtime
 {
     [Serializable]
     public sealed class BundleInfo

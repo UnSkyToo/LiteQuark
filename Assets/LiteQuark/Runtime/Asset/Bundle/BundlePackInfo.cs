@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LiteQuark.Runtime.Internal
+namespace LiteQuark.Runtime
 {
     [Serializable]
     public sealed class BundlePackInfo
