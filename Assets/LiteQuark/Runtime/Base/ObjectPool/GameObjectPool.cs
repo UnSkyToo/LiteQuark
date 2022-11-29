@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         {
             GoPath_ = (string)param;
             
-            LiteRuntime.GetAssetSystem().LoadAsset<GameObject>(GoPath_, (go) =>
+            LiteRuntime.Get<AssetSystem>().LoadAsset<GameObject>(GoPath_, (go) =>
             {
                 Go_ = go;
             });

@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class TaskSystem : ITick, IDispose
+    public sealed class TaskSystem : ISystem, ITick
     {
         public UnityEngine.MonoBehaviour MonoBehaviourInstance { get; private set; }
         

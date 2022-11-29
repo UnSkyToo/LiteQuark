@@ -11,14 +11,14 @@ namespace LiteQuark.Runtime
             var launcher = LiteRuntime.Instance.Launcher;
             if (launcher.ReceiveLog)
             {
-                LiteRuntime.GetLogSystem().GetRepository().EnableLevel(LogLevel.Info, launcher.LogInfo);
-                LiteRuntime.GetLogSystem().GetRepository().EnableLevel(LogLevel.Warn, launcher.LogWarn);
-                LiteRuntime.GetLogSystem().GetRepository().EnableLevel(LogLevel.Error, launcher.LogError);
-                LiteRuntime.GetLogSystem().GetRepository().EnableLevel(LogLevel.Fatal, launcher.LogFatal);
+                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Info, launcher.LogInfo);
+                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Warn, launcher.LogWarn);
+                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Error, launcher.LogError);
+                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Fatal, launcher.LogFatal);
             }
             else
             {
-                LiteRuntime.GetLogSystem().GetRepository().EnableLevel(LogLevel.All, false);
+                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.All, false);
             }
             
             if (launcher.ReceiveLog && launcher.ShowLogViewer)

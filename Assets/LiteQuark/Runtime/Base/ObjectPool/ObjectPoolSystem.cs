@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class ObjectPoolSystem : IDispose
+    public sealed class ObjectPoolSystem : ISystem
     {
         private readonly Dictionary<object, IObjectPool> PoolCache_ = new ();
 
