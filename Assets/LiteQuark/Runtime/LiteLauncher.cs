@@ -29,6 +29,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
+                DontDestroyOnLoad(this);
                 LiteRuntime.Instance.Startup(this);
             }
             catch (Exception ex)

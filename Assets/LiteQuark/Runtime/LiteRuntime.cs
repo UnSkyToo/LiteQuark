@@ -20,6 +20,7 @@ namespace LiteQuark.Runtime
         private ObjectPoolSystem ObjectPoolSystem_ = null;
         private EventSystem EventSystem_ = null;
         private TaskSystem TaskSystem_ = null;
+        private TimerSystem TimerSystem_ = null;
         private AssetSystem AssetSystem_ = null;
 
         private float EnterBackgroundTime_ = 0.0f;
@@ -89,6 +90,7 @@ namespace LiteQuark.Runtime
 
             var time = deltaTime * TimeScale;
             TaskSystem_.Tick(time);
+            TimerSystem_.Tick(time);
 
             foreach (var logic in LogicList_)
             {
@@ -114,6 +116,7 @@ namespace LiteQuark.Runtime
                 ObjectPoolSystem_ = new ObjectPoolSystem();
                 EventSystem_ = new EventSystem();
                 TaskSystem_ = new TaskSystem();
+                TimerSystem_ = new TimerSystem();
 
 #if UNITY_EDITOR
                 AssetSystem_ = new AssetSystem(Launcher.AssetMode);
@@ -131,6 +134,7 @@ namespace LiteQuark.Runtime
         private void UnInitializeSystem()
         {
             AssetSystem_.Dispose();
+            TimerSystem_.Dispose();
             TaskSystem_.Dispose();
             EventSystem_.Dispose();
             ObjectPoolSystem_.Dispose();
@@ -267,6 +271,11 @@ namespace LiteQuark.Runtime
         public static TaskSystem GetTaskSystem()
         {
             return Instance.TaskSystem_;
+        }
+
+        public static TimerSystem GetTimerSystem()
+        {
+            return Instance.TimerSystem_;
         }
         
         public static AssetSystem GetAssetSystem()
