@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public static class PathHelper
+    public static class PathUtils
     {
         public const char DirectorySeparatorChar = '/';
         

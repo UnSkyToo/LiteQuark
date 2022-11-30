@@ -153,7 +153,7 @@ namespace LiteQuark.Runtime
                         continue;
                     }
 
-                    var logicType = TypeHelper.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
+                    var logicType = TypeUtils.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
                     if (logicType == null)
                     {
                         LLog.Error($"can't not find logic class type : {logicEntry.TypeName}");

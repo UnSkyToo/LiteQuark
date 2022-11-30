@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
 
         private void CopyResToStreamingAssets(ProjectBuilder builder)
         {
-            PathHelper.CopyDirectory(builder.GetResOutputPath(), Application.streamingAssetsPath, CopyFilter);
+            PathUtils.CopyDirectory(builder.GetResOutputPath(), Application.streamingAssetsPath, CopyFilter);
             AssetDatabase.Refresh();
         }
         

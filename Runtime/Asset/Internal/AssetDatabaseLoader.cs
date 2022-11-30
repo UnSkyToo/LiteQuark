@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
-            var fullPath = PathHelper.GetFullPathInAssetRoot(assetPath);
+            var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
             var asset = AssetDatabase.LoadAssetAtPath<T>(fullPath);
             if (asset == null)
             {

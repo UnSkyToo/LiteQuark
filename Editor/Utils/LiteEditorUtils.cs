@@ -6,7 +6,7 @@ using UnityEngine;
 namespace LiteQuark.Editor
 {
 #if UNITY_EDITOR
-    public static class LiteEditorHelper
+    public static class LiteEditorUtils
     {
         public static void OpenFolder(string path)
         {
@@ -41,7 +41,7 @@ namespace LiteQuark.Editor
                 if (browserType != null)
                 {
                     var instance = browserType.GetField("s_LastInteractedProjectBrowser", BindingFlags.Public | BindingFlags.Static).GetValue(null);
-                    var setFunc = TypeHelper.GetMethod(browserType, "SetFolderSelection", 2, BindingFlags.NonPublic | BindingFlags.Instance);
+                    var setFunc = TypeUtils.GetMethod(browserType, "SetFolderSelection", 2, BindingFlags.NonPublic | BindingFlags.Instance);
                     // var setFunc = browserType.GetMethod("SetFolderSelection", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     var viewMode = (int)browserType.GetField("m_ViewMode", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);
                     if (viewMode == 0)
@@ -62,7 +62,7 @@ namespace LiteQuark.Editor
 
         public static void OpenAsset(string path)
         {
-            if (PathHelper.PathIsFile(path))
+            if (PathUtils.PathIsFile(path))
             {
                 var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
                 if (obj != null)
