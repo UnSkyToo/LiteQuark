@@ -62,6 +62,21 @@ public class Test : MonoBehaviour
         // }
         
         logSys.Dispose();
+        
+        LiteRuntime.Get<TimerSystem>().AddTimer(3, () =>
+        {
+            Debug.Log("on timer 3 second");
+        });
+
+        LiteRuntime.Get<TimerSystem>().AddTimer(4, () =>
+        {
+            Debug.Log("on timer 4 second once");
+        }, 3);
+
+        LiteRuntime.Get<TimerSystem>().AddTimerWithFrame(1, () =>
+        {
+            Debug.Log("timer tick");
+        });
     }
 
     private void OnDestroy()

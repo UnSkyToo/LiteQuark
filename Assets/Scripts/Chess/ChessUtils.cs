@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteGamePlay
 {
-    public static class ChessHelper
+    public static class ChessUtils
     {
         public static Vector2Int ScreenToBoardPos(Vector2 mousePosition, int width, int height)
         {

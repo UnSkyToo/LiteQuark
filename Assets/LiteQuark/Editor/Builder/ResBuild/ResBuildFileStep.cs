@@ -13,7 +13,7 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var outputPath = builder.GetResOutputPath();
-            PathHelper.CreateDirectory(outputPath);
+            PathUtils.CreateDirectory(outputPath);
             BuildPipeline.BuildAssetBundles(outputPath, builder.ResConfig.Options, builder.Target);
             AssetDatabase.Refresh();
         }

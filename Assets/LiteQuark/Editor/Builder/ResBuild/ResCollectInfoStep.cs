@@ -21,8 +21,8 @@ namespace LiteQuark.Editor
             ApplyBundleInfo(bundlePack);
             
             var jsonText = bundlePack.ToJson();
-            PathHelper.CreateDirectory(builder.GetResOutputPath());
-            System.IO.File.WriteAllText(PathHelper.ConcatPath(builder.GetResOutputPath(), LiteConst.BundlePackFileName), jsonText);
+            PathUtils.CreateDirectory(builder.GetResOutputPath());
+            System.IO.File.WriteAllText(PathUtils.ConcatPath(builder.GetResOutputPath(), LiteConst.BundlePackFileName), jsonText);
         }
 
         private BundlePackInfo GenerateBundlePackInfo(BuildTarget target)
@@ -33,15 +33,15 @@ namespace LiteQuark.Editor
         
         private BundleInfo[] CollectBundleInfo(string rootPath)
         {
-            rootPath = PathHelper.UnifyPath(rootPath);
+            rootPath = PathUtils.UnifyPath(rootPath);
 
-            if (!PathHelper.DirectoryExists(rootPath))
+            if (!PathUtils.DirectoryExists(rootPath))
             {
                 return Array.Empty<BundleInfo>();
             }
             
             var infoList = new List<BundleInfo>();
-            var subBundlePathList = PathHelper.GetDirectoryList(rootPath);
+            var subBundlePathList = PathUtils.GetDirectoryList(rootPath);
             
             foreach (var subBundlePath in subBundlePathList)
             {
@@ -60,7 +60,7 @@ namespace LiteQuark.Editor
         
         private BundleInfo CreateBundleInfo(string bundlePath)
         {
-            var filePathList = PathHelper.GetFileList(bundlePath);
+            var filePathList = PathUtils.GetFileList(bundlePath);
             var assetPathList = filePathList.Where(AssetFilter).ToArray();
             
             if (assetPathList.Length > 0)
@@ -70,7 +70,7 @@ namespace LiteQuark.Editor
                 
                 foreach (var assetPath in assetPathList)
                 {
-                    assetList.Add(PathHelper.GetRelativeAssetRootPath(assetPath).ToLower());
+                    assetList.Add(PathUtils.GetRelativeAssetRootPath(assetPath).ToLower());
                     
                     foreach (var dep in GetDependencyList(assetPath))
                     {
@@ -111,14 +111,14 @@ namespace LiteQuark.Editor
         
         private string GetBundlePathFromFullPath(string fullPath)
         {
-            var bundlePath = PathHelper.GetRelativeAssetRootPath(fullPath);
+            var bundlePath = PathUtils.GetRelativeAssetRootPath(fullPath);
 
             if (string.IsNullOrWhiteSpace(bundlePath))
             {
                 return DefaultBundlePath;
             }
 
-            bundlePath = PathHelper.GetPathFromFullPath(bundlePath);
+            bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
             bundlePath = bundlePath.ToLower();
 
             return $"{bundlePath}.ab";
@@ -142,7 +142,7 @@ namespace LiteQuark.Editor
             {
                 foreach (var assetPath in buildInfo.AssetList)
                 {
-                    var fullPath = PathHelper.GetFullPathInAssetRoot(assetPath);
+                    var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
                     var importer = AssetImporter.GetAtPath(fullPath);
                     importer.SetAssetBundleNameAndVariant(buildInfo.BundlePath, string.Empty);
                 }

@@ -156,12 +156,12 @@ namespace LiteQuark.Editor
         
         public string GetResOutputPath()
         {
-            return PathHelper.GetLiteQuarkRootPath($"Build/{Target}/Res");
+            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/Res");
         }
         
         public string GetAppOutputPath()
         {
-            return PathHelper.GetLiteQuarkRootPath($"Build/{Target}/App");
+            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/App");
         }
         
         public string[] GetBuildSceneList()

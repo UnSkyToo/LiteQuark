@@ -15,7 +15,7 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var outputPath = builder.GetAppOutputPath();
-            PathHelper.CreateDirectory(outputPath);
+            PathUtils.CreateDirectory(outputPath);
             
             switch (builder.Target)
             {

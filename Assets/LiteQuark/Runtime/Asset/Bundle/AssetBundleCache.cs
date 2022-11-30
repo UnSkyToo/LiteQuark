@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
             }
 
             IsLoad = false;
-            var fullPath = PathHelper.GetFullPathInRuntime(path);
+            var fullPath = PathUtils.GetFullPathInRuntime(path);
             Request_ = AssetBundle.LoadFromFileAsync(fullPath);
             
             yield return Request_;
@@ -132,7 +132,7 @@ namespace LiteQuark.Runtime
 
         private IEnumerator LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
-            var name = PathHelper.GetFileName(assetPath);
+            var name = PathUtils.GetFileName(assetPath);
             var request = Bundle_.LoadAssetAsync<T>(name);
             yield return request;
             if (request.isDone)

@@ -42,7 +42,7 @@ namespace LiteQuark.Runtime
 
         private BundlePackInfo LoadBundlePack()
         {
-            var request = UnityWebRequest.Get(PathHelper.ConcatPath(Application.streamingAssetsPath, LiteConst.BundlePackFileName));
+            var request = UnityWebRequest.Get(PathUtils.ConcatPath(Application.streamingAssetsPath, LiteConst.BundlePackFileName));
             request.SendWebRequest();
             while (!request.isDone)
             {

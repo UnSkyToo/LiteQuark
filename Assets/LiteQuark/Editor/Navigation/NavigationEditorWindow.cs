@@ -19,14 +19,14 @@ namespace LiteQuark.Editor
 
         private void OnEnable()
         {
-            var jsonPath = PathHelper.GetLiteQuarkRootPath(SubPath);
+            var jsonPath = PathUtils.GetLiteQuarkRootPath(SubPath);
             Data_ = NavigationData.FromJson(jsonPath);
             ScrollPos_ = Vector2.zero;
         }
 
         private void OnDisable()
         {
-            var jsonPath = PathHelper.GetLiteQuarkRootPath(SubPath);
+            var jsonPath = PathUtils.GetLiteQuarkRootPath(SubPath);
             NavigationData.ToJson(Data_, jsonPath);
         }
 
@@ -38,12 +38,12 @@ namespace LiteQuark.Editor
             {
                 if (GUILayout.Button("PersistentData Path"))
                 {
-                    LiteEditorHelper.OpenFolder(Application.persistentDataPath);
+                    LiteEditorUtils.OpenFolder(Application.persistentDataPath);
                 }
 
                 if (GUILayout.Button("TemporaryCache Path"))
                 {
-                    LiteEditorHelper.OpenFolder(Application.temporaryCachePath);
+                    LiteEditorUtils.OpenFolder(Application.temporaryCachePath);
                 }
 
                 foreach (var path in Data_.GetPathList())
@@ -52,11 +52,11 @@ namespace LiteQuark.Editor
                     {
                         if (GUILayout.Button(path))
                         {
-                            LiteEditorHelper.Ping(path);
+                            LiteEditorUtils.Ping(path);
                             
                             if (Event.current.alt)
                             {
-                                LiteEditorHelper.OpenAsset(path);
+                                LiteEditorUtils.OpenAsset(path);
                                 Event.current.Use();
                             }
                         }

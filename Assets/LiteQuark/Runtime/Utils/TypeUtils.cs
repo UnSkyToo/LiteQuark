@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace LiteQuark.Runtime
 {
-    public static class TypeHelper
+    public static class TypeUtils
     {
         public static Type GetTypeWithAssembly(string assemblyFullName, string typeName)
         {

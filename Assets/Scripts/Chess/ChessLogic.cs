@@ -5,8 +5,8 @@ namespace LiteGamePlay
 {
     public class ChessLogic : ILogic
     {
-        private int ChessWidth = 5;
-        private int ChessHeight = 5;
+        private int ChessWidth = 15;
+        private int ChessHeight = 15;
 
         private ChessBoard Board_;
         

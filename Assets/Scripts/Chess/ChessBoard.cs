@@ -61,7 +61,7 @@ namespace LiteGamePlay
         private void GenerateBoard()
         {
             Go_ = new GameObject("ChessBoard");
-            ChessHelper.GenerateChessBoard(Go_.transform, Width, Height);
+            ChessUtils.GenerateChessBoard(Go_.transform, Width, Height);
 
             Data_ = new ChessKind[Width, Height];
             for (var x = 0; x < Width; ++x)
@@ -76,12 +76,60 @@ namespace LiteGamePlay
         private void GenerateChess(ChessKind kind, int x, int y)
         {
             Data_[x, y] = kind;
-            ChessHelper.GenerateChess(Go_.transform, kind, x, y, Width, Height);
+            ChessUtils.GenerateChess(Go_.transform, kind, x, y, Width, Height);
         }
 
         private Vector2Int ScreenToBoardPos(Vector2 screenPos)
         {
-            return ChessHelper.ScreenToBoardPos(screenPos, Width, Height);
+            return ChessUtils.ScreenToBoardPos(screenPos, Width, Height);
+        }
+
+        private bool CheckWin(ChessKind kind, int x, int y)
+        {
+            var cnt = 1;
+            
+            // horizontal
+            var hx = x - 1;
+            while (hx > 0 && Data_[hx, y] == kind)
+            {
+                cnt++;
+                hx--;
+            }
+
+            hx = x + 1;
+            while (hx < Width - 1 && Data_[hx, y] == kind)
+            {
+                cnt++;
+                hx++;
+            }
+
+            if (cnt >= 5)
+            {
+                return true;
+            }
+            
+            // vertical
+            cnt = 1;
+            var hy = y - 1;
+            while (hy > 0 && Data_[x, hy] == kind)
+            {
+                cnt++;
+                hy--;
+            }
+
+            hy = y + 1;
+            while (hy < Height - 1 && Data_[x, hy] == kind)
+            {
+                cnt++;
+                hy++;
+            }
+
+            if (cnt >= 5)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
