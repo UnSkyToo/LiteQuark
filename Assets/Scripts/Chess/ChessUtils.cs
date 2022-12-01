@@ -44,7 +44,9 @@ namespace LiteGamePlay
                 case ChessKind.Black:
                     chessPrefab = "chess/prefab/chess_black.prefab";
                     break;
-                case ChessKind.None:
+                case ChessKind.Empty:
+                case ChessKind.Invalid:
+                default:
                     return;
             }
 

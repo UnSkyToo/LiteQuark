@@ -7,6 +7,7 @@ namespace LiteGamePlay
     {
         private int ChessWidth = 15;
         private int ChessHeight = 15;
+        private int WinCount = 5;
 
         private ChessBoard Board_;
         
@@ -23,7 +24,7 @@ namespace LiteGamePlay
 
         public bool Startup()
         {
-            Board_ = new ChessBoard(ChessWidth, ChessHeight);
+            Board_ = new ChessBoard(ChessWidth, ChessHeight, WinCount);
             // AssetManager.Instance.LoadAsset<GameObject>("chess/prefab/board.prefab", (board) =>
             // {
             //     Object.Instantiate(board);
