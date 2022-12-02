@@ -1,20 +1,25 @@
 ﻿using LiteQuark.Runtime;
 using UnityEngine;
 
-namespace LiteGamePlay
+namespace LiteGamePlay.Chess
 {
     public class ChessBoard : ITick, IDispose
     {
         public int Width { get; }
         public int Height { get; }
         public int WinCount { get; }
+        
+        public bool IsGameOver { get; private set; }
+        public ChessKind WinKind { get; private set; }
 
-        private bool IsGameOver_;
         private GameObject Go_;
         private ChessKind[,] Data_;
-        private ChessKind CurrentKind_;
 
+        private int PlayerIndex_ = 0;
+        private ChessPlayer[] PlayerList_;
         private ChessManual Manual_;
+
+        private ChessPlayer CurrentPlayer => PlayerList_[PlayerIndex_];
         
         public ChessKind this[int x, int y] => GetChess(x, y);
 
@@ -26,20 +31,22 @@ namespace LiteGamePlay
             
             GenerateBoard();
             Manual_ = new ChessManual();
-            CurrentKind_ = ChessKind.Black;
-            IsGameOver_ = false;
+            IsGameOver = false;
+            WinKind = ChessKind.Invalid;
+
+            PlayerList_ = new ChessPlayer[2];
+            PlayerList_[0] = new ChessPlayer(this, ChessKind.Black, false);
+            PlayerList_[1] = new ChessPlayer(this, ChessKind.White, true);
+
+            PlayerIndex_ = 0;
+            CurrentPlayer.NotifyReady();
         }
 
         public void Tick(float deltaTime)
         {
-            if (Input.GetMouseButtonDown(0))
+            foreach (var player in PlayerList_)
             {
-                var pos = ChessUtils.ScreenToBoardPos(Input.mousePosition, Width, Height);
-
-                if (DoChess(pos.x, pos.y))
-                {
-                    DoAIChess();
-                }
+                player.Tick(deltaTime);
             }
         }
 
@@ -63,23 +70,9 @@ namespace LiteGamePlay
             return Data_[x, y];
         }
 
-        private void DoAIChess()
+        public bool DoChess(ChessPlayer player, int x, int y)
         {
-            var bestCoordList = AI.Valuation.TupleUtils.GetBestValuePoints(this, CurrentKind_);
-            if (bestCoordList.Length > 0)
-            {
-                var coord = bestCoordList[Random.Range(0, bestCoordList.Length)];
-                DoChess(coord.X, coord.Y);
-            }
-            else
-            {
-                Debug.LogError("ai can not calculate point");
-            }
-        }
-
-        public bool DoChess(int x, int y)
-        {
-            if (IsGameOver_)
+            if (IsGameOver)
             {
                 return false;
             }
@@ -89,22 +82,24 @@ namespace LiteGamePlay
                 return false;
             }
             
-            GenerateChess(CurrentKind_, x, y);
-            CurrentKind_ = CurrentKind_ == ChessKind.White ? ChessKind.Black : ChessKind.White;
+            GenerateChess(player.Kind, x, y);
+            PlayerIndex_ = 1 - PlayerIndex_;
+            CurrentPlayer.NotifyReady();
             return true;
         }
 
         public void DoWin(ChessKind kind, int x, int y)
         {
-            if (IsGameOver_)
+            if (IsGameOver)
             {
                 return;
             }
             
             Manual_.Win(kind);
             ChessDatabase.Instance.AddManual(Manual_);
-            IsGameOver_ = true;
-            Debug.LogError($"{kind} Win!!!");
+            IsGameOver = true;
+            WinKind = kind;
+            Debug.LogWarning($"{kind} Win!!!");
         }
 
         private void GenerateBoard()

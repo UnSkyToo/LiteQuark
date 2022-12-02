@@ -1,7 +1,7 @@
 ﻿using LiteQuark.Runtime;
 using UnityEngine;
 
-namespace LiteGamePlay
+namespace LiteGamePlay.Chess
 {
     public static class ChessUtils
     {

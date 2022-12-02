@@ -1,4 +1,4 @@
-﻿namespace LiteGamePlay
+﻿namespace LiteGamePlay.Chess
 {
     public enum ChessKind : byte
     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LiteGamePlay.AI.Valuation
+namespace LiteGamePlay.Chess.AI.Valuation
 {
     /// <summary>
     /// 棋组类型

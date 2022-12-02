@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LiteGamePlay.AI.Valuation
+namespace LiteGamePlay.Chess.AI.Valuation
 {
     #region Tuple Parser
     /// <summary>

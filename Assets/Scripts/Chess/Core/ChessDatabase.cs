@@ -4,7 +4,7 @@ using System.IO;
 using LiteQuark.Runtime;
 using UnityEngine;
 
-namespace LiteGamePlay
+namespace LiteGamePlay.Chess
 {
     public class ChessDatabase : Singleton<ChessDatabase>
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 
-namespace LiteGamePlay
+namespace LiteGamePlay.Chess
 {
     public sealed class ChessManual
     {

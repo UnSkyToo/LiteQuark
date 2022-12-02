@@ -1,14 +1,14 @@
-﻿namespace LiteGamePlay.AI.Valuation
+﻿namespace LiteGamePlay.Chess.AI.Valuation
 {
     public static class TupleUtils
     {
         private static TupleParser Parser_ = new TupleParser();
 
-        public static ChessCoord[] GetBestValuePoints(ChessBoard ExpectBoard, ChessKind ExpectType)
+        public static ChessCoord[] GetBestValuePoints(ChessBoard expectBoard, ChessKind expectType)
         {
-            var Points = Parser_.GetBestPointsWithType(ExpectBoard, ExpectType);
+            var coordList = Parser_.GetBestPointsWithType(expectBoard, expectType);
 
-            return Points.ToArray();
+            return coordList.ToArray();
         }
     }
 }

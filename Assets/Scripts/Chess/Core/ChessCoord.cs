@@ -1,4 +1,4 @@
-﻿namespace LiteGamePlay
+﻿namespace LiteGamePlay.Chess
 {
     /// <summary>
     /// <para>X : A - O</para>
