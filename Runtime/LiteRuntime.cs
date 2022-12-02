@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -18,7 +17,7 @@ namespace LiteQuark.Runtime
         public LiteLauncher Launcher { get; private set; }
 
         private List<ISystem> SystemList_;
-        private Dictionary<Type, ISystem> SystemTypeMap_;
+        private Dictionary<System.Type, ISystem> SystemTypeMap_;
 
         private List<ILogic> LogicList_;
         
@@ -110,7 +109,7 @@ namespace LiteQuark.Runtime
             try
             {
                 SystemList_ = new List<ISystem>();
-                SystemTypeMap_ = new Dictionary<Type, ISystem>();
+                SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
 
                 foreach (var type in LiteConst.SystemTypeList)
                 {
@@ -123,8 +122,9 @@ namespace LiteQuark.Runtime
 
                 return true;
             }
-            catch
+            catch (System.Exception ex)
             {
+                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
                 return false;
             }
         }
@@ -177,8 +177,9 @@ namespace LiteQuark.Runtime
 
                 return true;
             }
-            catch
+            catch (System.Exception ex)
             {
+                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
                 return false;
             }
         }
@@ -197,7 +198,7 @@ namespace LiteQuark.Runtime
             Application.targetFrameRate = Launcher.TargetFrameRate;
             Input.multiTouchEnabled = Launcher.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            UnityEngine.Random.InitState((int) System.DateTime.Now.Ticks);
+            Random.InitState((int) System.DateTime.Now.Ticks);
             
             TimeScale = 1.0f;
             EnterBackgroundTime_ = 0.0f;
