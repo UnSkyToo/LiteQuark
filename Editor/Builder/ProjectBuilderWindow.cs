@@ -58,7 +58,7 @@ namespace LiteQuark.Editor
         {
             if (ResCfg_ == null || AppCfg_ == null)
             {
-                Debug.LogError("error build config");
+                LLogEditor.Error("error build config");
                 return;
             }
 

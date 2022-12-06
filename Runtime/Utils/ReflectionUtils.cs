@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -11,7 +10,7 @@ namespace LiteQuark.Runtime
             var methodInfo = type.GetMethod(methodName, flags);
             if (methodInfo == null)
             {
-                Debug.LogWarning($"can't find {methodName} method in {type}");
+                LLog.Warning($"can't find {methodName} method in {type}");
                 return null;
             }
 
@@ -51,14 +50,14 @@ namespace LiteQuark.Runtime
             var fieldInfo = type.GetField(fieldName, flags);
             if (fieldInfo == null)
             {
-                Debug.LogWarning($"can't find {fieldName} field in {type}");
+                LLog.Warning($"can't find {fieldName} field in {type}");
                 return null;
             }
             
             var fieldVal = fieldInfo.GetValue(instance);
             if (fieldVal == null)
             {
-                Debug.LogWarning($"can't get {fieldName} instance value");
+                LLog.Warning($"can't get {fieldName} instance value");
                 return null;
             }
 
@@ -80,14 +79,14 @@ namespace LiteQuark.Runtime
             var propertyInfo = type.GetProperty(propertyName, flags);
             if (propertyInfo == null)
             {
-                Debug.LogWarning($"can't find {propertyName} property in {type}");
+                LLog.Warning($"can't find {propertyName} property in {type}");
                 return null;
             }
 
             var propertyVal = propertyInfo.GetValue(instance);
             if (propertyVal == null)
             {
-                Debug.LogWarning($"can't get {propertyName} instance value");
+                LLog.Warning($"can't get {propertyName} instance value");
                 return null;
             }
 
@@ -109,7 +108,7 @@ namespace LiteQuark.Runtime
             var methodInfo = type.GetMethod(methodName, flags);
             if (methodInfo == null)
             {
-                Debug.LogWarning($"can't find {methodName} method in {type}");
+                LLog.Warning($"can't find {methodName} method in {type}");
                 return;
             }
             

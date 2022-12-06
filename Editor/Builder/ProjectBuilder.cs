@@ -138,7 +138,7 @@ namespace LiteQuark.Editor
 
             foreach (var log in Logs_)
             {
-                UnityEngine.Debug.Log(log);
+                LLogEditor.Info(log);
             }
 
             return new ProjectBuildResult(isSuccess, stopwatch.ElapsedMilliseconds / 1000f);
@@ -151,7 +151,7 @@ namespace LiteQuark.Editor
 
         public void LogError(string msg)
         {
-            UnityEngine.Debug.LogError(msg);
+            LLogEditor.Error(msg);
         }
         
         public string GetResOutputPath()

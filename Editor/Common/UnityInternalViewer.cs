@@ -49,7 +49,7 @@ namespace LiteQuark.Editor
             textEditor.OnFocus();
             textEditor.Copy();
             
-            Debug.Log($"copy [{text}] success!");
+            LLogEditor.Info($"copy [{text}] success!");
         }
 
         private void DrawStyleList()

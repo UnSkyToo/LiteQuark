@@ -9,7 +9,7 @@
         {
             if (Log_ == null)
             {
-                Log_ = LiteRuntime.Get<LogSystem>().GetLogger(Tag);
+                Log_ = LiteRuntime.Get<LogSystem>()?.GetLogger(Tag);
             }
 
             return Log_;
@@ -17,17 +17,41 @@
         
         internal static void Info(string msg)
         {
-            GetLog().Info(msg);
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.Log(msg);
+            }
+            else
+            {
+                log.Info(msg);
+            }
         }
 
         internal static void Warning(string msg)
         {
-            GetLog().Warn(msg);
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogWarning(msg);
+            }
+            else
+            {
+                log.Warn(msg);
+            }
         }
 
         internal static void Error(string msg)
         {
-            GetLog().Error(msg);
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogError(msg);
+            }
+            else
+            {
+                log.Error(msg);
+            }
         }
     }
 }

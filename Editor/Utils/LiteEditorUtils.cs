@@ -19,31 +19,9 @@ namespace LiteQuark.Editor
 
         public static void GenerateCSharpProject()
         {
-            var editorType = Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor.GetType();
-            var generationVal = editorType.GetField("m_ProjectGeneration", BindingFlags.Static | BindingFlags.NonPublic);
-            if (generationVal == null)
-            {
-                Debug.LogWarning($"can't find m_ProjectGeneration field in {editorType}");
-                return;
-            }
-            
-            var generationObj = generationVal.GetValue(Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor);
-            if (generationObj == null)
-            {
-                Debug.LogWarning("can't get m_ProjectGeneration instance value");
-                return;
-            }
-            
-            var generationValType = generationVal.FieldType;
-            var syncMethod = generationValType.GetMethod("Sync", BindingFlags.Instance | BindingFlags.Public);
-            if (syncMethod == null)
-            {
-                Debug.LogWarning($"can't get Sync method in {generationValType}");
-                return;
-            }
-            
-            syncMethod.Invoke(generationObj, null);
-            
+            var generationObj = ReflectionUtils.GetFieldValue(Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor, "m_ProjectGeneration", BindingFlags.Static | BindingFlags.NonPublic);
+            ReflectionUtils.InvokeMethod(generationObj, "Sync", BindingFlags.Instance | BindingFlags.Public);
+
             Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
         }
 
