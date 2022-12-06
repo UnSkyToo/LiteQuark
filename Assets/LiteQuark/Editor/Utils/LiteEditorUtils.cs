@@ -26,6 +26,7 @@ namespace LiteQuark.Editor
                 Debug.LogWarning($"can't find m_ProjectGeneration field in {editorType}");
                 return;
             }
+            
             var generationObj = generationVal.GetValue(Unity.CodeEditor.CodeEditor.Editor.CurrentCodeEditor);
             if (generationObj == null)
             {
@@ -65,7 +66,7 @@ namespace LiteQuark.Editor
                 if (browserType != null)
                 {
                     var instance = browserType.GetField("s_LastInteractedProjectBrowser", BindingFlags.Public | BindingFlags.Static).GetValue(null);
-                    var setFunc = TypeUtils.GetMethod(browserType, "SetFolderSelection", 2, BindingFlags.NonPublic | BindingFlags.Instance);
+                    var setFunc = ReflectionUtils.GetMethod(browserType, "SetFolderSelection", 2, BindingFlags.NonPublic | BindingFlags.Instance);
                     // var setFunc = browserType.GetMethod("SetFolderSelection", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     var viewMode = (int)browserType.GetField("m_ViewMode", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);
                     if (viewMode == 0)
