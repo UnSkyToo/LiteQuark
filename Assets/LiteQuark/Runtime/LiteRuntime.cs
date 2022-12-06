@@ -16,10 +16,10 @@ namespace LiteQuark.Runtime
 
         public LiteLauncher Launcher { get; private set; }
 
-        private List<ISystem> SystemList_;
-        private Dictionary<System.Type, ISystem> SystemTypeMap_;
+        private List<ISystem> SystemList_ = new List<ISystem>();
+        private Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
 
-        private List<ILogic> LogicList_;
+        private List<ILogic> LogicList_ = new List<ILogic>();
         
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
@@ -108,8 +108,8 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                SystemList_ = new List<ISystem>();
-                SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
+                SystemList_.Clear();
+                SystemTypeMap_.Clear();
 
                 foreach (var type in LiteConst.SystemTypeList)
                 {
@@ -144,7 +144,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                LogicList_ = new List<ILogic>();
+                LogicList_.Clear();
                 
                 foreach (var logicEntry in Launcher.LogicList)
                 {
