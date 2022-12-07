@@ -11,8 +11,12 @@ namespace LiteQuark.Runtime
         
         public static bool PathIsFile(string filePath)
         {
-            return File.Exists(filePath);
-            // return filePath.LastIndexOf('.') > filePath.LastIndexOf('/');
+            if (File.Exists(filePath))
+            {
+                return true;
+            }
+            
+            return filePath.LastIndexOf('.') > filePath.LastIndexOf('/');
         }
         
         public static string UnifyPath(string path)
