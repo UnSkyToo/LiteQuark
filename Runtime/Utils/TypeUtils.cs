@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace LiteQuark.Runtime
 {
@@ -71,6 +74,123 @@ namespace LiteQuark.Runtime
         public static T CreateInstance<T>()
         {
             return (T) CreateInstance(typeof(T));
+        }
+        
+        public static IList CreateGenericList(Type elementType, object[] array)
+        {
+            var typeList = typeof(List<>);
+            var genericType = typeList.MakeGenericType(elementType);
+            var result = Activator.CreateInstance(genericType) as IList;
+            foreach (var item in array)
+            {
+                result.Add(item);
+            }
+            return result;
+        }
+        
+        public static T GetAttribute<T>(Type type, object[] attrs) where T : Attribute
+        {
+            T result = null;
+            if (attrs != null)
+            {
+                result = (T)Array.Find(attrs, t => t is T);
+            }
+
+            if (result == null)
+            {
+                result = type?.GetCustomAttribute<T>();
+            }
+            return result;
+        }
+        
+        public static object[] ToArray(this IList list)
+        {
+            var result = new object[list.Count];
+            for (var index = 0; index < list.Count; ++index)
+            {
+                result[index] = list[index];
+            }
+            return result;
+        }
+
+        public static IList ToArray(this IList list, Type type)
+        {
+            var result = (IList)Array.CreateInstance(type, list.Count);
+            for (var index = 0; index < result.Count; ++index)
+            {
+                result[index] = list[index];
+            }
+            return result;
+        }
+        
+        public static T[] CloneObjectArray<T>(T[] array)
+        {
+            if (array == null)
+            {
+                return null;
+            }
+            
+            var result = new T[array.Length];
+
+            for (var index = 0; index < array.Length; ++index)
+            {
+                if (array[index] is ICloneable clone)
+                {
+                    result[index] = (T)clone.Clone();
+                }
+                else
+                {
+                    result[index] = array[index];
+                }
+            }
+
+            return result;
+        }
+
+        public static T[] CloneDataArray<T>(T[] array) where T : ICloneable
+        {
+            if (array == null)
+            {
+                return null;
+            }
+            
+            var result = new T[array.Length];
+
+            for (var index = 0; index < array.Length; ++index)
+            {
+                result[index] = (T)array[index].Clone();
+            }
+
+            return result;
+        }
+        
+        private static readonly Dictionary<string, Type> EnumTypeCache_ = new Dictionary<string, Type>();
+        public static Type GetEnumType(string enumName)
+        {
+            if (EnumTypeCache_.ContainsKey(enumName))
+            {
+                return EnumTypeCache_[enumName];
+            }
+
+            foreach (var type in Assembly.GetAssembly(typeof(TypeUtils)).GetTypes())
+            {
+                if (type.IsEnum && type.FullName.Contains(enumName))
+                {
+                    EnumTypeCache_.Add(enumName, type);
+                    return type;
+                }
+            }
+            
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+            {
+                if (type.IsEnum && type.FullName.Contains(enumName))
+                {
+                    EnumTypeCache_.Add(enumName, type);
+                    return type;
+                }
+            }
+
+            return null;
         }
     }
 }
