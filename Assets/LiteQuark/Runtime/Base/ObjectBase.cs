@@ -1,12 +1,12 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public abstract class BaseObject
+    public abstract class ObjectBase
     {
         public uint SerialID { get; }
 
         private static uint ID_ = 1;
 
-        protected BaseObject()
+        protected ObjectBase()
         {
             SerialID = ID_++;
         }
