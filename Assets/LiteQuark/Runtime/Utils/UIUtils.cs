@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
-namespace LiteCard.UI
+namespace LiteQuark.Runtime
 {
     public static class UIUtils
     {
@@ -12,6 +13,23 @@ namespace LiteCard.UI
         public static Transform FindChild(Transform parent, string path)
         {
             return parent.Find(path); 
+        }
+
+        public static Component FindComponent(GameObject parent, string path, Type type)
+        {
+            return FindComponent(parent.transform, path, type);
+        }
+
+        public static Component FindComponent(Transform parent, string path, Type type)
+        {
+            var child = FindChild(parent, path);
+
+            if (child != null)
+            {
+                return child.GetComponent(type);
+            }
+
+            return null;
         }
 
         public static T FindComponent<T>(GameObject parent, string path) where T : Component

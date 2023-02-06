@@ -1,8 +1,6 @@
 ﻿using LiteCard.GamePlay;
 using LiteQuark.Runtime;
 using TMPro;
-using UnityEngine;
-using UnityEngine.UI;
 
 namespace LiteCard.UI
 {
@@ -16,7 +14,6 @@ namespace LiteCard.UI
         
         protected override void OnOpen(params object[] paramList)
         {
-            UIUtils.FindComponent<Button>(Go, "BtnNextRound").onClick.AddListener(OnBtnNextRoundClick);
             LiteRuntime.Get<EventSystem>().Register<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
             
             RefreshInfo();
@@ -24,7 +21,6 @@ namespace LiteCard.UI
 
         protected override void OnClose()
         {
-            UIUtils.FindComponent<Button>(Go, "BtnNextRound").onClick.RemoveListener(OnBtnNextRoundClick);
             LiteRuntime.Get<EventSystem>().UnRegister<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
         }
 
@@ -34,6 +30,7 @@ namespace LiteCard.UI
             UIUtils.FindComponent<TextMeshProUGUI>(Go, "Energy/LabelValue").text = $"{player.CurEnergy}/{player.MaxEnergy}";
         }
         
+        [UIClickEvent("BtnNextRound")]
         private void OnBtnNextRoundClick()
         {
             GameLogic.Instance.GetBattleLogic().RoundEnd();

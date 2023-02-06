@@ -1,7 +1,7 @@
-﻿using LiteQuark.Runtime;
+﻿using System;
 using UnityEngine;
 
-namespace LiteCard.UI
+namespace LiteQuark.Runtime
 {
     public abstract class UIBase
     {
@@ -59,6 +59,26 @@ namespace LiteCard.UI
 
             Go.GetComponent<RectTransform>().anchorMin = anchorMin;
             Go.GetComponent<RectTransform>().anchorMax = anchorMax;
+        }
+
+        public Transform FindChild(string path)
+        {
+            return UIUtils.FindChild(Go, path);
+        }
+
+        public Component FindComponent(string path, Type type)
+        {
+            return UIUtils.FindComponent(Go, path, type);
+        }
+
+        public T FindComponent<T>(string path) where T : Component
+        {
+            return UIUtils.FindComponent<T>(Go, path);
+        }
+
+        public void SetActive(string path, bool value)
+        {
+            UIUtils.SetActive(Go, path, value);
         }
     }
 }

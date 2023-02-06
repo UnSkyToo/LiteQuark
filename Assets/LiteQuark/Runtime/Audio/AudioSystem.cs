@@ -1,11 +1,18 @@
-﻿using LiteQuark.Runtime;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace LiteGamePlay
+namespace LiteQuark.Runtime
 {
-    public sealed class AudioManager : Singleton<AudioManager>
+    public sealed class AudioSystem : ISystem
     {
         private AudioSource Source_;
+
+        public AudioSystem()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
 
         private AudioSource GetSource()
         {

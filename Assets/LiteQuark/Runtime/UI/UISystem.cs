@@ -1,24 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using LiteQuark.Runtime;
 using UnityEngine;
 
-namespace LiteCard.UI
+namespace LiteQuark.Runtime
 {
-    public sealed class UIManager : Singleton<UIManager>
+    public sealed class UISystem : ISystem, ITick
     {
         private readonly List<UIBase> UIList_ = new List<UIBase>();
         private readonly List<UIBase> CloseList_ = new List<UIBase>();
 
-        public UIManager()
+        public UISystem()
         {
         }
 
-        public void Cleanup()
+        public void Dispose()
         {
             CloseAllUI();
             HandleCloseList();
-            Update(0);
+            Tick(0);
+        }
+
+        public void Tick(float deltaTime)
+        {
+            HandleCloseList();
+            
+            foreach (var ui in UIList_)
+            {
+                ui.Update(deltaTime);
+            }
         }
 
         public T OpenUI<T>(params object[] paramList) where T : UIBase
@@ -29,13 +38,14 @@ namespace LiteCard.UI
             {
                 if (instance == null)
                 {
-                    Log.Error($"ui prefab load error : {ui.PrefabPath}");
+                    LLog.Error($"ui prefab load error : {ui.PrefabPath}");
                     return;
                 }
 
                 var canvas = GameObject.Find("Canvas");
                 instance.transform.SetParent(canvas.transform, false);
                 ui.BindGo(instance);
+                UIBinder.AutoBind(ui);
                 ui.Open(paramList);
 
                 UIList_.Add(ui);
@@ -51,6 +61,7 @@ namespace LiteCard.UI
 
         private void CloseUIInternal(UIBase ui)
         {
+            UIBinder.AutoUnbind(ui);
             ui.Close();
             LiteRuntime.Get<AssetSystem>().UnloadGameObject(ui.Go);
         }
@@ -79,16 +90,6 @@ namespace LiteCard.UI
         public T FindUI<T>() where T : UIBase
         {
             return UIList_.Find((ui) => ui.GetType() == typeof(T)) as T;
-        }
-
-        public void Update(float deltaTime)
-        {
-            HandleCloseList();
-            
-            foreach (var ui in UIList_)
-            {
-                ui.Update(deltaTime);
-            }
         }
     }
 }

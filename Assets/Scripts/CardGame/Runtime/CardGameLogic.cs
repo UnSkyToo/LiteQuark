@@ -9,7 +9,7 @@ namespace LiteCard
         public bool Startup()
         {
             // GameLogic.Instance.Startup();
-            UIManager.Instance.OpenUI<UILoading>();
+            LiteRuntime.Get<UISystem>().OpenUI<UILoading>();
             return true;
         }
 

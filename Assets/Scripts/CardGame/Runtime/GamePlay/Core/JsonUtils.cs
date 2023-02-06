@@ -339,7 +339,7 @@ namespace LiteCard.GamePlay
                     return null;
                 }
 
-                var type = TypeUtils.GetEnumType(chunks[0]);
+                var type = GameUtils.GetEnumType(chunks[0]);
                 if (type == null)
                 {
                     return null;

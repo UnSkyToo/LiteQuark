@@ -67,7 +67,7 @@ namespace LiteGamePlay.Chess
         {
             if (Board_.DoChess(this, x, y))
             {
-                AudioManager.Instance.PlaySound("chess/audio/down.ogg");
+                LiteRuntime.Get<AudioSystem>().PlaySound("chess/audio/down.ogg");
                 Ready_ = false;
             }
         }

@@ -75,7 +75,7 @@ namespace LiteCard.GamePlay
         
         private void Handle_SelectCardByUI(object[] paramList, Action<bool> callback)
         {
-            var ui = UIManager.Instance.OpenUI<UICardList>(paramList);
+            var ui = LiteRuntime.Get<UISystem>().OpenUI<UICardList>(paramList);
             ui.BindCallback((cards) =>
             {
                 BattleContext.Current[BattleContextKey.SelectCardList] = new List<CardBase>(cards);

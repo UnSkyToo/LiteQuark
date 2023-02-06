@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
@@ -166,6 +168,37 @@ namespace LiteCard.GamePlay
                    && CheckParamType(paramList, 1, typeof(T2))
                    && CheckParamType(paramList, 2, typeof(T3))
                    && CheckParamType(paramList, 4, typeof(T4));
+        }
+        
+        
+        
+        private static readonly Dictionary<string, Type> EnumTypeCache_ = new Dictionary<string, Type>();
+        public static Type GetEnumType(string enumName)
+        {
+            if (EnumTypeCache_.ContainsKey(enumName))
+            {
+                return EnumTypeCache_[enumName];
+            }
+
+            foreach (var type in Assembly.GetAssembly(typeof(GameUtils)).GetTypes())
+            {
+                if (type.IsEnum && type.FullName.Contains(enumName))
+                {
+                    EnumTypeCache_.Add(enumName, type);
+                    return type;
+                }
+            }
+            
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
+            {
+                if (type.IsEnum && type.FullName.Contains(enumName))
+                {
+                    EnumTypeCache_.Add(enumName, type);
+                    return type;
+                }
+            }
+
+            return null;
         }
     }
 }

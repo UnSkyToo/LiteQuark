@@ -36,7 +36,7 @@ namespace LiteCard.UI
 
                     if (CurrentCount_ >= TotalCount_)
                     {
-                        UIManager.Instance.CloseUI(this);
+                        LiteRuntime.Get<UISystem>().CloseUI(this);
                         // GameLogic.Instance.Startup();
                     }
                 });
@@ -50,13 +50,13 @@ namespace LiteCard.UI
         private void SetPercent(float val)
         {
             val = Mathf.Clamp01(val);
-            var rect = UIUtils.FindComponent<RectTransform>(Go, "ImageBarBG/ImageBar");
+            var rect = FindComponent<RectTransform>("ImageBarBG/ImageBar");
             rect.sizeDelta = new Vector2(1876f * val, 26f);
         }
 
         private void SetTips(string text)
         {
-            UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelTips").text = text;
+            FindComponent<TextMeshProUGUI>("LabelTips").text = text;
         }
     }
 }

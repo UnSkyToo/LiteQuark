@@ -20,10 +20,10 @@ namespace LiteCard
             ConfigDatabase.Instance.LoadFromJson();
             AgentSystem.Instance.Init();
             
-            var ui = UIManager.Instance.OpenUI<UICardHand>(AgentSystem.Instance.GetPlayer().GetCardDeck(CardDeckType.Hand));
-
-            UIManager.Instance.OpenUI<UIAgent>();
-            UIManager.Instance.OpenUI<UIBattleMain>();
+            LiteRuntime.Get<UISystem>().OpenUI<UICardHand>(AgentSystem.Instance.GetPlayer().GetCardDeck(CardDeckType.Hand));
+            
+            LiteRuntime.Get<UISystem>().OpenUI<UIAgent>();
+            LiteRuntime.Get<UISystem>().OpenUI<UIBattleMain>();
             
             Battle_.BattleBegin();
         }
@@ -31,13 +31,10 @@ namespace LiteCard
         public void Shutdown()
         {
             Battle_.BattleEnd();
-            
-            UIManager.Instance.Cleanup();
         }
 
         public void Update(float deltaTime)
         {
-            UIManager.Instance.Update(deltaTime);
         }
 
         public BattleLogic GetBattleLogic()

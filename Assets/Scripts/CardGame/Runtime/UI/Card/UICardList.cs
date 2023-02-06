@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-
 namespace LiteCard.UI
 {
     public sealed class UICardList : UIBase
@@ -23,9 +22,8 @@ namespace LiteCard.UI
         
         protected override void OnOpen(params object[] paramList)
         {
-            UIUtils.FindComponent<Button>(Go, "BtnConfirm").onClick.AddListener(OnBtnConfirmClick);
             CardList_ = new UIItemList<UICardItem, CardBase>(
-                UIUtils.FindChild(Go, "Content"),
+                FindChild("Content"),
                 GameConst.Prefab.CardItem);
             CardList_.ItemCreate += OnItemCreate;
             CardList_.ItemChange += OnItemChange;
@@ -34,7 +32,7 @@ namespace LiteCard.UI
             CardType_ = (CardType)paramList[1];
             MaxCount_ = (int)paramList[2];
             
-            UIUtils.SetActive(Go, "LabelCount", MaxCount_ >= 0);
+            SetActive("LabelCount", MaxCount_ >= 0);
 
             RefreshInfo();
         }
@@ -44,7 +42,6 @@ namespace LiteCard.UI
             CardList_.ItemChange -= OnItemChange;
             CardList_.ItemCreate -= OnItemCreate;
             CardList_.Dispose();
-            UIUtils.FindComponent<Button>(Go, "BtnConfirm").onClick.RemoveListener(OnBtnConfirmClick);
         }
 
         private void OnItemCreate(int index, UICardItem item)
@@ -59,7 +56,7 @@ namespace LiteCard.UI
 
         private void OnItemChange(UICardItem item)
         {
-            UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelCount").text = $"{GetSelectList().Count}/{MaxCount_}";
+            FindComponent<TextMeshProUGUI>("LabelCount").text = $"{GetSelectList().Count}/{MaxCount_}";
         }
 
         public void BindCallback(Action<CardBase[]> callback)
@@ -73,7 +70,7 @@ namespace LiteCard.UI
 
             if (MaxCount_ >= 0)
             {
-                UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelCount").text = $"{GetSelectList().Count}/{MaxCount_}";
+                FindComponent<TextMeshProUGUI>("LabelCount").text = $"{GetSelectList().Count}/{MaxCount_}";
             }
         }
 
@@ -108,6 +105,7 @@ namespace LiteCard.UI
             return result;
         }
 
+        [UIClickEvent("BtnConfirm")]
         private void OnBtnConfirmClick()
         {
             if (MaxCount_ >= 0)
@@ -129,7 +127,7 @@ namespace LiteCard.UI
                 Callback_?.Invoke(result.ToArray());
             }
 
-            UIManager.Instance.CloseUI(this);
+            LiteRuntime.Get<UISystem>().CloseUI(this);
         }
     }
 }

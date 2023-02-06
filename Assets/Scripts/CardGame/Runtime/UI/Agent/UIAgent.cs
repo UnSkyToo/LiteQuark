@@ -1,4 +1,5 @@
 ﻿using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 
 namespace LiteCard.UI
 {
@@ -16,11 +17,11 @@ namespace LiteCard.UI
         protected override void OnOpen(params object[] paramList)
         {
             PlayerList_ = new UIItemList<UIPlayerItem, AgentBase>(
-                UIUtils.FindChild(Go, "PlayerContent"),
+                FindChild("PlayerContent"),
                 GameConst.Prefab.PlayerItem);
 
             MonsterList_ = new UIItemList<UIMonsterItem, AgentBase>(
-                UIUtils.FindChild(Go, "MonsterContent"),
+                FindChild("MonsterContent"),
                 GameConst.Prefab.MonsterItem);
 
             RefreshInfo();

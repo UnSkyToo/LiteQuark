@@ -163,34 +163,5 @@ namespace LiteQuark.Runtime
 
             return result;
         }
-        
-        private static readonly Dictionary<string, Type> EnumTypeCache_ = new Dictionary<string, Type>();
-        public static Type GetEnumType(string enumName)
-        {
-            if (EnumTypeCache_.ContainsKey(enumName))
-            {
-                return EnumTypeCache_[enumName];
-            }
-
-            foreach (var type in Assembly.GetAssembly(typeof(TypeUtils)).GetTypes())
-            {
-                if (type.IsEnum && type.FullName.Contains(enumName))
-                {
-                    EnumTypeCache_.Add(enumName, type);
-                    return type;
-                }
-            }
-            
-            foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
-            {
-                if (type.IsEnum && type.FullName.Contains(enumName))
-                {
-                    EnumTypeCache_.Add(enumName, type);
-                    return type;
-                }
-            }
-
-            return null;
-        }
     }
 }

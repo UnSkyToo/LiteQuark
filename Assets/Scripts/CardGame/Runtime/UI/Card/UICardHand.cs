@@ -2,7 +2,6 @@
 using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace LiteCard.UI
 {
@@ -22,14 +21,10 @@ namespace LiteCard.UI
             Deck_ = (CardDeck)paramList[0];
             
             CardList_ = new UIItemList<UICardItem, CardBase>(
-                UIUtils.FindChild(Go, "Bottom/Content"),
+                FindChild("Bottom/Content"),
                 GameConst.Prefab.CardItem);
             CardList_.ItemCreate += OnItemCreate;
-            
-            UIUtils.FindComponent<Button>(Go, "BtnPool").onClick.AddListener(OnBtnPoolClick);
-            UIUtils.FindComponent<Button>(Go, "BtnUsed").onClick.AddListener(OnBtnUsedClick);
-            UIUtils.FindComponent<Button>(Go, "BtnAddCard").onClick.AddListener(OnBtnAddCardClick);
-            
+
             LiteRuntime.Get<EventSystem>().Register<CardChangeEvent>(OnCardChangeEvent);
             
             RefreshInfo();
@@ -39,10 +34,6 @@ namespace LiteCard.UI
         {
             CardList_.ItemCreate -= OnItemCreate;
             CardList_.Dispose();
-            
-            UIUtils.FindComponent<Button>(Go, "BtnPool").onClick.RemoveListener(OnBtnPoolClick);
-            UIUtils.FindComponent<Button>(Go, "BtnUsed").onClick.RemoveListener(OnBtnUsedClick);
-            UIUtils.FindComponent<Button>(Go, "BtnAddCard").onClick.RemoveListener(OnBtnAddCardClick);
             
             LiteRuntime.Get<EventSystem>().UnRegister<CardChangeEvent>(OnCardChangeEvent);
         }
@@ -56,8 +47,8 @@ namespace LiteCard.UI
         {
             CardList_?.RefreshInfo(Deck_.GetCards());
 
-            UIUtils.FindComponent<TextMeshProUGUI>(Go, "BtnPool/LabelNum").text = GameUtils.GetCardCount(CardDeckType.Pool).ToString();
-            UIUtils.FindComponent<TextMeshProUGUI>(Go, "BtnUsed/LabelNum").text = GameUtils.GetCardCount(CardDeckType.Used).ToString();
+            FindComponent<TextMeshProUGUI>("BtnPool/LabelNum").text = GameUtils.GetCardCount(CardDeckType.Pool).ToString();
+            FindComponent<TextMeshProUGUI>("BtnUsed/LabelNum").text = GameUtils.GetCardCount(CardDeckType.Used).ToString();
         }
 
         private void OnItemCreate(int index, UICardItem item)
@@ -83,19 +74,22 @@ namespace LiteCard.UI
             RefreshInfo();
         }
 
+        [UIClickEvent("BtnPool")]
         private void OnBtnPoolClick()
         {
-            UIManager.Instance.OpenUI<UICardList>(CardDeckType.Pool, -1);
+            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Pool, -1);
         }
-
+        
+        [UIClickEvent("BtnUsed")]
         private void OnBtnUsedClick()
         {
-            UIManager.Instance.OpenUI<UICardList>(CardDeckType.Used, -1);
+            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Used, -1);
         }
 
+        [UIClickEvent("BtnAddCard")]
         private void OnBtnAddCardClick()
         {
-            var text = UIUtils.FindComponent<TMP_InputField>(Go, "InputCardID").text;
+            var text = FindComponent<TMP_InputField>("InputCardID").text;
             if (int.TryParse(text, out var cardID))
             {
                 CardSystem.Instance.AddCardWithID(CardDeckType.Hand, cardID);
