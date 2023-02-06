@@ -152,6 +152,8 @@ namespace LiteQuark.Runtime
                     {
                         continue;
                     }
+                    
+                    LLog.Info($"initialize {logicEntry.TypeName} system");
 
                     var logicType = TypeUtils.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
                     if (logicType == null)
