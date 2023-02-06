@@ -73,6 +73,17 @@ namespace LiteQuark.Runtime
             });
         }
 
+        public void StopLoadAsset(string assetPath)
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
+            if (info == null)
+            {
+                return;
+            }
+
+            BundleCacheLoaderCallback_.Remove(info.BundlePath);
+        }
+
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             LoadBundleCacheAsync(assetPath, (cache) =>

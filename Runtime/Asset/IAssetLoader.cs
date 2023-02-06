@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
         bool Initialize();
 
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
+        void StopLoadAsset(string assetPath);
         
         void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object;
 
