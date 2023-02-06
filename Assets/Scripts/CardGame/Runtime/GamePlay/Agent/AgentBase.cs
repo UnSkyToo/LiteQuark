@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -148,7 +149,7 @@ namespace LiteCard.GamePlay
             BattleContext.Current[BattleContextKey.ChangeAttrValue] = value;
             BuffSystem.Instance.TriggerBuff(BuffTriggerType.AfterAttrChange, this, attrType);
             
-            EventManager.Instance.Send(new AgentAttrChangeEvent(this, attrType, value - oldValue));
+            LiteRuntime.Get<EventSystem>().Send(new AgentAttrChangeEvent(this, attrType, value - oldValue));
         }
 
         public void ChangeAttr(ChangeAttrConfig[] changeAttrs, int count, bool inverse)

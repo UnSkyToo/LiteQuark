@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace LiteEditor
+namespace LiteQuark.Editor
 {
     public sealed class ColorScope : GUI.Scope
     {

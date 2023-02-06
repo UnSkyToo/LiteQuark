@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -101,7 +102,7 @@ namespace LiteCard.GamePlay
             BattleContext.Current[BattleContextKey.DrawCard] = card;
             BuffSystem.Instance.TriggerBuff(BuffTriggerType.DrawCard, Player_);
             
-            EventManager.Instance.Send<CardChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<CardChangeEvent>();
         }
 
         private void FlushPoolCard()
@@ -119,7 +120,7 @@ namespace LiteCard.GamePlay
             usedDeck.Clear();
             poolDeck.Shuffle();
             
-            EventManager.Instance.Send<CardChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<CardChangeEvent>();
         }
         
         public void ConsumeCard(CardBase card)
@@ -150,7 +151,7 @@ namespace LiteCard.GamePlay
             BattleContext.Current[BattleContextKey.ConsumeCardCount] = cards.Length;
             BuffSystem.Instance.TriggerBuff(BuffTriggerType.ConsumeCard, Player_);
 
-            EventManager.Instance.Send<CardChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<CardChangeEvent>();
         }
 
         public void CastCard(CardBase card, AgentBase target)
@@ -180,7 +181,7 @@ namespace LiteCard.GamePlay
                 }
                 else
                 {
-                    EventManager.Instance.Send<CardChangeEvent>();
+                    LiteRuntime.Get<EventSystem>().Send<CardChangeEvent>();
                 }
             });
         }
@@ -264,7 +265,7 @@ namespace LiteCard.GamePlay
 
             CardUpgradeHandler.Instance.Execute(caster, card);
             
-            EventManager.Instance.Send<CardChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<CardChangeEvent>();
 
             return true;
         }
@@ -274,7 +275,7 @@ namespace LiteCard.GamePlay
             var targetDeck = Player_.GetCardDeck(targetDeckType);
             if (targetIndex < 0) // random
             {
-                targetIndex = GameUtils.RandInt(0, targetDeck.Count);
+                targetIndex = MathUtils.RandInt(0, targetDeck.Count);
             }
 
             RemoveCard(card);

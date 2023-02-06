@@ -1,4 +1,5 @@
 ﻿using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,7 +30,7 @@ namespace LiteCard.UI
             UIUtils.FindComponent<Button>(Go, "BtnUsed").onClick.AddListener(OnBtnUsedClick);
             UIUtils.FindComponent<Button>(Go, "BtnAddCard").onClick.AddListener(OnBtnAddCardClick);
             
-            EventManager.Instance.Register<CardChangeEvent>(OnCardChangeEvent);
+            LiteRuntime.Get<EventSystem>().Register<CardChangeEvent>(OnCardChangeEvent);
             
             RefreshInfo();
         }
@@ -43,7 +44,7 @@ namespace LiteCard.UI
             UIUtils.FindComponent<Button>(Go, "BtnUsed").onClick.RemoveListener(OnBtnUsedClick);
             UIUtils.FindComponent<Button>(Go, "BtnAddCard").onClick.RemoveListener(OnBtnAddCardClick);
             
-            EventManager.Instance.UnRegister<CardChangeEvent>(OnCardChangeEvent);
+            LiteRuntime.Get<EventSystem>().UnRegister<CardChangeEvent>(OnCardChangeEvent);
         }
         
         public CardDeck GetDeck()

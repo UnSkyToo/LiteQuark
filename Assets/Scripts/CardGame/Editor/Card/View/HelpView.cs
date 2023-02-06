@@ -37,7 +37,7 @@ namespace LiteCard.Editor
                 FoldoutCache_.Add(key, true);
             }
 
-            using (new LiteEditor.ColorScope(Color.green))
+            using (new LiteQuark.Editor.ColorScope(Color.green))
             {
                 FoldoutCache_[key] = EditorGUILayout.Foldout(FoldoutCache_[key], key);
             }

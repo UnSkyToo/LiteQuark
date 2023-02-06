@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public abstract class BattleHandlerBase<T> : Singleton<T> where T :  class
     {

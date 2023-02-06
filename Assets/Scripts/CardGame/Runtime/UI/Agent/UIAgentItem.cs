@@ -1,4 +1,5 @@
 ﻿using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
 
@@ -15,14 +16,14 @@ namespace LiteCard.UI
                 UIUtils.FindChild(Go, "Buff"),
                 GameConst.Prefab.BuffItem);
             
-            EventManager.Instance.Register<AgentAttrChangeEvent>(OnAgentAttrChangeEvent);
-            EventManager.Instance.Register<BuffLayerChangeEvent>(OnBuffLayerChangeEvent);
+            LiteRuntime.Get<EventSystem>().Register<AgentAttrChangeEvent>(OnAgentAttrChangeEvent);
+            LiteRuntime.Get<EventSystem>().Register<BuffLayerChangeEvent>(OnBuffLayerChangeEvent);
         }
 
         public override void Dispose()
         {
-            EventManager.Instance.UnRegister<AgentAttrChangeEvent>(OnAgentAttrChangeEvent);
-            EventManager.Instance.UnRegister<BuffLayerChangeEvent>(OnBuffLayerChangeEvent);
+            LiteRuntime.Get<EventSystem>().UnRegister<AgentAttrChangeEvent>(OnAgentAttrChangeEvent);
+            LiteRuntime.Get<EventSystem>().UnRegister<BuffLayerChangeEvent>(OnBuffLayerChangeEvent);
 
             BuffList_.Dispose();
             
@@ -54,7 +55,7 @@ namespace LiteCard.UI
 
         private void OnAgentAttrChangeEvent(AgentAttrChangeEvent evt)
         {
-            if (evt.Agent.UniqueID != Data.UniqueID)
+            if (evt.Agent.SerialID != Data.SerialID)
             {
                 return;
             }
@@ -64,7 +65,7 @@ namespace LiteCard.UI
 
         private void OnBuffLayerChangeEvent(BuffLayerChangeEvent evt)
         {
-            if (evt.Agent.UniqueID != Data.UniqueID)
+            if (evt.Agent.SerialID != Data.SerialID)
             {
                 return;
             }

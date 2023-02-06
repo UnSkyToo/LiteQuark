@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;

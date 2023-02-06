@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace LiteEditor
+namespace LiteQuark.Editor
 {
     public sealed class FieldWidthScope : GUI.Scope
     {

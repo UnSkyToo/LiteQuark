@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -118,7 +119,7 @@ namespace LiteCard.GamePlay
                 BuffLayerSub(caster, target, buffID, -layer);
             }
             
-            EventManager.Instance.Send(new BuffLayerChangeEvent(target, buffID));
+            LiteRuntime.Get<EventSystem>().Send(new BuffLayerChangeEvent(target, buffID));
         }
 
         public void AddBuff(AgentBase caster, int buffID, int layer)

@@ -1,4 +1,5 @@
 ﻿using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,7 +17,7 @@ namespace LiteCard.UI
         protected override void OnOpen(params object[] paramList)
         {
             UIUtils.FindComponent<Button>(Go, "BtnNextRound").onClick.AddListener(OnBtnNextRoundClick);
-            EventManager.Instance.Register<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
+            LiteRuntime.Get<EventSystem>().Register<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
             
             RefreshInfo();
         }
@@ -24,7 +25,7 @@ namespace LiteCard.UI
         protected override void OnClose()
         {
             UIUtils.FindComponent<Button>(Go, "BtnNextRound").onClick.RemoveListener(OnBtnNextRoundClick);
-            EventManager.Instance.UnRegister<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
+            LiteRuntime.Get<EventSystem>().UnRegister<PlayerEnergyChangeEvent>(OnPlayerEnergyChangeEvent);
         }
 
         public void RefreshInfo()

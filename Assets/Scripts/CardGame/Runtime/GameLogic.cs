@@ -1,6 +1,7 @@
 ﻿using System;
 using LiteCard.GamePlay;
 using LiteCard.UI;
+using LiteQuark.Runtime;
 
 namespace LiteCard
 {
@@ -32,7 +33,6 @@ namespace LiteCard
             Battle_.BattleEnd();
             
             UIManager.Instance.Cleanup();
-            EventManager.Instance.Cleanup();
         }
 
         public void Update(float deltaTime)

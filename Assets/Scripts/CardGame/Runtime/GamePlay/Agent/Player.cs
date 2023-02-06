@@ -1,4 +1,5 @@
 ﻿using System;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -33,7 +34,7 @@ namespace LiteCard.GamePlay
             base.RoundEnd();
 
             CurEnergy = MaxEnergy;
-            EventManager.Instance.Send<PlayerEnergyChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<PlayerEnergyChangeEvent>();
         }
 
         public void ChangeEnergy(int value, bool changeLimit)
@@ -46,7 +47,7 @@ namespace LiteCard.GamePlay
             {
                 CurEnergy = Math.Clamp(CurEnergy + value, 0, MaxEnergy);
             }
-            EventManager.Instance.Send<PlayerEnergyChangeEvent>();
+            LiteRuntime.Get<EventSystem>().Send<PlayerEnergyChangeEvent>();
         }
 
         public CardDeck[] GetCardDecks()

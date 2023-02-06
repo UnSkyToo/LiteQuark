@@ -1,5 +1,4 @@
-﻿using LiteCard.GamePlay;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace LiteCard.UI
@@ -66,8 +65,8 @@ namespace LiteCard.UI
                     CurrentHoveredHandler_.OnCardHovered(null);
                     CurrentHoveredHandler_ = null;
 
-                    CardItem.DoCast(target);
                     RectTrans_.anchoredPosition = CardPosition_;
+                    CardItem.DoCast(target);
                 }
             }
             else
@@ -77,8 +76,8 @@ namespace LiteCard.UI
 
                 if (offset.y >= GameConst.UI.CardDragLimitY)
                 {
-                    CardItem.DoCast();
                     RectTrans_.anchoredPosition = CardPosition_;
+                    CardItem.DoCast();
                 }
                 else
                 {

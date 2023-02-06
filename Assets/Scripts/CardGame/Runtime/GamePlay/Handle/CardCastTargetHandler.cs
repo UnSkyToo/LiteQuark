@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LiteCard.UI;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -134,7 +135,7 @@ namespace LiteCard.GamePlay
             {
                 while (result.Count > count)
                 {
-                    result.RemoveAt(GameUtils.RandInt(0, result.Count));
+                    result.RemoveAt(MathUtils.RandInt(0, result.Count));
                 }
 
                 BattleContext.Current[BattleContextKey.SelectCardList] = result;

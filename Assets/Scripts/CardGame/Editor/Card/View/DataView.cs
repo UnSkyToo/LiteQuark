@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -110,7 +111,7 @@ namespace LiteCard.Editor
 
             if (Index_ == index)
             {
-                using (new LiteEditor.ColorScope(Color.red))
+                using (new LiteQuark.Editor.ColorScope(Color.red))
                 {
                     GUI.Box(rect, Texture2D.redTexture);
                 }

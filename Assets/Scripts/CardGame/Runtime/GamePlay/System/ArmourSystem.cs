@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public sealed class ArmourSystem : Singleton<ArmourSystem>
     {

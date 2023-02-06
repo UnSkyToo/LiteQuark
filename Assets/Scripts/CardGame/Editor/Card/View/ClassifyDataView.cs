@@ -33,7 +33,7 @@ namespace LiteCard.Editor
             
             foreach (var classify in classifyList)
             {
-                using (new LiteEditor.ColorScope(Color.green))
+                using (new LiteQuark.Editor.ColorScope(Color.green))
                 {
                     FoldoutCache_[classify.Key] = EditorGUI.Foldout(new Rect(startX, startY, dataRect.width, 20), FoldoutCache_[classify.Key], classify.Key);
                 }

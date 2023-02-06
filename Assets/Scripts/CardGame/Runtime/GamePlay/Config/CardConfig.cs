@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public sealed class CardConfig : IJsonMainConfig
     {
@@ -43,7 +45,7 @@
                 CastUpgrade = CastUpgrade.Clone() as CardCastConfig,
                 Upgrade = Upgrade.Clone() as CardUpgradeConfig,
                 InitBuffs = TypeUtils.CloneDataArray(InitBuffs),
-                Tags = TypeUtils.CloneArray(Tags)
+                Tags = TypeUtils.CloneObjectArray(Tags)
             };
             return result;
         }

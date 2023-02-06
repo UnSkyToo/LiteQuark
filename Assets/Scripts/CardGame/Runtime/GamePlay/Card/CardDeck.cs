@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -58,7 +59,7 @@ namespace LiteCard.GamePlay
 
         public CardBase GetRandom()
         {
-            var index = GameUtils.RandInt(0, Count);
+            var index = MathUtils.RandInt(0, Count);
             return Get(index);
         }
 

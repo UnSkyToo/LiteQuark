@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -60,7 +61,7 @@ namespace LiteCard.GamePlay
         
         private static readonly Dictionary<CompareMethod, Func<double, double, bool>> CompareMethodFunc_ = new Dictionary<CompareMethod, Func<double, double, bool>>
         {
-            {CompareMethod.Equal, GameUtils.Approximately},
+            {CompareMethod.Equal, MathUtils.Approximately},
             {CompareMethod.Greater, (a, b) => a > b},
             {CompareMethod.GreaterEqual, (a, b) => a >= b},
             {CompareMethod.Less, (a, b) => a < b},

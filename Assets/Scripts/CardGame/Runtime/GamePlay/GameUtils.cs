@@ -1,16 +1,10 @@
 ﻿using System;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
     public static class GameUtils
     {
-        private static readonly Random Rand_ = new Random((int)DateTime.Now.Ticks);
-
-        public static bool Approximately(double a, double b)
-        {
-            return Math.Abs(a - b) < 0.000000001d;
-        }
-
         public static T[] AssignmentArray<T>(T[]? paramList)
         {
             if (paramList == null)
@@ -19,11 +13,6 @@ namespace LiteCard.GamePlay
             }
 
             return paramList;
-        }
-
-        public static int RandInt(int min, int max)
-        {
-            return Rand_.Next(min, max);
         }
 
         public static int FindArrayIndex(int[] array, int value)
@@ -41,7 +30,7 @@ namespace LiteCard.GamePlay
 
         public static Monster RandomMonster()
         {
-            var index = RandInt(0, AgentSystem.Instance.GetMonsterCount());
+            var index = MathUtils.RandInt(0, AgentSystem.Instance.GetMonsterCount());
             var monster = AgentSystem.Instance.GetMonster(index);
             return monster;
         }
