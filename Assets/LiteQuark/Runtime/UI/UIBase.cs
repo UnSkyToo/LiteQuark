@@ -6,7 +6,11 @@ namespace LiteQuark.Runtime
     public abstract class UIBase
     {
         public abstract string PrefabPath { get; }
+        public abstract UIDepthMode DepthMode { get; }
+        
         public GameObject Go { get; private set; }
+
+        public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
 
         protected UIBase()
         {

@@ -7,6 +7,7 @@ namespace LiteCard.UI
     public sealed class UIBattleMain : UIBase
     {
         public override string PrefabPath => "CardGame/UI/Battle/UIBattleMain.prefab";
+        public override UIDepthMode DepthMode => UIDepthMode.Normal;
 
         public UIBattleMain()
         {

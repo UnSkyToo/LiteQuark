@@ -9,6 +9,7 @@ namespace LiteCard.UI
     public sealed class UICardList : UIBase
     {
         public override string PrefabPath => "CardGame/UI/Card/UICardList.prefab";
+        public override UIDepthMode DepthMode => UIDepthMode.Normal;
         
         private UIItemList<UICardItem, CardBase> CardList_;
         private CardDeckType DeckType_;
