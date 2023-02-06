@@ -12,5 +12,6 @@ namespace LiteQuark.Runtime
         void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object;
 
         void UnloadAsset(string assetPath);
+        void UnloadAsset<T>(T asset) where T : UnityEngine.Object;
     }
 }
