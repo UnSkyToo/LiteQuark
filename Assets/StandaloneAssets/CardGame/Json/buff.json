@@ -1,0 +1,261 @@
+[
+    {
+        "ID": 100001,
+        "Name": "易伤",
+        "Job": "CharacterJob.Normal",
+        "Number": 1,
+        "TriggerType": "BuffTriggerType.BeforeBeAttack",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Round",
+        "MaxLayer": 999,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1002,
+                "ParamList": [
+                    1.5
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 100002,
+        "Name": "虚弱",
+        "Job": "CharacterJob.Normal",
+        "Number": 2,
+        "TriggerType": "BuffTriggerType.BeforeAttack",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Round",
+        "MaxLayer": 999,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1002,
+                "ParamList": [
+                    0.75
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 100003,
+        "Name": "灼伤-检测",
+        "Job": "CharacterJob.Normal",
+        "Number": 3,
+        "TriggerType": "BuffTriggerType.RoundEnd",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Round",
+        "MaxLayer": 999,
+        "MatchID": 1001,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1001,
+                "ParamList": [
+                    "2+$CAST_CARD<UpgradeLevel>*2"
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200001,
+        "Name": "以血还血-监听",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 1,
+        "TriggerType": "BuffTriggerType.DeductHp",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Forever",
+        "MaxLayer": 1,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 3501,
+                "ParamList": [
+                    "CardDeckType.Pool",
+                    203002009,
+                    "RecordScopeType.Battle",
+                    -1
+                ]
+            },
+            {
+                "ModifierID": 3501,
+                "ParamList": [
+                    "CardDeckType.Hand",
+                    203002009,
+                    "RecordScopeType.Battle",
+                    -1
+                ]
+            },
+            {
+                "ModifierID": 3501,
+                "ParamList": [
+                    "CardDeckType.Used",
+                    203002009,
+                    "RecordScopeType.Battle",
+                    -1
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200002,
+        "Name": "狂宴-监听1",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 2,
+        "TriggerType": "BuffTriggerType.KillMonster",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Round",
+        "MaxLayer": 1,
+        "MatchID": 5002,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 5001,
+                "ParamList": [
+                    "AgentAttrType.MaxHp",
+                    3,
+                    0.0
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200003,
+        "Name": "狂宴-监听2",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 3,
+        "TriggerType": "BuffTriggerType.KillMonster",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.Round",
+        "MaxLayer": 1,
+        "MatchID": 5002,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 5001,
+                "ParamList": [
+                    "AgentAttrType.MaxHp",
+                    4,
+                    0.0
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200004,
+        "Name": "活动肌肉",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 4,
+        "TriggerType": "BuffTriggerType.None",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.OneRound",
+        "MaxLayer": 999,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [
+            {
+                "AttrType": "AgentAttrType.Strength",
+                "Value": 2,
+                "Percent": 0.0
+            }
+        ],
+        "ModifierSets": []
+    },
+    {
+        "ID": 200005,
+        "Name": "火焰屏障-监听1",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 5,
+        "TriggerType": "BuffTriggerType.AfterBeAttack",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.OneRound",
+        "MaxLayer": 1,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1006,
+                "ParamList": [
+                    "4"
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200006,
+        "Name": "火焰屏障-监听2",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 6,
+        "TriggerType": "BuffTriggerType.AfterBeAttack",
+        "TriggerParams": [],
+        "SustainType": "BuffSustainType.OneRound",
+        "MaxLayer": 1,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1006,
+                "ParamList": [
+                    "6"
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200007,
+        "Name": "狂怒-监听1",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 7,
+        "TriggerType": "BuffTriggerType.AfterCastCard",
+        "TriggerParams": [
+            "CardType.Attack"
+        ],
+        "SustainType": "BuffSustainType.OneRound",
+        "MaxLayer": 1,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1501,
+                "ParamList": [
+                    "3"
+                ]
+            }
+        ]
+    },
+    {
+        "ID": 200008,
+        "Name": "狂怒-监听2",
+        "Job": "CharacterJob.Ironclad",
+        "Number": 8,
+        "TriggerType": "BuffTriggerType.AfterCastCard",
+        "TriggerParams": [
+            "CardType.Attack"
+        ],
+        "SustainType": "BuffSustainType.OneRound",
+        "MaxLayer": 1,
+        "MatchID": 0,
+        "BaseAttr": [],
+        "LayerAttr": [],
+        "ModifierSets": [
+            {
+                "ModifierID": 1501,
+                "ParamList": [
+                    "5"
+                ]
+            }
+        ]
+    }
+]

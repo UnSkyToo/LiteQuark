@@ -42,6 +42,10 @@ namespace LiteQuark.Runtime
         public void UnloadAsset(string assetPath)
         {
         }
+
+        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
+        {
+        }
     }
 }
 #endif

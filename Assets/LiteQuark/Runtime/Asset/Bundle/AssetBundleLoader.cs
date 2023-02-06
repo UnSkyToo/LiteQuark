@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
     internal sealed class AssetBundleLoader : IAssetLoader
     { 
         private BundlePackInfo PackInfo_ = null;
+        private readonly Dictionary<int, AssetBundleCache> AssetCache_ = new();
         private readonly Dictionary<string, AssetBundleCache> BundleCache_ = new();
         private readonly Dictionary<string, List<Action<AssetBundleCache>>> BundleCacheLoaderCallback_ = new();
 
@@ -24,6 +25,7 @@ namespace LiteQuark.Runtime
                 return false;
             }
             
+            AssetCache_.Clear();
             BundleCache_.Clear();
             BundleCacheLoaderCallback_.Clear();
             
@@ -38,6 +40,7 @@ namespace LiteQuark.Runtime
                 bundle.Value.Unload();
             }
             BundleCache_.Clear();
+            AssetCache_.Clear();
         }
 
         private BundlePackInfo LoadBundlePack()
@@ -94,7 +97,14 @@ namespace LiteQuark.Runtime
                     return;
                 }
                 
-                cache.LoadAsset(assetPath, callback);
+                cache.LoadAsset<T>(assetPath, (asset) =>
+                {
+                    if (asset != null && !AssetCache_.ContainsKey(asset.GetInstanceID()))
+                    {
+                        AssetCache_.Add(asset.GetInstanceID(), cache);
+                    }
+                    callback?.Invoke(asset);
+                });
             });
         }
 
@@ -110,6 +120,23 @@ namespace LiteQuark.Runtime
             {
                 cache.DecRef();
             }
+        }
+
+        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
+        {
+            if (asset == null)
+            {
+                return;
+            }
+
+            var instanceID = asset.GetInstanceID();
+            if (!AssetCache_.ContainsKey(instanceID))
+            {
+                return;
+            }
+
+            AssetCache_[instanceID].DecRef();
+            AssetCache_.Remove(instanceID);
         }
 
         private void LoadBundleCacheAsync(string assetPath, Action<AssetBundleCache> callback)
