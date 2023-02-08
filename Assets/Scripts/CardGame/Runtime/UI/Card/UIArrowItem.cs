@@ -8,12 +8,13 @@ namespace LiteCard.UI
     {
         private GameObject Go_;
         
-        public UIArrowItem(Transform parent, string path)
+        public UIArrowItem(Transform parent, string path, int order)
         {
             LiteRuntime.Get<AssetSystem>().LoadGameObject(path, (go) =>
             {
                 UnityUtils.SetParent(parent, go);
                 Go_ = go;
+                UIUtils.AddSortingCanvas(Go_, order);
             });
         }
 

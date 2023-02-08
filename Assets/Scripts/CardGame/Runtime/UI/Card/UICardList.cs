@@ -51,8 +51,8 @@ namespace LiteCard.UI
             {
                 item.Go.AddComponent<UICardItemSelectHandler>().CardItem = item;
             }
-
-            item.Go.GetComponent<Canvas>().sortingOrder = 6;
+            
+            UIUtils.AddSortingCanvas(item.Go, SortingOrder + 1);
         }
 
         private void OnItemChange(UICardItem item)

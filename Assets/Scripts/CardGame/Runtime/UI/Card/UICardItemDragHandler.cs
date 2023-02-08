@@ -17,24 +17,25 @@ namespace LiteCard.UI
         private Vector2 CardPosition_;
         private Vector2 DragOrigin_;
 
+        private int Order_ = 0;
+
         private void Awake()
         {
             Canvas_ = GetComponent<Canvas>();
             RectTrans_ = GetComponent<RectTransform>();
-            
-            Canvas_.sortingOrder = 1;
+            Order_ = Canvas_.sortingOrder;
         }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
             transform.localScale = Vector3.one * 1.5f * CardItem.BaseScale;
-            Canvas_.sortingOrder = 2;
+            Canvas_.sortingOrder = Order_ + 1;
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             transform.localScale = Vector3.one * CardItem.BaseScale;
-            Canvas_.sortingOrder = 1;
+            Canvas_.sortingOrder = Order_;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -105,7 +106,7 @@ namespace LiteCard.UI
 
         private UIArrowItem CreateArrow(Transform parent)
         {
-            return new UIArrowItem(parent, GameConst.Prefab.ArrowItem);
+            return new UIArrowItem(parent, GameConst.Prefab.ArrowItem, Order_ + 10);
         }
 
         private void RefreshArrow(PointerEventData eventData)

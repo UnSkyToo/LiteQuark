@@ -9,7 +9,6 @@ namespace LiteCard.UI
 
         private void Awake()
         {
-            GetComponent<Canvas>().sortingOrder = 1;
         }
 
         public void OnPointerClick(PointerEventData eventData)
