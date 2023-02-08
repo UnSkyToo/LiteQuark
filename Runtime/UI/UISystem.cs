@@ -123,7 +123,7 @@ namespace LiteQuark.Runtime
 
             var canvas = UnityUtils.GetOrCreateComponent<Canvas>(instance);
             canvas.overrideSorting = true;
-            canvas.sortingOrder = (int)ui.DepthMode + parent.childCount * UIStepOrder;
+            canvas.sortingOrder = (int)ui.DepthMode + (parent.childCount - 1) * UIStepOrder;
 
             var raycaster = UnityUtils.GetOrCreateComponent<GraphicRaycaster>(instance);
             raycaster.blockingMask = LayerMask.GetMask("UI");

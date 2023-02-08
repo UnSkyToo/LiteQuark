@@ -20,6 +20,11 @@ namespace LiteQuark.Runtime
             return go.AddComponent<T>();
         }
         
+        public static T GetOrCreateComponent<T>(Transform go) where T : Component
+        {
+            return GetOrCreateComponent<T>(go.gameObject);
+        }
+        
         public static GameObject CreateGameObject(Transform parent, string name)
         {
             var go = new GameObject(name);

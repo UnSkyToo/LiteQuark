@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
@@ -81,6 +82,18 @@ namespace LiteQuark.Runtime
             {
                 child.gameObject.SetActive(value);
             }
+        }
+
+        public static Canvas AddSortingCanvas(GameObject go, int order)
+        {
+            var canvas = UnityUtils.GetOrCreateComponent<Canvas>(go);
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = order;
+
+            var raycaster = UnityUtils.GetOrCreateComponent<GraphicRaycaster>(go);
+            raycaster.blockingMask = LayerMask.GetMask("UI");
+            
+            return canvas;
         }
     }
 }
