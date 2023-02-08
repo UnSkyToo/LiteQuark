@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LiteCard.GamePlay
+namespace LiteQuark.Runtime
 {
     public interface IJsonConfig : ICloneable
     {

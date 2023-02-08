@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public sealed class CardData
     {
@@ -12,7 +14,7 @@
 
         public CardData(int id)
         {
-            Cfg = ConfigDatabase.Instance.GetData<CardConfig>(id);
+            Cfg = LiteRuntime.Get<ConfigSystem>().GetData<CardConfig>(id);
             CastNormal = new CardCastData(Cfg.CastNormal);
             CastUpgrade = new CardCastData(Cfg.CastUpgrade);
             CastCount = 0;

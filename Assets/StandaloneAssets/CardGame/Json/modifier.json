@@ -2,168 +2,168 @@
     {
         "ID": 1001,
         "Name": "伤害",
-        "Type": "ModifierType.Damage",
+        "Type": "LiteCard.GamePlay.ModifierType~Damage",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 1002,
         "Name": "伤害修正",
-        "Type": "ModifierType.DamageFixed",
+        "Type": "LiteCard.GamePlay.ModifierType~DamageFixed",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 1003,
         "Name": "随机伤害",
-        "Type": "ModifierType.Damage",
+        "Type": "LiteCard.GamePlay.ModifierType~Damage",
         "MatchID": 3001,
         "RepeatCount": "1"
     },
     {
         "ID": 1004,
         "Name": "对自己伤害",
-        "Type": "ModifierType.Damage",
+        "Type": "LiteCard.GamePlay.ModifierType~Damage",
         "MatchID": 1001,
         "RepeatCount": "1"
     },
     {
         "ID": 1005,
         "Name": "伤害-耗能次",
-        "Type": "ModifierType.Damage",
+        "Type": "LiteCard.GamePlay.ModifierType~Damage",
         "MatchID": 0,
         "RepeatCount": "$CAST_CARD<Cost>"
     },
     {
         "ID": 1006,
         "Name": "对事件目标伤害",
-        "Type": "ModifierType.Damage",
+        "Type": "LiteCard.GamePlay.ModifierType~Damage",
         "MatchID": 6001,
         "RepeatCount": "1"
     },
     {
         "ID": 1501,
         "Name": "护甲",
-        "Type": "ModifierType.Armour",
+        "Type": "LiteCard.GamePlay.ModifierType~Armour",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 2001,
         "Name": "操作BUFF",
-        "Type": "ModifierType.Buff",
+        "Type": "LiteCard.GamePlay.ModifierType~Buff",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3001,
         "Name": "复制卡牌",
-        "Type": "ModifierType.CopyCard",
+        "Type": "LiteCard.GamePlay.ModifierType~CopyCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3101,
         "Name": "移动卡牌",
-        "Type": "ModifierType.MoveCard",
+        "Type": "LiteCard.GamePlay.ModifierType~MoveCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3201,
         "Name": "抽卡",
-        "Type": "ModifierType.DrawCard",
+        "Type": "LiteCard.GamePlay.ModifierType~DrawCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3202,
         "Name": "抽卡-易伤检测",
-        "Type": "ModifierType.DrawCard",
+        "Type": "LiteCard.GamePlay.ModifierType~DrawCard",
         "MatchID": 5001,
         "RepeatCount": "1"
     },
     {
         "ID": 3301,
         "Name": "增加卡牌",
-        "Type": "ModifierType.AddCard",
+        "Type": "LiteCard.GamePlay.ModifierType~AddCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3401,
         "Name": "消耗卡牌",
-        "Type": "ModifierType.ConsumeCard",
+        "Type": "LiteCard.GamePlay.ModifierType~ConsumeCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3501,
         "Name": "卡牌减费",
-        "Type": "ModifierType.CardCost",
+        "Type": "LiteCard.GamePlay.ModifierType~CardCost",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3502,
         "Name": "卡牌减费(Key)",
-        "Type": "ModifierType.CardCostByKey",
+        "Type": "LiteCard.GamePlay.ModifierType~CardCostByKey",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3601,
         "Name": "卡牌升级",
-        "Type": "ModifierType.UpgradeCard",
+        "Type": "LiteCard.GamePlay.ModifierType~UpgradeCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3701,
         "Name": "打出卡牌",
-        "Type": "ModifierType.CastCard",
+        "Type": "LiteCard.GamePlay.ModifierType~CastCard",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 3801,
         "Name": "卡牌Tag",
-        "Type": "ModifierType.CardTag",
+        "Type": "LiteCard.GamePlay.ModifierType~CardTag",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 4001,
         "Name": "护甲<自己>",
-        "Type": "ModifierType.Armour",
+        "Type": "LiteCard.GamePlay.ModifierType~Armour",
         "MatchID": 1001,
         "RepeatCount": "1"
     },
     {
         "ID": 5001,
         "Name": "改变属性",
-        "Type": "ModifierType.Attr",
+        "Type": "LiteCard.GamePlay.ModifierType~Attr",
         "MatchID": 0,
         "RepeatCount": "1"
     },
     {
         "ID": 6101,
         "Name": "操作能量-易伤检测",
-        "Type": "ModifierType.ChangeEnergy",
+        "Type": "LiteCard.GamePlay.ModifierType~ChangeEnergy",
         "MatchID": 5001,
         "RepeatCount": "1"
     },
     {
         "ID": 7001,
         "Name": "回复生命",
-        "Type": "ModifierType.Recovery",
+        "Type": "LiteCard.GamePlay.ModifierType~Recovery",
         "MatchID": 1001,
         "RepeatCount": "1"
     },
     {
         "ID": 8001,
         "Name": "玩家Tag",
-        "Type": "ModifierType.AgentTag",
+        "Type": "LiteCard.GamePlay.ModifierType~AgentTag",
         "MatchID": 0,
         "RepeatCount": "1"
     }

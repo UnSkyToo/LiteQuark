@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public sealed class BuffData : ExecuteData
     {
@@ -8,7 +10,7 @@
 
         public BuffData(int id, AgentBase caster)
         {
-            Cfg = ConfigDatabase.Instance.GetData<BuffConfig>(id);
+            Cfg = LiteRuntime.Get<ConfigSystem>().GetData<BuffConfig>(id);
             Caster = caster;
             Layer = 0;
             

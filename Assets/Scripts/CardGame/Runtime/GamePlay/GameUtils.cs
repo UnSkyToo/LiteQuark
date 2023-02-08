@@ -17,19 +17,6 @@ namespace LiteCard.GamePlay
             return paramList;
         }
 
-        public static int FindArrayIndex(int[] array, int value)
-        {
-            for (var index = 0; index < array.Length; ++index)
-            {
-                if (array[index] == value)
-                {
-                    return index;
-                }
-            }
-
-            return -1;
-        }
-
         public static Monster RandomMonster()
         {
             var index = MathUtils.RandInt(0, AgentSystem.Instance.GetMonsterCount());

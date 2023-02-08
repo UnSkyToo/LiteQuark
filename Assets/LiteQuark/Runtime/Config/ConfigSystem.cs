@@ -1,37 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using LiteQuark.Runtime;
+using System.Reflection;
 using UnityEngine;
 
-namespace LiteCard.GamePlay
+namespace LiteQuark.Runtime
 {
-    public sealed class ConfigDatabase : Singleton<ConfigDatabase>
+    public sealed class ConfigSystem : ISystem
     {
         private readonly Dictionary<Type, Dictionary<int, IJsonMainConfig>> ConfigCache = new Dictionary<Type, Dictionary<int, IJsonMainConfig>>();
 
-        public ConfigDatabase()
+        
+        public ConfigSystem()
         {
         }
         
-        public void LoadFromJson()
+        public void Dispose()
         {
-            var configs = new Dictionary<Type, string>
-            {
-                { typeof(MatchConfig), "match.json" },
-                { typeof(ModifierConfig), "modifier.json" },
-                { typeof(BuffConfig), "buff.json" },
-                { typeof(CardConfig), "card.json" },
-            };
-
-            foreach (var config in configs)
-            {
-                var cache = new Dictionary<int, IJsonMainConfig>();
-                ConfigCache.Add(config.Key, cache);
-                LoadConfigTable(config.Value, config.Key, cache);
-            }
         }
-
+        
         public T[] GetDataList<T>() where T : IJsonMainConfig
         {
             var type = typeof(T);
@@ -40,7 +27,7 @@ namespace LiteCard.GamePlay
                 return cache.Values.Cast<T>().ToArray();
             }
 
-            Log.Info($"error config type : {type}");
+            LLog.Info($"error config type : {type}");
             return Array.Empty<T>();
         }
 
@@ -55,39 +42,49 @@ namespace LiteCard.GamePlay
                 }
                 else
                 {
-                    Log.Info($"error {typeof(T).Name} config id : {id}");
+                    LLog.Info($"error {typeof(T).Name} config id : {id}");
                 }
             }
             else
             {
-                Log.Info($"error config type : {type}");
+                LLog.Info($"error config type : {type}");
             }
 
             return default;
         }
 
-        private void LoadConfigTable(string jsonFileName, Type type, Dictionary<int, IJsonMainConfig> cache)
+        public void AddAssembly(Assembly assembly, int index = -1)
         {
-            LiteRuntime.Get<AssetSystem>().LoadAsset<TextAsset>(GetJsonFullPath(jsonFileName), (asset) =>
+            JsonUtils.AddAssembly(assembly, index);
+        }
+        
+        public void LoadFromJson(Dictionary<Type, string> configs)
+        {
+            foreach (var config in configs)
+            {
+                var cache = new Dictionary<int, IJsonMainConfig>();
+                ConfigCache.Add(config.Key, cache);
+                LoadConfigTable(config.Value, config.Key, cache);
+            }
+        }
+        
+        private void LoadConfigTable(string jsonFilePath, Type type, Dictionary<int, IJsonMainConfig> cache)
+        {
+            LiteRuntime.Get<AssetSystem>().LoadAsset<TextAsset>(jsonFilePath, (asset) =>
             {
                 var data =  JsonUtils.DecodeArray(asset.text, type).Cast<IJsonMainConfig>().ToArray();
                 if (data == null)
                 {
-                    Log.Info($"read json file error : {jsonFileName}");
+                    LLog.Info($"read json file error : {jsonFilePath}");
                     return;
                 }
             
-                Log.Info($"load config : {jsonFileName}");
+                LLog.Info($"load config : {jsonFilePath}");
                 foreach (var item in data)
                 {
                     cache.Add(item.ID, item);
                 }
             });
-        }
-
-        private string GetJsonFullPath(string jsonFileName)
-        {
-            return $"CardGame/Json/{jsonFileName}";
         }
     }
 }

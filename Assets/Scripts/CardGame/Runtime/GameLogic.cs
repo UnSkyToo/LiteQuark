@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using LiteCard.GamePlay;
 using LiteCard.UI;
 using LiteQuark.Runtime;
@@ -17,7 +18,17 @@ namespace LiteCard
         public void Startup()
         {
             Log.Info("Load Config...");
-            ConfigDatabase.Instance.LoadFromJson();
+            
+            var configs = new Dictionary<Type, string>
+            {
+                { typeof(MatchConfig), "CardGame/Json/match.json" },
+                { typeof(ModifierConfig), "CardGame/Json/modifier.json" },
+                { typeof(BuffConfig), "CardGame/Json/buff.json" },
+                { typeof(CardConfig), "CardGame/Json/card.json" },
+            };
+            LiteRuntime.Get<ConfigSystem>().AddAssembly(typeof(GameLogic).Assembly, 0);
+            LiteRuntime.Get<ConfigSystem>().LoadFromJson(configs);
+            
             AgentSystem.Instance.Init();
             
             LiteRuntime.Get<UISystem>().OpenUI<UICardHand>(AgentSystem.Instance.GetPlayer().GetCardDeck(CardDeckType.Hand));

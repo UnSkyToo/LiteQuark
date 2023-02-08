@@ -1,19 +1,20 @@
+using System;
+using LiteGamePlay.Chess;
+using LiteQuark.Runtime;
 using UnityEngine;
 
 public class Test : MonoBehaviour
 {
     void Start()
     {
-        var b = GameObject.Find("Y");
-        var c = b.GetComponent<RectTransform>();
-        
-        var canvas = new GameObject("z");
-        canvas.transform.SetParent(GameObject.Find("X").transform, false);
-        var a = canvas.AddComponent<RectTransform>();
-        a.anchorMin = Vector2.zero;
-        a.anchorMax = Vector2.one;
-        a.anchoredPosition = Vector2.zero;
-        a.sizeDelta = Vector2.zero;
+        var a = typeof(ChessKind);
+        var b = typeof(AssetLoaderMode);
+
+        var a1 = a.ToString() + "," + a.Assembly.ToString();
+        var b1 = b.ToString() + "," + b.Assembly.ToString();
+
+        var az = Type.GetType(a1);
+        var bz = Type.GetType(b1);
     }
 
     private void OnDestroy()

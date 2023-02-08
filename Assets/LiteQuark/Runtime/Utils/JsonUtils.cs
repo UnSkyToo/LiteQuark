@@ -1,47 +1,53 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using LiteQuark.Runtime;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace LiteCard.GamePlay
+namespace LiteQuark.Runtime
 {
     public static class JsonUtils
     {
-        public static void EncodeData<T>(string jsonFile, T value) where T : IJsonMainConfig
-        {
-            var textBuilder = new StringBuilder();
-            var writer = new JsonTextWriter(new StringWriter(textBuilder))
-            {
-                Formatting = Formatting.Indented,
-                Indentation = 4,
-                IndentChar = ' '
-            };
+        private static List<Assembly> AssemblyList_ = new List<Assembly>();
 
-            try
+        static JsonUtils()
+        {
+            AssemblyList_.Clear();
+            AddAssembly(typeof(JsonUtils).Assembly);
+            AddAssembly(Assembly.GetExecutingAssembly());
+            AddAssembly(Assembly.GetEntryAssembly());
+        }
+        
+        public static void AddAssembly(Assembly assembly, int index = -1)
+        {
+            if (assembly == null)
             {
-                WriteData(writer, value.GetType().GetElementType(), value);
+                return;
             }
-            catch (Exception ex)
+            
+            if (AssemblyList_.Contains(assembly))
             {
-                Log.Error($"json encode error : {jsonFile}\n{ex.Message}");
                 return;
             }
 
-            var dir = Path.GetDirectoryName(jsonFile);
-            if (!Directory.Exists(dir))
+            if (index < 0 || index >= AssemblyList_.Count)
             {
-                Directory.CreateDirectory(dir);
+                AssemblyList_.Add(assembly);
             }
-            File.WriteAllText(jsonFile, textBuilder.ToString());
+            else
+            {
+                AssemblyList_.Insert(index, assembly);
+            }
         }
         
         public static string EncodeArray<T>(T[] value) where T : IJsonMainConfig
         {
+            AddAssembly(Assembly.GetCallingAssembly());
+            
             var textBuilder = new StringBuilder();
             var writer = new JsonTextWriter(new StringWriter(textBuilder))
             {
@@ -57,7 +63,7 @@ namespace LiteCard.GamePlay
             }
             catch (Exception ex)
             {
-                Log.Error($"json encode error\n{ex.Message}");
+                LLog.Error($"json encode error\n{ex.Message}");
                 return string.Empty;
             }
         }
@@ -173,7 +179,7 @@ namespace LiteCard.GamePlay
                     writer.WriteValue(stringValue);
                     break;
                 case Enum enumValue:
-                    writer.WriteValue($"{enumValue.GetType().Name}.{enumValue}");
+                    writer.WriteValue($"{enumValue.GetType().FullName}~{enumValue}");
                     break;
                 default:
                     throw new ArgumentException($"error simple json value : {value}");
@@ -200,6 +206,8 @@ namespace LiteCard.GamePlay
 
         public static object[] DecodeArray(string jsonText, Type type)
         {
+            AddAssembly(Assembly.GetCallingAssembly());
+            
             try
             {
                 var reader = JArray.Parse(jsonText);
@@ -210,7 +218,7 @@ namespace LiteCard.GamePlay
             }
             catch (Exception ex)
             {
-                Log.Error($"json decode error\n{ex.Message}");
+                LLog.Error($"json decode error\n{ex.Message}");
                 return null;
             }
         }
@@ -317,7 +325,7 @@ namespace LiteCard.GamePlay
                     return reader.Value<float>();
                 case JTokenType.String:
                     var str = reader.Value<string>();
-                    if (str.Contains("."))
+                    if (str.Contains("~"))
                     {
                         return ReadEnumFromString(str);
                     }
@@ -332,14 +340,14 @@ namespace LiteCard.GamePlay
                 {
                     return null;
                 }
-
-                var chunks = value.Split('.');
+                
+                var chunks = value.Split('~');
                 if (chunks.Length != 2)
                 {
                     return null;
                 }
-
-                var type = GameUtils.GetEnumType(chunks[0]);
+                
+                var type = TypeUtils.GetTypeWithAssembly(AssemblyList_.ToArray(), chunks[0]);
                 if (type == null)
                 {
                     return null;

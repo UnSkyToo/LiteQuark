@@ -2,9 +2,9 @@
     {
         "ID": 102016001,
         "Name": "伤口",
-        "Job": "CharacterJob.Normal",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.State",
+        "Job": "LiteCard.GamePlay.CharacterJob~Normal",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~State",
         "Number": 1,
         "NeedTarget": false,
         "CastNormal": {
@@ -12,9 +12,9 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -22,14 +22,14 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 0,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -38,9 +38,9 @@
     {
         "ID": 102016002,
         "Name": "眩晕",
-        "Job": "CharacterJob.Normal",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.State",
+        "Job": "LiteCard.GamePlay.CharacterJob~Normal",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~State",
         "Number": 2,
         "NeedTarget": false,
         "CastNormal": {
@@ -48,9 +48,9 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -58,27 +58,27 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 0,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Ethereal"
+            "LiteCard.GamePlay.CardTag~Ethereal"
         ]
     },
     {
         "ID": 102016003,
         "Name": "灼伤",
-        "Job": "CharacterJob.Normal",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.State",
+        "Job": "LiteCard.GamePlay.CharacterJob~Normal",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~State",
         "Number": 3,
         "NeedTarget": false,
         "CastNormal": {
@@ -86,9 +86,9 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -96,14 +96,14 @@
             "Cost": 0,
             "MatchID": 0,
             "ModifierSets": [],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.Forbid",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~Forbid",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [
@@ -117,9 +117,9 @@
     {
         "ID": 201002001,
         "Name": "打击（红）",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Starter",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 1,
         "NeedTarget": true,
         "CastNormal": {
@@ -134,9 +134,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -151,27 +151,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Strike"
+            "LiteCard.GamePlay.CardTag~Strike"
         ]
     },
     {
         "ID": 201002002,
         "Name": "痛击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Starter",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 2,
         "NeedTarget": true,
         "CastNormal": {
@@ -193,9 +193,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -217,14 +217,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -233,9 +233,9 @@
     {
         "ID": 201004001,
         "Name": "防御（红）",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Starter",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 1,
         "NeedTarget": false,
         "CastNormal": {
@@ -250,9 +250,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -267,14 +267,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -283,9 +283,9 @@
     {
         "ID": 202002001,
         "Name": "愤怒",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 1,
         "NeedTarget": true,
         "CastNormal": {
@@ -302,15 +302,15 @@
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.CastCard",
-                        "CardDeckType.Used",
+                        "LiteCard.GamePlay.BattleContextKey~CastCard",
+                        "LiteCard.GamePlay.CardDeckType~Used",
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -327,20 +327,20 @@
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.CastCard",
-                        "CardDeckType.Used",
+                        "LiteCard.GamePlay.BattleContextKey~CastCard",
+                        "LiteCard.GamePlay.CardDeckType~Used",
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -349,9 +349,9 @@
     {
         "ID": 202002002,
         "Name": "头槌",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 2,
         "NeedTarget": true,
         "CastNormal": {
@@ -368,19 +368,19 @@
                 {
                     "ModifierID": 3101,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Used",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Used",
+                "LiteCard.GamePlay.CardType~None",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -397,24 +397,24 @@
                 {
                     "ModifierID": 3101,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Used",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Used",
+                "LiteCard.GamePlay.CardType~None",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -423,9 +423,9 @@
     {
         "ID": 202002003,
         "Name": "重刃",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 3,
         "NeedTarget": true,
         "CastNormal": {
@@ -440,9 +440,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -457,14 +457,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -473,9 +473,9 @@
     {
         "ID": 202002004,
         "Name": "铁波斩",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 4,
         "NeedTarget": true,
         "CastNormal": {
@@ -496,9 +496,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -519,14 +519,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -535,9 +535,9 @@
     {
         "ID": 202002005,
         "Name": "完美打击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 5,
         "NeedTarget": true,
         "CastNormal": {
@@ -552,9 +552,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -569,27 +569,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Strike"
+            "LiteCard.GamePlay.CardTag~Strike"
         ]
     },
     {
         "ID": 202002006,
         "Name": "剑柄打击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 6,
         "NeedTarget": true,
         "CastNormal": {
@@ -610,9 +610,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -633,14 +633,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -649,9 +649,9 @@
     {
         "ID": 202002007,
         "Name": "飞剑回旋镖",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 7,
         "NeedTarget": false,
         "CastNormal": {
@@ -678,9 +678,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -713,14 +713,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -729,9 +729,9 @@
     {
         "ID": 202002008,
         "Name": "闪电霹雳",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 8,
         "NeedTarget": false,
         "CastNormal": {
@@ -753,9 +753,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -777,14 +777,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 0,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -793,9 +793,9 @@
     {
         "ID": 202002009,
         "Name": "双重打击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 9,
         "NeedTarget": true,
         "CastNormal": {
@@ -816,9 +816,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -839,27 +839,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Strike"
+            "LiteCard.GamePlay.CardTag~Strike"
         ]
     },
     {
         "ID": 202002010,
         "Name": "狂野打击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 10,
         "NeedTarget": true,
         "CastNormal": {
@@ -876,15 +876,15 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         102016001,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -901,33 +901,33 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         102016001,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Strike"
+            "LiteCard.GamePlay.CardTag~Strike"
         ]
     },
     {
         "ID": 202002011,
         "Name": "全身撞击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 11,
         "NeedTarget": true,
         "CastNormal": {
@@ -942,9 +942,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -959,14 +959,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -975,9 +975,9 @@
     {
         "ID": 202002012,
         "Name": "交锋",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 12,
         "NeedTarget": true,
         "CastNormal": {
@@ -992,11 +992,11 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.HandCardType",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~HandCardType",
             "CheckParams": [
-                "CardType.Attack",
+                "LiteCard.GamePlay.CardType~Attack",
                 -1
             ]
         },
@@ -1012,17 +1012,17 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.HandCardType",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~HandCardType",
             "CheckParams": [
-                "CardType.Attack",
+                "LiteCard.GamePlay.CardType~Attack",
                 -1
             ]
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1031,9 +1031,9 @@
     {
         "ID": 202002013,
         "Name": "顺劈斩",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 13,
         "NeedTarget": false,
         "CastNormal": {
@@ -1048,9 +1048,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1065,14 +1065,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1081,9 +1081,9 @@
     {
         "ID": 202002014,
         "Name": "金刚臂",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 14,
         "NeedTarget": true,
         "CastNormal": {
@@ -1105,9 +1105,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1129,14 +1129,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1145,9 +1145,9 @@
     {
         "ID": 202004001,
         "Name": "武装",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 1,
         "NeedTarget": false,
         "CastNormal": {
@@ -1164,18 +1164,18 @@
                 {
                     "ModifierID": 3601,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "RecordScopeType.Battle"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.RecordScopeType~Battle"
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1192,23 +1192,23 @@
                 {
                     "ModifierID": 3601,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "RecordScopeType.Battle"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.RecordScopeType~Battle"
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByType",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByType",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 true
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1217,9 +1217,9 @@
     {
         "ID": 202004002,
         "Name": "活动肌肉",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 2,
         "NeedTarget": false,
         "CastNormal": {
@@ -1235,9 +1235,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1253,14 +1253,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1269,9 +1269,9 @@
     {
         "ID": 202004003,
         "Name": "破灭",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 3,
         "NeedTarget": false,
         "CastNormal": {
@@ -1282,25 +1282,25 @@
                 {
                     "ModifierID": 3801,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "RecordScopeType.Round",
-                        "CardTag.Consume"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.RecordScopeType~Round",
+                        "LiteCard.GamePlay.CardTag~Consume"
                     ]
                 },
                 {
                     "ModifierID": 3701,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
                         3001
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByIndex",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByIndex",
             "TargetParams": [
-                "CardDeckType.Pool",
+                "LiteCard.GamePlay.CardDeckType~Pool",
                 0
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1311,30 +1311,30 @@
                 {
                     "ModifierID": 3801,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "RecordScopeType.Round",
-                        "CardTag.Consume"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.RecordScopeType~Round",
+                        "LiteCard.GamePlay.CardTag~Consume"
                     ]
                 },
                 {
                     "ModifierID": 3701,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
                         3001
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByIndex",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByIndex",
             "TargetParams": [
-                "CardDeckType.Pool",
+                "LiteCard.GamePlay.CardDeckType~Pool",
                 0
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1343,9 +1343,9 @@
     {
         "ID": 202004004,
         "Name": "耸肩无视",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 4,
         "NeedTarget": false,
         "CastNormal": {
@@ -1360,9 +1360,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1377,14 +1377,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1393,9 +1393,9 @@
     {
         "ID": 202004005,
         "Name": "坚毅",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 5,
         "NeedTarget": false,
         "CastNormal": {
@@ -1412,16 +1412,16 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByRandom",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByRandom",
             "TargetParams": [
-                "CardDeckType.Hand",
+                "LiteCard.GamePlay.CardDeckType~Hand",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1438,21 +1438,21 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByRandom",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByRandom",
             "TargetParams": [
-                "CardDeckType.Hand",
+                "LiteCard.GamePlay.CardDeckType~Hand",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1461,9 +1461,9 @@
     {
         "ID": 202004006,
         "Name": "战吼",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Common",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Common",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 6,
         "NeedTarget": false,
         "CastNormal": {
@@ -1480,19 +1480,19 @@
                 {
                     "ModifierID": 3101,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1509,37 +1509,37 @@
                 {
                     "ModifierID": 3101,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 203002001,
         "Name": "飞身踢",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 1,
         "NeedTarget": true,
         "CastNormal": {
@@ -1567,9 +1567,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1597,14 +1597,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1613,9 +1613,9 @@
     {
         "ID": 203002002,
         "Name": "御血术",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 2,
         "NeedTarget": true,
         "CastNormal": {
@@ -1636,9 +1636,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1659,14 +1659,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1675,9 +1675,9 @@
     {
         "ID": 203002003,
         "Name": "连续拳",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 3,
         "NeedTarget": true,
         "CastNormal": {
@@ -1710,9 +1710,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1751,27 +1751,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 203002004,
         "Name": "暴走",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 4,
         "NeedTarget": true,
         "CastNormal": {
@@ -1786,9 +1786,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1803,14 +1803,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1819,9 +1819,9 @@
     {
         "ID": 203002005,
         "Name": "无谋冲锋",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 5,
         "NeedTarget": true,
         "CastNormal": {
@@ -1838,15 +1838,15 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         102016002,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1863,20 +1863,20 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Pool",
+                        "LiteCard.GamePlay.CardDeckType~Pool",
                         102016002,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1885,9 +1885,9 @@
     {
         "ID": 203002006,
         "Name": "灼热攻击",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 6,
         "NeedTarget": true,
         "CastNormal": {
@@ -1902,9 +1902,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1919,14 +1919,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 999,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -1935,9 +1935,9 @@
     {
         "ID": 203002007,
         "Name": "断魂斩",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 7,
         "NeedTarget": true,
         "CastNormal": {
@@ -1948,7 +1948,7 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 },
                 {
@@ -1958,13 +1958,13 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByType",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByType",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.Attack",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~Attack",
                 true
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -1975,7 +1975,7 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 },
                 {
@@ -1985,18 +1985,18 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByType",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByType",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.Attack",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~Attack",
                 true
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2005,9 +2005,9 @@
     {
         "ID": 203002008,
         "Name": "上勾拳",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 8,
         "NeedTarget": true,
         "CastNormal": {
@@ -2036,9 +2036,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2067,14 +2067,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2083,9 +2083,9 @@
     {
         "ID": 203002009,
         "Name": "以血还血",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 9,
         "NeedTarget": true,
         "CastNormal": {
@@ -2100,9 +2100,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2117,14 +2117,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [
@@ -2138,9 +2138,9 @@
     {
         "ID": 203002010,
         "Name": "旋风斩",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 10,
         "NeedTarget": false,
         "CastNormal": {
@@ -2155,9 +2155,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2172,14 +2172,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2188,9 +2188,9 @@
     {
         "ID": 203002011,
         "Name": "残杀",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 11,
         "NeedTarget": true,
         "CastNormal": {
@@ -2205,9 +2205,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2222,27 +2222,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Ethereal"
+            "LiteCard.GamePlay.CardTag~Ethereal"
         ]
     },
     {
         "ID": 203004001,
         "Name": "缴械",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 1,
         "NeedTarget": true,
         "CastNormal": {
@@ -2253,15 +2253,15 @@
                 {
                     "ModifierID": 5001,
                     "ParamList": [
-                        "AgentAttrType.Strength",
+                        "LiteCard.GamePlay.AgentAttrType~Strength",
                         -2,
                         0.0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2272,33 +2272,33 @@
                 {
                     "ModifierID": 5001,
                     "ParamList": [
-                        "AgentAttrType.Strength",
+                        "LiteCard.GamePlay.AgentAttrType~Strength",
                         -3,
                         0.0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 203004002,
         "Name": "双持",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 2,
         "NeedTarget": false,
         "CastNormal": {
@@ -2309,19 +2309,19 @@
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.Attack, Power",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~Attack, Power",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2332,24 +2332,24 @@
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         2
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByUI",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByUI",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.Attack, Power",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~Attack, Power",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2358,9 +2358,9 @@
     {
         "ID": 203004003,
         "Name": "巩固",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 3,
         "NeedTarget": false,
         "CastNormal": {
@@ -2371,15 +2371,15 @@
                 {
                     "ModifierID": 5001,
                     "ParamList": [
-                        "AgentAttrType.Armour",
+                        "LiteCard.GamePlay.AgentAttrType~Armour",
                         0,
                         1.0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2390,20 +2390,20 @@
                 {
                     "ModifierID": 5001,
                     "ParamList": [
-                        "AgentAttrType.Armour",
+                        "LiteCard.GamePlay.AgentAttrType~Armour",
                         0,
                         1.0
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2412,9 +2412,9 @@
     {
         "ID": 203004004,
         "Name": "火焰屏障",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 4,
         "NeedTarget": false,
         "CastNormal": {
@@ -2436,9 +2436,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2460,14 +2460,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2476,9 +2476,9 @@
     {
         "ID": 203004005,
         "Name": "幽灵铠甲",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 5,
         "NeedTarget": false,
         "CastNormal": {
@@ -2493,9 +2493,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2510,27 +2510,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Ethereal"
+            "LiteCard.GamePlay.CardTag~Ethereal"
         ]
     },
     {
         "ID": 203004006,
         "Name": "地狱之刃",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 6,
         "NeedTarget": false,
         "CastNormal": {
@@ -2541,27 +2541,27 @@
                 {
                     "ModifierID": 3502,
                     "ParamList": [
-                        "BattleContextKey.ConsumeCardList",
-                        "RecordScopeType.Round",
+                        "LiteCard.GamePlay.BattleContextKey~ConsumeCardList",
+                        "LiteCard.GamePlay.RecordScopeType~Round",
                         -999
                     ]
                 },
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.ConsumeCardList",
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.BattleContextKey~ConsumeCardList",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByRandomJob",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByRandomJob",
             "TargetParams": [
-                "CharacterJob.Ironclad",
-                "CardType.Attack",
+                "LiteCard.GamePlay.CharacterJob~Ironclad",
+                "LiteCard.GamePlay.CardType~Attack",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2572,45 +2572,45 @@
                 {
                     "ModifierID": 3502,
                     "ParamList": [
-                        "BattleContextKey.SelectTarget",
-                        "RecordScopeType.Round",
+                        "LiteCard.GamePlay.BattleContextKey~SelectTarget",
+                        "LiteCard.GamePlay.RecordScopeType~Round",
                         -999
                     ]
                 },
                 {
                     "ModifierID": 3001,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList",
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByRandomJob",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByRandomJob",
             "TargetParams": [
-                "CharacterJob.Ironclad",
-                "CardType.Attack",
+                "LiteCard.GamePlay.CharacterJob~Ironclad",
+                "LiteCard.GamePlay.CardType~Attack",
                 1
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 203004007,
         "Name": "威吓",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 7,
         "NeedTarget": false,
         "CastNormal": {
@@ -2626,9 +2626,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2644,27 +2644,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 203004008,
         "Name": "硬撑",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 8,
         "NeedTarget": false,
         "CastNormal": {
@@ -2675,7 +2675,7 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         102016001,
                         2
                     ]
@@ -2687,9 +2687,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2700,7 +2700,7 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Hand",
+                        "LiteCard.GamePlay.CardDeckType~Hand",
                         102016001,
                         2
                     ]
@@ -2712,14 +2712,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2728,9 +2728,9 @@
     {
         "ID": 203004009,
         "Name": "狂怒",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 9,
         "NeedTarget": false,
         "CastNormal": {
@@ -2746,9 +2746,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2764,14 +2764,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2780,9 +2780,9 @@
     {
         "ID": 203004010,
         "Name": "战斗专注",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Uncommon",
-        "Type": "CardType.Skill",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
+        "Type": "LiteCard.GamePlay.CardType~Skill",
         "Number": 10,
         "NeedTarget": false,
         "CastNormal": {
@@ -2793,8 +2793,8 @@
                 {
                     "ModifierID": 8001,
                     "ParamList": [
-                        "RecordScopeType.Round",
-                        "AgentTag.ForbidDrawCard"
+                        "LiteCard.GamePlay.RecordScopeType~Round",
+                        "LiteCard.GamePlay.AgentTag~ForbidDrawCard"
                     ]
                 },
                 {
@@ -2804,9 +2804,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2817,8 +2817,8 @@
                 {
                     "ModifierID": 8001,
                     "ParamList": [
-                        "RecordScopeType.Round",
-                        "AgentTag.ForbidDrawCard"
+                        "LiteCard.GamePlay.RecordScopeType~Round",
+                        "LiteCard.GamePlay.AgentTag~ForbidDrawCard"
                     ]
                 },
                 {
@@ -2828,14 +2828,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -2844,9 +2844,9 @@
     {
         "ID": 204002001,
         "Name": "狂宴",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Rare",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 1,
         "NeedTarget": true,
         "CastNormal": {
@@ -2868,9 +2868,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2892,27 +2892,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 204002002,
         "Name": "恶魔之焰",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Rare",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 2,
         "NeedTarget": true,
         "CastNormal": {
@@ -2923,7 +2923,7 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 },
                 {
@@ -2933,13 +2933,13 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByType",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByType",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 true
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -2950,7 +2950,7 @@
                 {
                     "ModifierID": 3401,
                     "ParamList": [
-                        "BattleContextKey.SelectCardList"
+                        "LiteCard.GamePlay.BattleContextKey~SelectCardList"
                     ]
                 },
                 {
@@ -2960,31 +2960,31 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.SelectCardByType",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~SelectCardByType",
             "TargetParams": [
-                "CardDeckType.Hand",
-                "CardType.None",
+                "LiteCard.GamePlay.CardDeckType~Hand",
+                "LiteCard.GamePlay.CardType~None",
                 true
             ],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 204002003,
         "Name": "燔祭",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Rare",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 3,
         "NeedTarget": false,
         "CastNormal": {
@@ -3001,15 +3001,15 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Used",
+                        "LiteCard.GamePlay.CardDeckType~Used",
                         102016003,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -3026,20 +3026,20 @@
                 {
                     "ModifierID": 3301,
                     "ParamList": [
-                        "CardDeckType.Used",
+                        "LiteCard.GamePlay.CardDeckType~Used",
                         102016003,
                         1
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
@@ -3048,9 +3048,9 @@
     {
         "ID": 204002004,
         "Name": "死亡收割",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Rare",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 4,
         "NeedTarget": false,
         "CastNormal": {
@@ -3071,9 +3071,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -3094,27 +3094,27 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],
         "Tags": [
-            "CardTag.Consume"
+            "LiteCard.GamePlay.CardTag~Consume"
         ]
     },
     {
         "ID": 204002005,
         "Name": "重锤",
-        "Job": "CharacterJob.Ironclad",
-        "Rarity": "CardRarity.Rare",
-        "Type": "CardType.Attack",
+        "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
+        "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
+        "Type": "LiteCard.GamePlay.CardType~Attack",
         "Number": 5,
         "NeedTarget": true,
         "CastNormal": {
@@ -3129,9 +3129,9 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "CastUpgrade": {
@@ -3146,14 +3146,14 @@
                     ]
                 }
             ],
-            "TargetType": "CardCastTargetType.None",
+            "TargetType": "LiteCard.GamePlay.CardCastTargetType~None",
             "TargetParams": [],
-            "CheckType": "CardCastCheckType.None",
+            "CheckType": "LiteCard.GamePlay.CardCastCheckType~None",
             "CheckParams": []
         },
         "Upgrade": {
             "Limit": 1,
-            "Type": "CardUpgradeType.None",
+            "Type": "LiteCard.GamePlay.CardUpgradeType~None",
             "Params": []
         },
         "InitBuffs": [],

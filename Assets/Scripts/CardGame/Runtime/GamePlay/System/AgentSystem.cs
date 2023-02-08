@@ -23,7 +23,7 @@ namespace LiteCard.GamePlay
             var monster2 = new Monster("orcs", 150, 150);
             MonsterList_.Add(monster2);
 
-            var cardList = ConfigDatabase.Instance.GetDataList<CardConfig>();
+            var cardList = LiteRuntime.Get<ConfigSystem>().GetDataList<CardConfig>();
             foreach (var card in cardList)
             {
                 CardSystem.Instance.AddCardWithID(CardDeckType.Pool, card.ID);

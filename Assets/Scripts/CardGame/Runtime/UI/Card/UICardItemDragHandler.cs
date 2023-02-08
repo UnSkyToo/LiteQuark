@@ -106,7 +106,7 @@ namespace LiteCard.UI
 
         private UIArrowItem CreateArrow(Transform parent)
         {
-            return new UIArrowItem(parent, GameConst.Prefab.ArrowItem, Order_ + 10);
+            return new UIArrowItem(parent, GameConst.Prefab.ArrowItem, (int)UIDepthMode.Top + 1000);
         }
 
         private void RefreshArrow(PointerEventData eventData)

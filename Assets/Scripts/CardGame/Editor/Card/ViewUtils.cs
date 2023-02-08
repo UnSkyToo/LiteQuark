@@ -236,7 +236,7 @@ namespace LiteCard.Editor
             if (popupAttr != null)
             {
                 var popupArray = CardAttributeSource.GetPopupData(popupAttr.Type);
-                var index = GameUtils.FindArrayIndex(popupArray.Value, (int)value);
+                var index = popupArray.Value.IndexOf(value);
                 if (index == -1)
                 {
                     index = 0;

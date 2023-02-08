@@ -2,43 +2,43 @@
     {
         "ID": 1001,
         "Name": "自己",
-        "TargetType": "MatchTargetType.Player",
-        "FilterType": "MatchFilterType.None",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Player",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~None",
         "FilterParams": [],
         "TargetNum": 1
     },
     {
         "ID": 2001,
         "Name": "目标",
-        "TargetType": "MatchTargetType.Target",
-        "FilterType": "MatchFilterType.None",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Target",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~None",
         "FilterParams": [],
         "TargetNum": 1
     },
     {
         "ID": 3001,
         "Name": "随机",
-        "TargetType": "MatchTargetType.Random",
-        "FilterType": "MatchFilterType.None",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Random",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~None",
         "FilterParams": [],
         "TargetNum": 1
     },
     {
         "ID": 4001,
         "Name": "所有敌人",
-        "TargetType": "MatchTargetType.AllMonster",
-        "FilterType": "MatchFilterType.None",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~AllMonster",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~None",
         "FilterParams": [],
         "TargetNum": 99
     },
     {
         "ID": 5001,
         "Name": "Buff检测-易伤",
-        "TargetType": "MatchTargetType.Target",
-        "FilterType": "MatchFilterType.Buff",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Target",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~Buff",
         "FilterParams": [
             100001,
-            "CompareMethod.GreaterEqual",
+            "LiteCard.GamePlay.CompareMethod~GreaterEqual",
             1
         ],
         "TargetNum": 1
@@ -46,8 +46,8 @@
     {
         "ID": 5002,
         "Name": "自己-Buff检测-狂宴",
-        "TargetType": "MatchTargetType.Player",
-        "FilterType": "MatchFilterType.CastCard",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Player",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~CastCard",
         "FilterParams": [
             204002001
         ],
@@ -56,8 +56,8 @@
     {
         "ID": 6001,
         "Name": "事件目标",
-        "TargetType": "MatchTargetType.Event",
-        "FilterType": "MatchFilterType.None",
+        "TargetType": "LiteCard.GamePlay.MatchTargetType~Event",
+        "FilterType": "LiteCard.GamePlay.MatchFilterType~None",
         "FilterParams": [],
         "TargetNum": 99
     }

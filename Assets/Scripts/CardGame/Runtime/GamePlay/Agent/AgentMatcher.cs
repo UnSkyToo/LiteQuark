@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
@@ -11,7 +12,7 @@ namespace LiteCard.GamePlay
                 return targets;
             }
 
-            var cfg = ConfigDatabase.Instance.GetData<MatchConfig>(matchID);
+            var cfg = LiteRuntime.Get<ConfigSystem>().GetData<MatchConfig>(matchID);
             if (cfg == null)
             {
                 return targets;

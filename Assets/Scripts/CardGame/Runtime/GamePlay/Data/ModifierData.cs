@@ -1,4 +1,6 @@
-﻿namespace LiteCard.GamePlay
+﻿using LiteQuark.Runtime;
+
+namespace LiteCard.GamePlay
 {
     public sealed class ModifierData
     {
@@ -7,7 +9,7 @@
 
         public ModifierData(int id, object[] paramList)
         {
-            Cfg = ConfigDatabase.Instance.GetData<ModifierConfig>(id);
+            Cfg = LiteRuntime.Get<ConfigSystem>().GetData<ModifierConfig>(id);
             ParamList = paramList;
         }
     }

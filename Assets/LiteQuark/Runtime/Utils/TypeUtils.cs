@@ -21,6 +21,20 @@ namespace LiteQuark.Runtime
             return null;
         }
         
+        public static Type GetTypeWithAssembly(Assembly[] assemblyList, string typeName)
+        {
+            foreach (var assembly in assemblyList)
+            {
+                var type = assembly.GetType(typeName);
+                if (type != null)
+                {
+                    return type;
+                }
+            }
+
+            return null;
+        }
+        
         public static bool Equal(object a, object b)
         {
             if (a == null && b == null)
@@ -99,26 +113,6 @@ namespace LiteQuark.Runtime
             if (result == null)
             {
                 result = type?.GetCustomAttribute<T>();
-            }
-            return result;
-        }
-        
-        public static object[] ToArray(this IList list)
-        {
-            var result = new object[list.Count];
-            for (var index = 0; index < list.Count; ++index)
-            {
-                result[index] = list[index];
-            }
-            return result;
-        }
-
-        public static IList ToArray(this IList list, Type type)
-        {
-            var result = (IList)Array.CreateInstance(type, list.Count);
-            for (var index = 0; index < result.Count; ++index)
-            {
-                result[index] = list[index];
             }
             return result;
         }
