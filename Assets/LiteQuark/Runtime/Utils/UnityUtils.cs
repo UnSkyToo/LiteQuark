@@ -49,5 +49,13 @@ namespace LiteQuark.Runtime
             child.localScale = Vector3.one;
             child.localRotation = Quaternion.identity;
         }
+        
+#if UNITY_EDITOR
+        public static void ShowEditorNotification(string msg)
+        {
+            var func = typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            func?.Invoke(null, new object[] { msg });
+        }
+#endif
     }
 }
