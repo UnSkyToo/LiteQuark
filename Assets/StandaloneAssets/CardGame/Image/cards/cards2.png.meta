@@ -1995,8 +1995,8 @@ TextureImporter:
       blue_skill_skim: 3296099980094302205
       blue_skill_tempest: -2706504280018518170
       green_skill_piercing_wail: 1770307874250725157
-      green_skill_survivor: 4339055134665576129
       red_skill_sentinel: -5155098437316876569
+      green_skill_survivor: 4339055134665576129
       blue_skill_reprogram: 60324551928701028
       blue_skill_steam_barrier: -7943211509930994340
       purple_skill_spirit_shield: -6972345372792957501
@@ -2059,8 +2059,8 @@ TextureImporter:
       colorless_skill_jax: 5771344541579070744
       colorless_skill_master_of_strategy: -8909331246125692406
       blue_skill_rainbow: -8897744600624031518
-      purple_skill_prostrate: -3072390046613040876
       red_skill_intimidate: -3208147452405151124
+      purple_skill_prostrate: -3072390046613040876
       blue_skill_recycle: 7235091665756867727
       colorless_skill_insight: -4699709348940340896
       curse_shame: -2681601430660281420
