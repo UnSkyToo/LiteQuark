@@ -18,5 +18,10 @@ namespace LiteQuark.Editor
         /// Clean mode will delete last build file
         /// </summary>
         public bool CleanBuildMode { get; set; } = true;
+
+        /// <summary>
+        /// Copy asset bundle to streaming asset folder
+        /// </summary>
+        public bool CopyToStreamingAssets { get; set; } = false;
     }
 }

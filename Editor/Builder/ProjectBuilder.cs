@@ -79,6 +79,11 @@ namespace LiteQuark.Editor
             steps.Add(new ResCollectInfoStep());
             steps.Add(new ResBuildFileStep());
             steps.Add(new ResCleanInfoStep());
+
+            if (config.CopyToStreamingAssets)
+            {
+                steps.Add(new ResCopyToStreamingAssetStep());
+            }
             
             return steps.ToArray();
         }
