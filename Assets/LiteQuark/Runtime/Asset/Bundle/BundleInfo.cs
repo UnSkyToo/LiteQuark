@@ -11,6 +11,9 @@ namespace LiteQuark.Runtime
 
         public BundleInfo()
         {
+            BundlePath = string.Empty;
+            AssetList = Array.Empty<string>();
+            DependencyList = Array.Empty<string>();
         }
 
         public BundleInfo(string bundlePath, string[] assetList, string[] dependencyList)

@@ -7,7 +7,7 @@ namespace LiteCard.UI
 {
     public sealed class UICardHand : UIBase
     {
-        public override string PrefabPath => "CardGame/UI/Card/UICardHand.prefab";
+        public override string PrefabPath => "CardGame/Prefab/UI/Card/UICardHand.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
 
         private UIItemList<UICardItem, CardBase> CardList_;

@@ -15,6 +15,8 @@ namespace LiteQuark.Editor
         
         private string DefaultBundlePath => "default.ab";
 
+        private Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
+
         public void Execute(ProjectBuilder builder)
         {
             var bundlePack = GenerateBundlePackInfo(builder.Target);
@@ -27,40 +29,58 @@ namespace LiteQuark.Editor
 
         private BundlePackInfo GenerateBundlePackInfo(BuildTarget target)
         {
-            var bundleInfoList = CollectBundleInfo(LiteConst.AssetRootPath);
-            return new BundlePackInfo(target.ToString(), bundleInfoList);
+            BundleInfoCache_.Clear();
+            CollectBundleInfo(LiteConst.AssetRootPath);
+            return new BundlePackInfo(target.ToString(), BundleInfoCache_.Values.ToArray());
+        }
+
+        private void AddToBundleInfoCache(string bundlePath, string[] assetList, string[] dependencyList)
+        {
+            if (BundleInfoCache_.TryGetValue(bundlePath, out var cache))
+            {
+                cache.BundlePath = bundlePath;
+                cache.AssetList = ArrayUtils.AppendArray(cache.AssetList, assetList, false);
+                cache.DependencyList = ArrayUtils.AppendArray(cache.DependencyList, dependencyList, false);
+            }
+            else
+            {
+                cache = new BundleInfo(bundlePath, assetList, dependencyList);
+                BundleInfoCache_.Add(bundlePath, cache);
+            }
         }
         
-        private BundleInfo[] CollectBundleInfo(string rootPath)
+        private void CollectBundleInfo(string rootPath)
         {
             rootPath = PathUtils.UnifyPath(rootPath);
 
+            if (rootPath.Contains("#"))
+            {
+                return;
+            }
+
             if (!PathUtils.DirectoryExists(rootPath))
             {
-                return Array.Empty<BundleInfo>();
+                return;
             }
             
-            var infoList = new List<BundleInfo>();
             var subBundlePathList = PathUtils.GetDirectoryList(rootPath);
             
             foreach (var subBundlePath in subBundlePathList)
             {
-                var subInfoList = CollectBundleInfo(subBundlePath);
-                infoList.AddRange(subInfoList);
+                CollectBundleInfo(subBundlePath);
             }
 
-            var bundleInfo = CreateBundleInfo(rootPath);
-            if (bundleInfo != null)
-            {
-                infoList.Add(bundleInfo);
-            }
-
-            return infoList.ToArray();
+            CreateBundleInfo(rootPath);
         }
         
-        private BundleInfo CreateBundleInfo(string bundlePath)
+        private void CreateBundleInfo(string bundleFullPath)
         {
-            var filePathList = PathUtils.GetFileList(bundlePath);
+            var filePathList = PathUtils.GetFileList(bundleFullPath);
+            CreateBundleInfo(bundleFullPath, filePathList);
+        }
+        
+        private void CreateBundleInfo(string bundleFullPath, string[] filePathList)
+        {
             var assetPathList = filePathList.Where(AssetFilter).ToArray();
             
             if (assetPathList.Length > 0)
@@ -81,10 +101,9 @@ namespace LiteQuark.Editor
                     }
                 }
 
-                return new BundleInfo($"{GetBundlePathFromFullPath(bundlePath)}", assetList.ToArray(), dependencyList.ToArray());
+                var bundlePath = $"{GetBundlePathFromFullPath(bundleFullPath)}";
+                AddToBundleInfoCache(bundlePath, assetList.ToArray(), dependencyList.ToArray());
             }
-
-            return null;
         }
         
         private string[] GetDependencyList(string assetPath)
@@ -94,7 +113,7 @@ namespace LiteQuark.Editor
 
             foreach (var dependencyPath in dependencyPathList)
             {
-                if (dependencyPath == assetPath || !AssetFilter(assetPath))
+                if (string.Compare(dependencyPath, assetPath, StringComparison.OrdinalIgnoreCase) == 0 || !AssetFilter(dependencyPath))
                 {
                     continue;
                 }
@@ -102,6 +121,7 @@ namespace LiteQuark.Editor
                 var path = GetBundlePathFromFullPath(dependencyPath);
                 if (!result.Contains(path))
                 {
+                    CreateBundleInfo(dependencyPath, new[] { PathUtils.GetRelativeAssetRootPath(dependencyPath).ToLower() });
                     result.Add(path);
                 }
             }
@@ -126,9 +146,18 @@ namespace LiteQuark.Editor
         
         private bool AssetFilter(string filePath)
         {
+            if (filePath.Contains("#"))
+            {
+                return false;
+            }
+
             var ext = System.IO.Path.GetExtension(filePath);
-            
-            if (ext is ".meta" or ".dll" or ".cs" or ".js" or ".boo")
+            if (ext is ".meta" or ".dll" or ".cs" or ".js" or ".boo" or ".psd")
+            {
+                return false;
+            }
+
+            if (ext is ".ttf" or ".ttc" or ".otf")
             {
                 return false;
             }
@@ -142,7 +171,7 @@ namespace LiteQuark.Editor
             {
                 foreach (var assetPath in buildInfo.AssetList)
                 {
-                    var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
+                    var fullPath = assetPath.StartsWith("assets") ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
                     var importer = AssetImporter.GetAtPath(fullPath);
                     importer.SetAssetBundleNameAndVariant(buildInfo.BundlePath, string.Empty);
                 }

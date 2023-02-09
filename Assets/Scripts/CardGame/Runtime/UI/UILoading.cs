@@ -6,7 +6,7 @@ namespace LiteCard.UI
 {
     public sealed class UILoading : UIBase
     {
-        public override string PrefabPath => "CardGame/UI/UILoading.prefab";
+        public override string PrefabPath => "CardGame/Prefab/UI/UILoading.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
 
         private int TotalCount_;

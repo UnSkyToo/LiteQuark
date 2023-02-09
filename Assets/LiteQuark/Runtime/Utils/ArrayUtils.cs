@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
@@ -65,6 +66,33 @@ namespace LiteQuark.Runtime
                 result[index] = list[index];
             }
             return result;
+        }
+
+        public static T[] CombineArray<T>(T[] array1, T[] array2)
+        {
+            var array = new T[array1.Length + array2.Length];
+            Array.Copy(array1, 0, array, 0, array1.Length);
+            Array.Copy(array2, 0, array, array1.Length, array2.Length);
+            return array;
+        }
+        
+        public static T[] AppendArray<T>(T[] array1, T[] array2, bool allowSame)
+        {
+            if (allowSame)
+            {
+                return CombineArray(array1, array2);
+            }
+
+            var array = new List<T>(array1);
+            foreach (var item in array2)
+            {
+                if (!array.Contains(item))
+                {
+                    array.Add(item);
+                }
+            }
+
+            return array.ToArray();
         }
     }
 }

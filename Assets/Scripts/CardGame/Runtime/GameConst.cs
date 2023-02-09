@@ -4,12 +4,12 @@
     {
         public static class Prefab
         {
-            public const string ArrowItem = "CardGame/UI/Card/ArrowItem.prefab";
-            public const string CardItem = "CardGame/UI/Card/CardItem.prefab";
+            public const string ArrowItem = "CardGame/Prefab/UI/Card/ArrowItem.prefab";
+            public const string CardItem = "CardGame/Prefab/UI/Card/CardItem.prefab";
 
-            public const string PlayerItem = "CardGame/UI/Agent/PlayerItem.prefab";
-            public const string MonsterItem = "CardGame/UI/Agent/MonsterItem.prefab";
-            public const string BuffItem = "CardGame/UI/Agent/BuffItem.prefab";
+            public const string PlayerItem = "CardGame/Prefab/UI/Agent/PlayerItem.prefab";
+            public const string MonsterItem = "CardGame/Prefab/UI/Agent/MonsterItem.prefab";
+            public const string BuffItem = "CardGame/Prefab/UI/Agent/BuffItem.prefab";
 
             public static readonly string[] PreloadList =
             {
@@ -19,10 +19,10 @@
                 MonsterItem,
                 BuffItem,
                 
-                "CardGame/UI/Card/UICardHand.prefab",
-                "CardGame/UI/Card/UICardList.prefab",
-                "CardGame/UI/Agent/UIAgent.prefab",
-                "CardGame/UI/Battle/UIBattleMain.prefab",
+                "CardGame/Prefab/UI/Card/UICardHand.prefab",
+                "CardGame/Prefab/UI/Card/UICardList.prefab",
+                "CardGame/Prefab/UI/Agent/UIAgent.prefab",
+                "CardGame/Prefab/UI/Battle/UIBattleMain.prefab",
             };
         }
 

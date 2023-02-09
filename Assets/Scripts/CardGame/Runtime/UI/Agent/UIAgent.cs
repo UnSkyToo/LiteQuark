@@ -5,7 +5,7 @@ namespace LiteCard.UI
 {
     public sealed class UIAgent : UIBase
     {
-        public override string PrefabPath => "CardGame/UI/Agent/UIAgent.prefab";
+        public override string PrefabPath => "CardGame/Prefab/UI/Agent/UIAgent.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
 
         private UIItemList<UIPlayerItem, AgentBase> PlayerList_;
