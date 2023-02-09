@@ -20,26 +20,40 @@ namespace LiteCard.UI
         {
             SetPercent(0);
 
-            TotalCount_ = GameConst.Prefab.PreloadList.Length;
+            TotalCount_ = GameConst.Preload.Count;
             CurrentCount_ = 0;
-            foreach (var prefabPath in GameConst.Prefab.PreloadList)
+
+            void OnLoadCallback(bool isLoaded, string path)
+            {
+                if (!isLoaded)
+                {
+                    Log.Error($"preload asset error : {path}");
+                    return;
+                }
+                
+                CurrentCount_++;
+                SetPercent((float)CurrentCount_ / (float)TotalCount_);
+                SetTips($"{CurrentCount_}/{TotalCount_}");
+
+                if (CurrentCount_ >= TotalCount_)
+                {
+                    LiteRuntime.Get<UISystem>().CloseUI(this);
+                }
+            }
+            
+            foreach (var prefabPath in GameConst.Preload.PrefabList)
             {
                 LiteRuntime.Get<AssetSystem>().PreloadAsset<GameObject>(prefabPath, (isLoad) =>
                 {
-                    if (!isLoad)
-                    {
-                        Log.Error($"preload asset error : {prefabPath}");
-                        return;
-                    }
-                    CurrentCount_++;
-                    SetPercent((float)CurrentCount_ / (float)TotalCount_);
-                    SetTips($"{CurrentCount_}/{TotalCount_}");
+                    OnLoadCallback(isLoad, prefabPath);
+                });
+            }
 
-                    if (CurrentCount_ >= TotalCount_)
-                    {
-                        LiteRuntime.Get<UISystem>().CloseUI(this);
-                        // GameLogic.Instance.Startup();
-                    }
+            foreach (var jsonPath in GameConst.Preload.JsonList)
+            {
+                LiteRuntime.Get<AssetSystem>().PreloadAsset<TextAsset>(jsonPath, (isLoad) =>
+                {
+                    OnLoadCallback(isLoad, jsonPath);
                 });
             }
         }

@@ -10,19 +10,32 @@
             public const string PlayerItem = "CardGame/Prefab/UI/Agent/PlayerItem.prefab";
             public const string MonsterItem = "CardGame/Prefab/UI/Agent/MonsterItem.prefab";
             public const string BuffItem = "CardGame/Prefab/UI/Agent/BuffItem.prefab";
+        }
 
-            public static readonly string[] PreloadList =
+        public static class Preload
+        {
+            public static int Count => PrefabList.Length + JsonList.Length;
+            
+            public static readonly string[] PrefabList =
             {
-                ArrowItem,
-                CardItem,
-                PlayerItem,
-                MonsterItem,
-                BuffItem,
+                Prefab.ArrowItem,
+                Prefab.CardItem,
+                Prefab.PlayerItem,
+                Prefab.MonsterItem,
+                Prefab.BuffItem,
                 
                 "CardGame/Prefab/UI/Card/UICardHand.prefab",
                 "CardGame/Prefab/UI/Card/UICardList.prefab",
                 "CardGame/Prefab/UI/Agent/UIAgent.prefab",
                 "CardGame/Prefab/UI/Battle/UIBattleMain.prefab",
+            };
+
+            public static readonly string[] JsonList =
+            {
+                "CardGame/Json/card.json",
+                "CardGame/Json/buff.json",
+                "CardGame/Json/modifier.json",
+                "CardGame/Json/match.json",
             };
         }
 
