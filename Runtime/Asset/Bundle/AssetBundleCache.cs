@@ -17,6 +17,7 @@ namespace LiteQuark.Runtime
 
         private readonly List<AssetBundleCache> DependencyCacheList_ = new();
         private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new();
+        private readonly Dictionary<string, List<Action<bool>>> AssetLoaderCallback_ = new();
 
         public AssetBundleCache(BundleInfo info)
         {
@@ -36,7 +37,7 @@ namespace LiteQuark.Runtime
             cache.IncRef();
             DependencyCacheList_.Add(cache);
         }
-        
+
         public void IncRef()
         {
             RefCount_++;
@@ -108,6 +109,8 @@ namespace LiteQuark.Runtime
             }
             AssetCache_.Clear();
             
+            AssetLoaderCallback_.Clear();
+            
             if (Bundle_ != null)
             {
                 Bundle_.Unload(true);
@@ -118,19 +121,26 @@ namespace LiteQuark.Runtime
             RefCount_ = 0;
         }
 
-        public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        public void LoadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
+            // TODO same path, but type different, like (xxx Texture2D & xxx Sprite)
             if (AssetCache_.TryGetValue(assetPath, out var asset))
             {
-                IncRef();
-                callback?.Invoke(asset as T);
+                callback?.Invoke(CreateAsset<T>(assetPath));
                 return;
             }
-            
-            LiteRuntime.Get<TaskSystem>().AddTask(LoadAssetAsync(assetPath, callback));
+
+            if (AssetLoaderCallback_.TryGetValue(assetPath, out var list))
+            {
+                list.Add(callback);
+                return;
+            }
+
+            AssetLoaderCallback_.Add(assetPath, new List<Action<bool>> { callback });
+            LiteRuntime.Get<TaskSystem>().AddTask(LoadAssetAsync<T>(assetPath));
         }
 
-        private IEnumerator LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        private IEnumerator LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
         {
             var name = PathUtils.GetFileName(assetPath);
             var request = Bundle_.LoadAssetAsync<T>(name);
@@ -138,13 +148,29 @@ namespace LiteQuark.Runtime
             if (request.isDone)
             {
                 AssetCache_.Add(assetPath, request.asset);
-                IncRef();
-                callback?.Invoke(request.asset as T);
             }
-            else
+            
+            foreach (var loader in AssetLoaderCallback_[assetPath])
             {
-                callback?.Invoke(null);
+                loader?.Invoke(request.isDone);
             }
+            AssetLoaderCallback_.Remove(assetPath);
+        }
+
+        public void UnloadAsset(string assetPath)
+        {
+            DecRef();
+        }
+
+        public T CreateAsset<T>(string assetPath) where T : UnityEngine.Object
+        {
+            if (AssetCache_.TryGetValue(assetPath, out var asset))
+            {
+                IncRef();
+                return asset as T;
+            }
+
+            return null;
         }
     }
 }

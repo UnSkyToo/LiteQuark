@@ -8,10 +8,8 @@ namespace LiteQuark.Runtime
     internal sealed class AssetBundleLoader : IAssetLoader
     { 
         private BundlePackInfo PackInfo_ = null;
-        private readonly Dictionary<string, UnityEngine.Object> PathToAssetCache_ = new();
         private readonly Dictionary<int, AssetBundleCache> AssetIDToBundleCache_ = new();
         private readonly Dictionary<string, AssetBundleCache> PathToBundleCache_ = new();
-        private readonly Dictionary<string, List<Action<bool>>> AssetLoaderCallback_ = new();
         private readonly Dictionary<string, List<Action<AssetBundleCache>>> BundleCacheLoaderCallback_ = new();
 
         public AssetBundleLoader()
@@ -27,10 +25,8 @@ namespace LiteQuark.Runtime
                 return false;
             }
             
-            PathToAssetCache_.Clear();
             AssetIDToBundleCache_.Clear();
             PathToBundleCache_.Clear();
-            AssetLoaderCallback_.Clear();
             BundleCacheLoaderCallback_.Clear();
             
             return true;
@@ -44,9 +40,6 @@ namespace LiteQuark.Runtime
                 bundle.Value.Unload();
             }
             PathToBundleCache_.Clear();
-            
-            AssetLoaderCallback_.Clear();
-            PathToAssetCache_.Clear();
             AssetIDToBundleCache_.Clear();
         }
 
@@ -85,8 +78,6 @@ namespace LiteQuark.Runtime
 
         public void StopLoadAsset(string assetPath)
         {
-            AssetLoaderCallback_.Remove(assetPath);
-            
             var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
             if (info == null)
             {
@@ -98,13 +89,6 @@ namespace LiteQuark.Runtime
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
-            // TODO same path, but type different, like (xxx Texture2D & xxx Sprite)
-            if (PathToAssetCache_.ContainsKey(assetPath))
-            {
-                callback?.Invoke(PathToAssetCache_[assetPath] as T);
-                return;
-            }
-            
             LoadBundleCacheAsync(assetPath, (cache) =>
             {
                 if (cache == null)
@@ -113,7 +97,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
                 
-                LoadAssetAsyncInternal<T>(cache, assetPath, (isLoaded) =>
+                cache.LoadAsset<T>(assetPath, (isLoaded) =>
                 {
                     if (!isLoaded)
                     {
@@ -122,42 +106,20 @@ namespace LiteQuark.Runtime
                         return;
                     }
                     
-                    callback?.Invoke(PathToAssetCache_[assetPath] as T);
+                    var asset = cache.CreateAsset<T>(assetPath);
+                    if (asset != null)
+                    {
+                        if (!AssetIDToBundleCache_.ContainsKey(asset.GetInstanceID()))
+                        {
+                            AssetIDToBundleCache_.Add(asset.GetInstanceID(), cache);
+                        }
+                    
+                        callback?.Invoke(asset);
+                        return;
+                    }
+                    
+                    callback?.Invoke(null);
                 });
-            });
-        }
-
-        private void LoadAssetAsyncInternal<T>(AssetBundleCache cache, string assetPath, Action<bool> callback) where T : UnityEngine.Object
-        {
-            if (AssetLoaderCallback_.TryGetValue(assetPath, out var list))
-            {
-                list.Add(callback);
-                return;
-            }
-
-            AssetLoaderCallback_.Add(assetPath, new List<Action<bool>> {callback});
-            
-            cache.LoadAsset<T>(assetPath, (asset) =>
-            {
-                if (asset != null)
-                {
-                    if (!PathToAssetCache_.ContainsKey(assetPath))
-                    {
-                        PathToAssetCache_.Add(assetPath, asset);
-                    }
-                    
-                    if (!AssetIDToBundleCache_.ContainsKey(asset.GetInstanceID()))
-                    {
-                        AssetIDToBundleCache_.Add(asset.GetInstanceID(), cache);
-                    }
-                }
-
-                foreach (var loader in AssetLoaderCallback_[assetPath])
-                {
-                    loader?.Invoke(true);
-                }
-                    
-                AssetLoaderCallback_.Remove(assetPath);
             });
         }
 
@@ -171,7 +133,7 @@ namespace LiteQuark.Runtime
 
             if (PathToBundleCache_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoad)
             {
-                cache.DecRef();
+                cache.UnloadAsset(assetPath);
             }
         }
 
