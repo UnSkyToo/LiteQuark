@@ -30,20 +30,36 @@ namespace LiteQuark.Runtime
         {
             return Info.DependencyList;
         }
+        
+        public void AddDependencyCache(AssetBundleCache cache)
+        {
+            cache.IncRef();
+            DependencyCacheList_.Add(cache);
+        }
+        
+        public void IncRef()
+        {
+            RefCount_++;
+        }
+
+        public void DecRef()
+        {
+            RefCount_--;
+        }
 
         public void Load(Action<bool> callback)
         {
+            if (IsLoad)
+            {
+                callback?.Invoke(true);
+                return;
+            }
+            
             LiteRuntime.Get<TaskSystem>().AddTask(LoadAsync(Info.BundlePath, callback));
         }
 
         private IEnumerator LoadAsync(string path, Action<bool> callback)
         {
-            if (IsLoad)
-            {
-                callback?.Invoke(true);
-                yield break;
-            }
-
             IsLoad = false;
             var fullPath = PathUtils.GetFullPathInRuntime(path);
             Request_ = AssetBundle.LoadFromFileAsync(fullPath);
@@ -102,22 +118,6 @@ namespace LiteQuark.Runtime
             RefCount_ = 0;
         }
 
-        public void IncRef()
-        {
-            RefCount_++;
-        }
-
-        public void DecRef()
-        {
-            RefCount_--;
-        }
-
-        public void AddDependencyCache(AssetBundleCache cache)
-        {
-            cache.IncRef();
-            DependencyCacheList_.Add(cache);
-        }
-
         public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             if (AssetCache_.TryGetValue(assetPath, out var asset))
@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(asset as T);
                 return;
             }
-
+            
             LiteRuntime.Get<TaskSystem>().AddTask(LoadAssetAsync(assetPath, callback));
         }
 
