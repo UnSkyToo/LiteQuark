@@ -88,7 +88,7 @@ namespace LiteQuark.Runtime
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
-        {
+        {   
             LoadBundleCacheAsync(assetPath, (cache) =>
             {
                 if (cache == null)
@@ -107,18 +107,11 @@ namespace LiteQuark.Runtime
                     }
                     
                     var asset = cache.CreateAsset<T>(assetPath);
-                    if (asset != null)
+                    if (asset != null && !AssetIDToBundleCache_.ContainsKey(asset.GetInstanceID()))
                     {
-                        if (!AssetIDToBundleCache_.ContainsKey(asset.GetInstanceID()))
-                        {
-                            AssetIDToBundleCache_.Add(asset.GetInstanceID(), cache);
-                        }
-                    
-                        callback?.Invoke(asset);
-                        return;
+                        AssetIDToBundleCache_.Add(asset.GetInstanceID(), cache);
                     }
-                    
-                    callback?.Invoke(null);
+                    callback?.Invoke(asset);
                 });
             });
         }
