@@ -7,12 +7,13 @@ namespace LiteCard.UI
 {
     public sealed class UICardItem : UIItemBase<CardBase>
     {
-        public float BaseScale { get; set; } = 1.0f;
+        public float BaseScale { get; set; } = 0.6f;
         public bool IsSelected { get; private set; }
 
         public UICardItem(GameObject go, CardBase card)
             : base(go, card)
         {
+            go.transform.localScale = Vector3.one * BaseScale;
             Select(false);
         }
 

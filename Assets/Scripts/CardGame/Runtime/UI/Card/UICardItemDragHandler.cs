@@ -28,7 +28,7 @@ namespace LiteCard.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            transform.localScale = Vector3.one * 1.5f * CardItem.BaseScale;
+            transform.localScale = Vector3.one * 1.667f * CardItem.BaseScale;
             Canvas_.sortingOrder = Order_ + 1;
         }
 

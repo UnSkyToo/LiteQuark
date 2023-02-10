@@ -60,13 +60,14 @@ namespace LiteCard.UI
             {
                 scale = 1600f / totalWidth;
             }
+            item.BaseScale = item.BaseScale * scale;
             
             var startX = -(Deck_.Count - 1) / 2f * 200f * scale;
             var x = startX + index * 200 * scale;
             
             UIUtils.AddSortingCanvas(item.Go, SortingOrder + 1);
             item.Go.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, 0);
-            item.Go.GetComponent<RectTransform>().localScale = new Vector3(scale, scale, scale);
+            item.Go.GetComponent<RectTransform>().localScale = item.BaseScale * Vector3.one;
 
             item.Go.AddComponent<UICardItemDragHandler>().CardItem = item;
         }

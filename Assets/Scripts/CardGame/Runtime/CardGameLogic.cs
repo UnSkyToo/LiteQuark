@@ -15,6 +15,7 @@ namespace LiteCard
 
         public void Shutdown()
         {
+            Preloader.Instance.Unload();
             GameLogic.Instance.Shutdown();
             Resources.UnloadUnusedAssets();
         }
