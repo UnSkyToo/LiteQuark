@@ -170,5 +170,29 @@ namespace LiteQuark.Runtime
             obj.AddComponent<GraphicRaycaster>();
             return obj.transform;
         }
+
+        public static void ReplaceSprite(GameObject go, string path, string resPath)
+        {   
+            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(resPath, (sprite) =>
+            {
+                var image = FindComponent<Image>(go, path);
+                if (image != null)
+                {
+                    image.sprite = sprite;
+                }
+            });
+        }
+
+        public static void ReplaceSprite(GameObject go, string resPath)
+        {
+            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(resPath, (sprite) =>
+            {
+                var image = go.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.sprite = sprite;
+                }
+            });
+        }
     }
 }
