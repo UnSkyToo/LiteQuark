@@ -7,17 +7,17 @@ namespace LiteQuark.Editor
 {
     public sealed class AtlasSplitter
     {
-        [MenuItem("Assets/Atlas Splitter")]
-        private static void Entry()
+        [MenuItem("Assets/Atlas To Sprite Sheet (Step1)")]
+        private static void Entry1()
         {
             var selectObj = Selection.activeObject;
             if (selectObj != null)
             {
-                Process(selectObj);
+                Process1(selectObj);
             }
         }
 
-        private static void Process(UnityEngine.Object obj)
+        private static void Process1(Object obj)
         {
             var selectionPath = AssetDatabase.GetAssetPath(obj);
             if (!selectionPath.EndsWith(".atlas"))
@@ -43,6 +43,7 @@ namespace LiteQuark.Editor
                 mainImporter.spritesheet = MetaList_.ToArray();
                 mainImporter.textureType = TextureImporterType.Sprite;
                 mainImporter.spriteImportMode = SpriteImportMode.Multiple;
+                mainImporter.isReadable = true;
                 
                 AssetDatabase.ImportAsset(mainImporter.assetPath, ImportAssetOptions.ForceUpdate);
             }
@@ -106,6 +107,50 @@ namespace LiteQuark.Editor
             
             ApplyImporter();
             Debug.Log("process success");
+        }
+
+        [MenuItem("Assets/Sprite Sheet To File (Step2)")]
+        private static void Entry2()
+        {
+            var selectObj = Selection.activeObject;
+            if (selectObj != null)
+            {
+                Process2(selectObj);
+            }
+        }
+
+        private static void Process2(Object obj)
+        {
+            var selectionPath = AssetDatabase.GetAssetPath(obj);
+            if (!selectionPath.EndsWith(".png"))
+            {
+                EditorUtility.DisplayDialog("Error", "Please select a png file!", "OK");
+                return;
+            }
+            
+            var rootPath = $"{Path.GetDirectoryName(selectionPath)}/{Path.GetFileNameWithoutExtension(selectionPath)}";
+            var assetList = AssetDatabase.LoadAllAssetsAtPath(selectionPath);
+
+            if (Directory.Exists(rootPath))
+            {
+                Directory.Delete(rootPath, true);
+            }
+
+            Directory.CreateDirectory(rootPath);
+
+            foreach (var asset in assetList)
+            {
+                if (asset is Sprite sprite)
+                {
+                    var texture2D = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height, sprite.texture.format, false);
+                    texture2D.SetPixels(sprite.texture.GetPixels((int)sprite.rect.xMin, (int)sprite.rect.yMin, (int)sprite.rect.width, (int)sprite.rect.height));
+                    texture2D.Apply();
+                    var filePath = $"{rootPath}/{sprite.name}.png";
+                    File.WriteAllBytes(filePath, texture2D.EncodeToPNG());
+                }
+            }
+            
+            AssetDatabase.Refresh();
         }
     }
 }

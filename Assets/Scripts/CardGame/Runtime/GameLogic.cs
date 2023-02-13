@@ -26,7 +26,7 @@ namespace LiteCard
                 { typeof(BuffConfig), "CardGame/Json/buff.json" },
                 { typeof(CardConfig), "CardGame/Json/card.json" },
             };
-            LiteRuntime.Get<ConfigSystem>().AddAssembly(typeof(GameLogic).Assembly, 0);
+            TypeUtils.AddAssembly(typeof(GameLogic).Assembly, 0);
             LiteRuntime.Get<ConfigSystem>().LoadFromJson(configs);
             
             AgentSystem.Instance.Init();

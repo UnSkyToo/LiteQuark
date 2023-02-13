@@ -7,6 +7,37 @@ namespace LiteQuark.Runtime
 {
     public static class TypeUtils
     {
+        private static List<Assembly> AssemblyList_ = new List<Assembly>();
+
+        static TypeUtils()
+        {
+            AddAssembly(typeof(TypeUtils).Assembly);
+            AddAssembly(Assembly.GetExecutingAssembly());
+            AddAssembly(Assembly.GetEntryAssembly());
+        }
+
+        public static void AddAssembly(Assembly assembly, int index = -1)
+        {
+            if (assembly == null)
+            {
+                return;
+            }
+            
+            if (AssemblyList_.Contains(assembly))
+            {
+                return;
+            }
+
+            if (index < 0 || index >= AssemblyList_.Count)
+            {
+                AssemblyList_.Add(assembly);
+            }
+            else
+            {
+                AssemblyList_.Insert(index, assembly);
+            }
+        }
+
         public static Type GetTypeWithAssembly(string assemblyFullName, string typeName)
         {
             var assemblyList = AppDomain.CurrentDomain.GetAssemblies();
@@ -34,7 +65,21 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-        
+
+        public static Type GetTypeWithAssembly(string typeName)
+        {
+            foreach (var assembly in AssemblyList_)
+            {
+                var type = assembly.GetType(typeName);
+                if (type != null)
+                {
+                    return type;
+                }
+            }
+
+            return null;
+        }
+
         public static bool Equal(object a, object b)
         {
             if (a == null && b == null)

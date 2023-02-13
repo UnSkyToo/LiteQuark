@@ -52,11 +52,6 @@ namespace LiteQuark.Runtime
 
             return default;
         }
-
-        public void AddAssembly(Assembly assembly, int index = -1)
-        {
-            JsonUtils.AddAssembly(assembly, index);
-        }
         
         public void LoadFromJson(Dictionary<Type, string> configs)
         {

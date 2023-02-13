@@ -2,6 +2,7 @@
 using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LiteCard.UI
 {
@@ -14,6 +15,7 @@ namespace LiteCard.UI
             : base(go, card)
         {
             go.transform.localScale = Vector3.one * BaseScale;
+            Setup();
             Select(false);
         }
 
@@ -35,6 +37,24 @@ namespace LiteCard.UI
             OnItemChange();
         }
 
+        private void Setup()
+        {
+            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(Data.GetCfg().IconRes, (sprite) =>
+            {
+                UIUtils.FindComponent<Image>(Go, "Icon").sprite = sprite;
+            });
+            
+            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(GameConst.Card.NameResPathList[Data.GetCfg().Rarity], (sprite) =>
+            {
+                UIUtils.FindComponent<Image>(Go, "Name").sprite = sprite;
+            });
+            
+            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(GameConst.Card.TypeResPathList[Data.GetCfg().Type][Data.GetCfg().Rarity], (sprite) =>
+            {
+                UIUtils.FindComponent<Image>(Go, "Type").sprite = sprite;
+            });
+        }
+
         public override void RefreshInfo()
         {
             var labelCost = UIUtils.FindComponent<TextMeshProUGUI>(Go, "Cost/LabelCost");
@@ -48,7 +68,6 @@ namespace LiteCard.UI
             labelType.text = Data.GetCfg().Type.ToString();
 
             var labelDesc = UIUtils.FindComponent<TextMeshProUGUI>(Go, "Desc/LabelDesc");
-            var desc = Data.GetCastData().Cfg.Desc;
             labelDesc.text = FormulaUtils.FormatCardDescription(AgentSystem.Instance.GetPlayer(), Data);
         }
     }

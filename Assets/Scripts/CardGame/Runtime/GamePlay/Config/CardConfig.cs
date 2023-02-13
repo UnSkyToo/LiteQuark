@@ -10,6 +10,8 @@ namespace LiteCard.GamePlay
         [EditorDataReadOnly]
         public int ID { get; private set; }
         public string Name { get; private set; }
+        [EditorDataAsset(typeof(UnityEngine.Sprite))]
+        public string IconRes { get; private set; }
         public CharacterJob Job { get; private set; }
         public CardRarity Rarity { get; private set; }
         public CardType Type { get; private set; }
@@ -36,6 +38,7 @@ namespace LiteCard.GamePlay
             {
                 ID = ID,
                 Name = Name,
+                IconRes = IconRes,
                 Job = Job,
                 Rarity = Rarity,
                 Type = Type,

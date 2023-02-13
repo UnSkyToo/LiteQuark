@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using LiteCard.GamePlay;
 using LiteQuark.Runtime;
 using TMPro;
-using UnityEngine;
+
 namespace LiteCard.UI
 {
     public sealed class UICardList : UIBase

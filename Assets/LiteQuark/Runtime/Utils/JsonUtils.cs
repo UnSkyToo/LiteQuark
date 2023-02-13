@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,42 +11,8 @@ namespace LiteQuark.Runtime
 {
     public static class JsonUtils
     {
-        private static List<Assembly> AssemblyList_ = new List<Assembly>();
-
-        static JsonUtils()
-        {
-            AssemblyList_.Clear();
-            AddAssembly(typeof(JsonUtils).Assembly);
-            AddAssembly(Assembly.GetExecutingAssembly());
-            AddAssembly(Assembly.GetEntryAssembly());
-        }
-        
-        public static void AddAssembly(Assembly assembly, int index = -1)
-        {
-            if (assembly == null)
-            {
-                return;
-            }
-            
-            if (AssemblyList_.Contains(assembly))
-            {
-                return;
-            }
-
-            if (index < 0 || index >= AssemblyList_.Count)
-            {
-                AssemblyList_.Add(assembly);
-            }
-            else
-            {
-                AssemblyList_.Insert(index, assembly);
-            }
-        }
-        
         public static string EncodeArray<T>(T[] value) where T : IJsonMainConfig
         {
-            AddAssembly(Assembly.GetCallingAssembly());
-            
             var textBuilder = new StringBuilder();
             var writer = new JsonTextWriter(new StringWriter(textBuilder))
             {
@@ -206,8 +171,6 @@ namespace LiteQuark.Runtime
 
         public static object[] DecodeArray(string jsonText, Type type)
         {
-            AddAssembly(Assembly.GetCallingAssembly());
-            
             try
             {
                 var reader = JArray.Parse(jsonText);
@@ -347,7 +310,7 @@ namespace LiteQuark.Runtime
                     return null;
                 }
                 
-                var type = TypeUtils.GetTypeWithAssembly(AssemblyList_.ToArray(), chunks[0]);
+                var type = TypeUtils.GetTypeWithAssembly(chunks[0]);
                 if (type == null)
                 {
                     return null;

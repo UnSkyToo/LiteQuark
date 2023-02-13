@@ -6,6 +6,7 @@ using LiteCard.GamePlay;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace LiteCard.Editor
 {
@@ -241,11 +242,14 @@ namespace LiteCard.Editor
                 {
                     index = 0;
                 }
+
                 var newIndex = EditorGUILayout.Popup(name, index, popupArray.Display);
                 return popupArray.Value[newIndex];
             }
-            
-            return string.IsNullOrEmpty(name) ? EditorGUILayout.IntField(value) : EditorGUILayout.IntField(name, value);
+            else
+            {
+                return string.IsNullOrEmpty(name) ? EditorGUILayout.IntField(value) : EditorGUILayout.IntField(name, value);
+            }
         }
 
         private static float DrawFloat(string name, float value, Type type, object[] attrs)
@@ -255,7 +259,47 @@ namespace LiteCard.Editor
 
         private static string DrawString(string name, string value, Type type, object[] attrs)
         {
-            return string.IsNullOrEmpty(name) ? EditorGUILayout.TextField(value) : EditorGUILayout.TextField(name, value);
+            var assetAttr = TypeUtils.GetAttribute<EditorDataAssetAttribute>(type, attrs);
+            if (assetAttr != null)
+            {
+                return DrawAssetField(name, value, assetAttr);
+            }
+            else
+            {
+                return string.IsNullOrEmpty(name) ? EditorGUILayout.TextField(value) : EditorGUILayout.TextField(name, value);
+            }
+        }
+        
+        private static readonly Dictionary<string, Object> PathToAssetCache_ = new ();
+        private static string DrawAssetField(string name, string value, EditorDataAssetAttribute assetAttr)
+        {
+            Object asset = null;
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                if (PathToAssetCache_.ContainsKey(value))
+                {
+                    asset = PathToAssetCache_[value];
+                }
+                else
+                {
+                    asset = AssetDatabase.LoadAssetAtPath(PathUtils.GetFullPathInAssetRoot(value), assetAttr.AssetType);
+                    if (asset != null)
+                    {
+                        PathToAssetCache_.Add(value, asset);
+                    }
+                }
+            }
+
+            EditorGUI.BeginChangeCheck();
+            asset = EditorGUILayout.ObjectField(name, asset, assetAttr.AssetType, true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                var path = PathUtils.GetRelativeAssetRootPath(AssetDatabase.GetAssetPath(asset));
+                return path;
+            }
+
+            return value;
         }
 
         private static Enum DrawEnum(string name, Enum value, Type type, object[] attrs)

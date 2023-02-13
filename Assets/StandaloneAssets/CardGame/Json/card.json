@@ -2,6 +2,7 @@
     {
         "ID": 102016001,
         "Name": "伤口",
+        "IconRes": "CardGame/Image/cards/cards3/status_wound.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~State",
@@ -38,6 +39,7 @@
     {
         "ID": 102016002,
         "Name": "眩晕",
+        "IconRes": "CardGame/Image/cards/cards1/status_dazed.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~State",
@@ -76,6 +78,7 @@
     {
         "ID": 102016003,
         "Name": "灼伤",
+        "IconRes": "CardGame/Image/cards/cards1/status_burn.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~State",
@@ -117,6 +120,7 @@
     {
         "ID": 201002001,
         "Name": "打击（红）",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_strike.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -169,6 +173,7 @@
     {
         "ID": 201002002,
         "Name": "痛击",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_bash.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -233,6 +238,7 @@
     {
         "ID": 201004001,
         "Name": "防御（红）",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_defend.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Starter",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -283,6 +289,7 @@
     {
         "ID": 202002001,
         "Name": "愤怒",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_anger.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -349,6 +356,7 @@
     {
         "ID": 202002002,
         "Name": "头槌",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_headbutt.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -423,6 +431,7 @@
     {
         "ID": 202002003,
         "Name": "重刃",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_heavy_blade.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -473,6 +482,7 @@
     {
         "ID": 202002004,
         "Name": "铁波斩",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_iron_wave.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -535,6 +545,7 @@
     {
         "ID": 202002005,
         "Name": "完美打击",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_perfected_strike.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -587,6 +598,7 @@
     {
         "ID": 202002006,
         "Name": "剑柄打击",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_pommel_strike.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -649,6 +661,7 @@
     {
         "ID": 202002007,
         "Name": "飞剑回旋镖",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_sword_boomerang.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -729,6 +742,7 @@
     {
         "ID": 202002008,
         "Name": "闪电霹雳",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_thunder_clap.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -793,6 +807,7 @@
     {
         "ID": 202002009,
         "Name": "双重打击",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_twin_strike.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -857,6 +872,7 @@
     {
         "ID": 202002010,
         "Name": "狂野打击",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_wild_strike.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -925,6 +941,7 @@
     {
         "ID": 202002011,
         "Name": "全身撞击",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_body_slam.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -975,6 +992,7 @@
     {
         "ID": 202002012,
         "Name": "交锋",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_clash.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1031,6 +1049,7 @@
     {
         "ID": 202002013,
         "Name": "顺劈斩",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_cleave.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1081,6 +1100,7 @@
     {
         "ID": 202002014,
         "Name": "金刚臂",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_clothesline.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1145,6 +1165,7 @@
     {
         "ID": 202004001,
         "Name": "武装",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_armaments.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1217,6 +1238,7 @@
     {
         "ID": 202004002,
         "Name": "活动肌肉",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_flex.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1269,6 +1291,7 @@
     {
         "ID": 202004003,
         "Name": "破灭",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_havoc.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1343,6 +1366,7 @@
     {
         "ID": 202004004,
         "Name": "耸肩无视",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_shrug_it_off.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1393,6 +1417,7 @@
     {
         "ID": 202004005,
         "Name": "坚毅",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_true_grit.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1461,6 +1486,7 @@
     {
         "ID": 202004006,
         "Name": "战吼",
+        "IconRes": "CardGame/Image/cards/cards3/red_skill_warcry.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Common",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -1537,6 +1563,7 @@
     {
         "ID": 203002001,
         "Name": "飞身踢",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_drop_kick.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1613,6 +1640,7 @@
     {
         "ID": 203002002,
         "Name": "御血术",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_hemokinesis.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1675,6 +1703,7 @@
     {
         "ID": 203002003,
         "Name": "连续拳",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_pummel.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1769,6 +1798,7 @@
     {
         "ID": 203002004,
         "Name": "暴走",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_rampage.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1819,6 +1849,7 @@
     {
         "ID": 203002005,
         "Name": "无谋冲锋",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_reckless_charge.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1885,6 +1916,7 @@
     {
         "ID": 203002006,
         "Name": "灼热攻击",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_searing_blow.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -1935,6 +1967,7 @@
     {
         "ID": 203002007,
         "Name": "断魂斩",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_sever_soul.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2005,6 +2038,7 @@
     {
         "ID": 203002008,
         "Name": "上勾拳",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_uppercut.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2083,6 +2117,7 @@
     {
         "ID": 203002009,
         "Name": "以血还血",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_blood_for_blood.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2138,6 +2173,7 @@
     {
         "ID": 203002010,
         "Name": "旋风斩",
+        "IconRes": "CardGame/Image/cards/cards5/red_attack_whirlwind.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2188,6 +2224,7 @@
     {
         "ID": 203002011,
         "Name": "残杀",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_carnage.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2240,6 +2277,7 @@
     {
         "ID": 203004001,
         "Name": "缴械",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_disarm.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2296,6 +2334,7 @@
     {
         "ID": 203004002,
         "Name": "双持",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_dual_wield.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2358,6 +2397,7 @@
     {
         "ID": 203004003,
         "Name": "巩固",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_entrench.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2412,6 +2452,7 @@
     {
         "ID": 203004004,
         "Name": "火焰屏障",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_flame_barrier.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2476,6 +2517,7 @@
     {
         "ID": 203004005,
         "Name": "幽灵铠甲",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_ghostly_armor.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2528,6 +2570,7 @@
     {
         "ID": 203004006,
         "Name": "地狱之刃",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_infernal_blade.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2608,6 +2651,7 @@
     {
         "ID": 203004007,
         "Name": "威吓",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_intimidate.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2662,6 +2706,7 @@
     {
         "ID": 203004008,
         "Name": "硬撑",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_power_through.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2728,6 +2773,7 @@
     {
         "ID": 203004009,
         "Name": "狂怒",
+        "IconRes": "CardGame/Image/cards/cards2/red_skill_rage.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2780,6 +2826,7 @@
     {
         "ID": 203004010,
         "Name": "战斗专注",
+        "IconRes": "CardGame/Image/cards/cards1/red_skill_battle_trance.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Uncommon",
         "Type": "LiteCard.GamePlay.CardType~Skill",
@@ -2844,6 +2891,7 @@
     {
         "ID": 204002001,
         "Name": "狂宴",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_feed.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2910,6 +2958,7 @@
     {
         "ID": 204002002,
         "Name": "恶魔之焰",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_fiend_fire.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -2982,6 +3031,7 @@
     {
         "ID": 204002003,
         "Name": "燔祭",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_immolate.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -3048,6 +3098,7 @@
     {
         "ID": 204002004,
         "Name": "死亡收割",
+        "IconRes": "CardGame/Image/cards/cards4/red_attack_reaper.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
         "Type": "LiteCard.GamePlay.CardType~Attack",
@@ -3112,6 +3163,7 @@
     {
         "ID": 204002005,
         "Name": "重锤",
+        "IconRes": "CardGame/Image/cards/cards3/red_attack_bludgeon.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Rarity": "LiteCard.GamePlay.CardRarity~Rare",
         "Type": "LiteCard.GamePlay.CardType~Attack",

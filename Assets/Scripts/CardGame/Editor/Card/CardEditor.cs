@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using LiteCard.GamePlay;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,6 +24,8 @@ namespace LiteCard.Editor
         private void OnEnable()
         {
             Instance_ = this;
+            
+            TypeUtils.AddAssembly(typeof(CardGameLogic).Assembly, 0);
             
             Views_.Clear();
             Views_.Add(new ClassifyDataView<CardConfig>("Card", 1, "Assets/StandaloneAssets/CardGame/Json/card.json", (data) => $"{data.Job}_{data.Rarity}_{data.Type}"));
