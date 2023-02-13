@@ -80,13 +80,13 @@ namespace LiteCard.UI
         [UIClickEvent("BtnPool")]
         private void OnBtnPoolClick()
         {
-            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Pool, -1);
+            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Pool, CardType.All, -1);
         }
         
         [UIClickEvent("BtnUsed")]
         private void OnBtnUsedClick()
         {
-            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Used, -1);
+            LiteRuntime.Get<UISystem>().OpenUI<UICardList>(CardDeckType.Used, CardType.All, -1);
         }
 
         [UIClickEvent("BtnAddCard")]

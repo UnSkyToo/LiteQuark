@@ -136,6 +136,8 @@ namespace LiteCard.GamePlay
         Power = 1 << 3,
         State = 1 << 4,
         Curse = 1 << 5,
+        
+        All = Attack | Skill | Power | State | Curse,
     }
     
     public enum CardTag

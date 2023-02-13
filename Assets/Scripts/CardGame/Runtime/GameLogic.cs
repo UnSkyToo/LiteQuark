@@ -31,10 +31,9 @@ namespace LiteCard
             
             AgentSystem.Instance.Init();
             
-            LiteRuntime.Get<UISystem>().OpenUI<UICardHand>(AgentSystem.Instance.GetPlayer().GetCardDeck(CardDeckType.Hand));
-            
             LiteRuntime.Get<UISystem>().OpenUI<UIAgent>();
             LiteRuntime.Get<UISystem>().OpenUI<UIBattleMain>();
+            LiteRuntime.Get<UISystem>().OpenUI<UICardHand>(AgentSystem.Instance.GetPlayer().GetCardDeck(CardDeckType.Hand));
             
             Battle_.BattleBegin();
         }

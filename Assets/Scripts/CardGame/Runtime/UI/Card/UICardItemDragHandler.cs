@@ -29,12 +29,14 @@ namespace LiteCard.UI
         public void OnPointerEnter(PointerEventData eventData)
         {
             transform.localScale = Vector3.one * 1.667f * CardItem.BaseScale;
+            RectTrans_.anchoredPosition = new Vector2(RectTrans_.anchoredPosition.x, 70);
             Canvas_.sortingOrder = Order_ + 1;
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             transform.localScale = Vector3.one * CardItem.BaseScale;
+            RectTrans_.anchoredPosition = new Vector2(RectTrans_.anchoredPosition.x, 0);
             Canvas_.sortingOrder = Order_;
         }
 
