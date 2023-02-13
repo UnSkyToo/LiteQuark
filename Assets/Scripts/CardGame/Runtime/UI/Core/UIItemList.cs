@@ -57,10 +57,10 @@ namespace LiteCard.UI
             return ItemList_.ToArray();
         }
 
-        public void RefreshInfo(TData[] dataList)
+        public void RefreshInfo(TData[] dataList, Func<TData, bool> checker = null)
         {
             ClearItemList();
-            CreateItemList(dataList);
+            CreateItemList(dataList, checker);
         }
 
         private void ClearItemList()
@@ -73,11 +73,14 @@ namespace LiteCard.UI
             ItemList_.Clear();
         }
         
-        private void CreateItemList(TData[] dataList)
+        private void CreateItemList(TData[] dataList, Func<TData, bool> checker)
         {
             foreach (var data in dataList)
             {
-                CreateItem(data);
+                if (checker?.Invoke(data) ?? true)
+                {
+                    CreateItem(data);
+                }
             }
         }
         

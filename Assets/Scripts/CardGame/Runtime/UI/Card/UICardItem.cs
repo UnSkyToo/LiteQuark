@@ -39,20 +39,9 @@ namespace LiteCard.UI
 
         private void Setup()
         {
-            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(Data.GetCfg().IconRes, (sprite) =>
-            {
-                UIUtils.FindComponent<Image>(Go, "Icon").sprite = sprite;
-            });
-            
-            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(GameConst.Card.NameResPathList[Data.GetCfg().Rarity], (sprite) =>
-            {
-                UIUtils.FindComponent<Image>(Go, "Name").sprite = sprite;
-            });
-            
-            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(GameConst.Card.TypeResPathList[Data.GetCfg().Type][Data.GetCfg().Rarity], (sprite) =>
-            {
-                UIUtils.FindComponent<Image>(Go, "Type").sprite = sprite;
-            });
+            UIUtils.ReplaceSprite(Go, "Icon", Data.GetCfg().IconRes);
+            UIUtils.ReplaceSprite(Go, "Name", GameConst.Card.NameResPathList[Data.GetCfg().Rarity]);
+            UIUtils.ReplaceSprite(Go, "Type", GameConst.Card.TypeResPathList[Data.GetCfg().Type][Data.GetCfg().Rarity]);
         }
 
         public override void RefreshInfo()

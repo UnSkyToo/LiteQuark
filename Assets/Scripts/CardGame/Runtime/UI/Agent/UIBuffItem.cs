@@ -14,8 +14,8 @@ namespace LiteCard.UI
         
         public override void RefreshInfo()
         {
-            UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelName").text = Data.Cfg.Name;
             UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelLayer").text = $"{Data.Layer}";
+            UIUtils.ReplaceSprite(Go, Data.Cfg.IconRes);
         }
     }
 }

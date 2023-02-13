@@ -10,6 +10,9 @@ namespace LiteCard.GamePlay
         [EditorDataReadOnly]
         public int ID { get; private set; }
         public string Name { get; private set; }
+        public bool ShowIcon { get; private set; }
+        [EditorDataAsset(typeof(UnityEngine.Sprite))]
+        public string IconRes { get; private set; }
         public CharacterJob Job { get; private set; }
         public int Number { get; private set; }
         public BuffTriggerType TriggerType { get; private set; }
@@ -38,6 +41,8 @@ namespace LiteCard.GamePlay
             {
                 ID = ID,
                 Name = Name,
+                ShowIcon = ShowIcon,
+                IconRes = IconRes,
                 Job = Job,
                 Number = Number,
                 TriggerType = TriggerType,

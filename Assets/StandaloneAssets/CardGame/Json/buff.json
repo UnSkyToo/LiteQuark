@@ -2,6 +2,8 @@
     {
         "ID": 100001,
         "Name": "易伤",
+        "ShowIcon": true,
+        "IconRes": "CardGame/Image/powers/48_vulnerable.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Number": 1,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~BeforeBeAttack",
@@ -23,6 +25,8 @@
     {
         "ID": 100002,
         "Name": "虚弱",
+        "ShowIcon": true,
+        "IconRes": "CardGame/Image/powers/48_weak.png",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Number": 2,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~BeforeAttack",
@@ -44,6 +48,8 @@
     {
         "ID": 100003,
         "Name": "灼伤-检测",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Normal",
         "Number": 3,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~RoundEnd",
@@ -65,6 +71,8 @@
     {
         "ID": 200001,
         "Name": "以血还血-监听",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 1,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~DeductHp",
@@ -107,6 +115,8 @@
     {
         "ID": 200002,
         "Name": "狂宴-监听1",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 2,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~KillMonster",
@@ -130,6 +140,8 @@
     {
         "ID": 200003,
         "Name": "狂宴-监听2",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 3,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~KillMonster",
@@ -153,6 +165,8 @@
     {
         "ID": 200004,
         "Name": "活动肌肉",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 4,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~None",
@@ -173,6 +187,8 @@
     {
         "ID": 200005,
         "Name": "火焰屏障-监听1",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 5,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~AfterBeAttack",
@@ -194,6 +210,8 @@
     {
         "ID": 200006,
         "Name": "火焰屏障-监听2",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 6,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~AfterBeAttack",
@@ -215,6 +233,8 @@
     {
         "ID": 200007,
         "Name": "狂怒-监听1",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 7,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~AfterCastCard",
@@ -238,6 +258,8 @@
     {
         "ID": 200008,
         "Name": "狂怒-监听2",
+        "ShowIcon": false,
+        "IconRes": "",
         "Job": "LiteCard.GamePlay.CharacterJob~Ironclad",
         "Number": 8,
         "TriggerType": "LiteCard.GamePlay.BuffTriggerType~AfterCastCard",

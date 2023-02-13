@@ -50,7 +50,12 @@ namespace LiteCard.UI
 
             UIUtils.FindComponent<TextMeshProUGUI>(Go, "LabelName").text = Data.Name;
             
-            BuffList_.RefreshInfo(Data.GetBuffList());
+            RefreshBuffList();
+        }
+
+        private void RefreshBuffList()
+        {
+            BuffList_.RefreshInfo(Data.GetBuffList(), (buff) => buff.Cfg.ShowIcon);
         }
 
         private void OnAgentAttrChangeEvent(AgentAttrChangeEvent evt)
@@ -70,7 +75,7 @@ namespace LiteCard.UI
                 return;
             }
             
-            BuffList_.RefreshInfo(Data.GetBuffList());
+            RefreshBuffList();
         }
     }
 }
