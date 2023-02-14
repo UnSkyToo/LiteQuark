@@ -28,27 +28,12 @@ namespace LiteCard.Editor
             TypeUtils.AddAssembly(typeof(CardGameLogic).Assembly, 0);
             
             Views_.Clear();
-            Views_.Add(new ClassifyDataView<CardConfig>("Card", 1, "Assets/StandaloneAssets/CardGame/Json/card.json", (data) => $"{data.Job}_{data.Rarity}_{data.Type}"));
-            Views_.Add(new ClassifyDataView<BuffConfig>("Buff", 2, "Assets/StandaloneAssets/CardGame/Json/buff.json", (data) => data.Job.ToString()));
-            Views_.Add(new DataView<ModifierConfig>("Modifier", 3, "Assets/StandaloneAssets/CardGame/Json/modifier.json"));
-            Views_.Add(new DataView<MatchConfig>("Match", 4, "Assets/StandaloneAssets/CardGame/Json/match.json"));
+            Views_.Add(new CardDataView("Card", "Assets/StandaloneAssets/CardGame/Json/card.json"));
+            Views_.Add(new BuffDataView("Buff", "Assets/StandaloneAssets/CardGame/Json/buff.json"));
+            Views_.Add(new DataView<ModifierConfig>("Modifier", "Assets/StandaloneAssets/CardGame/Json/modifier.json"));
+            Views_.Add(new DataView<MatchConfig>("Match", "Assets/StandaloneAssets/CardGame/Json/match.json"));
             Views_.Add(new HelpView());
             
-            Views_.Sort((a, b) =>
-            {
-                if (a.Priority < b.Priority)
-                {
-                    return -1;
-                }
-
-                if (a.Priority > b.Priority)
-                {
-                    return 1;
-                }
-
-                return 0;
-            });
-
             foreach (var view in Views_)
             {
                 Toolbars_.Add(new GUIContent(view.Name));

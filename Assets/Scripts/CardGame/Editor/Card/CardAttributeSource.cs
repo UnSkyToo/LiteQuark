@@ -14,12 +14,12 @@ namespace LiteCard.Editor
             switch (type)
             {
                 case EditorDataPopupType.Card:
-                    var cardView = CardEditor.GetView<ClassifyDataView<CardConfig>>(type);
+                    var cardView = CardEditor.GetView<CardDataView>(type);
                     display.AddRange(cardView.GetData().Select(data => $"{data.GetMainID()}_{data.Name}"));
                     value.AddRange(cardView.GetData().Select(data => data.GetMainID()));
                     break;
                 case EditorDataPopupType.Buff:
-                    var buffView = CardEditor.GetView<ClassifyDataView<BuffConfig>>(type);
+                    var buffView = CardEditor.GetView<BuffDataView>(type);
                     display.AddRange(buffView.GetData().Select(data => $"{data.GetMainID()}_{data.Name}"));
                     value.AddRange(buffView.GetData().Select(data => data.GetMainID()));
                     break;
