@@ -7,7 +7,7 @@ namespace LiteCard
     {
         public static class Prefab
         {
-            public const string ArrowItem = "CardGame/Prefab/UI/Card/ArrowItem.prefab";
+            public const string ArrowItem = "CardGame/Prefab/UI/Battle/CardArrowItem.prefab";
             public const string CardItem = "CardGame/Prefab/UI/Card/CardItem.prefab";
 
             public const string PlayerItem = "CardGame/Prefab/UI/Agent/PlayerItem.prefab";

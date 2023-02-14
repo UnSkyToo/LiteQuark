@@ -70,9 +70,9 @@ namespace LiteQuark.Runtime
             return null;
         }
         
-        public static Vector2 ScreenPosToCanvasPos(RectTransform parent, Vector2 screenPos)
+        public static Vector2 ScreenPosToCanvasPos(RectTransform parent, Vector2 screenPos, Camera camera = null)
         {
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPos, Camera.main, out var pos);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPos, camera, out var pos);
             return pos;
         }
 
@@ -104,14 +104,14 @@ namespace LiteQuark.Runtime
             return CanvasPosToScreenPos(rectTrans, canvasPos);
         }
 
-        public static Vector2 WorldPosToScreenPos(Vector3 worldPos)
+        public static Vector2 WorldPosToScreenPos(Vector3 worldPos, Camera camera = null)
         {
-            return RectTransformUtility.WorldToScreenPoint(Camera.main, worldPos);
+            return RectTransformUtility.WorldToScreenPoint(camera, worldPos);
         }
 
-        public static Vector2 WorldPosToCanvasPos(RectTransform parent, Vector3 worldPos)
+        public static Vector2 WorldPosToCanvasPos(RectTransform parent, Vector3 worldPos, Camera camera= null)
         {
-            return ScreenPosToCanvasPos(parent, WorldPosToScreenPos(worldPos));
+            return ScreenPosToCanvasPos(parent, WorldPosToScreenPos(worldPos, camera));
         }
 
         public static Vector2 WorldPosToCanvasPos(Transform parent, Vector3 worldPos)

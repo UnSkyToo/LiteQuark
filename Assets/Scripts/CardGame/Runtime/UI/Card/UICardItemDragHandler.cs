@@ -10,8 +10,9 @@ namespace LiteCard.UI
 
         private Canvas Canvas_;
         private RectTransform RectTrans_;
+        private RectTransform RootUIRectTrans_;
         
-        private UIArrowItem ArrowItem_;
+        private UICardArrowItem ArrowItem_;
         private UIMonsterItemHandler CurrentHoveredHandler_;
 
         private Vector2 CardPosition_;
@@ -24,6 +25,8 @@ namespace LiteCard.UI
             Canvas_ = GetComponent<Canvas>();
             RectTrans_ = GetComponent<RectTransform>();
             Order_ = Canvas_.sortingOrder;
+
+            RootUIRectTrans_ = LiteRuntime.Get<UISystem>().FindUI<UICardHand>().Go.GetComponent<RectTransform>();
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -46,7 +49,7 @@ namespace LiteCard.UI
 
             if (cfg.NeedTarget)
             {
-                ArrowItem_ = CreateArrow(transform);
+                 CreateArrow(RootUIRectTrans_);
             }
             else
             {
@@ -61,7 +64,8 @@ namespace LiteCard.UI
 
             if (cfg.NeedTarget)
             {
-                ArrowItem_.Dispose();
+                LiteRuntime.Get<AssetSystem>().UnloadGameObject(ArrowItem_.gameObject);
+                ArrowItem_ = null;
 
                 if (CurrentHoveredHandler_ != null)
                 {
@@ -106,15 +110,24 @@ namespace LiteCard.UI
             }
         }
 
-        private UIArrowItem CreateArrow(Transform parent)
+        private void CreateArrow(Transform parent)
         {
-            return new UIArrowItem(parent, GameConst.Prefab.ArrowItem, (int)UIDepthMode.Top + 1000);
+            LiteRuntime.Get<AssetSystem>().LoadGameObject(GameConst.Prefab.ArrowItem, (go) =>
+            {
+                UnityUtils.SetParent(parent, go);
+                go.GetComponent<Canvas>().sortingOrder = (int)UIDepthMode.Top + 1000;
+                ArrowItem_ = go.GetComponent<UICardArrowItem>();
+            });
         }
 
         private void RefreshArrow(PointerEventData eventData)
         {
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(RectTrans_, eventData.position, null, out var localPos);
-            ArrowItem_.RefreshInfo(Vector2.zero, localPos);
+            if (ArrowItem_ != null)
+            {
+                var beginPos = UIUtils.WorldPosToCanvasPos(RootUIRectTrans_, transform.position);
+                var endPos = UIUtils.ScreenPosToCanvasPos(RootUIRectTrans_, eventData.position, null);
+                ArrowItem_.UpdatePosition(beginPos, endPos);
+            }
         }
 
         private void RefreshHovered(PointerEventData eventData)
@@ -127,6 +140,11 @@ namespace LiteCard.UI
                     CurrentHoveredHandler_?.OnCardHovered(null);
                     monsterItemHandler.OnCardHovered(CardItem);
                     CurrentHoveredHandler_ = monsterItemHandler;
+                }
+                else if (monsterItemHandler == null && CurrentHoveredHandler_ != null)
+                {
+                    CurrentHoveredHandler_.OnCardHovered(null);
+                    CurrentHoveredHandler_ = null;
                 }
             }
             else

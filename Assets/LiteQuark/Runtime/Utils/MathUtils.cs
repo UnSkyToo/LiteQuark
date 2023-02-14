@@ -22,11 +22,19 @@ namespace LiteQuark.Runtime
             return (float)Rand_.NextDouble();
         }
         
-        public static float Angle(Vector2 from, Vector2 to)
+        public static float AngleByVector(Vector2 from, Vector2 to)
         {
             var cross = Vector3.Cross(from, to);
             var angle = Vector2.Angle(from, to);
             return cross.z > 0 ? -angle : angle;
+        }
+
+        public static float AngleByPoint(Vector2 begin, Vector2 end)
+        {
+            var from = Vector2.up;
+            var to = (end - begin).normalized;
+            var angle = AngleByVector(from, to);
+            return angle;
         }
     }
 }
