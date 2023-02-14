@@ -8,21 +8,19 @@ namespace LiteCard.Editor
     [IDBindType(typeof(CardConfig))]
     public sealed class CardIDBinder : IIDBinder
     {
-        private readonly CardConfig Instance_;
-
-        public CardIDBinder(CardConfig instance, int id)
+        public CardIDBinder()
         {
-            Instance_ = instance;
         }
         
-        public int ToID()
+        public int ToID(object instance, int id)
         {
-            return (int)Instance_.Job * 10000000 + (int)Instance_.Rarity * 100000 + (int)Instance_.Type * 1000 + Instance_.Number;
+            var cfg = instance as CardConfig;
+            return (int)cfg.Job * 10000000 + (int)cfg.Rarity * 100000 + (int)cfg.Type * 1000 + cfg.Number;
         }
 
-        public void Draw(string title)
+        public void Draw(string title, object instance, int id)
         {
-            EditorGUILayout.IntField(title, ToID());
+            EditorGUILayout.IntField(title, ToID(instance, id));
         }
     }
 }

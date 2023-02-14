@@ -8,21 +8,19 @@ namespace LiteCard.Editor
     [IDBindType(typeof(BuffConfig))]
     public sealed class BuffIDBinder : IIDBinder
     {
-        private readonly BuffConfig Instance_;
-
-        public BuffIDBinder(BuffConfig instance, int id)
+        public BuffIDBinder()
         {
-            Instance_ = instance;
         }
         
-        public int ToID()
+        public int ToID(object instance, int id)
         {
-            return (int)Instance_.Job * 10000 + Instance_.Number;
+            var cfg = instance as BuffConfig;
+            return (int)cfg.Job * 10000 + cfg.Number;
         }
 
-        public void Draw(string title)
+        public void Draw(string title, object instance, int id)
         {
-            EditorGUILayout.IntField(title, ToID());
+            EditorGUILayout.IntField(title, ToID(instance, id));
         }
     }
 }

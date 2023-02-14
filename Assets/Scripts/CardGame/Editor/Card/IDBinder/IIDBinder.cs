@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 
@@ -6,9 +7,9 @@ namespace LiteCard.Editor
 {
     public interface IIDBinder
     {
-        int ToID();
+        int ToID(object instance, int id);
         
-        void Draw(string title);
+        void Draw(string title, object instance, int id);
     }
 
     public sealed class IDBindTypeAttribute : Attribute
@@ -23,9 +24,16 @@ namespace LiteCard.Editor
 
     public static class IDBinder
     {
+        private static Dictionary<Type, IIDBinder> BinderCache_ = new Dictionary<Type, IIDBinder>();
+
         public static int Draw(string title, object instance, object value)
         {
-            var binder = GetIDBinder(instance, value);
+            var type = instance.GetType();
+            if (!BinderCache_.TryGetValue(type, out var binder))
+            {
+                binder = GetIDBinder(type);
+                BinderCache_.Add(type, binder);
+            }
 
             var newValue = (int)value;
             if (binder == null)
@@ -34,23 +42,23 @@ namespace LiteCard.Editor
             }
             else
             {
-                binder.Draw(title);
-                newValue = binder.ToID();
+                binder.Draw(title, instance, newValue);
+                newValue = binder.ToID(instance, newValue);
             }
 
             return newValue;
         }
         
-        private static IIDBinder GetIDBinder(object instance, object value)
+        private static IIDBinder GetIDBinder(Type idType)
         {
             var typeList = TypeCache.GetTypesDerivedFrom<IIDBinder>();
             
             foreach (var type in typeList)
             {
                 var attr = type.GetCustomAttribute(typeof(IDBindTypeAttribute), false) as IDBindTypeAttribute;
-                if (attr != null && attr.BindType == instance.GetType())
+                if (attr != null && attr.BindType == idType)
                 {
-                    return Activator.CreateInstance(type, instance, value) as IIDBinder;
+                    return Activator.CreateInstance(type) as IIDBinder;
                 }
             }
 
