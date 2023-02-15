@@ -102,6 +102,7 @@ namespace LiteQuark.Editor
                 }
 
                 var bundlePath = $"{GetBundlePathFromFullPath(bundleFullPath)}";
+                dependencyList.Remove(bundlePath);
                 AddToBundleInfoCache(bundlePath, assetList.ToArray(), dependencyList.ToArray());
             }
         }
@@ -169,6 +170,11 @@ namespace LiteQuark.Editor
         {
             foreach (var buildInfo in packInfo.BundleList)
             {
+                if (buildInfo.DependencyList.Contains(buildInfo.BundlePath))
+                {
+                    LLogEditor.Error($"loop reference : {buildInfo.BundlePath}");
+                }
+                
                 foreach (var assetPath in buildInfo.AssetList)
                 {
                     var fullPath = assetPath.StartsWith("assets") ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
