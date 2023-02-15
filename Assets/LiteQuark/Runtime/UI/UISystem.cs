@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
         {
             var ui = Activator.CreateInstance<T>();
 
-            LiteRuntime.Get<AssetSystem>().LoadGameObject(ui.PrefabPath, (instance) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(ui.PrefabPath, (instance) =>
             {
                 if (instance == null)
                 {
@@ -81,7 +81,7 @@ namespace LiteQuark.Runtime
         {
             UIBinder.AutoUnbind(ui);
             ui.Close();
-            LiteRuntime.Get<AssetSystem>().UnloadGameObject(ui.Go);
+            LiteRuntime.Get<AssetSystem>().UnloadAsset(ui.Go);
         }
 
         public void CloseAllUI()

@@ -18,7 +18,7 @@ namespace LiteCard.UI
         private void Start()
         {
             NodeList_ = new RectTransform[NodeCount];
-            LiteRuntime.Get<AssetSystem>().LoadAsset<GameObject>("CardGame/Prefab/UI/Battle/ArrowBodyItem.prefab", (go) =>
+            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<GameObject>("CardGame/Prefab/UI/Battle/ArrowBodyItem.prefab", (go) =>
             {
                 for (var index = 0; index < NodeCount - 1; ++index)
                 {
@@ -29,7 +29,7 @@ namespace LiteCard.UI
                 }
             });
             
-            LiteRuntime.Get<AssetSystem>().LoadGameObject("CardGame/Prefab/UI/Battle/ArrowHeadItem.prefab", (go) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync("CardGame/Prefab/UI/Battle/ArrowHeadItem.prefab", (go) =>
             {
                 UnityUtils.SetParent(transform, go.transform);
                 go.GetComponent<Image>().color = Color;

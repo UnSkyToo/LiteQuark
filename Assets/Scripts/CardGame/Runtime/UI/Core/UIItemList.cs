@@ -20,7 +20,7 @@ namespace LiteCard.UI
 
         public virtual void Dispose()
         {
-            LiteRuntime.Get<AssetSystem>().UnloadGameObject(Go);
+            LiteRuntime.Get<AssetSystem>().UnloadAsset(Go);
         }
 
         public abstract void RefreshInfo();
@@ -86,7 +86,7 @@ namespace LiteCard.UI
         
         private void CreateItem(TData data)
         {
-            LiteRuntime.Get<AssetSystem>().LoadGameObject(PrefabPath_, (instance) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(PrefabPath_, (instance) =>
             {
                 instance.transform.SetParent(Content_, false);
                 instance.transform.localPosition = Vector3.zero;

@@ -1,33 +1,81 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class AssetBundleCache
+    internal sealed class AssetBundleCache : IDisposable
     {
         public BundleInfo Info { get; }
-        public bool IsLoad { get; private set; }
-        public bool Unused => (RefCount_ <= 0 && IsLoad == true);
-
-        private AssetBundleCreateRequest Request_;
-        private AssetBundle Bundle_;
-        private int RefCount_;
-
+        public bool IsLoaded { get; private set; }
+        private bool IsUnloaded_;
+        
+        public bool IsUsed => RefCount_ > 0;
+        
         private readonly List<AssetBundleCache> DependencyCacheList_ = new();
-        private readonly Dictionary<string, UnityEngine.Object> AssetCache_ = new();
-        private readonly Dictionary<string, List<Action<bool>>> AssetLoaderCallback_ = new();
-
+        private readonly Dictionary<string, UnityEngine.Object> AssetCacheMap_ = new();
+        private readonly Dictionary<string, List<Action<bool>>> AssetLoaderCallbackList_ = new();
+        
+        private UnityEngine.AssetBundleCreateRequest Request_;
+        private UnityEngine.AssetBundle Bundle_;
+        private int RefCount_;
+        
         public AssetBundleCache(BundleInfo info)
         {
             Info = info;
+            IsLoaded = false;
+            IsUnloaded_ = false;
+
+            Request_ = null;
             Bundle_ = null;
-            IsLoad = false;
             RefCount_ = 0;
         }
 
-        public string[] GetDependencyPathList()
+        public void Dispose()
+        {
+            Unload();
+            AssetLoaderCallbackList_.Clear();
+            DependencyCacheList_.Clear();
+            AssetCacheMap_.Clear();
+
+            if (Bundle_ != null)
+            {
+                Bundle_.Unload(true);
+                Bundle_ = null;
+            }
+
+            Request_ = null;
+            IsLoaded = false;
+        }
+        
+        public void Unload()
+        {
+            if (IsUnloaded_)
+            {
+                return;
+            }
+            
+            if (RefCount_ > 0)
+            {
+                LLog.Warning($"unload bundle leak : {Info.BundlePath}({RefCount_})");
+            }
+            
+            foreach (var cache in DependencyCacheList_)
+            {
+                cache.DecRef();
+
+                if (!cache.IsUsed)
+                {
+                    cache.Unload();
+                }
+            }
+
+            RefCount_ = 0;
+            IsUnloaded_ = true;
+        }
+
+        public string[] GetAllDependencies()
         {
             return Info.DependencyList;
         }
@@ -48,22 +96,22 @@ namespace LiteQuark.Runtime
             RefCount_--;
         }
 
-        public void Load(Action<bool> callback)
+        public void LoadBundleAsync(Action<bool> callback)
         {
-            if (IsLoad)
+            if (IsLoaded)
             {
                 callback?.Invoke(true);
                 return;
             }
             
-            LiteRuntime.Get<TaskSystem>().AddTask(LoadAsync(Info.BundlePath, callback));
+            LiteRuntime.Get<TaskSystem>().AddTask(LoadBundleAsyncTask(Info.BundlePath, callback));
         }
-
-        private IEnumerator LoadAsync(string path, Action<bool> callback)
+        
+        private IEnumerator LoadBundleAsyncTask(string path, Action<bool> callback)
         {
-            IsLoad = false;
+            IsLoaded = false;
             var fullPath = PathUtils.GetFullPathInRuntime(path);
-            Request_ = AssetBundle.LoadFromFileAsync(fullPath);
+            Request_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
             
             yield return Request_;
             
@@ -71,7 +119,8 @@ namespace LiteQuark.Runtime
             {
                 Bundle_ = Request_.assetBundle;
                 RefCount_ = 0;
-                IsLoad = true;
+                IsLoaded = true;
+                IsUnloaded_ = false;
                 Request_ = null;
                 callback?.Invoke(true);
             }
@@ -82,95 +131,63 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void Unload()
+        private bool AssetExisted(string assetPath)
         {
-            if (RefCount_ > 0)
-            {
-                LLog.Warning($"unload bundle leak : {Info.BundlePath}({RefCount_})");
-            }
-
-            foreach (var cache in DependencyCacheList_)
-            {
-                cache.DecRef();
-
-                if (cache.Unused)
-                {
-                    cache.Unload();
-                }
-            }
-            DependencyCacheList_.Clear();
-
-            foreach (var asset in AssetCache_)
-            {
-                if (asset.Value is not GameObject)
-                {
-                    Resources.UnloadAsset(asset.Value);
-                }
-            }
-            AssetCache_.Clear();
-            
-            AssetLoaderCallback_.Clear();
-            
-            if (Bundle_ != null)
-            {
-                Bundle_.Unload(true);
-                Bundle_ = null;
-            }
-
-            IsLoad = false;
-            RefCount_ = 0;
+            return AssetCacheMap_.ContainsKey(assetPath);
         }
 
-        public void LoadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
+        public UnityEngine.Object[] GetLoadAssetList()
         {
-            // TODO same path, but type different, like (xxx Texture2D & xxx Sprite)
-            if (AssetCache_.TryGetValue(assetPath, out var asset))
+            return AssetCacheMap_.Count == 0 ? Array.Empty<UnityEngine.Object>() : AssetCacheMap_.Values.ToArray();
+        }
+
+        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        {
+            LoadAssetAsync<T>(assetPath, (bool isLoaded) =>
             {
-                callback?.Invoke(CreateAsset<T>(assetPath));
+                if (!isLoaded)
+                {
+                    callback?.Invoke(null);
+                    return;
+                }
+                
+                callback?.Invoke(AssetCacheMap_[assetPath] as T);
+            });
+        }
+
+        private void LoadAssetAsync<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
+        {
+            if (AssetExisted(assetPath))
+            {
+                callback?.Invoke(true);
                 return;
             }
-
-            if (AssetLoaderCallback_.TryGetValue(assetPath, out var list))
+            
+            if (AssetLoaderCallbackList_.TryGetValue(assetPath, out var list))
             {
                 list.Add(callback);
                 return;
             }
 
-            AssetLoaderCallback_.Add(assetPath, new List<Action<bool>> { callback });
-            LiteRuntime.Get<TaskSystem>().AddTask(LoadAssetAsync<T>(assetPath));
+            AssetLoaderCallbackList_.Add(assetPath, new List<Action<bool>> { callback });
+            LiteRuntime.Get<TaskSystem>().AddTask(LoadAssetAsyncTask<T>(assetPath));
         }
-
-        private IEnumerator LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
+        
+        private IEnumerator LoadAssetAsyncTask<T>(string assetPath) where T : UnityEngine.Object
         {
             var name = PathUtils.GetFileName(assetPath);
             var request = Bundle_.LoadAssetAsync<T>(name);
             yield return request;
             if (request.isDone)
             {
-                AssetCache_.Add(assetPath, request.asset);
+                AssetCacheMap_.Add(assetPath, request.asset);
             }
             
-            foreach (var loader in AssetLoaderCallback_[assetPath])
+            foreach (var loader in AssetLoaderCallbackList_[assetPath])
             {
                 loader?.Invoke(request.isDone);
             }
-            AssetLoaderCallback_.Remove(assetPath);
-        }
-
-        public void UnloadAsset(string assetPath)
-        {
-            DecRef();
-        }
-
-        public T CreateAsset<T>(string assetPath) where T : UnityEngine.Object
-        {
-            if (AssetCache_.TryGetValue(assetPath, out var asset))
-            {
-                IncRef();
-                return asset as T;
-            }
-
-            return null;
+            AssetLoaderCallbackList_.Remove(assetPath);
         }
     }
 }

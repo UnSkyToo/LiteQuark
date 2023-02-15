@@ -64,7 +64,7 @@ namespace LiteCard.UI
 
             if (cfg.NeedTarget)
             {
-                LiteRuntime.Get<AssetSystem>().UnloadGameObject(ArrowItem_.gameObject);
+                LiteRuntime.Get<AssetSystem>().UnloadAsset(ArrowItem_.gameObject);
                 ArrowItem_ = null;
 
                 if (CurrentHoveredHandler_ != null)
@@ -112,7 +112,7 @@ namespace LiteCard.UI
 
         private void CreateArrow(Transform parent)
         {
-            LiteRuntime.Get<AssetSystem>().LoadGameObject(GameConst.Prefab.ArrowItem, (go) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(GameConst.Prefab.ArrowItem, (go) =>
             {
                 UnityUtils.SetParent(parent, go);
                 go.GetComponent<Canvas>().sortingOrder = (int)UIDepthMode.Top + 1000;

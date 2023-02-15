@@ -173,7 +173,7 @@ namespace LiteQuark.Runtime
 
         public static void ReplaceSprite(GameObject go, string path, string resPath)
         {   
-            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(resPath, (sprite) =>
+            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
             {
                 var image = FindComponent<Image>(go, path);
                 if (image != null)
@@ -185,7 +185,7 @@ namespace LiteQuark.Runtime
 
         public static void ReplaceSprite(GameObject go, string resPath)
         {
-            LiteRuntime.Get<AssetSystem>().LoadAsset<Sprite>(resPath, (sprite) =>
+            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
             {
                 var image = go.GetComponent<Image>();
                 if (image != null)

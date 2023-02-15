@@ -39,12 +39,26 @@ namespace LiteQuark.Runtime
             callback?.Invoke(asset);
         }
 
+        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        {
+            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
+            {
+                var instance = UnityEngine.Object.Instantiate(asset);
+                callback?.Invoke(instance);
+            });
+        }
+
         public void UnloadAsset(string assetPath)
         {
         }
 
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
+        }
+
+        public void UnloadUnusedBundle()
+        {
+            UnityEngine.Resources.UnloadUnusedAssets();
         }
     }
 }

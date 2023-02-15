@@ -1,71 +1,49 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
     internal sealed class AssetBundleLoader : IAssetLoader
-    { 
+    {
         private BundlePackInfo PackInfo_ = null;
-        private readonly Dictionary<int, AssetBundleCache> AssetIDToBundleCache_ = new();
-        private readonly Dictionary<string, AssetBundleCache> PathToBundleCache_ = new();
-        private readonly Dictionary<string, List<Action<AssetBundleCache>>> BundleCacheLoaderCallback_ = new();
+        
+        private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
+        private readonly Dictionary<string, List<Action<bool>>> BundleLoaderCallbackList_ = new();
+        private readonly Dictionary<int, string> AssetIDToPathMap_ = new();
 
         public AssetBundleLoader()
         {
         }
-        
+
         public bool Initialize()
         {
-            PackInfo_ = LoadBundlePack();
-            
+            PackInfo_ = BundlePackInfo.LoadBundlePack();
             if (PackInfo_ == null)
             {
                 return false;
             }
             
-            AssetIDToBundleCache_.Clear();
-            PathToBundleCache_.Clear();
-            BundleCacheLoaderCallback_.Clear();
+            BundleCacheMap_.Clear();
+            BundleLoaderCallbackList_.Clear();
+            AssetIDToPathMap_.Clear();
             
             return true;
         }
-        
+
         public void Dispose()
         {
-            BundleCacheLoaderCallback_.Clear();
-            foreach (var bundle in PathToBundleCache_)
+            AssetIDToPathMap_.Clear();
+            BundleLoaderCallbackList_.Clear();
+            foreach (var bundle in BundleCacheMap_)
             {
-                bundle.Value.Unload();
+                bundle.Value.Dispose();
             }
-            PathToBundleCache_.Clear();
-            AssetIDToBundleCache_.Clear();
+            BundleCacheMap_.Clear();
         }
 
-        private BundlePackInfo LoadBundlePack()
+        private bool BundleExisted(BundleInfo info)
         {
-            var request = UnityWebRequest.Get(PathUtils.ConcatPath(Application.streamingAssetsPath, LiteConst.BundlePackFileName));
-            request.SendWebRequest();
-            while (!request.isDone)
-            {
-            }
-
-            if (request.result != UnityWebRequest.Result.Success)
-            {
-                LLog.Error($"load bundle package error\n{request.error}");
-                return null;
-            }
-
-            var info = BundlePackInfo.FromJson(request.downloadHandler.text);
-            
-            if (info is not {IsValid: true})
-            {
-                return null;
-            }
-            
-            info.Initialize();
-            return info;
+            return BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded;
         }
 
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
@@ -84,35 +62,132 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            BundleCacheLoaderCallback_.Remove(info.BundlePath);
+            BundleLoaderCallbackList_.Remove(info.BundlePath);
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
-        {   
-            LoadBundleCacheAsync(assetPath, (cache) =>
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
+            if (info == null)
             {
-                if (cache == null)
+                callback?.Invoke(null);
+                return;
+            }
+
+            LoadBundleAsync(info, (isLoaded) =>
+            {
+                if (!isLoaded)
                 {
                     callback?.Invoke(null);
                     return;
                 }
-                
-                cache.LoadAsset<T>(assetPath, (isLoaded) =>
+
+                var cache = BundleCacheMap_[info.BundlePath];
+                cache.LoadAssetAsync<T>(assetPath, (asset) =>
                 {
-                    if (!isLoaded)
+                    cache.IncRef();
+                    if (asset != null && !AssetIDToPathMap_.ContainsKey(asset.GetInstanceID()))
                     {
-                        LLog.Error($"load asset error : {assetPath}");
-                        callback?.Invoke(null);
-                        return;
-                    }
-                    
-                    var asset = cache.CreateAsset<T>(assetPath);
-                    if (asset != null && !AssetIDToBundleCache_.ContainsKey(asset.GetInstanceID()))
-                    {
-                        AssetIDToBundleCache_.Add(asset.GetInstanceID(), cache);
+                        AssetIDToPathMap_.Add(asset.GetInstanceID(), assetPath);
                     }
                     callback?.Invoke(asset);
                 });
+            });
+        }
+
+        private void LoadBundleAsync(BundleInfo info, Action<bool> callback)
+        {
+            if (BundleExisted(info))
+            {
+                callback?.Invoke(true);
+                return;
+            }
+
+            if (BundleLoaderCallbackList_.TryGetValue(info.BundlePath, out var list))
+            {
+                list.Add(callback);
+                return;
+            }
+
+            BundleLoaderCallbackList_.Add(info.BundlePath, new List<Action<bool>> { callback });
+            LoadBundleCompleteAsync(info, (isLoaded) =>
+            {
+                if (!isLoaded)
+                {
+                    BundleCacheMap_.Remove(info.BundlePath);
+                }
+                
+                foreach (var loadCallback in BundleLoaderCallbackList_[info.BundlePath])
+                {
+                    loadCallback?.Invoke(isLoaded);
+                }
+
+                BundleLoaderCallbackList_.Remove(info.BundlePath);
+            });
+        }
+
+        private void LoadBundleCompleteAsync(BundleInfo info, Action<bool> callback)
+        {
+            if (!BundleCacheMap_.TryGetValue(info.BundlePath, out var cache))
+            {
+                cache = new AssetBundleCache(info);
+                BundleCacheMap_.Add(info.BundlePath, cache);
+            }
+            
+            LoadBundleDependenciesAsync(cache, (isLoaded) =>
+            {
+                if (!isLoaded)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+                
+                cache.LoadBundleAsync(callback);
+            });
+        }
+
+        private void LoadBundleDependenciesAsync(AssetBundleCache cache, Action<bool> callback)
+        {
+            var dependencies = cache.GetAllDependencies();
+            if (dependencies == null || dependencies.Length == 0)
+            {
+                callback?.Invoke(true);
+                return;
+            }
+
+            var loadCompletedCount = 0;
+            foreach (var dependency in dependencies)
+            {
+                var dependencyInfo = PackInfo_.GetBundleInfoFromBundlePath(dependency);
+                LoadBundleAsync(dependencyInfo, (isLoaded) =>
+                {
+                    if (!isLoaded)
+                    {
+                        callback?.Invoke(false);
+                        return;
+                    }
+
+                    cache.AddDependencyCache(BundleCacheMap_[dependencyInfo.BundlePath]);
+                    loadCompletedCount++;
+
+                    if (loadCompletedCount >= dependencies.Length)
+                    {
+                        callback?.Invoke(true);
+                    }
+                });
+            }
+        }
+
+        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        {
+            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
+            {
+                var instance = UnityEngine.Object.Instantiate(asset);
+                if (instance != null && !AssetIDToPathMap_.ContainsKey(instance.GetInstanceID()))
+                {
+                    AssetIDToPathMap_.Add(instance.GetInstanceID(), assetPath);
+                }
+                callback?.Invoke(instance);
             });
         }
 
@@ -124,12 +199,12 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (PathToBundleCache_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoad)
+            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
             {
-                cache.UnloadAsset(assetPath);
+                cache.DecRef();
             }
         }
-
+        
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
             if (asset == null)
@@ -138,121 +213,53 @@ namespace LiteQuark.Runtime
             }
 
             var instanceID = asset.GetInstanceID();
-            if (!AssetIDToBundleCache_.ContainsKey(instanceID))
+            if (AssetIDToPathMap_.TryGetValue(instanceID, out var assetPath))
             {
-                return;
+                UnloadAsset(assetPath);
+                AssetIDToPathMap_.Remove(instanceID);
             }
 
-            AssetIDToBundleCache_[instanceID].DecRef();
-            AssetIDToBundleCache_.Remove(instanceID);
+            if (asset is UnityEngine.GameObject)
+            {
+                UnityEngine.Object.DestroyImmediate(asset);
+            }
         }
 
-        private void LoadBundleCacheAsync(string assetPath, Action<AssetBundleCache> callback)
+        public void UnloadUnusedBundle()
         {
-            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
-            LoadBundleCacheAsync(info, callback);
-        }
-
-        private void LoadBundleCacheAsync(BundleInfo info, Action<AssetBundleCache> callback)
-        {
-            if (info == null)
+            foreach (var bundle in BundleCacheMap_)
             {
-                callback?.Invoke(null);
-                return;
-            }
-
-            if (!PathToBundleCache_.TryGetValue(info.BundlePath, out var cache))
-            {
-                cache = new AssetBundleCache(info);
-                PathToBundleCache_.Add(info.BundlePath, cache);
-            }
-            
-            LoadBundleCacheAsync(cache, callback);
-        }
-
-        private void LoadBundleCacheAsync(AssetBundleCache cache, Action<AssetBundleCache> callback)
-        {
-            if (cache.IsLoad)
-            {
-                callback?.Invoke(cache);
-                return;
-            }
-            
-            if (BundleCacheLoaderCallback_.TryGetValue(cache.Info.BundlePath, out var list))
-            {
-                list.Add(callback);
-                return;
-            }
-
-            BundleCacheLoaderCallback_.Add(cache.Info.BundlePath, new List<Action<AssetBundleCache>> {callback});
-            
-            LoadDependencyBundleCache(cache, (isLoaded) =>
-            {
-                if (!isLoaded)
+                if (bundle.Value.IsLoaded && !bundle.Value.IsUsed)
                 {
-                    callback?.Invoke(null);
-                    return;
+                    bundle.Value.Unload();
                 }
-
-                LoadBundleCacheInternal(cache, (loadBundle) =>
-                {
-                    foreach (var loader in BundleCacheLoaderCallback_[cache.Info.BundlePath])
-                    {
-                        loader?.Invoke(loadBundle);
-                    }
-                    
-                    BundleCacheLoaderCallback_.Remove(cache.Info.BundlePath);
-                });
-            });
-        }
-        
-        private void LoadDependencyBundleCache(AssetBundleCache cache, Action<bool> callback)
-        {
-            var loadCompletedCount = 0;
-            var dependencyPathList = cache.GetDependencyPathList();
-
-            if (dependencyPathList.Length == 0)
-            {
-                callback?.Invoke(true);
-                return;
             }
 
-            foreach (var dependencyPath in dependencyPathList)
+            var disposeList = new List<AssetBundleCache>();
+            foreach (var bundle in BundleCacheMap_)
             {
-                var dependencyInfo = PackInfo_.GetBundleInfoFromBundlePath(dependencyPath);
-                LoadBundleCacheAsync(dependencyInfo, (dependencyBundle) =>
+                if (bundle.Value.IsLoaded && !bundle.Value.IsUsed)
                 {
-                    if (dependencyBundle == null)
-                    {
-                        callback?.Invoke(false);
-                        return;
-                    }
-                    
-                    cache.AddDependencyCache(dependencyBundle);
-                    loadCompletedCount++;
-
-                    if (loadCompletedCount >= dependencyPathList.Length)
-                    {
-                        callback?.Invoke(true);
-                    }
-                });
-            }
-        }
-
-        private void LoadBundleCacheInternal(AssetBundleCache cache, Action<AssetBundleCache> callback)
-        {
-            cache.Load((isLoaded) =>
-            {
-                if (!isLoaded)
-                {
-                    PathToBundleCache_.Remove(cache.Info.BundlePath);
-                    LLog.Error($"load bundle error : {cache.Info.BundlePath}");
-                    callback?.Invoke(null);
-                    return;
+                    disposeList.Add(bundle.Value);
                 }
-                
-                callback?.Invoke(cache);
-            });
+            }
+
+            if (disposeList.Count > 0)
+            {
+                foreach (var cache in disposeList)
+                {
+                    foreach (var asset in cache.GetLoadAssetList())
+                    {
+                        AssetIDToPathMap_.Remove(asset.GetInstanceID());
+                    }
+
+                    BundleCacheMap_.Remove(cache.Info.BundlePath);
+                    cache.Dispose();
+                }
+                disposeList.Clear();
+            }
+            
+            UnityEngine.Resources.UnloadUnusedAssets();
         }
     }
 }

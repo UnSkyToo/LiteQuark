@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
         
         private void LoadConfigTable(string jsonFilePath, Type type, Dictionary<int, IJsonMainConfig> cache)
         {
-            LiteRuntime.Get<AssetSystem>().LoadAsset<TextAsset>(jsonFilePath, (asset) =>
+            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<TextAsset>(jsonFilePath, (asset) =>
             {
                 var data =  JsonUtils.DecodeArray(asset.text, type).Cast<IJsonMainConfig>().ToArray();
                 if (data == null)
