@@ -32,6 +32,8 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
+            Loader_?.UnloadUnusedBundle();
+            
             Loader_?.Dispose();
             Loader_ = null;
         }
@@ -53,10 +55,16 @@ namespace LiteQuark.Runtime
             Loader_?.StopLoadAsset(formatPath);
         }
 
-        public void LoadAsset<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
             Loader_?.LoadAssetAsync<T>(formatPath, callback);
+        }
+
+        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        {
+            var formatPath = FormatPath(assetPath);
+            Loader_?.InstantiateAsync(formatPath, callback);
         }
 
         public void UnloadAsset(string assetPath)
@@ -70,19 +78,9 @@ namespace LiteQuark.Runtime
             Loader_?.UnloadAsset(asset);
         }
 
-        public void LoadGameObject(string assetPath, Action<UnityEngine.GameObject> callback)
+        public void UnloadUnusedBundle()
         {
-            LoadAsset<UnityEngine.GameObject>(assetPath, (go) =>
-            {
-                var instance = UnityEngine.GameObject.Instantiate(go);
-                callback?.Invoke(instance);
-            });
-        }
-
-        public void UnloadGameObject(UnityEngine.GameObject asset)
-        {
-            UnloadAsset(asset);
-            UnityEngine.GameObject.DestroyImmediate(asset);
+            Loader_?.UnloadUnusedBundle();
         }
     }
 }

@@ -70,10 +70,35 @@ namespace LiteQuark.Runtime
             return jsonText;
         }
 
-        public static BundlePackInfo FromJson(string jsonText)
+        private static BundlePackInfo FromJson(string jsonText)
         {
             var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<BundlePackInfo>(jsonText);
             return packInfo;
+        }
+        
+        public static BundlePackInfo LoadBundlePack()
+        {
+            var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.ConcatPath(UnityEngine.Application.streamingAssetsPath, LiteConst.BundlePackFileName));
+            request.SendWebRequest();
+            while (!request.isDone)
+            {
+            }
+
+            if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                LLog.Error($"load bundle package error\n{request.error}");
+                return null;
+            }
+
+            var info = FromJson(request.downloadHandler.text);
+            
+            if (info is not {IsValid: true})
+            {
+                return null;
+            }
+            
+            info.Initialize();
+            return info;
         }
     }
 }

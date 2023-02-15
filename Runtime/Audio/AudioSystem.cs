@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
         
         public void PlaySound(string resName)
         {
-            LiteRuntime.Get<AssetSystem>().LoadAsset<AudioClip>(resName, (clip) =>
+            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<AudioClip>(resName, (clip) =>
             {
                 if (clip == null)
                 {

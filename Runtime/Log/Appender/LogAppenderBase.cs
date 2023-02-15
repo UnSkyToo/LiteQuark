@@ -184,7 +184,7 @@ namespace LiteQuark.Runtime
             if (Layout.IgnoresException) 
             {
                 var exceptionStr = loggingEvent.GetExceptionString();
-                if (exceptionStr != null && exceptionStr.Length > 0) 
+                if (exceptionStr != null && exceptionStr.Length > 0)
                 {
                     // render the event and the exception
                     Layout.Format(writer, loggingEvent);
