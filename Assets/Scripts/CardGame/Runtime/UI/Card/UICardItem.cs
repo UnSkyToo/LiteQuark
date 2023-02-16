@@ -39,10 +39,10 @@ namespace LiteCard.UI
 
         private void Setup()
         {
-            UIUtils.ReplaceSprite(Go, "Background", GameConst.Card.BackgroundResPathList[Data.GetCfg().Job][Data.GetCfg().Type]);
-            UIUtils.ReplaceSprite(Go, "Icon", Data.GetCfg().IconRes);
-            UIUtils.ReplaceSprite(Go, "Name", GameConst.Card.NameResPathList[Data.GetCfg().Rarity]);
-            UIUtils.ReplaceSprite(Go, "Type", GameConst.Card.TypeResPathList[Data.GetCfg().Type][Data.GetCfg().Rarity]);
+            UIUtils.ReplaceSprite(Go, "Background", GameConst.Card.BackgroundResPathList[Data.GetCfg().Job][Data.GetCfg().Type], false);
+            UIUtils.ReplaceSprite(Go, "Icon", Data.GetCfg().IconRes, false);
+            UIUtils.ReplaceSprite(Go, "Name", GameConst.Card.NameResPathList[Data.GetCfg().Rarity], false);
+            UIUtils.ReplaceSprite(Go, "Type", GameConst.Card.TypeResPathList[Data.GetCfg().Type][Data.GetCfg().Rarity], false);
         }
 
         public override void RefreshInfo()

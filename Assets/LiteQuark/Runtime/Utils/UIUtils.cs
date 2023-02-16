@@ -10,9 +10,14 @@ namespace LiteQuark.Runtime
         {
             return FindChild(parent.transform, path);
         }
-        
+
         public static Transform FindChild(Transform parent, string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return parent;
+            }
+            
             return parent.Find(path); 
         }
 
@@ -37,7 +42,7 @@ namespace LiteQuark.Runtime
         {
             return FindComponent<T>(parent.transform, path);
         }
-        
+
         public static T FindComponent<T>(Transform parent, string path) where T : Component
         {
             var child = FindChild(parent, path);
@@ -49,7 +54,7 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-
+        
         public static T FindComponentUpper<T>(GameObject current) where T : Component
         {
             return FindComponentUpper<T>(current.transform);
@@ -170,29 +175,35 @@ namespace LiteQuark.Runtime
             obj.AddComponent<GraphicRaycaster>();
             return obj.transform;
         }
-
-        public static void ReplaceSprite(GameObject go, string path, string resPath)
-        {   
-            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
+        
+        public static void ReplaceSprite(GameObject go, string path, Sprite sprite)
+        {
+            var image = FindComponent<Image>(go, path);
+            if (image != null)
             {
-                var image = FindComponent<Image>(go, path);
-                if (image != null)
-                {
-                    image.sprite = sprite;
-                }
-            });
+                image.sprite = sprite;
+            }
         }
 
-        public static void ReplaceSprite(GameObject go, string resPath)
+        public static void ReplaceSprite(GameObject go, string path, string resPath, bool async)
         {
-            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
+            if (async)
             {
-                var image = go.GetComponent<Image>();
-                if (image != null)
+                LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
                 {
-                    image.sprite = sprite;
-                }
-            });
+                    ReplaceSprite(go, path, sprite);
+                });
+            }
+            else
+            {
+                var sprite = LiteRuntime.Get<AssetSystem>().LoadAssetSync<Sprite>(resPath);
+                ReplaceSprite(go, path, sprite);
+            }
+        }
+
+        public static void ReplaceSprite(GameObject go, string resPath, bool async)
+        {
+            ReplaceSprite(go, null, resPath, async);
         }
     }
 }
