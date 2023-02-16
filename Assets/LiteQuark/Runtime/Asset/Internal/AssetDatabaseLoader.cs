@@ -30,13 +30,18 @@ namespace LiteQuark.Runtime
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
+            callback?.Invoke(LoadAssetSync<T>(assetPath));
+        }
+
+        public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
+        {
             var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
             var asset = AssetDatabase.LoadAssetAtPath<T>(fullPath);
             if (asset == null)
             {
                 LLog.Error($"can't load asset : {fullPath}");
             }
-            callback?.Invoke(asset);
+            return asset;
         }
 
         public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
@@ -48,12 +53,23 @@ namespace LiteQuark.Runtime
             });
         }
 
+        public UnityEngine.GameObject InstantiateSync(string assetPath)
+        {
+            var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
+            var instance = UnityEngine.Object.Instantiate(asset);
+            return instance;
+        }
+
         public void UnloadAsset(string assetPath)
         {
         }
 
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
+            if (asset is UnityEngine.GameObject)
+            {
+                UnityEngine.Object.DestroyImmediate(asset);
+            }
         }
 
         public void UnloadUnusedBundle()
