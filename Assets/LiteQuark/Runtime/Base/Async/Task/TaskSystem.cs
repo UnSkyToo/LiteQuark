@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            TaskList_.Foreach((task) =>
+            TaskList_.Foreach((task, list) =>
             {
                 if (!task.IsExecute)
                 {
@@ -43,9 +43,9 @@ namespace LiteQuark.Runtime
                 if (task.IsEnd)
                 {
                     task.Dispose();
-                    TaskList_.Remove(task);
+                    list.Remove(task);
                 }
-            });
+            }, TaskList_);
 
             if (MainThreadTaskList_.Count > 0)
             {
