@@ -2,9 +2,22 @@
 
 namespace LiteQuark.Runtime
 {
+    public static class UnityUtilsEx
+    {
+        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
+        {
+            return UnityUtils.GetOrAddComponent<T>(go);
+        }
+
+        public static T GetOrAddComponent<T>(this Transform go) where T : Component
+        {
+            return UnityUtils.GetOrAddComponent<T>(go);
+        }
+    }
+    
     public static class UnityUtils
     {
-        public static T GetOrCreateComponent<T>(GameObject go) where T : Component
+        public static T GetOrAddComponent<T>(GameObject go) where T : Component
         {
             if (go == null)
             {
@@ -20,9 +33,9 @@ namespace LiteQuark.Runtime
             return go.AddComponent<T>();
         }
         
-        public static T GetOrCreateComponent<T>(Transform go) where T : Component
+        public static T GetOrAddComponent<T>(Transform go) where T : Component
         {
-            return GetOrCreateComponent<T>(go.gameObject);
+            return GetOrAddComponent<T>(go.gameObject);
         }
         
         public static GameObject CreateGameObject(Transform parent, string name)

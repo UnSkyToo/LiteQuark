@@ -150,11 +150,11 @@ namespace LiteQuark.Runtime
 
         public static Canvas AddSortingCanvas(GameObject go, int order)
         {
-            var canvas = UnityUtils.GetOrCreateComponent<Canvas>(go);
+            var canvas = go.GetOrAddComponent<Canvas>();
             canvas.overrideSorting = true;
             canvas.sortingOrder = order;
 
-            var raycaster = UnityUtils.GetOrCreateComponent<GraphicRaycaster>(go);
+            var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
             
             return canvas;

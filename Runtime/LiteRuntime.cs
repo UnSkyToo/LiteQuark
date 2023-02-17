@@ -113,6 +113,7 @@ namespace LiteQuark.Runtime
 
                 foreach (var type in LiteConst.SystemTypeList)
                 {
+                    LLog.Info($"Initialize {type}");
                     if (System.Activator.CreateInstance(type) is ISystem sys)
                     {
                         SystemList_.Add(sys);
