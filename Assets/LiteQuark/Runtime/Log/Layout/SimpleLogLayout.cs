@@ -14,8 +14,8 @@ namespace LiteQuark.Runtime
                 throw new ArgumentNullException(nameof(loggingEvent));
             }
 
-            writer.Write(loggingEvent.Level.ToString());
-            writer.Write(" - ");
+            // writer.Write(loggingEvent.Level.ToString());
+            // writer.Write(" - ");
             writer.Write(loggingEvent.Message);
             writer.WriteLine();
         }

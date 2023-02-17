@@ -21,6 +21,9 @@ namespace LiteQuark.Editor
         private SerializedProperty LogFatalProperty_;
         private SerializedProperty ShowLogViewerProperty_;
 
+        private SerializedProperty ResolutionWidthProperty_;
+        private SerializedProperty ResolutionHeightProperty_;
+
         private void OnEnable()
         {
             LogicListProperty_ = serializedObject.FindProperty("LogicList");
@@ -37,6 +40,9 @@ namespace LiteQuark.Editor
             LogErrorProperty_ = serializedObject.FindProperty("LogError");
             LogFatalProperty_ = serializedObject.FindProperty("LogFatal");
             ShowLogViewerProperty_ = serializedObject.FindProperty("ShowLogViewer");
+
+            ResolutionWidthProperty_ = serializedObject.FindProperty("ResolutionWidth");
+            ResolutionHeightProperty_ = serializedObject.FindProperty("ResolutionHeight");
         }
 
         public override void OnInspectorGUI()
@@ -66,8 +72,13 @@ namespace LiteQuark.Editor
                 DrawSubProperty(LogFatalProperty_);
                 DrawSubProperty(ShowLogViewerProperty_);
             }
+            
+            DrawProperty(ResolutionWidthProperty_);
+            DrawProperty(ResolutionHeightProperty_);
 
             serializedObject.ApplyModifiedProperties();
+
+            // DrawPropertiesExcluding(serializedObject, "m_Script");
         }
 
         private void DrawProperty(SerializedProperty property)

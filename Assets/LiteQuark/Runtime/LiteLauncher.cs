@@ -25,6 +25,10 @@ namespace LiteQuark.Runtime
         [SerializeField] [HideInInspector] public bool LogFatal = true;
         [SerializeField] [HideInInspector] public bool ShowLogViewer = true;
 
+        [Header("UI Setting")]
+        [SerializeField] [HideInInspector] public int ResolutionWidth = 1920;
+        [SerializeField] [HideInInspector] public int ResolutionHeight = 1080;
+
         void Awake()
         {
             try
