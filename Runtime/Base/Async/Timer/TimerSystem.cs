@@ -20,15 +20,15 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            TimerList_.Foreach((timer, dt) =>
+            TimerList_.Foreach((timer, list, dt) =>
             {
                 timer.Tick(dt);
 
                 if (timer.IsEnd)
                 {
-                    TimerList_.Remove(timer);
+                    list.Remove(timer);
                 }
-            }, deltaTime);
+            }, TimerList_, deltaTime);
         }
 
         public ITimer AddTimer(float interval, Action onTick, int repeatCount = RepeatCountForever)
