@@ -172,7 +172,7 @@ namespace LiteQuark.Editor
             {
                 if (buildInfo.DependencyList.Contains(buildInfo.BundlePath))
                 {
-                    LLogEditor.Error($"loop reference : {buildInfo.BundlePath}");
+                    LEditorLog.Error($"loop reference : {buildInfo.BundlePath}");
                 }
                 
                 foreach (var assetPath in buildInfo.AssetList)

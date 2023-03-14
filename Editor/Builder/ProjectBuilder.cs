@@ -143,7 +143,7 @@ namespace LiteQuark.Editor
 
             foreach (var log in Logs_)
             {
-                LLogEditor.Info(log);
+                LEditorLog.Info(log);
             }
 
             return new ProjectBuildResult(isSuccess, stopwatch.ElapsedMilliseconds / 1000f);
@@ -156,7 +156,7 @@ namespace LiteQuark.Editor
 
         public void LogError(string msg)
         {
-            LLogEditor.Error(msg);
+            LEditorLog.Error(msg);
         }
         
         public string GetResOutputPath()

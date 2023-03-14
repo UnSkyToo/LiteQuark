@@ -36,5 +36,15 @@ namespace LiteQuark.Runtime
             var angle = AngleByVector(from, to);
             return angle;
         }
+
+        public static Vector2 Round(this Vector2 vec)
+        {
+            return new Vector2(Mathf.Round(vec.x), Mathf.Round(vec.y));
+        }
+
+        public static Vector3 Round(this Vector3 vec)
+        {
+            return new Vector3(Mathf.Round(vec.x), Mathf.Round(vec.y), Mathf.Round(vec.z));
+        }
     }
 }
