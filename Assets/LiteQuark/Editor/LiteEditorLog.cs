@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Editor
 {
-    internal static class LLogEditor
+    internal static class LEditorLog
     {
         internal static void Info(string msg)
         {
