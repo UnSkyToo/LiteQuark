@@ -5,6 +5,7 @@ namespace LiteQuark.Runtime
     public sealed class GameObjectPool : ObjectPoolBase<GameObject>
     {
         private string GoPath_;
+        private Transform Parent_;
         private GameObject Go_;
         
         public GameObjectPool()
@@ -14,6 +15,7 @@ namespace LiteQuark.Runtime
         public override void Initialize(object param)
         {
             GoPath_ = (string)param;
+            Parent_ = new GameObject(PathUtils.GetFileName(GoPath_)).transform;
             
             LiteRuntime.Get<AssetSystem>().LoadAssetAsync<GameObject>(GoPath_, (go) =>
             {
@@ -21,9 +23,20 @@ namespace LiteQuark.Runtime
             });
         }
 
+        public override void Clean()
+        {
+            base.Clean();
+            
+            GameObject.DestroyImmediate(Parent_.gameObject);
+            Parent_ = null;
+        }
+
         protected override GameObject OnCreate()
         {
-            return Object.Instantiate(Go_);
+            var go = Object.Instantiate(Go_);
+            go.transform.SetParent(Parent_, false);
+            go.transform.localPosition = Vector3.zero;
+            return go;
         }
 
         protected override void OnAlloc(GameObject go)
