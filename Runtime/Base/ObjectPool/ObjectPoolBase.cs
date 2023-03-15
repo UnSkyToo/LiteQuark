@@ -16,12 +16,7 @@ namespace LiteQuark.Runtime
         
         public T Alloc()
         {
-            if (ObjectStack_.Count > 0)
-            {
-                return ObjectStack_.Pop();
-            }
-
-            var obj = OnCreate();
+            var obj = ObjectStack_.Count > 0 ? ObjectStack_.Pop() : OnCreate();
             if (obj == null)
             {
                 throw new NoNullAllowedException("object pool create null obj");
@@ -36,7 +31,7 @@ namespace LiteQuark.Runtime
             ObjectStack_.Push(obj);
         }
         
-        public void Clean()
+        public virtual void Clean()
         {
             foreach (var obj in ObjectStack_)
             {
