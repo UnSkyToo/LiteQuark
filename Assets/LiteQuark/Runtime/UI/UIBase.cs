@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         public abstract UIDepthMode DepthMode { get; }
         
         public GameObject Go { get; private set; }
+        public RectTransform RT { get; private set; }
 
         public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
 
@@ -19,6 +20,7 @@ namespace LiteQuark.Runtime
         public void BindGo(GameObject go)
         {
             Go = go;
+            RT = Go.GetComponent<RectTransform>();
         }
 
         public void Open(params object[] paramList)
@@ -61,8 +63,8 @@ namespace LiteQuark.Runtime
             anchorMax.x /= maxWidth;
             anchorMax.y /= maxHeight;
 
-            Go.GetComponent<RectTransform>().anchorMin = anchorMin;
-            Go.GetComponent<RectTransform>().anchorMax = anchorMax;
+            RT.anchorMin = anchorMin;
+            RT.anchorMax = anchorMax;
         }
 
         public Transform FindChild(string path)
