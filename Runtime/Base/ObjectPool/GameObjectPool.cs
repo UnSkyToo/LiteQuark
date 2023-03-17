@@ -4,6 +4,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class GameObjectPool : ObjectPoolBase<GameObject>
     {
+        private static readonly Vector3 InvalidPosition = new Vector3(-10000, -10000, -10000);
+        
         private string GoPath_;
         private Transform Parent_;
         private GameObject Go_;
@@ -35,18 +37,18 @@ namespace LiteQuark.Runtime
         {
             var go = Object.Instantiate(Go_);
             go.transform.SetParent(Parent_, false);
-            go.transform.localPosition = Vector3.zero;
+            go.transform.localPosition = InvalidPosition;
             return go;
         }
 
         protected override void OnAlloc(GameObject go)
         {
-            go.SetActive(true);
+            go.transform.localPosition = Vector3.zero;
         }
 
         protected override void OnRecycle(GameObject go)
         {
-            go.SetActive(false);
+            go.transform.localPosition = InvalidPosition;
         }
 
         protected override void OnDelete(GameObject go)
