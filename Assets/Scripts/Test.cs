@@ -1,26 +1,22 @@
-using System;
+using LiteQuark.Runtime;
 using Platform;
 using UnityEngine;
 
 public class Test : MonoBehaviour
 {
-    public GameObject CharacterGo;
-    
-    private PhysicsWorld World_;
-    private Character Character_;
+    public GameObject Instance;
+
+    private GameObject[] GoList_ = new GameObject[50000];
+
+    private GameObjectPool Pool_;
 
     void Start()
     {
-        CharacterGo.SetActive(true);
-        
-        World_ = new PhysicsWorld();
-        Character_ = new Character(World_, CharacterGo, new AABB(0, 0, Const.CharacterHalfX, Const.CharacterHalfY, 0, Const.CharacterHalfY));
-        World_.AddObject(Character_);
+        Pool_ = LiteRuntime.Get<ObjectPoolSystem>().GetPool<GameObjectPool>("Test/Prefab/CircleTest.prefab");
     }
 
     private void OnDestroy()
     {
-        World_.Dispose();
     }
 
     void Update()
@@ -29,42 +25,63 @@ public class Test : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
-            var worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var x = World_.GetMap().GetMapTileXAtPoint(worldPos.x);
-            var y = World_.GetMap().GetMapTileYAtPoint(worldPos.y);
-
-            if (Input.GetKey(KeyCode.LeftControl))
-            {
-                World_.GetMap().SetTile(x, y, World_.GetMap().GetTile(x, y) == TileType.Empty ? TileType.OneWay : TileType.Empty);
-            }
-            else
-            {
-                World_.GetMap().SetTile(x, y, World_.GetMap().GetTile(x, y) == TileType.Empty ? TileType.Block : TileType.Empty);
-            }
+            Show();
         }
-
-        if (Input.GetMouseButtonDown(1))
+        else if (Input.GetMouseButtonDown(1))
         {
-            var worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var x = World_.GetMap().GetMapTileXAtPoint(worldPos.x);
-            var y = World_.GetMap().GetMapTileYAtPoint(worldPos.y);
-            var tilePosX = World_.GetMap().GetMapTilePositionX(x);
-            var tilePosY = World_.GetMap().GetMapTilePositionY(y);
-            Character_.SetPosition(new Vector2((float)tilePosX, (float)tilePosY));
+            Hide();
         }
     }
 
-    private int a = 0;
-    private void FixedUpdate()
+    private void Show()
     {
-        a++;
-        if (a % 3 == 0)
+        var sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+        for (var i = 0; i < GoList_.Length; ++i)
         {
-            World_.Update(Time.fixedDeltaTime * 3);
+            GoList_[i] = Pool_.Alloc();
         }
+
+        sw.Stop();
+        Debug.LogWarning($"Show time : {sw.Elapsed.TotalSeconds}");
     }
 
-    private void OnGUI()
+    private void Hide()
     {
+        var sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+        for (var i = 0; i < GoList_.Length; ++i)
+        {
+            Pool_.Recycle(GoList_[i]);
+        }
+
+        sw.Stop();
+        Debug.LogWarning($"Hide time : {sw.Elapsed.TotalSeconds}");
+    }
+
+    private void Show2()
+    {
+        var sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+        for (var i = 0; i < GoList_.Length; ++i)
+        {
+            GoList_[i].transform.localPosition = new Vector3(0, 0, 0);
+        }
+
+        sw.Stop();
+        Debug.LogWarning($"Show2 time : {sw.Elapsed.TotalSeconds}");
+    }
+
+    private void Hide2()
+    {
+        var sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+        for (var i = 0; i < GoList_.Length; ++i)
+        {
+            GoList_[i].transform.localPosition = new Vector3(10000, 10000, 10000);
+        }
+
+        sw.Stop();
+        Debug.LogWarning($"Hide2 time : {sw.Elapsed.TotalSeconds}");
     }
 }

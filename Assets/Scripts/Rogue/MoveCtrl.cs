@@ -28,7 +28,7 @@ namespace Rogue
                 transform.rotation = Quaternion.Slerp(transform.rotation, TargetRotate_, RotateSpeed);
             }
 
-            var moveDir = new Vector3(h, 0, v).normalized;
+            var moveDir = new Vector3(h, 0, v);
             var moveSpeed = Input.GetAxis("Fire3") > 0 ? RunSpeed : WalkSpeed;
             
             Controller_.SimpleMove(moveSpeed * moveDir);
@@ -43,10 +43,10 @@ namespace Rogue
         {
             if (hit.transform.CompareTag("Player"))
             {
-                var rigidbody = hit.collider.attachedRigidbody;
-                if (rigidbody != null && !rigidbody.isKinematic)
+                var body = hit.collider.attachedRigidbody;
+                if (body != null && !body.isKinematic)
                 {
-                    rigidbody.velocity = hit.moveDirection * PushForce;
+                    body.velocity = hit.moveDirection * PushForce;
                 }
             }
         }
