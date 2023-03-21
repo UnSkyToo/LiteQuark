@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fdd7109314640fd931b0b0ddd040e3f, type: 3}
   m_Name: curve_circle
   m_EditorClassIdentifier: 
+  Loop: 1
   Points:
   - {x: 0, y: 3}
   - {x: 4, y: 3}

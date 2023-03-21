@@ -10,9 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 638479791684701583}
   - component: {fileID: 638479791684701582}
-  - component: {fileID: 5407362700075462309}
   m_Layer: 3
-  m_Name: BulletCurve
+  m_Name: Bullet2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,7 +73,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: 21300000, guid: cfae266e07df97144836520c081bf9d2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e6b0add171b828840a3f2be2cee740f0, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -85,17 +84,3 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &5407362700075462309
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 638479791684701585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afaa2663d1ac409d912aa1daa6149b82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Velocity: 0
-  Curve: {fileID: 0}

@@ -3,12 +3,16 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Enemy
+  - EnemyBullet
+  - Bullet
+  - Exp
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Collision
   - Water
   - UI
   - 

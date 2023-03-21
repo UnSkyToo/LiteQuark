@@ -1,26 +1,26 @@
 ﻿using System.Collections;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
 
 namespace InfiniteGame
 {
-    public sealed class Enemy : MonoBehaviour
+    public sealed class Enemy : BattleEntity
     {
         public bool IsAlive { get; set; }
-        
-        public float MoveSpeed;
-
-        public int Hp;
+        public float MoveSpeed { get; set; }
+        public int Hp { get; set; }
         
         private TextMeshPro HpText_;
-        
-        private void Awake()
+
+        public Enemy(GameObject go, CircleArea circle)
+            : base(go, circle)
         {
-            HpText_ = GetComponentInChildren<TextMeshPro>();
+            HpText_ = Go.transform.Find("LabelHp").GetComponent<TextMeshPro>();
             UpdateHpText();
         }
 
-        private void FixedUpdate()
+        public override void Tick(float deltaTime)
         {
             if (!IsAlive)
             {
@@ -28,13 +28,14 @@ namespace InfiniteGame
             }
 
             var player = BattleManager.Instance.GetPlayer();
-            if (Vector3.Distance(player.GetPosition(), transform.localPosition) < 0.1f)
+            if (Vector3.Distance(player.GetPosition(), GetPosition()) < 0.1f)
             {
                 return;
             }
 
-            var moveDir = (player.GetPosition() - transform.localPosition).normalized;
-            transform.Translate(moveDir * (MoveSpeed * Time.fixedDeltaTime), Space.Self);
+            var moveDir = (player.GetPosition() - GetPosition()).normalized;
+            var position = GetPosition() + moveDir * (MoveSpeed * deltaTime);
+            SetPosition(position);
         }
 
         public void UpdateHpText()
@@ -42,9 +43,9 @@ namespace InfiniteGame
             HpText_.text = $"{Hp}";
         }
 
-        public void OnBulletCollision(Bullet bullet)
+        public void OnBulletCollision(BulletBase bullet)
         {
-            Hp--;
+            Hp = Mathf.Max(0, Hp - bullet.Damage);
             UpdateHpText();
 
             if (Hp <= 0)
@@ -53,7 +54,7 @@ namespace InfiniteGame
             }
             else
             {
-                StartCoroutine(Twinkle());
+                LiteRuntime.Get<TaskSystem>().AddTask(Twinkle());
             }
         }
 
@@ -64,15 +65,15 @@ namespace InfiniteGame
 
         private IEnumerator Twinkle()
         {
-            GetComponent<SpriteRenderer>().color = Color.red;
+            Go.GetComponent<SpriteRenderer>().color = Color.red;
             yield return new WaitForSeconds(0.05f);
-            GetComponent<SpriteRenderer>().color = Color.white;
+            Go.GetComponent<SpriteRenderer>().color = Color.white;
         }
 
         private void Dead()
         {
             IsAlive = false;
-            BattleManager.Instance.CreateExp(transform.localPosition);
+            BattleManager.Instance.CreateExp(GetPosition());
             BattleManager.Instance.RemoveEnemy(this);
         }
     }

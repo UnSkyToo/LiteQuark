@@ -1,65 +1,52 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace InfiniteGame
 {
-    public sealed class Player : MonoBehaviour
+    public sealed class Player : BattleEntity
     {
-        public float AttackInterval;
-        public float MoveSpeed;
+        public float MoveSpeed { get; set; }
 
-        private float Interval_;
-
-        private IBulletEmitter Emitter_;
-        private Vector3 Position_;
+        private List<SkillBase> SkillList_;
 
         public int CurExp { get; private set; }
         public int MaxExp { get; private set; }
         public int Level { get; private set; }
 
-        private void Awake()
+        public Player(GameObject go, CircleArea circle)
+            : base(go, circle)
         {
-            AttackInterval = Mathf.Max(AttackInterval, 0.01f);
-            Emitter_ = new BulletSerialEmitter(this, 0.083f);
-
-            Interval_ = AttackInterval - 0.2f;
-            Position_ = transform.localPosition;
+            SkillList_ = new List<SkillBase>();
 
             CurExp = 0;
             MaxExp = 5;
             Level = 1;
         }
 
-        private void FixedUpdate()
+        public override void Tick(float deltaTime)
         {
             var h = Input.GetAxis("Horizontal");
             var v = Input.GetAxis("Vertical");
 
             var moveDir = new Vector3(h, v, 0).normalized;
-            transform.Translate(moveDir * (MoveSpeed * Time.fixedDeltaTime), Space.Self);
-            Position_ = transform.localPosition;
-        }
+            var position = GetPosition() + moveDir * (MoveSpeed * deltaTime);
+            SetPosition(position);
 
-        private void Update()
-        {
-            Interval_ += Time.deltaTime;
-            while (Interval_ >= AttackInterval)
+            foreach (var skill in SkillList_)
             {
-                Interval_ -= AttackInterval;
-                Fire();
+                skill.Tick(deltaTime);
             }
             
             CheckCollision();
-            Camera.main.transform.localPosition = new Vector3(Position_.x, Position_.y, -10);
-        }
+            Camera.main.transform.localPosition = new Vector3(GetPosition().x, GetPosition().y, -10);
 
-        public Vector3 GetPosition()
-        {
-            return Position_;
-        }
-
-        private void Fire()
-        {
-            Emitter_.Fire(BattleManager.Instance.FindEnemy());
+            if (Input.GetKeyDown(KeyCode.J))
+            {
+                foreach (var skill in SkillList_)
+                {
+                    skill.AddLevel();
+                }
+            }
         }
 
         private void AddExp(int val)
@@ -82,21 +69,24 @@ namespace InfiniteGame
         
         private void CheckCollision()
         {
-            var result = PhysicUtils.CheckOverlapCircle(transform.localPosition, 0.5f, Const.Mask.Collision);
-            foreach (var col in result)
+            var enemy = PhysicUtils.CheckOverlapEnemyOne(GetCircle());
+            if (enemy != null)
             {
-                if (col.CompareTag("Exp"))
-                {
-                    var exp = col.transform.GetComponent<Exp>();
-                    AddExp(exp.Value);
-                    exp.OnPlayerCollision();
-                }
-                else if (col.CompareTag("Enemy"))
-                {
-                    var enemy = col.transform.GetComponent<Enemy>();
-                    enemy.OnPlayerCollision(this);
-                }
+                enemy.OnPlayerCollision(this);
             }
+
+            var exps = PhysicUtils.CheckOverlapExp(GetCircle());
+            foreach (var exp in exps)
+            {
+                AddExp(exp.Value);
+                exp.OnPlayerCollision();
+            }
+        }
+
+        public void AddSkill(SkillBase skill)
+        {
+            SkillList_.Add(skill);
+            skill.Attach();
         }
     }
 }

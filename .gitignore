@@ -21,6 +21,7 @@
 
 # Streaming directory
 [Aa]ssets/StreamingAssets/
+[Aa]ssets/StreamingAssets.meta
 
 # Visual Studio cache directory
 .vs/

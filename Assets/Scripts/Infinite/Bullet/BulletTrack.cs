@@ -1,12 +1,9 @@
-using LiteQuark.Runtime;
 using UnityEngine;
 
 namespace InfiniteGame
 {
-    public class Bullet : MonoBehaviour
+    public sealed class BulletTrack : BulletBase
     {
-        public bool IsAlive { get; set; }
-
         public float Angular;
         public float AngularAcceleration;
         public float AngularAccelerationDelay;
@@ -14,24 +11,22 @@ namespace InfiniteGame
         public float Acceleration;
         public float AccelerationDelay;
 
-        public int Damage;
-        
         public float LifeTime;
 
-        private void Start()
+        public BulletTrack(GameObject go, CircleArea circle)
+            : base(go, circle)
         {
-            IsAlive = true;
             LifeTime = 3;
         }
 
-        private void FixedUpdate()
+        public override void Tick(float deltaTime)
         {
             if (!IsAlive)
             {
                 return;
             }
 
-            LifeTime -= Time.fixedDeltaTime;
+            LifeTime -= deltaTime;
             if (LifeTime <= 0)
             {
                 Dead();
@@ -39,35 +34,29 @@ namespace InfiniteGame
             }
 
             var direction = (Quaternion.AngleAxis(Angular, Vector3.back) * Vector3.up).normalized;
-            transform.Translate(direction * (Velocity * Time.fixedDeltaTime), Space.Self);
+            var position = GetPosition() + direction * (Velocity * deltaTime);
+            SetPosition(position);
 
-            AngularAccelerationDelay -= Time.fixedDeltaTime;
+            AngularAccelerationDelay -= deltaTime;
             if (AngularAccelerationDelay <= 0)
             {
-                Angular += AngularAcceleration * Time.fixedDeltaTime;
+                Angular += AngularAcceleration * deltaTime;
             }
 
-            AccelerationDelay -= Time.fixedDeltaTime;
+            AccelerationDelay -= deltaTime;
             if (AccelerationDelay <= 0)
             {
-                Velocity += Acceleration * Time.fixedDeltaTime;
+                Velocity += Acceleration * deltaTime;
             }
 
             CheckCollision();
         }
 
-        private void Dead()
-        {
-            IsAlive = false;
-            BulletManager.Instance.RemoveBullet(this);
-        }
-
         private void CheckCollision()
         {
-            var result = PhysicUtils.CheckOverlapCircleOne(transform.localPosition, 0.16f, Const.Mask.Collision, "Enemy");
-            if (result != null)
+            var enemy = PhysicUtils.CheckOverlapEnemyOne(GetCircle());
+            if (enemy != null)
             {
-                var enemy = result.transform.GetComponent<Enemy>();
                 enemy.OnBulletCollision(this);
                 Dead();
             }

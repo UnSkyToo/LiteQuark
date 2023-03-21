@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/ChessScene.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
+    path: Assets/Scenes/InfiniteGame.unity
+    guid: dc6196301bb7ad04aa0bbfcbca0172a3
   m_configObjects: {}
