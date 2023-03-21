@@ -181,7 +181,7 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("A layout must be set");
             }
 
-            if (Layout.IgnoresException) 
+            if (!Layout.IgnoresException) 
             {
                 var exceptionStr = loggingEvent.GetExceptionString();
                 if (exceptionStr != null && exceptionStr.Length > 0)
