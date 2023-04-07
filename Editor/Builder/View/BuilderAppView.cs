@@ -21,7 +21,11 @@ namespace LiteQuark.Editor
 
         protected override void DrawContent()
         {
+            Config_.ProduceName = EditorGUILayout.TextField(new GUIContent("Produce Name", "Display app name"), Config_.ProduceName);
+            Config_.Version = EditorGUILayout.TextField(new GUIContent("Version", "App version"), Config_.Version);
             Config_.Options = (BuildOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), Config_.Options, false);
+            Config_.Backend = (ScriptingImplementation)EditorGUILayout.EnumPopup(new GUIContent("Backend", "Script backend"), Config_.Backend);
+            Config_.IsDevelopmentBuild = EditorGUILayout.Toggle(new GUIContent("Development Build", "Is development build"), Config_.IsDevelopmentBuild);
         }
     }
 }

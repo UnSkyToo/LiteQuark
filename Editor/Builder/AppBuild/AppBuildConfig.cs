@@ -19,5 +19,15 @@ namespace LiteQuark.Editor
         public string Version { get; set; } = "1.0.0";
 
         public int BuildCode { get; set; } = 1;
+
+        /// <summary>
+        /// Script backend
+        /// </summary>
+        public ScriptingImplementation Backend { get; set; } = ScriptingImplementation.IL2CPP;
+
+        /// <summary>
+        /// Is development build Mode
+        /// </summary>
+        public bool IsDevelopmentBuild { get; set; } = true;
     }
 }
