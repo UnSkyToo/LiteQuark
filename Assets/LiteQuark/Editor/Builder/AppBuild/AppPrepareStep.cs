@@ -27,15 +27,18 @@ namespace LiteQuark.Editor
 
         private void ApplySetting(ProjectBuilder builder)
         {
-            // var targetGroup = BuildPipeline.GetBuildTargetGroup(builder.Target);
+            var targetGroup = BuildPipeline.GetBuildTargetGroup(builder.Target);
             // PlayerSettings.SetApplicationIdentifier(targetGroup, "com.lite.quark.demo");
             // PlayerSettings.companyName = "lite";
             // PlayerSettings.productName = "demo";
             // PlayerSettings.bundleVersion = "1.0.0";
             //
-            // EditorUserBuildSettings.development = false;
-            //
-            // AssetDatabase.SaveAssets();
+            EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
+            
+            PlayerSettings.SetScriptingBackend(targetGroup, builder.AppConfig.Backend);
+            EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
+
+            AssetDatabase.SaveAssets();
         }
     }
 }
