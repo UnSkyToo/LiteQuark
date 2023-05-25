@@ -21,10 +21,10 @@ namespace LiteQuark.Runtime
 
         public static T[] Clone<T>(this T[] array)
         {
-            return CloneArray(array);
+            return CloneObjectArray(array);
         }
         
-        public static T[] CloneArray<T>(T[] array)
+        public static T[] CloneObjectArray<T>(T[] array)
         {
             if (array == null)
             {
@@ -43,6 +43,23 @@ namespace LiteQuark.Runtime
                 {
                     result[index] = array[index];
                 }
+            }
+
+            return result;
+        }
+        
+        public static T[] CloneDataArray<T>(T[] array) where T : ICloneable
+        {
+            if (array == null)
+            {
+                return null;
+            }
+            
+            var result = new T[array.Length];
+
+            for (var index = 0; index < array.Length; ++index)
+            {
+                result[index] = (T)array[index].Clone();
             }
 
             return result;

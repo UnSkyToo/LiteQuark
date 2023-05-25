@@ -161,46 +161,5 @@ namespace LiteQuark.Runtime
             }
             return result;
         }
-        
-        public static T[] CloneObjectArray<T>(T[] array)
-        {
-            if (array == null)
-            {
-                return null;
-            }
-            
-            var result = new T[array.Length];
-
-            for (var index = 0; index < array.Length; ++index)
-            {
-                if (array[index] is ICloneable clone)
-                {
-                    result[index] = (T)clone.Clone();
-                }
-                else
-                {
-                    result[index] = array[index];
-                }
-            }
-
-            return result;
-        }
-
-        public static T[] CloneDataArray<T>(T[] array) where T : ICloneable
-        {
-            if (array == null)
-            {
-                return null;
-            }
-            
-            var result = new T[array.Length];
-
-            for (var index = 0; index < array.Length; ++index)
-            {
-                result[index] = (T)array[index].Clone();
-            }
-
-            return result;
-        }
     }
 }
