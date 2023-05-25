@@ -61,7 +61,7 @@ namespace LiteCard.GamePlay
             var result = new ModifierSet
             {
                 ModifierID = ModifierID,
-                ParamList = TypeUtils.CloneObjectArray(ParamList)
+                ParamList = ArrayUtils.CloneObjectArray(ParamList)
             };
             return result;
         }

@@ -6,13 +6,14 @@ namespace InfiniteGame
 {
     public sealed class BattleManager : Singleton<BattleManager>
     {
+        public bool Pause { get; set; }
+        
         private Player Player_;
         private ListEx<Enemy> EnemyList_ = new ListEx<Enemy>();
         private ListEx<BulletBase> BulletList_ = new ListEx<BulletBase>();
         private ListEx<Exp> ExpList_ = new ListEx<Exp>();
 
         private GameObjectPool EnemyPool_;
-        private GameObjectPool BulletPool_;
         private GameObjectPool ExpPool_;
 
         private IEnemyEmitter EnemyEmitter_;
@@ -20,14 +21,20 @@ namespace InfiniteGame
         public BattleManager()
         {
             EnemyPool_ = LiteRuntime.Get<ObjectPoolSystem>().GetPool<GameObjectPool>("Infinite/Prefab/Enemy.prefab");
-            BulletPool_ = LiteRuntime.Get<ObjectPoolSystem>().GetPool<GameObjectPool>("Infinite/Prefab/Bullet.prefab");
             ExpPool_ = LiteRuntime.Get<ObjectPoolSystem>().GetPool<GameObjectPool>("Infinite/Prefab/Exp.prefab");
 
             EnemyEmitter_ = new NormalEnemyEmitter();
+
+            Pause = false;
         }
 
         public void Tick(float deltaTime)
         {
+            if (Pause)
+            {
+                return;
+            }
+
             Player_.Tick(deltaTime);
             
             EnemyList_.Foreach((enemy, dt) =>
@@ -52,11 +59,10 @@ namespace InfiniteGame
         {
             var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Player.prefab");
             Player_ = new Player(go, new CircleArea(0.2f));
-            Player_.MoveSpeed = 4;
+            Player_.MoveSpeed = 3;
+            Player_.DamageAdd = 0;
             
-            Player_.AddSkill(new Skill1());
-            Player_.AddSkill(new Skill2());
-            Player_.AddSkill(new Skill3());
+            Player_.AddSkill(4);
         }
 
         public Player GetPlayer()
@@ -84,7 +90,7 @@ namespace InfiniteGame
             var go = EnemyPool_.Alloc();
             var enemy = new Enemy(go, new CircleArea(0.25f));
             enemy.MoveSpeed = 1.0f;
-            enemy.Hp = 1;
+            enemy.Hp = MathUtils.RandInt(1, 3);
             enemy.IsAlive = true;
             enemy.UpdateHpText();
             enemy.SetPosition(GameUtils.RandomPosition(11));
@@ -102,7 +108,7 @@ namespace InfiniteGame
             EnemyList_.Remove(enemy);
         }
 
-        public Enemy FindEnemy()
+        public Enemy FindEnemy(int maxRange)
         {
             var minDist = float.MaxValue;
             Enemy target = null;
@@ -110,7 +116,7 @@ namespace InfiniteGame
             EnemyList_.Foreach((enemy) =>
             {
                 var dist = Vector3.Distance(enemy.GetPosition(), Player_.GetPosition());
-                if (dist < minDist)
+                if (dist <= maxRange && dist < minDist)
                 {
                     minDist = dist;
                     target = enemy;
@@ -122,69 +128,35 @@ namespace InfiniteGame
 
         public BulletTrack CreateBulletTrack(Vector3 beginPos, Vector3 targetPos, float speed)
         {
-            var go = BulletPool_.Alloc();
-            go.tag = Const.Tag.Bullet;
-
-            var bullet = new BulletTrack(go, new CircleArea(0.08f));
-            bullet.Pool = BulletPool_;
-            bullet.SetPosition(beginPos);
-            bullet.LifeTime = 3;
-            bullet.Angular = MathUtils.AngleByPoint(beginPos, targetPos);
-            bullet.AngularAcceleration = 0;
-            bullet.AngularAccelerationDelay = 0;
-            bullet.Velocity = speed;
-            bullet.Acceleration = 0;
-            bullet.AccelerationDelay = 0;
-            bullet.Damage = 1;
-            
+            var bullet = BulletFactory.Instance.CreateBulletTrack(beginPos, targetPos, speed);
             BulletList_.Add(bullet);
             return bullet;
         }
 
         public BulletCurve CreateBulletCurve(CurveData curve, float speed)
         {
-            var go = BulletPool_.Alloc();
-            go.tag = Const.Tag.Bullet;
-
-            var bullet = new BulletCurve(go, new CircleArea(0.08f), curve, speed);
-            bullet.Pool = BulletPool_;
-            bullet.Damage = 1;
-            
+            var bullet = BulletFactory.Instance.CreateBulletCurve(curve, speed);
             BulletList_.Add(bullet);
             return bullet;
         }
 
         public BulletArea CreateBulletArea(int level, float interval)
         {
-            var scale = 1f + (level - 1) * 0.3f;
-            
-            var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Bullet2.prefab");
-            go.tag = Const.Tag.Bullet;
-            go.transform.localScale = Vector3.one * scale;
+            var bullet = BulletFactory.Instance.CreateBulletArea(level, interval);
+            BulletList_.Add(bullet);
+            return bullet;
+        }
 
-            var bullet = new BulletArea(go, new CircleArea(0.64f * scale), interval);
-            bullet.Damage = 1;
-            
+        public BulletWink CreateBulletWink(Vector3 position, float duration)
+        {
+            var bullet = BulletFactory.Instance.CreateBulletWink(position, duration);
             BulletList_.Add(bullet);
             return bullet;
         }
 
         public void RemoveBullet(BulletBase bullet)
         {
-            if (bullet == null)
-            {
-                return;
-            }
-
-            if (bullet.Pool != null)
-            {
-                bullet.Pool.Recycle(bullet.Go);
-            }
-            else
-            {
-                LiteRuntime.Get<AssetSystem>().UnloadAsset(bullet.Go);
-            }
-
+            BulletFactory.Instance.RemoveBullet(bullet);
             BulletList_.Remove(bullet);
         }
 

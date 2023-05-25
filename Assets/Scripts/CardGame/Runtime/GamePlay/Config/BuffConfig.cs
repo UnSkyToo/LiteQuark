@@ -46,13 +46,13 @@ namespace LiteCard.GamePlay
                 Job = Job,
                 Number = Number,
                 TriggerType = TriggerType,
-                TriggerParams = TypeUtils.CloneObjectArray(TriggerParams),
+                TriggerParams = ArrayUtils.CloneObjectArray(TriggerParams),
                 SustainType = SustainType,
                 MaxLayer = MaxLayer,
                 MatchID = MatchID,
-                BaseAttr = TypeUtils.CloneDataArray(BaseAttr),
-                LayerAttr = TypeUtils.CloneDataArray(LayerAttr),
-                ModifierSets = TypeUtils.CloneDataArray(ModifierSets)
+                BaseAttr = ArrayUtils.CloneDataArray(BaseAttr),
+                LayerAttr = ArrayUtils.CloneDataArray(LayerAttr),
+                ModifierSets = ArrayUtils.CloneDataArray(ModifierSets)
             };
             return result;
         }

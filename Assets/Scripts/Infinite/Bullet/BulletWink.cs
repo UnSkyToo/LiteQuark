@@ -2,16 +2,16 @@
 
 namespace InfiniteGame
 {
-    public sealed class BulletArea : BulletBase
+    public sealed class BulletWink : BulletBase
     {
-        private float Interval_;
+        private float Duration_;
         private float Time_;
         
-        public BulletArea(GameObject go, CircleArea circle, float interval)
+        public BulletWink(GameObject go, CircleArea circle, float duration)
             : base(go, circle)
         {
-            Interval_ = interval;
-            Time_ = interval;
+            Duration_ = duration;
+            Time_ = 0;
         }
 
         public override void Tick(float deltaTime)
@@ -21,11 +21,16 @@ namespace InfiniteGame
                 return;
             }
 
+            if (Time_ == 0)
+            {
+                CheckCollision();
+            }
+
             Time_ += deltaTime;
-            if (Time_ >= Interval_)
+            if (Time_ >= Duration_)
             {
                 Time_ = 0f;
-                CheckCollision();
+                Dead();
             }
         }
         

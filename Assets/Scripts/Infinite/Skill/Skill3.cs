@@ -5,6 +5,7 @@
         private IBulletEmitter Emitter_;
         
         public Skill3()
+            : base("domain")
         {
             Emitter_ = new BulletAreaEmitter();
         }

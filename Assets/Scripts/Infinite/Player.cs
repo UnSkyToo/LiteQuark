@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using LiteQuark.Runtime;
 using UnityEngine;
 
 namespace InfiniteGame
@@ -6,8 +7,9 @@ namespace InfiniteGame
     public sealed class Player : BattleEntity
     {
         public float MoveSpeed { get; set; }
+        public  int DamageAdd { get; set; }
 
-        private List<SkillBase> SkillList_;
+        private Dictionary<int, SkillBase> SkillList_;
 
         public int CurExp { get; private set; }
         public int MaxExp { get; private set; }
@@ -16,7 +18,7 @@ namespace InfiniteGame
         public Player(GameObject go, CircleArea circle)
             : base(go, circle)
         {
-            SkillList_ = new List<SkillBase>();
+            SkillList_ = new Dictionary<int, SkillBase>();
 
             CurExp = 0;
             MaxExp = 5;
@@ -27,14 +29,14 @@ namespace InfiniteGame
         {
             var h = Input.GetAxis("Horizontal");
             var v = Input.GetAxis("Vertical");
-
+            
             var moveDir = new Vector3(h, v, 0).normalized;
             var position = GetPosition() + moveDir * (MoveSpeed * deltaTime);
             SetPosition(position);
 
             foreach (var skill in SkillList_)
             {
-                skill.Tick(deltaTime);
+                skill.Value.Tick(deltaTime);
             }
             
             CheckCollision();
@@ -44,7 +46,7 @@ namespace InfiniteGame
             {
                 foreach (var skill in SkillList_)
                 {
-                    skill.AddLevel();
+                    skill.Value.AddLevel();
                 }
             }
         }
@@ -65,6 +67,9 @@ namespace InfiniteGame
         {
             MaxExp += (int)(MaxExp * 1.5f);
             Debug.Log($"Level up, {CurExp}/{MaxExp}");
+
+            var skillList = SkillDatabase.Instance.GetRandomList(3);
+            LiteRuntime.Get<UISystem>().OpenUI<UIChooseSkill>(skillList);
         }
         
         private void CheckCollision()
@@ -83,10 +88,18 @@ namespace InfiniteGame
             }
         }
 
-        public void AddSkill(SkillBase skill)
+        public void AddSkill(int id)
         {
-            SkillList_.Add(skill);
-            skill.Attach();
+            if (SkillList_.TryGetValue(id, out var skill))
+            {
+                skill.AddLevel();
+            }
+            else
+            {
+                var newSkill = SkillDatabase.Instance.GetSkill(id);
+                SkillList_.Add(id, newSkill);
+                newSkill.Attach();
+            }
         }
     }
 }

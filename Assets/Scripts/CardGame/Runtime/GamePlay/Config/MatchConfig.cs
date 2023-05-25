@@ -32,7 +32,7 @@ namespace LiteCard.GamePlay
                 Name = Name,
                 TargetType = TargetType,
                 FilterType = FilterType,
-                FilterParams = TypeUtils.CloneObjectArray(FilterParams),
+                FilterParams = ArrayUtils.CloneObjectArray(FilterParams),
                 TargetNum = TargetNum
             };
             return result;

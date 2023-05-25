@@ -4,10 +4,12 @@ namespace InfiniteGame
 {
     public abstract class SkillBase : ITick
     {
+        public string Name { get; }
         public int Level { get; private set; }
         
-        protected SkillBase()
+        protected SkillBase(string name)
         {
+            Name = name;
             Level = 1;
         }
 

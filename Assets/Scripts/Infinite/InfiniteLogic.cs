@@ -6,7 +6,9 @@ namespace InfiniteGame
     {
         public bool Startup()
         {
+            BulletFactory.Instance.Initialize();
             BattleManager.Instance.CreatePlayer();
+            // LiteRuntime.Get<UISystem>().OpenUI<UIChooseSkill>(1, 3);
             return true;
         }
 

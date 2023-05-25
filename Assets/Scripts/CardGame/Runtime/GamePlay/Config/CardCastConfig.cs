@@ -30,11 +30,11 @@ namespace LiteCard.GamePlay
                 Desc = Desc,
                 Cost = Cost,
                 MatchID = MatchID,
-                ModifierSets = TypeUtils.CloneDataArray(ModifierSets),
+                ModifierSets = ArrayUtils.CloneDataArray(ModifierSets),
                 TargetType = TargetType,
-                TargetParams = TypeUtils.CloneObjectArray(TargetParams),
+                TargetParams = ArrayUtils.CloneObjectArray(TargetParams),
                 CheckType = CheckType,
-                CheckParams = TypeUtils.CloneObjectArray(CheckParams),
+                CheckParams = ArrayUtils.CloneObjectArray(CheckParams),
             };
             return result;
         }

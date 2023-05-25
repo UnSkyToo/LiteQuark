@@ -1,18 +1,14 @@
 ﻿namespace InfiniteGame
 {
-    public sealed class Skill2 : SkillBase
+    public sealed class Skill102 : SkillBase
     {
-        private IBulletEmitter Emitter_;
-        
-        public Skill2()
-            : base("circle")
+        public Skill102()
+            : base("damage up")
         {
-            Emitter_ = new BulletCircleEmitter();
         }
         
         public override void Tick(float deltaTime)
         {
-            Emitter_.Move(GetPlayer().GetPosition());
         }
 
         private Player GetPlayer()
@@ -22,12 +18,12 @@
 
         protected override void OnAttach()
         {
-            Emitter_.Fire(Level);
+            GetPlayer().DamageAdd++;
         }
 
         protected override void OnLevelUp()
         {
-            Emitter_.Fire(Level);
+            GetPlayer().DamageAdd++;
         }
     }
 }

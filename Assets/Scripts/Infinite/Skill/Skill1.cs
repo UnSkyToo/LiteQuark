@@ -6,11 +6,12 @@ namespace InfiniteGame
     {
         private float Interval_;
         private float Time_;
-        
+
         public Skill1()
+            : base("Kunai")
         {
         }
-        
+
         public override void Tick(float deltaTime)
         {
             Time_ += deltaTime;
@@ -25,7 +26,7 @@ namespace InfiniteGame
         {
             LiteRuntime.Get<TimerSystem>().AddTimer(GetBulletInterval(), () =>
             {
-                var target = BattleManager.Instance.FindEnemy();
+                var target = BattleManager.Instance.FindEnemy(10);
                 if (target == null)
                 {
                     return;

@@ -47,8 +47,8 @@ namespace LiteCard.GamePlay
                 CastNormal = CastNormal.Clone() as CardCastConfig,
                 CastUpgrade = CastUpgrade.Clone() as CardCastConfig,
                 Upgrade = Upgrade.Clone() as CardUpgradeConfig,
-                InitBuffs = TypeUtils.CloneDataArray(InitBuffs),
-                Tags = TypeUtils.CloneObjectArray(Tags)
+                InitBuffs = ArrayUtils.CloneDataArray(InitBuffs),
+                Tags = ArrayUtils.CloneObjectArray(Tags)
             };
             return result;
         }

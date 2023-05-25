@@ -77,7 +77,7 @@ namespace InfiniteGame
             }
 
             Clean();
-            Bullet_ = BattleManager.Instance.CreateBulletArea(level, 0.5f);
+            Bullet_ = BattleManager.Instance.CreateBulletArea(level, 0.25f);
         }
 
         public void Move(Vector3 position)

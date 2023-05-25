@@ -22,7 +22,7 @@ namespace LiteCard.GamePlay
             {
                 Limit = Limit,
                 Type = Type,
-                Params = TypeUtils.CloneObjectArray(Params)
+                Params = ArrayUtils.CloneObjectArray(Params)
             };
             return result;
         }
