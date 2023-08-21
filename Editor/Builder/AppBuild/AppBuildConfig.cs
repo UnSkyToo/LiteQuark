@@ -14,6 +14,7 @@ namespace LiteQuark.Editor
         /// </summary>
         public BuildOptions Options { get; set; } = BuildOptions.None;
 
+        public string Identifier { get; set; } = "com.lite.game";
         public string ProduceName { get; set; } = "game";
 
         public string Version { get; set; } = "1.0.0";
