@@ -147,6 +147,11 @@ namespace LiteQuark.Editor
         
         private bool AssetFilter(string filePath)
         {
+            if (filePath.StartsWith("Packages"))
+            {
+                return false;
+            }
+            
             if (filePath.Contains("#"))
             {
                 return false;
