@@ -28,8 +28,8 @@ namespace LiteQuark.Runtime
         [Header("UI Setting")]
         [SerializeField] [HideInInspector] public int ResolutionWidth = 1920;
         [SerializeField] [HideInInspector] public int ResolutionHeight = 1080;
-
-        void Awake()
+        
+        private void Awake()
         {
             try
             {
@@ -42,7 +42,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        void Update()
+        private void Update()
         {
             try
             {
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
             LiteRuntime.Instance.OnGUI();
         }
 
-        void OnApplicationQuit()
+        private void OnApplicationQuit()
         {
             try
             {
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        void OnApplicationPause(bool pause)
+        private void OnApplicationPause(bool pause)
         {
             if (pause)
             {

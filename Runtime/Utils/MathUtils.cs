@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
         {
             var cross = Vector3.Cross(from, to);
             var angle = Vector2.Angle(from, to);
-            return cross.z > 0 ? -angle : angle;
+            return cross.z > 0 ? 360f - angle : angle;
         }
 
         public static float AngleByPoint(Vector2 begin, Vector2 end)
