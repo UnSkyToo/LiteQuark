@@ -33,17 +33,17 @@ namespace Tetris
 
             Frame_++;
             
-            if (InputMgr.Instance.IsState(InputState.Left) && Frame_ % Const.LevelTranslateFrame[Level_] == 0)
+            if (InputMgr.Instance.IsState(InputState.Left) && IsTranslateValid())
             {
                 Board_.TranslateLeft();
             }
 
-            if (InputMgr.Instance.IsState(InputState.Right) && Frame_ % Const.LevelTranslateFrame[Level_] == 0)
+            if (InputMgr.Instance.IsState(InputState.Right) && IsTranslateValid())
             {
                 Board_.TranslateRight();
             }
 
-            if (InputMgr.Instance.IsState(InputState.Rotate) && Frame_ % Const.LevelRotateFrame[Level_] == 0)
+            if (InputMgr.Instance.IsState(InputState.Rotate) && IsRotateValid())
             {
                 Board_.Rotate();
             }
@@ -63,6 +63,18 @@ namespace Tetris
                 Line_ -= 10;
                 Level_++;
             }
+        }
+
+        private bool IsTranslateValid()
+        {
+            return true;
+            return Frame_ % Const.LevelTranslateFrame[Level_] == 0;
+        }
+        
+        private bool IsRotateValid()
+        {
+            return true;
+            return Frame_ % Const.LevelRotateFrame[Level_] == 0;
         }
 
         public void OnGUI()

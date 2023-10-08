@@ -1,4 +1,5 @@
-﻿using LiteQuark.Runtime;
+﻿using System;
+using LiteQuark.Runtime;
 using UnityEngine;
 
 namespace Tetris
@@ -11,13 +12,29 @@ namespace Tetris
         FastFall,
         Rotate,
     }
+
+    public enum GestureDirection
+    {
+        None,
+        Up,
+        Down,
+        Left,
+        Right,
+        LeftUp,
+        LeftDown,
+        RightUp,
+        RightDown,
+    }
     
     public class InputMgr : Singleton<InputMgr>, ITick
-    { 
+    {
+        public event Action<GestureDirection> Swipe; 
+        
+        private const float MinDistance = 80;
+        
         private InputState State_;
-        private bool IsTouch_;
-        private int TouchBeginFrame_;
-        private Vector2 TouchBeginPos_;
+        private Vector2 BeginPos_;
+        private Vector2 EndPos_;
         
         public InputMgr()
         {
@@ -28,8 +45,9 @@ namespace Tetris
         {
             State_ = InputState.None;
             UpdateKeyboard();
-            UpdateMouse();
+            // UpdateMouse();
             UpdateTouch();
+            UpdateGesture();
         }
 
         public bool IsState(InputState state)
@@ -101,7 +119,7 @@ namespace Tetris
 
         private void UpdateTouch()
         {
-// #if !UNITY_EDITOR
+#if !UNITY_EDITOR
             if (Input.touchCount > 0)
             {
                 var touch = Input.GetTouch(0);
@@ -116,27 +134,27 @@ namespace Tetris
                 {
                     State_ = InputState.FastFall;
                 }
-                else if (y < h / 8f * 2f)
-                {
-                    if (x < w * 0.5f)
-                    {
-                        State_ = InputState.Left;
-                    }
-
-                    if (x > w * 0.5f)
-                    {
-                        State_ = InputState.Right;
-                    }
-                }
-                else
-                {
-                    State_ = InputState.Rotate;
-                }
+                // else if (y < h / 8f * 2f)
+                // {
+                //     if (x < w * 0.5f)
+                //     {
+                //         State_ = InputState.Left;
+                //     }
+                //
+                //     if (x > w * 0.5f)
+                //     {
+                //         State_ = InputState.Right;
+                //     }
+                // }
+                // else
+                // {
+                //     State_ = InputState.Rotate;
+                // }
             }
-// #endif
+#endif
         }
 
-        private void UpdateFinger()
+        private void UpdateGesture()
         {
             if (Input.touchCount != 1)
             {
@@ -148,28 +166,72 @@ namespace Tetris
             switch (touch.phase)
             {
                 case TouchPhase.Began:
-                    TouchBeginPos_ = touch.position;
-                    TouchBeginFrame_ = Time.frameCount;
-                    IsTouch_ = true;
-                    break;
-                case TouchPhase.Moved:
-                    
+                    BeginPos_ = touch.position;
                     break;
                 case TouchPhase.Ended:
-                    if (IsTouch_)
-                    {
-                        IsTouch_ = false;
-                        HandleSwipe(TouchBeginPos_, touch.position, TouchBeginFrame_, Time.frameCount);
-                    }
-                    break;
-                case TouchPhase.Canceled:
+                    EndPos_ = touch.position;
+                    DispatchGesture();
                     break;
             }
         }
-
-        private void HandleSwipe(Vector2 beginPos, Vector2 endPos, int beginFrame, int endFrame)
+        
+        private void DispatchGesture()
         {
-            
+            var distance = Vector2.Distance(BeginPos_, EndPos_);
+            if (distance < MinDistance)
+            {
+                return;
+            }
+
+            var angle = MathUtils.AngleByPoint(BeginPos_, EndPos_);
+            var dir = GestureDirection.None;
+            // 0 - 22.5
+            // 22.5 - 67.5
+            // 67.5 - 112.5
+            // 112.5 - 157.5
+            // 157.5 - 202.5
+            // 202.5 - 247.5
+            // 247.5 - 292.5
+            // 292.5 - 337.5
+            // 337.5 - 360
+            if (angle is >= 22.5f and < 67.5f)
+            {
+                dir = GestureDirection.RightUp;
+            }
+            else if (angle is >= 67.5f and < 112.5f)
+            {
+                dir = GestureDirection.Right;
+                State_ = InputState.Right;
+            }
+            else if (angle is >= 112.5f and < 157.5f)
+            {
+                dir = GestureDirection.RightDown;
+            }
+            else if (angle is >= 157.5f and < 202.5f)
+            {
+                dir = GestureDirection.Down;
+                State_ = InputState.FastFall;
+            }
+            else if (angle is >= 202.5f and < 247.5f)
+            {
+                dir = GestureDirection.LeftDown;
+            }
+            else if (angle is >= 247.5f and < 292.5f)
+            {
+                dir = GestureDirection.Left;
+                State_ = InputState.Left;
+            }
+            else if (angle is >= 292.5f and < 337.5f)
+            {
+                dir = GestureDirection.LeftUp;
+            }
+            else
+            {
+                dir = GestureDirection.Up;
+                State_ = InputState.Rotate;
+            }
+
+            Swipe?.Invoke(dir);
         }
     }
 }
