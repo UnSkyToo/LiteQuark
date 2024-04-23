@@ -1,0 +1,15 @@
+{
+    "name": "com.lite.litequark",
+    "version": "0.0.1-preview",
+    "displayName": "LiteQuark",
+    "description": "simple framework",
+    "unity": "2021.1",
+    "unityRelease": "0f1",
+    "category": "Lite",
+    "author": {
+        "name": "UnSkyToo",
+        "email": "unskytoo@gmail.com",
+        "url": "https://github.com/UnSkyToo/"
+    },
+    "license": "MIT"
+}
