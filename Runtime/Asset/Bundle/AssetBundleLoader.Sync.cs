@@ -84,10 +84,10 @@
             return true;
         }
 
-        public UnityEngine.GameObject InstantiateSync(string assetPath)
+        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
         {
             var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
-            var instance = UnityEngine.Object.Instantiate(asset);
+            var instance = UnityEngine.Object.Instantiate(asset, parent);
             if (instance != null && !AssetIDToPathMap_.ContainsKey(instance.GetInstanceID()))
             {
                 AssetIDToPathMap_.Add(instance.GetInstanceID(), assetPath);
