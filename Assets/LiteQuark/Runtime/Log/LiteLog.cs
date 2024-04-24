@@ -1,4 +1,6 @@
-﻿namespace LiteQuark.Runtime
+﻿using System;
+
+namespace LiteQuark.Runtime
 {
     internal static class LLog
     {
@@ -52,6 +54,11 @@
             {
                 log.Error(msg);
             }
+        }
+
+        internal static void Exception(Exception ex)
+        {
+            Error($"{ex.Message}\n{ex.StackTrace}");
         }
     }
 }
