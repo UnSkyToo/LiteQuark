@@ -57,7 +57,7 @@ namespace InfiniteGame
 
         public void CreatePlayer()
         {
-            var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Player.prefab");
+            var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Player.prefab", null);
             Player_ = new Player(go, new CircleArea(0.2f));
             Player_.MoveSpeed = 3;
             Player_.DamageAdd = 0;

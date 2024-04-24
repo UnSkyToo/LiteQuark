@@ -67,16 +67,16 @@ namespace LiteQuark.Runtime
             return Loader_?.LoadAssetSync<T>(formatPath);
         }
 
-        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
             var formatPath = FormatPath(assetPath);
-            Loader_?.InstantiateAsync(formatPath, callback);
+            Loader_?.InstantiateAsync(formatPath, parent, callback);
         }
 
-        public UnityEngine.GameObject InstantiateSync(string assetPath)
+        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
         {
             var formatPath = FormatPath(assetPath);
-            return Loader_?.InstantiateSync(formatPath);
+            return Loader_?.InstantiateSync(formatPath, parent);
         }
 
         public void UnloadAsset(string assetPath)

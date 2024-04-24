@@ -112,9 +112,8 @@ namespace LiteCard.UI
 
         private void CreateArrow(Transform parent)
         {
-            LiteRuntime.Get<AssetSystem>().InstantiateAsync(GameConst.Prefab.ArrowItem, (go) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(GameConst.Prefab.ArrowItem, parent, (go) =>
             {
-                UnityUtils.SetParent(parent, go);
                 go.GetComponent<Canvas>().sortingOrder = (int)UIDepthMode.Top + 1000;
                 ArrowItem_ = go.GetComponent<UICardArrowItem>();
             });

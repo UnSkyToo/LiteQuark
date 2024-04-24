@@ -86,9 +86,8 @@ namespace LiteCard.UI
         
         private void CreateItem(TData data)
         {
-            LiteRuntime.Get<AssetSystem>().InstantiateAsync(PrefabPath_, (instance) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(PrefabPath_, Content_, (instance) =>
             {
-                instance.transform.SetParent(Content_, false);
                 instance.transform.localPosition = Vector3.zero;
                 instance.transform.localScale = Vector3.one;
                 var item = Activator.CreateInstance(typeof(TItem), instance, data) as TItem;

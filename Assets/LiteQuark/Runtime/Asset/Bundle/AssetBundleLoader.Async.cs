@@ -118,11 +118,11 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
-                var instance = UnityEngine.Object.Instantiate(asset);
+                var instance = UnityEngine.Object.Instantiate(asset, parent);
                 if (instance != null && !AssetIDToPathMap_.ContainsKey(instance.GetInstanceID()))
                 {
                     AssetIDToPathMap_.Add(instance.GetInstanceID(), assetPath);

@@ -29,9 +29,8 @@ namespace LiteCard.UI
                 }
             });
             
-            LiteRuntime.Get<AssetSystem>().InstantiateAsync("CardGame/Prefab/UI/Battle/ArrowHeadItem.prefab", (go) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync("CardGame/Prefab/UI/Battle/ArrowHeadItem.prefab", transform, (go) =>
             {
-                UnityUtils.SetParent(transform, go.transform);
                 go.GetComponent<Image>().color = Color;
                 NodeList_[NodeCount - 1] = go.GetComponent<RectTransform>();
             });

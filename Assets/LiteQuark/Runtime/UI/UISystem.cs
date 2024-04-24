@@ -59,8 +59,9 @@ namespace LiteQuark.Runtime
         public T OpenUI<T>(params object[] paramList) where T : UIBase
         {
             var ui = Activator.CreateInstance<T>();
+            var parent = GetUIParent(ui.DepthMode);
 
-            LiteRuntime.Get<AssetSystem>().InstantiateAsync(ui.PrefabPath, (instance) =>
+            LiteRuntime.Get<AssetSystem>().InstantiateAsync(ui.PrefabPath, parent, (instance) =>
             {
                 if (instance == null)
                 {
@@ -118,7 +119,6 @@ namespace LiteQuark.Runtime
         private void SetupUI(UIBase ui, GameObject instance)
         {
             var parent = GetUIParent(ui.DepthMode);
-            UnityUtils.SetParent(parent, instance);
             
             var rectTransform = instance.GetOrAddComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
@@ -157,8 +157,8 @@ namespace LiteQuark.Runtime
             rectTrans.sizeDelta = Vector2.zero;
             go.layer = LayerMask.NameToLayer("UI");
             
-            var canvas = go.GetOrAddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            // var canvas = go.GetOrAddComponent<Canvas>();
+            // canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

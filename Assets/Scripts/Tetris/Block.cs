@@ -26,7 +26,7 @@ namespace Tetris
 
         public Block(BlockKind kind)
         {
-            Go_ = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Block.prefab");
+            Go_ = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Block.prefab", null);
             
             Cells_ = new GameObject[Const.BlockHeight, Const.BlockWidth];
             
@@ -34,9 +34,8 @@ namespace Tetris
             {
                 for (var x = 0; x < Const.BlockWidth; ++x)
                 {
-                    Cells_[y, x] = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Cell.prefab");
+                    Cells_[y, x] = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Cell.prefab", Go_.transform);
                     Cells_[y, x].name = $"Cell{y}{x}";
-                    Cells_[y, x].transform.SetParent(Go_.transform, false);
                     Cells_[y, x].GetComponent<RectTransform>().anchoredPosition = new Vector2(x * Const.CellWidth, -y * Const.CellHeight);
                 }
             }

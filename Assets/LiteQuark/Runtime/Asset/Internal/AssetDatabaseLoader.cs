@@ -44,19 +44,19 @@ namespace LiteQuark.Runtime
             return asset;
         }
 
-        public void InstantiateAsync(string assetPath, Action<UnityEngine.GameObject> callback)
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
-                var instance = UnityEngine.Object.Instantiate(asset);
+                var instance = UnityEngine.Object.Instantiate(asset, parent);
                 callback?.Invoke(instance);
             });
         }
 
-        public UnityEngine.GameObject InstantiateSync(string assetPath)
+        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
         {
             var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
-            var instance = UnityEngine.Object.Instantiate(asset);
+            var instance = UnityEngine.Object.Instantiate(asset, parent);
             return instance;
         }
 

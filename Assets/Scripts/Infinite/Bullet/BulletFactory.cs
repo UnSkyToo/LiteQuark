@@ -54,7 +54,7 @@ namespace InfiniteGame
         {
             var scale = 1f + (level - 1) * 0.3f;
             
-            var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Bullet2.prefab");
+            var go = LiteRuntime.Get<AssetSystem>().InstantiateSync("Infinite/Prefab/Bullet2.prefab", null);
             go.tag = Const.Tag.Bullet;
             go.transform.localScale = Vector3.one * scale;
 

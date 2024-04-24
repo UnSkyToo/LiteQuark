@@ -16,18 +16,15 @@ namespace Tetris
         
         public Board()
         {
-            Go_ = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Board.prefab");
-            Go_.transform.SetParent(GameObject.Find("Canvas_Normal").transform, false);
-
+            Go_ = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Board.prefab", GameObject.Find("Canvas_Normal").transform);
             Cells_ = new GameObject[Const.BoardHeight, Const.BoardWidth];
             
             for (var y = 0; y < Const.BoardHeight; ++y)
             {
                 for (var x = 0; x < Const.BoardWidth; ++x)
                 {
-                    Cells_[y, x] = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Cell.prefab");
+                    Cells_[y, x] = LiteRuntime.Get<AssetSystem>().InstantiateSync("Tetris/Cell.prefab", Go_.transform.Find("Cells"));
                     Cells_[y, x].name = $"Cell{y}{x}";
-                    Cells_[y, x].transform.SetParent(Go_.transform.Find("Cells"), false);
                     Cells_[y, x].GetComponent<RectTransform>().anchoredPosition = new Vector2(x * Const.CellWidth, -y * Const.CellHeight);
                 }
             }
