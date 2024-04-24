@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
     public enum BezierCurveModulateMode
     {
@@ -22,8 +20,7 @@ namespace LiteQuark.Runtime
     {
         public float Modulation(float time)
         {
-            //return Mathf.Sqrt(Time);
-            return Mathf.Pow(time, 0.85f);
+            return 1 - (1 - time) * (1 - time);
         }
     }
 
@@ -31,7 +28,14 @@ namespace LiteQuark.Runtime
     {
         public float Modulation(float time)
         {
-            return ((time * time * time) + (float)System.Math.Pow(time, 0.33334f)) / 2.0f;
+            if (time < 0.5f)
+            {
+                return 0.5f * (2 * time) * (2 * time);
+            }
+            else
+            {
+                return 0.5f * (2 * time - 2) * (2 * time - 2) + 1;
+            }
         }
     }
 }
