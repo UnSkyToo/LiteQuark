@@ -1,59 +1,101 @@
 ﻿using UnityEngine;
+using UnityEngine.Pool;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class GameObjectPool : ObjectPoolBase<GameObject>
+    public class GameObjectPool : IGameObjectPool
     {
-        private static readonly Vector3 InvalidPosition = new Vector3(-10000, -10000, -10000);
+        public string Key => Path_;
+        public string Name => PathUtils.GetFileName(Path_);
+        public int CountAll => Pool_?.CountAll ?? 0;
+        public int CountActive => Pool_?.CountActive ?? 0;
+        public int CountInactive => Pool_?.CountInactive ?? 0;
         
-        private string GoPath_;
-        private Transform Parent_;
-        private GameObject Go_;
+        private static readonly Vector3 InvalidPosition = new Vector3(-9999, -9999, -9999);
+
+        protected string Path_;
+        protected Transform Parent_;
+        protected GameObject Template_;
+        protected ObjectPool<GameObject> Pool_;
         
         public GameObjectPool()
         {
         }
 
-        public override void Initialize(object param)
+        public void Initialize(string key, params object[] args)
         {
-            GoPath_ = (string)param;
-            Parent_ = new GameObject(PathUtils.GetFileName(GoPath_)).transform;
-            
-            LiteRuntime.Get<AssetSystem>().LoadAssetAsync<GameObject>(GoPath_, (go) =>
+            Path_ = key;
+            var root = (Transform)args[0];
+            Parent_ = new GameObject(Path_).transform;
+            Parent_.hideFlags = HideFlags.NotEditable;
+            Parent_.SetParent(root, false);
+            Parent_.localPosition = Vector3.zero;
+            Template_ = LiteRuntime.Asset.LoadAssetSync<GameObject>(Path_);
+            Pool_ = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
+        }
+        
+        public virtual void Dispose()
+        {
+            Pool_.Dispose();
+
+            if (Parent_ != null)
             {
-                Go_ = go;
-            });
+                Object.DestroyImmediate(Parent_.gameObject);
+                Parent_ = null;
+            }
         }
 
-        public override void Clean()
+        protected virtual GameObject OnCreate()
         {
-            base.Clean();
-            
-            GameObject.DestroyImmediate(Parent_.gameObject);
-            Parent_ = null;
-        }
-
-        protected override GameObject OnCreate()
-        {
-            var go = Object.Instantiate(Go_);
-            go.transform.SetParent(Parent_, false);
-            go.transform.localPosition = InvalidPosition;
+            var go = Object.Instantiate(Template_, Parent_);
             return go;
         }
 
-        protected override void OnAlloc(GameObject go)
+        protected virtual void OnGet(GameObject go)
         {
-            go.transform.localPosition = Vector3.zero;
         }
 
-        protected override void OnRecycle(GameObject go)
+        protected virtual void OnRelease(GameObject go)
         {
-            go.transform.localPosition = InvalidPosition;
+            go.transform.SetParent(Parent_, false);
+            go.transform.position = InvalidPosition;
         }
 
-        protected override void OnDelete(GameObject go)
+        protected virtual void OnDestroy(GameObject go)
         {
             Object.DestroyImmediate(go);
+        }
+
+        public virtual void Generate(int count)
+        {
+            var go = new GameObject[count];
+            
+            for (var i = 0; i < count; ++i)
+            {
+                go[i] = Alloc(Parent_);
+            }
+
+            for (var i = 0; i < count; ++i)
+            {
+                Recycle(go[i]);
+            }
+        }
+
+        public virtual GameObject Alloc()
+        {
+            return Alloc(null);
+        }
+
+        public virtual GameObject Alloc(Transform parent)
+        {
+            var go = Pool_.Get();
+            go.transform.SetParent(parent, false);
+            return go;
+        }
+
+        public virtual void Recycle(GameObject value)
+        {
+            Pool_.Release(value);
         }
     }
 }

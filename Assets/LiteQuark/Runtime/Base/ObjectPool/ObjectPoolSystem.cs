@@ -1,42 +1,85 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     public sealed class ObjectPoolSystem : ISystem
     {
-        private readonly Dictionary<object, IObjectPool> PoolCache_ = new ();
+        private readonly Dictionary<string, IBasePool> PoolCache_ = new ();
+        private Transform Root_;
 
         public ObjectPoolSystem()
         {
+            if (Root_ == null)
+            {
+                Root_ = new GameObject("ObjectPool").transform;
+                Root_.hideFlags = HideFlags.NotEditable;
+                Object.DontDestroyOnLoad(Root_);
+            }
+            
             PoolCache_.Clear();
         }
 
         public void Dispose()
         {
-            foreach (var current in PoolCache_)
+            foreach (var pool in PoolCache_)
             {
-                current.Value.Clean();
+                pool.Value.Dispose();
             }
             PoolCache_.Clear();
+
+            if (Root_ != null)
+            {
+                Object.DestroyImmediate(Root_.gameObject);
+                Root_ = null;
+            }
         }
 
-        public TPool GetPool<TPool>(object key) where TPool : IObjectPool
+        public Dictionary<string, IBasePool> GetPoolCache()
         {
-            if (PoolCache_.TryGetValue(key, out var pool) && pool is TPool tpool)
+            return PoolCache_;
+        }
+
+        public TPool GetPool<TPool>(string key, params object[] args) where TPool : class, IBasePool
+        {
+            if (PoolCache_.TryGetValue(key, out var pool))
             {
-                return tpool;
+                return pool as TPool;
             }
 
-            return AddPool<TPool>(key);
+            return AddPool<TPool>(key, args);
         }
-
-        public TPool AddPool<TPool>(object key) where TPool : IObjectPool
+        
+        public TPool AddPool<TPool>(string key, params object[] args) where TPool : IBasePool
         {
-            var pool = Activator.CreateInstance<TPool>();
-            pool.Initialize(key);
+            var pool = System.Activator.CreateInstance<TPool>();
+            pool.Initialize(key, args);
             PoolCache_.Add(key, pool);
             return pool;
+        }
+
+        public void RemovePool<TPool>(TPool pool) where TPool : IBasePool
+        {
+            if (pool == null)
+            {
+                return;
+            }
+
+            if (PoolCache_.ContainsKey(pool.Key))
+            {
+                pool.Dispose();
+                PoolCache_.Remove(pool.Key);
+            }
+        }
+
+        public GameObjectPool GetGameObjectPool(string path)
+        {
+            return GetPool<GameObjectPool>(path, Root_);
+        }
+
+        public ParticlePool GetParticlePool(string path)
+        {
+            return GetPool<ParticlePool>(path, Root_);
         }
     }
 }
