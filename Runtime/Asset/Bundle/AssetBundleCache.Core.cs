@@ -23,7 +23,6 @@ namespace LiteQuark.Runtime
         private UnityEngine.AssetBundle Bundle_;
         private Action<bool> BundleLoaderCallback_;
 
-
         public AssetBundleCache(BundleInfo info)
         {
             Info = info;

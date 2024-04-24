@@ -18,6 +18,7 @@ namespace LiteQuark.Runtime
         [SerializeField] [HideInInspector] public bool AutoRestartInBackground;
         [SerializeField] [HideInInspector] public float BackgroundLimitTime = 90.0f;
 
+        [Header("Log Setting")]
         [SerializeField] [HideInInspector] public bool ReceiveLog = true;
         [SerializeField] [HideInInspector] public bool LogInfo = true;
         [SerializeField] [HideInInspector] public bool LogWarn = true;
@@ -38,7 +39,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
+                LLog.Exception(ex);
             }
         }
 
@@ -50,7 +51,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
+                LLog.Exception(ex);
             }
 
 #if UNITY_EDITOR
@@ -82,7 +83,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
+                LLog.Exception(ex);
             }
         }
 

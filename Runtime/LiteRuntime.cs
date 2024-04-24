@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public class LiteRuntime : Singleton<LiteRuntime>
+    public sealed class LiteRuntime : Singleton<LiteRuntime>
     {
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
@@ -125,7 +125,7 @@ namespace LiteQuark.Runtime
             }
             catch (System.Exception ex)
             {
-                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
+                LLog.Exception(ex);
                 return false;
             }
         }
@@ -182,7 +182,7 @@ namespace LiteQuark.Runtime
             }
             catch (System.Exception ex)
             {
-                LLog.Error($"{ex.Message}\n{ex.StackTrace}");
+                LLog.Exception(ex);
                 return false;
             }
         }
@@ -274,5 +274,17 @@ namespace LiteQuark.Runtime
         {
             return Instance.GetSystem<T>();
         }
+
+        // frequently used system
+        public static LogSystem Log => Get<LogSystem>();
+        public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
+        public static EventSystem Event => Get<EventSystem>();
+        public static TaskSystem Task => Get<TaskSystem>();
+        public static TimerSystem Timer => Get<TimerSystem>();
+        public static GroupSystem Group => Get<GroupSystem>();
+        public static AssetSystem Asset => Get<AssetSystem>();
+        public static AudioSystem Audio => Get<AudioSystem>();
+        public static ConfigSystem Config => Get<ConfigSystem>();
+        public static UISystem UI => Get<UISystem>();
     }
 }
