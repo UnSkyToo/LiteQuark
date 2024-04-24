@@ -12,7 +12,7 @@ namespace LiteQuark.Editor
         /// <summary>
         /// Build res options
         /// </summary>
-        public BuildAssetBundleOptions Options { get; set; } = BuildAssetBundleOptions.None;
+        public BuildAssetBundleOptions Options { get; set; } = BuildAssetBundleOptions.ChunkBasedCompression;
 
         /// <summary>
         /// Clean mode will delete last build file
