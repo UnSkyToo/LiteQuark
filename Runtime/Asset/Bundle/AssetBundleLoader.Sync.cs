@@ -21,7 +21,6 @@
 
             if (asset != null)
             {
-                cache.IncRef();
                 AssetIDToPathMap_.TryAdd(asset.GetInstanceID(), assetPath);
             }
 

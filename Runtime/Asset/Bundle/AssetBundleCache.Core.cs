@@ -4,9 +4,10 @@ using System.Linq;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : IDisposable
+    internal sealed partial class AssetBundleCache : IDispose
     {
         public BundleInfo Info { get; }
+        public UnityEngine.AssetBundle Bundle => Bundle_;
         public bool IsLoaded { get; private set; }
         private bool IsUnloaded_;
         
@@ -14,10 +15,7 @@ namespace LiteQuark.Runtime
         private int RefCount_;
         
         private readonly List<AssetBundleCache> DependencyCacheList_ = new();
-        private readonly Dictionary<string, UnityEngine.Object> AssetCacheMap_ = new();
-        private readonly Dictionary<string, List<Action<bool>>> AssetLoaderCallbackList_ = new();
-        private readonly Dictionary<string, UnityEngine.AssetBundleRequest> AssetRequestMap_ = new();
-        private readonly Dictionary<UnityEngine.AsyncOperation, string> RequestToAssetPathMap_ = new();
+        private readonly Dictionary<string, AssetInfoCache> AssetCacheMap_ = new();
 
         private UnityEngine.AssetBundleCreateRequest BundleRequest_;
         private UnityEngine.AssetBundle Bundle_;
@@ -37,10 +35,8 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             Unload();
-            AssetLoaderCallbackList_.Clear();
             DependencyCacheList_.Clear();
             AssetCacheMap_.Clear();
-            AssetRequestMap_.Clear();
 
             if (Bundle_ != null)
             {
@@ -49,6 +45,7 @@ namespace LiteQuark.Runtime
             }
 
             BundleRequest_ = null;
+            BundleLoaderCallback_ = null;
             IsLoaded = false;
         }
         
@@ -89,24 +86,31 @@ namespace LiteQuark.Runtime
             DependencyCacheList_.Add(cache);
         }
 
-        public void IncRef()
+        private void IncRef()
         {
             RefCount_++;
         }
 
-        public void DecRef()
+        private void DecRef()
         {
             RefCount_--;
         }
 
-        private bool AssetExisted(string assetPath)
+        private AssetInfoCache GetOrCreateAssetCache(string assetPath)
         {
-            return AssetCacheMap_.ContainsKey(assetPath);
+            if (AssetCacheMap_.TryGetValue(assetPath, out var cache))
+            {
+                return cache;
+            }
+
+            cache = new AssetInfoCache(this, assetPath);
+            AssetCacheMap_.Add(assetPath, cache);
+            return cache;
         }
 
-        public UnityEngine.Object[] GetLoadAssetList()
+        public AssetInfoCache[] GetLoadAssetList()
         {
-            return AssetCacheMap_.Count == 0 ? Array.Empty<UnityEngine.Object>() : AssetCacheMap_.Values.ToArray();
+            return AssetCacheMap_.Count == 0 ? Array.Empty<AssetInfoCache>() : AssetCacheMap_.Values.ToArray();
         }
 
         private void OnBundleLoaded(UnityEngine.AssetBundle bundle)
@@ -118,6 +122,15 @@ namespace LiteQuark.Runtime
                 RefCount_ = 0;
                 IsLoaded = true;
                 IsUnloaded_ = false;
+            }
+        }
+
+        public void UnloadAsset(string assetPath)
+        {
+            if (AssetCacheMap_.TryGetValue(assetPath, out var cache))
+            {
+                cache.UnloadAsset(assetPath);
+                DecRef();
             }
         }
     }

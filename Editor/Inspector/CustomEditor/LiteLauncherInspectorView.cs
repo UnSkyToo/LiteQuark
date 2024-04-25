@@ -1,4 +1,5 @@
-﻿using LiteQuark.Runtime;
+﻿using System.Collections.Generic;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,8 +8,10 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteDebugger))]
     internal class LiteLauncherInspectorView : LiteInspectorBaseView
     {
-        private bool AssetFoldout_ = false;
+        private bool AssetFoldout_ = true;
         private bool ObjectPoolFoldout_ = false;
+
+        private Dictionary<string, bool> BundleFoldout_ = new Dictionary<string, bool>();
         
         protected override void OnDraw()
         {
@@ -23,17 +26,35 @@ namespace LiteQuark.Editor
 
         private void DrawFoldout(ref bool foldout, string label, System.Action func)
         {
-            foldout = EditorGUILayout.BeginFoldoutHeaderGroup(foldout, label);
+            foldout = EditorGUILayout.Foldout(foldout, label);
             if (foldout)
             {
                 func.Invoke();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
         private void DrawAsset()
         {
-            var system = LiteRuntime.Asset;
+            var visitorInfo = LiteRuntime.Asset.GetVisitorInfo();
+            if (visitorInfo.Tag == null)
+            {
+                return;
+            }
+
+
+            if (visitorInfo.BundleVisitorList.Count == 0)
+            {
+                EditorGUILayout.LabelField("Empty");
+                return;
+            }
+
+            foreach (var bundleInfo in visitorInfo.BundleVisitorList)
+            {
+                foreach (var assetInfo in bundleInfo.AssetVisitorList)
+                {
+                    EditorGUILayout.LabelField(assetInfo.AssetPath, $"{bundleInfo.BundlePath} {assetInfo.RefCount} {assetInfo.IsLoaded}");
+                }
+            }
         }
 
         private void DrawObjectPool()

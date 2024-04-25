@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : IDisposable
+    internal sealed partial class AssetBundleCache : IDispose
     {
         private bool ForceLoadBundleComplete()
         {
@@ -57,24 +55,12 @@ namespace LiteQuark.Runtime
 
         public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
         {
-            if (AssetExisted(assetPath))
-            {
-                return AssetCacheMap_[assetPath] as T;
-            }
-
-            T asset = null;
-
-            if (AssetRequestMap_.TryGetValue(assetPath, out var request))
-            {
-                return request.asset as T;
-            }
-            
-            var name = PathUtils.GetFileName(assetPath);
-            asset = Bundle_.LoadAsset<T>(name);
+            var cache = GetOrCreateAssetCache(assetPath);
+            var asset = cache.LoadAssetSync<T>();
             
             if (asset != null)
             {
-                AssetCacheMap_.Add(assetPath, asset);
+                IncRef();
             }
             
             return asset;

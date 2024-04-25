@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
 
             if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
             {
-                cache.DecRef();
+                cache.UnloadAsset(assetPath);
             }
         }
         
@@ -101,20 +101,12 @@ namespace LiteQuark.Runtime
 
         public void UnloadUnusedBundle()
         {
-            foreach (var bundle in BundleCacheMap_)
-            {
-                if (bundle.Value.IsLoaded && !bundle.Value.IsUsed)
-                {
-                    bundle.Value.Unload();
-                }
-            }
-
             var disposeList = new List<AssetBundleCache>();
-            foreach (var bundle in BundleCacheMap_)
+            foreach (var chunk in BundleCacheMap_)
             {
-                if (bundle.Value.IsLoaded && !bundle.Value.IsUsed)
+                if (chunk.Value.IsLoaded && !chunk.Value.IsUsed)
                 {
-                    disposeList.Add(bundle.Value);
+                    disposeList.Add(chunk.Value);
                 }
             }
 
@@ -124,9 +116,9 @@ namespace LiteQuark.Runtime
                 {
                     foreach (var asset in cache.GetLoadAssetList())
                     {
-                        AssetIDToPathMap_.Remove(asset.GetInstanceID());
+                        AssetIDToPathMap_.Remove(asset.Asset.GetInstanceID());
                     }
-
+                
                     BundleCacheMap_.Remove(cache.Info.BundlePath);
                     cache.Dispose();
                 }
@@ -134,6 +126,7 @@ namespace LiteQuark.Runtime
             }
             
             UnityEngine.Resources.UnloadUnusedAssets();
+            GC.Collect();
         }
     }
 }
