@@ -94,5 +94,17 @@ namespace LiteQuark.Runtime
         {
             Loader_?.UnloadUnusedBundle();
         }
+        
+#if UNITY_EDITOR
+        public VisitorInfo GetVisitorInfo()
+        {
+            if (Loader_ is AssetBundleLoader loader)
+            {
+                return loader.GetVisitorInfo();
+            }
+
+            return new VisitorInfo(null);
+        }
+#endif
     }
 }
