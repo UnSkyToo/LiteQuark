@@ -104,7 +104,7 @@ namespace LiteQuark.Runtime
             var disposeList = new List<AssetBundleCache>();
             foreach (var chunk in BundleCacheMap_)
             {
-                if (chunk.Value.IsLoaded && !chunk.Value.IsUsed)
+                if (!chunk.Value.IsUsed)
                 {
                     disposeList.Add(chunk.Value);
                 }

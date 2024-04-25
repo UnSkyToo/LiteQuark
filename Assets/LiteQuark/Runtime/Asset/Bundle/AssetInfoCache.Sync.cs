@@ -19,6 +19,7 @@
             else
             {
                 var name = PathUtils.GetFileName(AssetPath_);
+                BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
                 asset = Cache.Bundle.LoadAsset<T>(name);
             }
 

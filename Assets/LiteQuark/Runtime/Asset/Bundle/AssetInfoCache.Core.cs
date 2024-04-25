@@ -8,7 +8,8 @@ namespace LiteQuark.Runtime
         public AssetBundleCache Cache { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded { get; private set; }
-        private bool IsUnloaded_;
+        private double BeginLoadTime_;
+        private float LoadTime_;
         
         public bool IsUsed => RefCount_ > 0;
         private int RefCount_;
@@ -22,7 +23,6 @@ namespace LiteQuark.Runtime
             Cache = cache;
             AssetPath_ = assetPath;
             IsLoaded = false;
-            IsUnloaded_ = false;
 
             AssetRequest_ = null;
             Asset = null;
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
 
         public void Unload()
         {
-            if (IsUnloaded_)
+            if (!IsLoaded)
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             }
 
             RefCount_ = 0;
-            IsUnloaded_ = true;
+            IsLoaded = false;
         }
 
         private void IncRef()
@@ -72,7 +72,7 @@ namespace LiteQuark.Runtime
                 AssetRequest_ = null;
                 RefCount_ = 0;
                 IsLoaded = true;
-                IsUnloaded_ = false;
+                LoadTime_ = (float)((UnityEngine.Time.realtimeSinceStartupAsDouble - BeginLoadTime_) * 1000);
             }
         }
 

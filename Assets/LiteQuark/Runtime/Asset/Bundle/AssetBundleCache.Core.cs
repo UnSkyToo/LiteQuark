@@ -9,7 +9,8 @@ namespace LiteQuark.Runtime
         public BundleInfo Info { get; }
         public UnityEngine.AssetBundle Bundle => Bundle_;
         public bool IsLoaded { get; private set; }
-        private bool IsUnloaded_;
+        private double BeginLoadTime_;
+        private float LoadTime_;
         
         public bool IsUsed => RefCount_ > 0;
         private int RefCount_;
@@ -25,7 +26,6 @@ namespace LiteQuark.Runtime
         {
             Info = info;
             IsLoaded = false;
-            IsUnloaded_ = false;
 
             BundleRequest_ = null;
             Bundle_ = null;
@@ -36,7 +36,6 @@ namespace LiteQuark.Runtime
         {
             Unload();
             DependencyCacheList_.Clear();
-            AssetCacheMap_.Clear();
 
             if (Bundle_ != null)
             {
@@ -46,15 +45,20 @@ namespace LiteQuark.Runtime
 
             BundleRequest_ = null;
             BundleLoaderCallback_ = null;
-            IsLoaded = false;
         }
         
         public void Unload()
         {
-            if (IsUnloaded_)
+            if (!IsLoaded)
             {
                 return;
             }
+
+            foreach (var chunk in AssetCacheMap_)
+            {
+                chunk.Value.Dispose();
+            }
+            AssetCacheMap_.Clear();
             
             if (RefCount_ > 0)
             {
@@ -72,7 +76,7 @@ namespace LiteQuark.Runtime
             }
 
             RefCount_ = 0;
-            IsUnloaded_ = true;
+            IsLoaded = false;
         }
 
         public string[] GetAllDependencies()
@@ -121,7 +125,7 @@ namespace LiteQuark.Runtime
                 BundleRequest_ = null;
                 RefCount_ = 0;
                 IsLoaded = true;
-                IsUnloaded_ = false;
+                LoadTime_ = (float)((UnityEngine.Time.realtimeSinceStartupAsDouble - BeginLoadTime_) * 1000);
             }
         }
 

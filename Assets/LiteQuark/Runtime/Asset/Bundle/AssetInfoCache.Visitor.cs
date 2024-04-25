@@ -4,7 +4,7 @@
     {
         internal AssetVisitorInfo GetVisitorInfo()
         {
-            var info = new AssetVisitorInfo(AssetPath_, RefCount_, IsLoaded);
+            var info = new AssetVisitorInfo(AssetPath_, RefCount_, IsLoaded, LoadTime_);
             return info;
         }
     }

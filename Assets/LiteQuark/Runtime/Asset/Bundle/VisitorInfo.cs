@@ -24,14 +24,16 @@ namespace LiteQuark.Runtime
         public string BundlePath { get; }
         public int RefCount { get; }
         public bool IsLoaded { get; }
+        public float LoadTime { get; }
         
         public List<AssetVisitorInfo> AssetVisitorList { get; }
 
-        public BundleVisitorInfo(string bundlePath, int refCount, bool isLoaded)
+        public BundleVisitorInfo(string bundlePath, int refCount, bool isLoaded, float loadTime)
         {
             BundlePath = bundlePath;
             RefCount = refCount;
             IsLoaded = isLoaded;
+            LoadTime = loadTime;
 
             AssetVisitorList = new List<AssetVisitorInfo>();
         }
@@ -47,12 +49,14 @@ namespace LiteQuark.Runtime
         public string AssetPath { get; }
         public int RefCount { get; }
         public bool IsLoaded { get; }
+        public float LoadTime { get; }
 
-        public AssetVisitorInfo(string assetPath, int refCount, bool isLoaded)
+        public AssetVisitorInfo(string assetPath, int refCount, bool isLoaded, float loadTime)
         {
             AssetPath = assetPath;
             RefCount = refCount;
             IsLoaded = isLoaded;
+            LoadTime = loadTime;
         }
     }
 }

@@ -41,7 +41,6 @@ namespace LiteQuark.Editor
                 return;
             }
 
-
             if (visitorInfo.BundleVisitorList.Count == 0)
             {
                 EditorGUILayout.LabelField("Empty");
@@ -50,10 +49,14 @@ namespace LiteQuark.Editor
 
             foreach (var bundleInfo in visitorInfo.BundleVisitorList)
             {
+                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.IsLoaded} {bundleInfo.LoadTime}");
+
+                EditorGUI.indentLevel++;
                 foreach (var assetInfo in bundleInfo.AssetVisitorList)
                 {
-                    EditorGUILayout.LabelField(assetInfo.AssetPath, $"{bundleInfo.BundlePath} {assetInfo.RefCount} {assetInfo.IsLoaded}");
+                    EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.IsLoaded} {assetInfo.LoadTime}");
                 }
+                EditorGUI.indentLevel--;
             }
         }
 
