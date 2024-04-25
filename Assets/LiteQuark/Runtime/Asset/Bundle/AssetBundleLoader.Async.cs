@@ -25,10 +25,10 @@ namespace LiteQuark.Runtime
                 var cache = BundleCacheMap_[info.BundlePath];
                 cache.LoadAssetAsync<T>(assetPath, (asset) =>
                 {
-                    cache.IncRef();
-                    if (asset != null && !AssetIDToPathMap_.ContainsKey(asset.GetInstanceID()))
+                    if (asset != null)
                     {
-                        AssetIDToPathMap_.Add(asset.GetInstanceID(), assetPath);
+                        cache.IncRef();
+                        AssetIDToPathMap_.TryAdd(asset.GetInstanceID(), assetPath);
                     }
                     callback?.Invoke(asset);
                 });
@@ -123,9 +123,9 @@ namespace LiteQuark.Runtime
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
                 var instance = UnityEngine.Object.Instantiate(asset, parent);
-                if (instance != null && !AssetIDToPathMap_.ContainsKey(instance.GetInstanceID()))
+                if (instance != null)
                 {
-                    AssetIDToPathMap_.Add(instance.GetInstanceID(), assetPath);
+                    AssetIDToPathMap_.TryAdd(instance.GetInstanceID(), assetPath);
                 }
                 callback?.Invoke(instance);
             });
