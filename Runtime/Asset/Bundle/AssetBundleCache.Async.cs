@@ -14,6 +14,7 @@ namespace LiteQuark.Runtime
 
             BundleLoaderCallback_ = callback;
             var fullPath = PathUtils.GetFullPathInRuntime(Info.BundlePath);
+            BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
             BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
             BundleRequest_.completed += OnBundleRequestCompleted;
         }

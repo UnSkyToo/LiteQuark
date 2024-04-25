@@ -13,7 +13,7 @@
 
             foreach (var chunk in BundleLoaderCallbackList_)
             {
-                info.AddBundleVisitor(new BundleVisitorInfo(chunk.Key, 0, false));
+                info.AddBundleVisitor(new BundleVisitorInfo(chunk.Key, 0, false, 0));
             }
             
             return info;

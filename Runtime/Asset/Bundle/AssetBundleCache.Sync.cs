@@ -39,6 +39,7 @@
             }
             
             var fullPath = PathUtils.GetFullPathInRuntime(Info.BundlePath);
+            BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
             if (bundle != null)

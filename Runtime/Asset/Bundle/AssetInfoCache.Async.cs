@@ -34,6 +34,7 @@ namespace LiteQuark.Runtime
             }
 
             var name = PathUtils.GetFileName(AssetPath_);
+            BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
             AssetRequest_ = Cache.Bundle.LoadAssetAsync<T>(name);
             AssetRequest_.completed += OnAssetRequestLoadCompleted;
         }
