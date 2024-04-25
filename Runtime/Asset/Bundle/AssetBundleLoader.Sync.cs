@@ -19,10 +19,10 @@
             var cache = BundleCacheMap_[info.BundlePath];
             var asset = cache.LoadAssetSync<T>(assetPath);
 
-            cache.IncRef();
-            if (asset != null && !AssetIDToPathMap_.ContainsKey(asset.GetInstanceID()))
+            if (asset != null)
             {
-                AssetIDToPathMap_.Add(asset.GetInstanceID(), assetPath);
+                cache.IncRef();
+                AssetIDToPathMap_.TryAdd(asset.GetInstanceID(), assetPath);
             }
 
             return asset;
@@ -88,9 +88,9 @@
         {
             var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
             var instance = UnityEngine.Object.Instantiate(asset, parent);
-            if (instance != null && !AssetIDToPathMap_.ContainsKey(instance.GetInstanceID()))
+            if (instance != null)
             {
-                AssetIDToPathMap_.Add(instance.GetInstanceID(), assetPath);
+                AssetIDToPathMap_.TryAdd(instance.GetInstanceID(), assetPath);
             }
             return instance;
         }
