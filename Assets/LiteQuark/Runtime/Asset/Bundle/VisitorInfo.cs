@@ -25,15 +25,17 @@ namespace LiteQuark.Runtime
         public int RefCount { get; }
         public bool IsLoaded { get; }
         public float LoadTime { get; }
+        public float RetainTimeMs { get; }
         
         public List<AssetVisitorInfo> AssetVisitorList { get; }
 
-        public BundleVisitorInfo(string bundlePath, int refCount, bool isLoaded, float loadTime)
+        public BundleVisitorInfo(string bundlePath, int refCount, bool isLoaded, float loadTime, float retainTimeMs)
         {
             BundlePath = bundlePath;
             RefCount = refCount;
             IsLoaded = isLoaded;
             LoadTime = loadTime;
+            RetainTimeMs = retainTimeMs;
 
             AssetVisitorList = new List<AssetVisitorInfo>();
         }

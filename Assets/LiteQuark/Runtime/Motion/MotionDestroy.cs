@@ -6,7 +6,7 @@
         {
             if (Master != null && Master.gameObject != null)
             {
-                LiteRuntime.Get<AssetSystem>().UnloadAsset(Master.gameObject);
+                LiteRuntime.Asset.UnloadAsset(Master.gameObject);
             }
         }
     }

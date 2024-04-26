@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     {
         public abstract string PrefabPath { get; }
         public abstract UIDepthMode DepthMode { get; }
+        public abstract bool IsMutex { get; }
         
         public GameObject Go { get; private set; }
         public RectTransform RT { get; private set; }

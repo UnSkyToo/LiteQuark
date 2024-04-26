@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDispose
     {
         private bool ForceLoadBundleComplete()
         {

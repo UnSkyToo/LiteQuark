@@ -1,0 +1,87 @@
+﻿using LiteQuark.Runtime;
+using UnityEditor;
+using UnityEngine;
+
+namespace LiteQuark.Editor
+{
+    // [CustomPropertyDrawer(typeof(LiteSetting))]
+    // public class LiteSettingDrawer : PropertyDrawer
+    // {
+    //     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    //     {
+    //         EditorGUI.BeginProperty(position, label, property);
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("LogicList"));
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Common"));
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Asset"));
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Log"));
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("UI"));
+    //         EditorGUI.EndProperty();
+    //     }
+    // }
+    
+    [CustomPropertyDrawer(typeof(LiteSetting.CommonSetting))]
+    public class LiteCommonSettingDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            EditorGUILayout.PropertyField(property);
+            EditorGUI.EndProperty();
+        }
+    }
+    
+    [CustomPropertyDrawer(typeof(LiteSetting.AssetSetting))]
+    public class LiteAssetSettingDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            EditorGUILayout.PropertyField(property);
+            EditorGUI.EndProperty();
+        }
+    }
+    
+    [CustomPropertyDrawer(typeof(LiteSetting.LogSetting))]
+    public class LiteLogSettingDrawer : PropertyDrawer
+    {
+        private bool Foldout_ = false;
+        
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            Foldout_ = EditorGUILayout.BeginFoldoutHeaderGroup(Foldout_, "Log");
+            
+            if (Foldout_)
+            {
+                var receiveLogProperty = property.FindPropertyRelative("ReceiveLog");
+                EditorGUILayout.PropertyField(receiveLogProperty);
+            
+                if (receiveLogProperty.boolValue)
+                {
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogInfo"));
+                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogWarn"));
+                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogError"));
+                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogFatal"));
+                        EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowLogViewer"));
+                    }
+                }
+            }
+            
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUI.EndProperty();
+        }
+    }
+    
+    [CustomPropertyDrawer(typeof(LiteSetting.UISetting))]
+    public class LiteUISettingDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            EditorGUILayout.PropertyField(property);
+            EditorGUI.EndProperty();
+        }
+    }
+}

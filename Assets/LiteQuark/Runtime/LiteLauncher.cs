@@ -4,31 +4,10 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
+    [DefaultExecutionOrder(9999)]
     public class LiteLauncher : MonoBehaviour
     {
-        [SerializeField] [HideInInspector] public List<LiteLogicEntryData> LogicList;
-
-        [SerializeField] [HideInInspector] public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
-
-        [Header("Base Setting")]
-        [SerializeField] [HideInInspector] public int TargetFrameRate = 60;
-        
-        [SerializeField] [HideInInspector] public bool MultiTouch;
-
-        [SerializeField] [HideInInspector] public bool AutoRestartInBackground;
-        [SerializeField] [HideInInspector] public float BackgroundLimitTime = 90.0f;
-
-        [Header("Log Setting")]
-        [SerializeField] [HideInInspector] public bool ReceiveLog = true;
-        [SerializeField] [HideInInspector] public bool LogInfo = true;
-        [SerializeField] [HideInInspector] public bool LogWarn = true;
-        [SerializeField] [HideInInspector] public bool LogError = true;
-        [SerializeField] [HideInInspector] public bool LogFatal = true;
-        [SerializeField] [HideInInspector] public bool ShowLogViewer = true;
-
-        [Header("UI Setting")]
-        [SerializeField] [HideInInspector] public int ResolutionWidth = 1920;
-        [SerializeField] [HideInInspector] public int ResolutionHeight = 1080;
+        [SerializeField] public LiteSetting Setting;
         
         private void Awake()
         {

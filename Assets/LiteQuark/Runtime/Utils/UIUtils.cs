@@ -189,14 +189,14 @@ namespace LiteQuark.Runtime
         {
             if (async)
             {
-                LiteRuntime.Get<AssetSystem>().LoadAssetAsync<Sprite>(resPath, (sprite) =>
+                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
                 {
                     ReplaceSprite(go, path, sprite);
                 });
             }
             else
             {
-                var sprite = LiteRuntime.Get<AssetSystem>().LoadAssetSync<Sprite>(resPath);
+                var sprite = LiteRuntime.Asset.LoadAssetSync<Sprite>(resPath);
                 ReplaceSprite(go, path, sprite);
             }
         }
