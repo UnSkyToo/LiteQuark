@@ -46,7 +46,8 @@ namespace LiteQuark.Runtime
         public class AssetSetting
         {
             [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
-            [SerializeField] public float BundleRetainMs = 5000f;
+            [SerializeField] public float AssetRetainTime = 5f;
+            [SerializeField] public float BundleRetainTime = 5f;
 
             public AssetSetting()
             {

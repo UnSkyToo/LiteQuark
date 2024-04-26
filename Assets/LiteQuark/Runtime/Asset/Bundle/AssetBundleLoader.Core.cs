@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
         private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
         private readonly Dictionary<string, List<Action<bool>>> BundleLoaderCallbackList_ = new();
         private readonly Dictionary<int, string> AssetIDToPathMap_ = new();
+        private readonly List<string> UnloadBundleList_ = new();
         
         public AssetBundleLoader()
         {
@@ -26,12 +27,14 @@ namespace LiteQuark.Runtime
             BundleCacheMap_.Clear();
             BundleLoaderCallbackList_.Clear();
             AssetIDToPathMap_.Clear();
+            UnloadBundleList_.Clear();
             
             return true;
         }
 
         public void Dispose()
         {
+            UnloadBundleList_.Clear();
             AssetIDToPathMap_.Clear();
             BundleLoaderCallbackList_.Clear();
             foreach (var chunk in BundleCacheMap_)
@@ -46,12 +49,27 @@ namespace LiteQuark.Runtime
             foreach (var chunk in BundleCacheMap_)
             {
                 chunk.Value.Tick(deltaTime);
+
+                if (chunk.Value.Stage == AssetCacheStage.Unloading)
+                {
+                    UnloadBundleList_.Add(chunk.Key);
+                }
+            }
+
+            if (UnloadBundleList_.Count > 0)
+            {
+                foreach (var bundlePath in UnloadBundleList_)
+                {
+                    BundleCacheMap_[bundlePath].Unload();
+                    BundleCacheMap_.Remove(bundlePath);
+                }
+                UnloadBundleList_.Clear();
             }
         }
 
         private bool BundleExisted(BundleInfo info)
         {
-            return BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded;
+            return BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.Stage == AssetCacheStage.Loaded;
         }
         
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
@@ -81,7 +99,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
+            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.Stage == AssetCacheStage.Loaded)
             {
                 cache.UnloadAsset(assetPath);
             }

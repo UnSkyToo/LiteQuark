@@ -23,19 +23,17 @@ namespace LiteQuark.Runtime
     {
         public string BundlePath { get; }
         public int RefCount { get; }
-        public bool IsLoaded { get; }
-        public float LoadTime { get; }
-        public float RetainTimeMs { get; }
+        public string Stage { get; }
+        public float RetainTime { get; }
         
         public List<AssetVisitorInfo> AssetVisitorList { get; }
 
-        public BundleVisitorInfo(string bundlePath, int refCount, bool isLoaded, float loadTime, float retainTimeMs)
+        public BundleVisitorInfo(string bundlePath, int refCount, string stage, float retainTime)
         {
             BundlePath = bundlePath;
             RefCount = refCount;
-            IsLoaded = isLoaded;
-            LoadTime = loadTime;
-            RetainTimeMs = retainTimeMs;
+            Stage = stage;
+            RetainTime = retainTime;
 
             AssetVisitorList = new List<AssetVisitorInfo>();
         }
@@ -50,15 +48,15 @@ namespace LiteQuark.Runtime
     {
         public string AssetPath { get; }
         public int RefCount { get; }
-        public bool IsLoaded { get; }
-        public float LoadTime { get; }
+        public string Stage { get; }
+        public float RetainTime { get; }
 
-        public AssetVisitorInfo(string assetPath, int refCount, bool isLoaded, float loadTime)
+        public AssetVisitorInfo(string assetPath, int refCount, string stage, float retainTime)
         {
             AssetPath = assetPath;
             RefCount = refCount;
-            IsLoaded = isLoaded;
-            LoadTime = loadTime;
+            Stage = stage;
+            RetainTime = retainTime;
         }
     }
 }

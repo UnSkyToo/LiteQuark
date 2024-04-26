@@ -6,15 +6,21 @@ namespace LiteQuark.Runtime
     {
         public void LoadBundleAsync(Action<bool> callback)
         {
-            if (IsLoaded)
+            if (Stage == AssetCacheStage.Loaded)
             {
                 callback?.Invoke(true);
                 return;
             }
 
+            if (Stage == AssetCacheStage.Loading)
+            {
+                LLog.Error($"repeat bundle loader : {Info.BundlePath}");
+                return;
+            }
+
+            Stage = AssetCacheStage.Loading;
             BundleLoaderCallback_ = callback;
             var fullPath = PathUtils.GetFullPathInRuntime(Info.BundlePath);
-            BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
             BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
             BundleRequest_.completed += OnBundleRequestCompleted;
         }
@@ -31,6 +37,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
+                Stage = AssetCacheStage.Invalid;
                 LLog.Error($"load asset bundle failed : {Info.BundlePath}");
                 BundleLoaderCallback_?.Invoke(false);
             }

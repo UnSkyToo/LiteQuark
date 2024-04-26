@@ -4,7 +4,7 @@
     {
         private bool ForceLoadBundleComplete()
         {
-            if (IsLoaded)
+            if (Stage == AssetCacheStage.Loaded)
             {
                 return true;
             }
@@ -28,18 +28,18 @@
         
         public bool LoadBundleSync()
         {
-            if (IsLoaded)
+            if (Stage == AssetCacheStage.Loaded)
             {
                 return true;
             }
 
-            if (BundleRequest_ != null)
+            if (Stage == AssetCacheStage.Loading)
             {
                 return ForceLoadBundleComplete();
             }
-            
+
+            Stage = AssetCacheStage.Loading;
             var fullPath = PathUtils.GetFullPathInRuntime(Info.BundlePath);
-            BeginLoadTime_ = UnityEngine.Time.realtimeSinceStartupAsDouble;
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
             if (bundle != null)
@@ -49,6 +49,7 @@
             }
             else
             {
+                Stage = AssetCacheStage.Invalid;
                 LLog.Error($"load asset bundle failed : {Info.BundlePath}");
                 return false;
             }
