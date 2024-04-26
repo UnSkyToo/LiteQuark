@@ -21,7 +21,7 @@
             {
                 Stage = AssetCacheStage.Loading;
                 var name = PathUtils.GetFileName(AssetPath_);
-                asset = Cache.GetBundle().LoadAsset<T>(name);
+                asset = Cache_.Bundle.LoadAsset<T>(name);
             }
 
             if (asset != null)

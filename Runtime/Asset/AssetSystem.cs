@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Loader_?.UnloadUnusedBundle();
+            Loader_?.UnloadUnusedAssets();
             
             Loader_?.Dispose();
             Loader_ = null;
@@ -52,12 +52,6 @@ namespace LiteQuark.Runtime
         {
             var formatPath = FormatPath(assetPath);
             Loader_?.PreloadAsset<T>(formatPath, callback);
-        }
-
-        public void StopLoadAsset(string assetPath)
-        {
-            var formatPath = FormatPath(assetPath);
-            Loader_?.StopLoadAsset(formatPath);
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
@@ -95,9 +89,9 @@ namespace LiteQuark.Runtime
             Loader_?.UnloadAsset(asset);
         }
 
-        public void UnloadUnusedBundle()
+        public void UnloadUnusedAssets()
         {
-            Loader_?.UnloadUnusedBundle();
+            Loader_?.UnloadUnusedAssets();
         }
         
 #if UNITY_EDITOR

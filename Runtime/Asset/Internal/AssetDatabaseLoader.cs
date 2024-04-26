@@ -28,10 +28,6 @@ namespace LiteQuark.Runtime
             callback?.Invoke(true);
         }
 
-        public void StopLoadAsset(string assetPath)
-        {
-        }
-
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             callback?.Invoke(LoadAssetSync<T>(assetPath));
@@ -76,7 +72,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadUnusedBundle()
+        public void UnloadUnusedAssets()
         {
             UnityEngine.Resources.UnloadUnusedAssets();
         }

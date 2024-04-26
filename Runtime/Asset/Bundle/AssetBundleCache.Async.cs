@@ -4,7 +4,66 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        public void LoadBundleAsync(Action<bool> callback)
+        public void LoadBundleCompleteAsync(Action<bool> callback)
+        {
+            if (Stage == AssetCacheStage.Loaded)
+            {
+                callback?.Invoke(true);
+                return;
+            }
+            
+            var info = Loader_.GetPackInfo().GetBundleInfoFromBundlePath(BundlePath_);
+            if (info == null)
+            {
+                callback?.Invoke(false);
+                return;
+            }
+
+            LoadBundleDependenciesAsync(info, (isLoaded) =>
+            {
+                if (!isLoaded)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+                
+                LoadBundleAsync(callback);
+            });
+        }
+        
+        private void LoadBundleDependenciesAsync(BundleInfo info, Action<bool> callback)
+        {
+            var dependencies = info.DependencyList;
+            if (dependencies == null || dependencies.Length == 0)
+            {
+                callback?.Invoke(true);
+                return;
+            }
+
+            var loadCompletedCount = 0;
+            foreach (var dependency in dependencies)
+            {
+                var dependencyCache = Loader_.GetOrCreateBundleCache(dependency);
+                dependencyCache.LoadBundleCompleteAsync((isLoaded) =>
+                {
+                    if (!isLoaded)
+                    {
+                        callback?.Invoke(false);
+                        return;
+                    }
+
+                    AddDependencyCache(dependencyCache);
+                    loadCompletedCount++;
+
+                    if (loadCompletedCount >= dependencies.Length)
+                    {
+                        callback?.Invoke(true);
+                    }
+                });
+            }
+        }
+        
+        private void LoadBundleAsync(Action<bool> callback)
         {
             if (Stage == AssetCacheStage.Loaded)
             {
@@ -12,15 +71,14 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            BundleLoaderCallbackList_.Add(callback);
             if (Stage == AssetCacheStage.Loading)
             {
-                LLog.Error($"repeat bundle loader : {Info.BundlePath}");
                 return;
             }
 
             Stage = AssetCacheStage.Loading;
-            BundleLoaderCallback_ = callback;
-            var fullPath = PathUtils.GetFullPathInRuntime(Info.BundlePath);
+            var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
             BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
             BundleRequest_.completed += OnBundleRequestCompleted;
         }
@@ -33,14 +91,24 @@ namespace LiteQuark.Runtime
             if (bundle != null)
             {
                 OnBundleLoaded(bundle);
-                BundleLoaderCallback_?.Invoke(true);
+                
+                foreach (var loader in BundleLoaderCallbackList_)
+                {
+                    loader?.Invoke(true);
+                }
             }
             else
             {
                 Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load asset bundle failed : {Info.BundlePath}");
-                BundleLoaderCallback_?.Invoke(false);
+                LLog.Error($"load bundle failed : {BundlePath_}");
+                
+                foreach (var loader in BundleLoaderCallbackList_)
+                {
+                    loader?.Invoke(false);
+                }
             }
+            
+            BundleLoaderCallbackList_.Clear();
         }
         
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
