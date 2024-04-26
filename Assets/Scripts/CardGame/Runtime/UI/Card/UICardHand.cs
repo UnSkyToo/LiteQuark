@@ -9,6 +9,7 @@ namespace LiteCard.UI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Card/UICardHand.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
+        public override bool IsMutex => true;
 
         private UIItemList<UICardItem, CardBase> CardList_;
         private CardDeck Deck_;

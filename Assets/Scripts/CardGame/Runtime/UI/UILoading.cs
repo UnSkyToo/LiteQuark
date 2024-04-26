@@ -8,6 +8,7 @@ namespace LiteCard.UI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/UILoading.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
+        public override bool IsMutex => true;
 
         public UILoading()
         {

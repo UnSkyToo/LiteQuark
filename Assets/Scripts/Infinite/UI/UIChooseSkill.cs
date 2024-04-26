@@ -8,6 +8,7 @@ namespace InfiniteGame
     {
         public override string PrefabPath => "Infinite/Prefab/UIChooseSkill.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
+        public override bool IsMutex => true;
 
         [UIComponent("Content/BtnChoose1/LabelText")]
         private TextMeshProUGUI LabelChoose1_;

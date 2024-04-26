@@ -7,6 +7,7 @@ namespace LiteCard.UI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Agent/UIAgent.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;
+        public override bool IsMutex => true;
 
         private UIItemList<UIPlayerItem, AgentBase> PlayerList_;
         private UIItemList<UIMonsterItem, AgentBase> MonsterList_;
