@@ -5,11 +5,11 @@ namespace LiteQuark.Runtime
     public class MotionParallel : MotionContainer
     {
         public MotionParallel()
-            : base(Array.Empty<MotionBase>())
+            : base(Array.Empty<BaseMotion>())
         {
         }
         
-        public MotionParallel(params MotionBase[] args)
+        public MotionParallel(params BaseMotion[] args)
             : base(args)
         {
         }

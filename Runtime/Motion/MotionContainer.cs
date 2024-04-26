@@ -2,24 +2,24 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionContainer : MotionBase
+    public class MotionContainer : BaseMotion
     {
         public int Count => SubMotions_.Count;
         
-        protected readonly List<MotionBase> SubMotions_;
+        protected readonly List<BaseMotion> SubMotions_;
 
-        protected MotionContainer(params MotionBase[] args)
+        protected MotionContainer(params BaseMotion[] args)
         {
-            SubMotions_ = new List<MotionBase>(args);
+            SubMotions_ = new List<BaseMotion>(args);
             IsEnd = SubMotions_.Count == 0;
         }
 
-        public MotionBase[] GetSubMotions()
+        public BaseMotion[] GetSubMotions()
         {
             return SubMotions_.ToArray();
         }
 
-        public void AddMotion(MotionBase motion)
+        public void AddMotion(BaseMotion motion)
         {
             SubMotions_.Add(motion);
         }

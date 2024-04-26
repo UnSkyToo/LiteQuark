@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionWaitTime : MotionBase
+    public class MotionWaitTime : BaseMotion
     {
         private readonly float TotalTime_;
         private float CurrentTime_;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionWaitConditional : MotionBase
+    public class MotionWaitConditional : BaseMotion
     {
         private readonly Func<bool> ConditionFunc_;
 

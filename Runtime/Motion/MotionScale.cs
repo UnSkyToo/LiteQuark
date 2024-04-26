@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionScale : MotionBase
+    public class MotionScale : BaseMotion
     {
         private readonly bool IsRelative_;
         private readonly float TotalTime_;

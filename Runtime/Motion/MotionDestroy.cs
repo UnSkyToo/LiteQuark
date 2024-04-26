@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public class MotionDestroy : MotionBase
+    public class MotionDestroy : BaseMotion
     {
         public override void Enter()
         {

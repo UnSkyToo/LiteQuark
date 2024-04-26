@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionCallback : MotionBase
+    public class MotionCallback : BaseMotion
     {
         private readonly Action Callback_;
 
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionCallback<T> : MotionBase
+    public class MotionCallback<T> : BaseMotion
     {
         private readonly Action<T> Callback_;
         private readonly T Param_;
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionCallback<T1, T2> : MotionBase
+    public class MotionCallback<T1, T2> : BaseMotion
     {
         private readonly Action<T1, T2> Callback_;
         private readonly T1 Param1_;

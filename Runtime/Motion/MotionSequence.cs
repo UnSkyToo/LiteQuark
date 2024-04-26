@@ -4,15 +4,15 @@ namespace LiteQuark.Runtime
 {
     public class MotionSequence : MotionContainer
     {
-        private MotionBase Current_;
+        private BaseMotion Current_;
         protected int Index_;
 
         public MotionSequence()
-            : base(Array.Empty<MotionBase>())
+            : base(Array.Empty<BaseMotion>())
         {
         }
 
-        public MotionSequence(params MotionBase[] args)
+        public MotionSequence(params BaseMotion[] args)
             : base()
         {
             Index_ = -1;
@@ -84,7 +84,7 @@ namespace LiteQuark.Runtime
 
     public class MotionRepeatSequence : MotionSequence
     {
-        public MotionRepeatSequence(params MotionBase[] args)
+        public MotionRepeatSequence(params BaseMotion[] args)
             : base(args)
         {
         }

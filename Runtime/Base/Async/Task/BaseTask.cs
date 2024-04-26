@@ -1,11 +1,11 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public abstract class TaskBase : ITask
+    public abstract class BaseTask : ITask
     {
         public bool IsEnd { get; private set; }
         public bool IsExecute { get; private set; }
 
-        protected TaskBase()
+        protected BaseTask()
         {
             IsEnd = false;
             IsExecute = false;

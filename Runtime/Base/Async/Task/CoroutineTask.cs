@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class CoroutineTask : TaskBase
+    public sealed class CoroutineTask : BaseTask
     {
         private readonly IEnumerator Item_;
         private Action Callback_;

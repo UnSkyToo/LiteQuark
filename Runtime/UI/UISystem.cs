@@ -10,8 +10,8 @@ namespace LiteQuark.Runtime
         private const int UIStepOrder = 100;
         
         private readonly Dictionary<UIDepthMode, Transform> CanvasTransform_ = new Dictionary<UIDepthMode, Transform>();
-        private readonly List<UIBase> UIList_ = new List<UIBase>();
-        private readonly List<UIBase> CloseList_ = new List<UIBase>();
+        private readonly List<BaseUI> UIList_ = new List<BaseUI>();
+        private readonly List<BaseUI> CloseList_ = new List<BaseUI>();
 
         public UISystem()
         {
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public T OpenUI<T>(params object[] paramList) where T : UIBase
+        public T OpenUI<T>(params object[] paramList) where T : BaseUI
         {
             var ui = Activator.CreateInstance<T>();
             if (ui.IsMutex)
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
             return ui;
         }
 
-        public void CloseUI(UIBase ui)
+        public void CloseUI(BaseUI ui)
         {
             if (ui != null)
             {
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void CloseUI<T>() where T : UIBase
+        public void CloseUI<T>() where T : BaseUI
         {
             var ui = FindUI<T>();
             if (ui != null)
@@ -103,7 +103,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void CloseUIInternal(UIBase ui)
+        private void CloseUIInternal(BaseUI ui)
         {
             UIBinder.AutoUnbind(ui);
             ui.Close();
@@ -131,12 +131,12 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public T FindUI<T>() where T : UIBase
+        public T FindUI<T>() where T : BaseUI
         {
             return UIList_.Find((ui) => ui.GetType() == typeof(T)) as T;
         }
 
-        private void SetupUI(UIBase ui, GameObject instance)
+        private void SetupUI(BaseUI ui, GameObject instance)
         {
             var parent = GetUIParent(ui.DepthMode);
             

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public abstract class UIBase
+    public abstract class BaseUI
     {
         public abstract string PrefabPath { get; }
         public abstract UIDepthMode DepthMode { get; }
@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
 
         public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
 
-        protected UIBase()
+        protected BaseUI()
         {
         }
 
