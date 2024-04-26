@@ -6,10 +6,10 @@ namespace LiteQuark.Runtime
     internal sealed partial class AssetInfoCache : ITick, IDispose
     {
         public AssetCacheStage Stage { get; private set; }
-        public AssetBundleCache Cache { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
 
         private readonly string AssetPath_;
+        private readonly AssetBundleCache Cache_;
         private readonly List<Action<bool>> AssetLoaderCallbackList_ = new();
         private UnityEngine.AssetBundleRequest AssetRequest_ = null;
         
@@ -20,10 +20,10 @@ namespace LiteQuark.Runtime
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
             Stage = AssetCacheStage.Created;
-            Cache = cache;
             Asset = null;
             
             AssetPath_ = assetPath;
+            Cache_ = cache;
             AssetRequest_ = null;
             RefCount_ = 0;
             RetainTime_ = 0;
@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (RefCount_ > 0)
+            if (RefCount_ > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
             {
                 LLog.Warning($"unload asset leak : {AssetPath_}({RefCount_})");
             }
@@ -73,7 +73,7 @@ namespace LiteQuark.Runtime
                 Stage = AssetCacheStage.Loaded;
             }
 
-            if (Stage != AssetCacheStage.Loaded)
+            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error($"asset IncRef error, {AssetPath_} : {Stage}");
             }
@@ -103,7 +103,6 @@ namespace LiteQuark.Runtime
             {
                 Asset = asset;
                 AssetRequest_ = null;
-                RefCount_ = 0;
                 Stage = AssetCacheStage.Loaded;
             }
             else

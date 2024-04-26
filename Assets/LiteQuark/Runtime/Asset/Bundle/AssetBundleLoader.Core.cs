@@ -8,7 +8,6 @@ namespace LiteQuark.Runtime
         private BundlePackInfo PackInfo_ = null;
         
         private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
-        private readonly Dictionary<string, List<Action<bool>>> BundleLoaderCallbackList_ = new();
         private readonly Dictionary<int, string> AssetIDToPathMap_ = new();
         private readonly List<string> UnloadBundleList_ = new();
         
@@ -25,7 +24,6 @@ namespace LiteQuark.Runtime
             }
             
             BundleCacheMap_.Clear();
-            BundleLoaderCallbackList_.Clear();
             AssetIDToPathMap_.Clear();
             UnloadBundleList_.Clear();
             
@@ -36,7 +34,6 @@ namespace LiteQuark.Runtime
         {
             UnloadBundleList_.Clear();
             AssetIDToPathMap_.Clear();
-            BundleLoaderCallbackList_.Clear();
             foreach (var chunk in BundleCacheMap_)
             {
                 chunk.Value.Dispose();
@@ -60,16 +57,27 @@ namespace LiteQuark.Runtime
             {
                 foreach (var bundlePath in UnloadBundleList_)
                 {
-                    BundleCacheMap_[bundlePath].Unload();
-                    BundleCacheMap_.Remove(bundlePath);
+                    UnloadBundleCache(bundlePath);
                 }
                 UnloadBundleList_.Clear();
             }
         }
 
-        private bool BundleExisted(BundleInfo info)
+        internal BundlePackInfo GetPackInfo()
         {
-            return BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.Stage == AssetCacheStage.Loaded;
+            return PackInfo_;
+        }
+        
+        internal AssetBundleCache GetOrCreateBundleCache(string bundlePath)
+        {
+            if (BundleCacheMap_.TryGetValue(bundlePath, out var cache))
+            {
+                return cache;
+            }
+
+            cache = new AssetBundleCache(this, bundlePath);
+            BundleCacheMap_.Add(bundlePath, cache);
+            return cache;
         }
         
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
@@ -78,17 +86,6 @@ namespace LiteQuark.Runtime
             {
                 callback?.Invoke(asset != null);
             });
-        }
-
-        public void StopLoadAsset(string assetPath)
-        {
-            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
-            if (info == null)
-            {
-                return;
-            }
-
-            BundleLoaderCallbackList_.Remove(info.BundlePath);
         }
         
         public void UnloadAsset(string assetPath)
@@ -125,34 +122,41 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadUnusedBundle()
+        public void UnloadUnusedAssets()
         {
-            var disposeList = new List<AssetBundleCache>();
+            var unloadList = new List<string>();
+            
             foreach (var chunk in BundleCacheMap_)
             {
-                if (!chunk.Value.IsUsed)
+                chunk.Value.UnloadUnusedAssets();
+                
+                if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.Stage == AssetCacheStage.Unloading)
                 {
-                    disposeList.Add(chunk.Value);
+                    unloadList.Add(chunk.Key);
                 }
             }
 
-            if (disposeList.Count > 0)
+            if (unloadList.Count > 0)
             {
-                foreach (var cache in disposeList)
+                foreach (var bundlePath in unloadList)
                 {
-                    foreach (var asset in cache.GetLoadAssetList())
-                    {
-                        AssetIDToPathMap_.Remove(asset.Asset.GetInstanceID());
-                    }
-                
-                    BundleCacheMap_.Remove(cache.Info.BundlePath);
-                    cache.Dispose();
+                    UnloadBundleCache(bundlePath);
                 }
-                disposeList.Clear();
+
+                unloadList.Clear();
             }
-            
+
             UnityEngine.Resources.UnloadUnusedAssets();
             GC.Collect();
+        }
+        
+        private void UnloadBundleCache(string bundlePath)
+        {
+            if (BundleCacheMap_.ContainsKey(bundlePath))
+            {
+                BundleCacheMap_[bundlePath].Unload(false);
+                BundleCacheMap_.Remove(bundlePath);
+            }
         }
     }
 }

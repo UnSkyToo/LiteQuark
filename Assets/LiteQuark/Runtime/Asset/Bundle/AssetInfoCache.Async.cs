@@ -27,6 +27,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
+            IncRef();
             AssetLoaderCallbackList_.Add(callback);
             if (Stage == AssetCacheStage.Loading)
             {
@@ -35,7 +36,7 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(AssetPath_);
-            AssetRequest_ = Cache.GetBundle().LoadAssetAsync<T>(name);
+            AssetRequest_ = Cache_.Bundle.LoadAssetAsync<T>(name);
             AssetRequest_.completed += OnAssetRequestLoadCompleted;
         }
         
@@ -50,7 +51,6 @@ namespace LiteQuark.Runtime
                 
                 foreach (var loader in AssetLoaderCallbackList_)
                 {
-                    IncRef();
                     loader?.Invoke(true);
                 }
             }
