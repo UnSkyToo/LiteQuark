@@ -50,13 +50,13 @@ namespace LiteQuark.Editor
 
             foreach (var bundleInfo in visitorInfo.BundleVisitorList)
             {
-                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.IsLoaded} {bundleInfo.LoadTime} {bundleInfo.RetainTimeMs}");
+                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.Stage}({bundleInfo.RetainTime:0.0}s)");
 
                 using (new EditorGUI.IndentLevelScope())
                 {
                     foreach (var assetInfo in bundleInfo.AssetVisitorList)
                     {
-                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.IsLoaded} {assetInfo.LoadTime}");
+                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
                     }
                 }
             }
