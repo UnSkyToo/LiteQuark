@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace InfiniteGame
 {
-    public abstract class BattleEntity : ObjectBase, ITick
+    public abstract class BattleEntity : BaseObject, ITick
     {
         public GameObject Go { get; }
         

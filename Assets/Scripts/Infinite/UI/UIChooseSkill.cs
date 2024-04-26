@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace InfiniteGame
 {
-    public sealed class UIChooseSkill : UIBase
+    public sealed class UIChooseSkill : BaseUI
     {
         public override string PrefabPath => "Infinite/Prefab/UIChooseSkill.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

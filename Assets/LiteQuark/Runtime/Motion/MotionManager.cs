@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     public class MotionManager : ISystem
     {
-        private readonly ListEx<MotionBase> MotionList_ = new ListEx<MotionBase>();
+        private readonly ListEx<BaseMotion> MotionList_ = new ListEx<BaseMotion>();
 
         public MotionManager()
         {
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             }, deltaTime);
         }
 
-        public MotionBase Execute(Transform master, MotionBase motion)
+        public BaseMotion Execute(Transform master, BaseMotion motion)
         {
             if (master == null || motion == null)
             {
@@ -50,9 +50,9 @@ namespace LiteQuark.Runtime
             return motion;
         }
 
-        public List<MotionBase> GetMotion(Transform master)
+        public List<BaseMotion> GetMotion(Transform master)
         {
-            var result = new List<MotionBase>();
+            var result = new List<BaseMotion>();
 
             foreach (var motion in MotionList_)
             {
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
             return result;
         }
 
-        public void Abandon(MotionBase motion)
+        public void Abandon(BaseMotion motion)
         {
             motion?.Stop();
         }

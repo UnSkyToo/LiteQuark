@@ -3,7 +3,7 @@ using LiteQuark.Runtime;
 
 namespace LiteCard.UI
 {
-    public sealed class UIAgent : UIBase
+    public sealed class UIAgent : BaseUI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Agent/UIAgent.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

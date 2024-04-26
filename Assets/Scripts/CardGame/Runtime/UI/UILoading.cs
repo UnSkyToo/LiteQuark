@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LiteCard.UI
 {
-    public sealed class UILoading : UIBase
+    public sealed class UILoading : BaseUI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/UILoading.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

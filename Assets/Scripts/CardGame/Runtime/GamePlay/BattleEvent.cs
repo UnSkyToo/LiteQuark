@@ -2,14 +2,14 @@
 
 namespace LiteCard.GamePlay
 {
-    public sealed class CardChangeEvent : EventBase
+    public sealed class CardChangeEvent : BaseEvent
     {
         public CardChangeEvent()
         {
         }
     }
 
-    public sealed class AgentAttrChangeEvent : EventBase
+    public sealed class AgentAttrChangeEvent : BaseEvent
     {
         public AgentBase Agent { get; }
         public AgentAttrType AttrType { get; }
@@ -23,14 +23,14 @@ namespace LiteCard.GamePlay
         }
     }
 
-    public sealed class PlayerEnergyChangeEvent : EventBase
+    public sealed class PlayerEnergyChangeEvent : BaseEvent
     {
         public PlayerEnergyChangeEvent()
         {
         }
     }
 
-    public sealed class BuffLayerChangeEvent : EventBase
+    public sealed class BuffLayerChangeEvent : BaseEvent
     {
         public AgentBase Agent { get; }
         public int BuffID { get; }

@@ -2,12 +2,12 @@
 
 namespace LiteQuark.Runtime
 {
-    public abstract class MotionBase : ObjectBase
+    public abstract class BaseMotion : BaseObject
     {
         public Transform Master { get; set; }
         public bool IsEnd { get; protected set; }
 
-        protected MotionBase()
+        protected BaseMotion()
             : base()
         {
             IsEnd = true;

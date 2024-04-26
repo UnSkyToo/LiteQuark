@@ -4,7 +4,7 @@ using LiteQuark.Runtime;
 
 namespace LiteCard.GamePlay
 {
-    public abstract class AgentBase : ObjectBase, IRoundLifeCycle
+    public abstract class AgentBase : BaseObject, IRoundLifeCycle
     {
         public string Name { get; }
 

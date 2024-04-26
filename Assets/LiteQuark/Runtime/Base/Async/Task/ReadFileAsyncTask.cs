@@ -4,7 +4,7 @@ using System.IO;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class ReadFileAsyncTask : TaskBase
+    public sealed class ReadFileAsyncTask : BaseTask
     {
         private const int BufferSize = 4096;
 

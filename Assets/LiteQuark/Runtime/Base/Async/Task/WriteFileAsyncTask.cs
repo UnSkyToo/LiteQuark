@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class WriteFileAsyncTask : TaskBase
+    public sealed class WriteFileAsyncTask : BaseTask
     {
         private const int BufferSize = 4096;
 

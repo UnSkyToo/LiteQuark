@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         private static readonly Type TransformType = typeof(Transform);
         private static readonly Type ComponentType = typeof(Component);
 
-        internal static void AutoBind(UIBase ui)
+        internal static void AutoBind(BaseUI ui)
         {
             if (ui == null)
             {
@@ -24,12 +24,12 @@ namespace LiteQuark.Runtime
             BindEvent(ui);
         }
 
-        internal static void AutoUnbind(UIBase ui)
+        internal static void AutoUnbind(BaseUI ui)
         {
             UnbindEvent(ui);
         }
 
-        private static void BindNode(UIBase ui)
+        private static void BindNode(BaseUI ui)
         {
             var fieldList = ui.GetType().GetFields(CustomFlags);
             foreach (var field in fieldList)
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private static void BindComponent(UIBase ui)
+        private static void BindComponent(BaseUI ui)
         {
             var fieldList = ui.GetType().GetFields(CustomFlags);
             foreach (var field in fieldList)
@@ -79,7 +79,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private static void BindEvent(UIBase ui)
+        private static void BindEvent(BaseUI ui)
         {
             var methodList = ui.GetType().GetMethods(CustomFlags);
             foreach (var method in methodList)
@@ -99,7 +99,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private static void UnbindEvent(UIBase ui)
+        private static void UnbindEvent(BaseUI ui)
         {
             var methodList = ui.GetType().GetMethods(CustomFlags);
             foreach (var method in methodList)

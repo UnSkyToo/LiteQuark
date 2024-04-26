@@ -4,7 +4,7 @@ using TMPro;
 
 namespace LiteCard.UI
 {
-    public sealed class UIBattleMain : UIBase
+    public sealed class UIBattleMain : BaseUI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Battle/UIBattleMain.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

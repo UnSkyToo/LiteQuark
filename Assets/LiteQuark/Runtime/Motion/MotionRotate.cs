@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionRotate : MotionBase
+    public class MotionRotate : BaseMotion
     {
         private readonly float TotalTime_;
         private float CurrentTime_;

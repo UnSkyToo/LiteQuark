@@ -6,7 +6,7 @@ using TMPro;
 
 namespace LiteCard.UI
 {
-    public sealed class UICardList : UIBase
+    public sealed class UICardList : BaseUI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Card/UICardList.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

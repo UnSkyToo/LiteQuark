@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LiteCard.UI
 {
-    public sealed class UICardHand : UIBase
+    public sealed class UICardHand : BaseUI
     {
         public override string PrefabPath => "CardGame/Prefab/UI/Card/UICardHand.prefab";
         public override UIDepthMode DepthMode => UIDepthMode.Normal;

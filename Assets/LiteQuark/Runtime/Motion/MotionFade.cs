@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionFade : MotionBase
+    public class MotionFade : BaseMotion
     {
         private readonly float TotalTime_;
         private readonly float BeginAlpha_;

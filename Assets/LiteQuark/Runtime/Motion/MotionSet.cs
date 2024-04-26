@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class MotionSetPosition : MotionBase
+    public class MotionSetPosition : BaseMotion
     {
         private readonly Vector3 Position_;
 
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionSetRotation : MotionBase
+    public class MotionSetRotation : BaseMotion
     {
         private readonly Quaternion Rotation_;
 
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionSetScale : MotionBase
+    public class MotionSetScale : BaseMotion
     {
         private readonly Vector3 Scale_;
 
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionSetAlpha : MotionBase
+    public class MotionSetAlpha : BaseMotion
     {
         private readonly float Alpha_;
         private MotionAlphaBox AlphaBox_;
@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class MotionSetActive : MotionBase
+    public class MotionSetActive : BaseMotion
     {
         private readonly bool Value_;
 

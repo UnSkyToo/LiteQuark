@@ -7,18 +7,18 @@ namespace LiteQuark.Runtime
     {
         private abstract class EventListener
         {
-            public abstract void Trigger(EventBase msg);
+            public abstract void Trigger(BaseEvent msg);
 
 #if UNITY_EDITOR
             public abstract void Check();
 #endif
         }
 
-        private class EventListenerImpl<T> : EventListener where T : EventBase
+        private class EventListenerImpl<T> : EventListener where T : BaseEvent
         {
             public event Action<T> OnEvent = null;
 
-            public override void Trigger(EventBase msg)
+            public override void Trigger(BaseEvent msg)
             {
                 OnEvent?.Invoke((T) msg);
             }
@@ -63,7 +63,7 @@ namespace LiteQuark.Runtime
             return typeof(T).Name;
         }
 
-        public void Send<T>(T msg) where T : EventBase
+        public void Send<T>(T msg) where T : BaseEvent
         {
             if (EventList_.ContainsKey(msg.EventName))
             {
@@ -72,13 +72,13 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void Send<T>() where T : EventBase, new()
+        public void Send<T>() where T : BaseEvent, new()
         {
             var msg = new T();
             Send(msg);
         }
 
-        public void Register<T>(Action<T> callback) where T : EventBase
+        public void Register<T>(Action<T> callback) where T : BaseEvent
         {
             var eventName = GetEventName<T>();
             if (!EventList_.ContainsKey(eventName))
@@ -89,7 +89,7 @@ namespace LiteQuark.Runtime
             ((EventListenerImpl<T>) EventList_[eventName]).OnEvent += callback;
         }
 
-        public void UnRegister<T>(Action<T> callback) where T : EventBase
+        public void UnRegister<T>(Action<T> callback) where T : BaseEvent
         {
             var eventName = GetEventName<T>();
             if (EventList_.ContainsKey(eventName))

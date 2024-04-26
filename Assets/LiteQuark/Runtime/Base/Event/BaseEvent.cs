@@ -1,10 +1,10 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public abstract class EventBase
+    public abstract class BaseEvent
     {
         public string EventName { get; }
         
-        protected EventBase()
+        protected BaseEvent()
         {
             EventName = GetType().Name;
         }
