@@ -8,20 +8,20 @@ namespace LiteQuark.Runtime
         
         public bool Startup()
         {
-            var launcher = LiteRuntime.Instance.Launcher;
-            if (launcher.ReceiveLog)
+            var setting = LiteRuntime.Setting.Log;
+            if (setting.ReceiveLog)
             {
-                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Info, launcher.LogInfo);
-                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Warn, launcher.LogWarn);
-                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Error, launcher.LogError);
-                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.Fatal, launcher.LogFatal);
+                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Info, setting.LogInfo);
+                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Warn, setting.LogWarn);
+                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Error, setting.LogError);
+                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Fatal, setting.LogFatal);
             }
             else
             {
-                LiteRuntime.Get<LogSystem>().GetRepository().EnableLevel(LogLevel.All, false);
+                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.All, false);
             }
             
-            if (launcher.ReceiveLog && launcher.ShowLogViewer)
+            if (setting.ReceiveLog && setting.ShowLogViewer)
             {
                 Go_ = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
             }

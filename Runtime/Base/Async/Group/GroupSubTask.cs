@@ -78,7 +78,7 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            LiteRuntime.Get<TimerSystem>().CancelTimer(Timer_);
+            LiteRuntime.Timer.CancelTimer(Timer_);
             Timer_ = null;
             
             base.Dispose();
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
-            Timer_ = LiteRuntime.Get<TimerSystem>().AddTimer(WaitTime_, Done, 1);
+            Timer_ = LiteRuntime.Timer.AddTimer(WaitTime_, Done, 1);
         }
     }
 
@@ -103,7 +103,7 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            LiteRuntime.Get<TimerSystem>().CancelTimer(Timer_);
+            LiteRuntime.Timer.CancelTimer(Timer_);
             Timer_ = null;
 
             base.Dispose();
@@ -111,7 +111,7 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
-            Timer_ = LiteRuntime.Get<TimerSystem>().AddTimer(0, TickFunc);
+            Timer_ = LiteRuntime.Timer.AddTimer(0, TickFunc);
         }
 
         private void TickFunc()

@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public interface IAssetLoader : IDispose
+    public interface IAssetLoader : ITick, IDispose
     {
         bool Initialize();
 

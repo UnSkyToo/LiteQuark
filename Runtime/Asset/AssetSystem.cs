@@ -2,14 +2,14 @@
 
 namespace LiteQuark.Runtime
 {
-    public sealed class AssetSystem : ISystem
+    public sealed class AssetSystem : ISystem, ITick
     {
         private IAssetLoader Loader_ = null;
 
         public AssetSystem()
         {
 #if UNITY_EDITOR
-            var mode = LiteRuntime.Instance.Launcher.AssetMode;
+            var mode = LiteRuntime.Setting.Asset.AssetMode;
 #else
             var mode = AssetLoaderMode.Bundle;
 #endif
@@ -36,6 +36,11 @@ namespace LiteQuark.Runtime
             
             Loader_?.Dispose();
             Loader_ = null;
+        }
+
+        public void Tick(float deltaTime)
+        {
+            Loader_?.Tick(deltaTime);
         }
 
         private string FormatPath(string path)

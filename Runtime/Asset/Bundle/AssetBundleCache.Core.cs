@@ -4,13 +4,16 @@ using System.Linq;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDispose
     {
+        public AssetCacheStage Stage { get; private set; }
+        
         public BundleInfo Info { get; }
         public UnityEngine.AssetBundle Bundle => Bundle_;
         public bool IsLoaded { get; private set; }
         private double BeginLoadTime_;
         private float LoadTime_;
+        private float RetainTimeMs_;
         
         public bool IsUsed => RefCount_ > 0;
         private int RefCount_;
@@ -24,12 +27,15 @@ namespace LiteQuark.Runtime
 
         public AssetBundleCache(BundleInfo info)
         {
+            Stage = AssetCacheStage.Created;
+            
             Info = info;
             IsLoaded = false;
 
             BundleRequest_ = null;
             Bundle_ = null;
             RefCount_ = 0;
+            RetainTimeMs_ = 0;
         }
 
         public void Dispose()
@@ -45,6 +51,16 @@ namespace LiteQuark.Runtime
 
             BundleRequest_ = null;
             BundleLoaderCallback_ = null;
+        }
+
+        public void Tick(float deltaTime)
+        {
+            if (IsUsed)
+            {
+                return;
+            }
+            
+            RetainTimeMs_ -= deltaTime * 1000;
         }
         
         public void Unload()
@@ -98,6 +114,11 @@ namespace LiteQuark.Runtime
         private void DecRef()
         {
             RefCount_--;
+
+            if (RefCount_ <= 0)
+            {
+                RetainTimeMs_ = LiteRuntime.Setting.Asset.BundleRetainMs;
+            }
         }
 
         private AssetInfoCache GetOrCreateAssetCache(string assetPath)

@@ -19,6 +19,10 @@ namespace LiteQuark.Runtime
         {
         }
 
+        public void Tick(float deltaTime)
+        {
+        }
+
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             callback?.Invoke(true);

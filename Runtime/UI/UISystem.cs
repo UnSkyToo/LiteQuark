@@ -59,9 +59,17 @@ namespace LiteQuark.Runtime
         public T OpenUI<T>(params object[] paramList) where T : UIBase
         {
             var ui = Activator.CreateInstance<T>();
+            if (ui.IsMutex)
+            {
+                var existUI = FindUI<T>();
+                if (existUI != null)
+                {
+                    return existUI;
+                }
+            }
+            
             var parent = GetUIParent(ui.DepthMode);
-
-            LiteRuntime.Get<AssetSystem>().InstantiateAsync(ui.PrefabPath, parent, (instance) =>
+            LiteRuntime.Asset.InstantiateAsync(ui.PrefabPath, parent, (instance) =>
             {
                 if (instance == null)
                 {
@@ -80,14 +88,26 @@ namespace LiteQuark.Runtime
 
         public void CloseUI(UIBase ui)
         {
-            CloseList_.Add(ui);
+            if (ui != null)
+            {
+                CloseList_.Add(ui);
+            }
+        }
+
+        public void CloseUI<T>() where T : UIBase
+        {
+            var ui = FindUI<T>();
+            if (ui != null)
+            {
+                CloseUI(ui);
+            }
         }
 
         private void CloseUIInternal(UIBase ui)
         {
             UIBinder.AutoUnbind(ui);
             ui.Close();
-            LiteRuntime.Get<AssetSystem>().UnloadAsset(ui.Go);
+            LiteRuntime.Asset.UnloadAsset(ui.Go);
         }
 
         public void CloseAllUI()
@@ -162,7 +182,7 @@ namespace LiteQuark.Runtime
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(LiteRuntime.Instance.Launcher.ResolutionWidth, LiteRuntime.Instance.Launcher.ResolutionHeight);
+            scaler.referenceResolution = new Vector2(LiteRuntime.Setting.UI.ResolutionWidth, LiteRuntime.Setting.UI.ResolutionHeight);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0;
             scaler.referencePixelsPerUnit = 100;

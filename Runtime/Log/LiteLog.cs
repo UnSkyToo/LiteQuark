@@ -9,9 +9,11 @@ namespace LiteQuark.Runtime
         
         private static ILog GetLog()
         {
+            return null;
+            
             if (Log_ == null)
             {
-                Log_ = LiteRuntime.Get<LogSystem>()?.GetLogger(Tag);
+                Log_ = LiteRuntime.Log?.GetLogger(Tag);
             }
 
             return Log_;

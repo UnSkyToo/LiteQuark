@@ -147,7 +147,7 @@ namespace LiteQuark.Runtime
             {
                 LogicList_.Clear();
                 
-                foreach (var logicEntry in Launcher.LogicList)
+                foreach (var logicEntry in Launcher.Setting.LogicList)
                 {
                     if (logicEntry.Disabled)
                     {
@@ -198,8 +198,8 @@ namespace LiteQuark.Runtime
         
         private void InitializeConfigure()
         {
-            Application.targetFrameRate = Launcher.TargetFrameRate;
-            Input.multiTouchEnabled = Launcher.MultiTouch;
+            Application.targetFrameRate = Launcher.Setting.Common.TargetFrameRate;
+            Input.multiTouchEnabled = Launcher.Setting.Common.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int) System.DateTime.Now.Ticks);
             
@@ -234,7 +234,7 @@ namespace LiteQuark.Runtime
             LLog.Info("OnEnterForeground");
             GetSystem<EventSystem>().Send<EnterForegroundEvent>();
 
-            if (Launcher.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.BackgroundLimitTime)
+            if (Launcher.Setting.Common.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.Setting.Common.BackgroundLimitTime)
             {
                 Restart();
                 return;
@@ -275,6 +275,8 @@ namespace LiteQuark.Runtime
             return Instance.GetSystem<T>();
         }
 
+        public static LiteSetting Setting => Instance.Launcher.Setting;
+        
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();

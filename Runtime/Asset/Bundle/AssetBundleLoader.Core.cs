@@ -34,11 +34,19 @@ namespace LiteQuark.Runtime
         {
             AssetIDToPathMap_.Clear();
             BundleLoaderCallbackList_.Clear();
-            foreach (var bundle in BundleCacheMap_)
+            foreach (var chunk in BundleCacheMap_)
             {
-                bundle.Value.Dispose();
+                chunk.Value.Dispose();
             }
             BundleCacheMap_.Clear();
+        }
+        
+        public void Tick(float deltaTime)
+        {
+            foreach (var chunk in BundleCacheMap_)
+            {
+                chunk.Value.Tick(deltaTime);
+            }
         }
 
         private bool BundleExisted(BundleInfo info)

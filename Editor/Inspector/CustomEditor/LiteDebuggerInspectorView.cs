@@ -6,8 +6,9 @@ using UnityEngine;
 namespace LiteQuark.Editor
 {
     [CustomEditor(typeof(LiteDebugger))]
-    internal class LiteLauncherInspectorView : LiteInspectorBaseView
+    internal class LiteDebuggerInspectorView : LiteInspectorBaseView
     {
+        private bool Foldout_ = true;
         private bool AssetFoldout_ = true;
         private bool ObjectPoolFoldout_ = false;
 
@@ -19,7 +20,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-
+            
             DrawFoldout(ref AssetFoldout_, "Asset", DrawAsset);
             DrawFoldout(ref ObjectPoolFoldout_, "ObjectPool", DrawObjectPool);
         }
@@ -49,14 +50,15 @@ namespace LiteQuark.Editor
 
             foreach (var bundleInfo in visitorInfo.BundleVisitorList)
             {
-                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.IsLoaded} {bundleInfo.LoadTime}");
+                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.IsLoaded} {bundleInfo.LoadTime} {bundleInfo.RetainTimeMs}");
 
-                EditorGUI.indentLevel++;
-                foreach (var assetInfo in bundleInfo.AssetVisitorList)
+                using (new EditorGUI.IndentLevelScope())
                 {
-                    EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.IsLoaded} {assetInfo.LoadTime}");
+                    foreach (var assetInfo in bundleInfo.AssetVisitorList)
+                    {
+                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.IsLoaded} {assetInfo.LoadTime}");
+                    }
                 }
-                EditorGUI.indentLevel--;
             }
         }
 
