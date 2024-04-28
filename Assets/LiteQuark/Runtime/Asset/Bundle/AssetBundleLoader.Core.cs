@@ -96,7 +96,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.Stage == AssetCacheStage.Loaded)
+            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.UnloadAsset(assetPath);
             }

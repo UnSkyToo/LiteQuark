@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
 
         private void LoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 IncRef();
                 callback?.Invoke(true);

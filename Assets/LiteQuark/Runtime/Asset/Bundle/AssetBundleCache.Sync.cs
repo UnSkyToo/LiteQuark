@@ -4,7 +4,7 @@
     {
         public bool LoadBundleCompleteSync()
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 return true;
             }
@@ -49,7 +49,7 @@
         
         private bool LoadBundleSync()
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 return true;
             }
@@ -78,7 +78,7 @@
         
         private bool ForceLoadBundleComplete()
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 return true;
             }

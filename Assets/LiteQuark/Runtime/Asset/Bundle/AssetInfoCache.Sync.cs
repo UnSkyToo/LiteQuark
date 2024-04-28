@@ -4,7 +4,7 @@
     {
         public T LoadAssetSync<T>() where T : UnityEngine.Object
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 IncRef();
                 return Asset as T;
