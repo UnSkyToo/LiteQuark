@@ -66,9 +66,12 @@ namespace LiteQuark.Runtime
 
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
-            if (asset is UnityEngine.GameObject)
+            if (asset is UnityEngine.GameObject go)
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                if (go.scene.buildIndex != -1)
+                {
+                    UnityEngine.Object.DestroyImmediate(asset);
+                }
             }
         }
 
