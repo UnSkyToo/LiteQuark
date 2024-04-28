@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     {
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
+        public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
 
         private readonly string BundlePath_;
         private readonly AssetBundleLoader Loader_;

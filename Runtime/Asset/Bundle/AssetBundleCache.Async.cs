@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     {
         public void LoadBundleCompleteAsync(Action<bool> callback)
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 callback?.Invoke(true);
                 return;
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
         
         private void LoadBundleAsync(Action<bool> callback)
         {
-            if (Stage == AssetCacheStage.Loaded)
+            if (IsLoaded)
             {
                 callback?.Invoke(true);
                 return;

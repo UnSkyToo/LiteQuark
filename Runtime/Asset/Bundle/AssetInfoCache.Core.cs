@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     {
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
+        public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
 
         private readonly string AssetPath_;
         private readonly AssetBundleCache Cache_;
@@ -45,7 +46,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (RefCount_ > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
+            if (RefCount_ > 0)
             {
                 LLog.Warning($"unload asset leak : {AssetPath_}({RefCount_})");
             }
