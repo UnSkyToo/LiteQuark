@@ -38,6 +38,12 @@ namespace LiteQuark.Runtime
         {
             Pool_.Dispose();
 
+            if (Template_ != null)
+            {
+                LiteRuntime.Asset.UnloadAsset(Template_);
+                Template_ = null;
+            }
+
             if (Parent_ != null)
             {
                 Object.DestroyImmediate(Parent_.gameObject);
@@ -58,7 +64,7 @@ namespace LiteQuark.Runtime
         protected virtual void OnRelease(GameObject go)
         {
             go.transform.SetParent(Parent_, false);
-            go.transform.position = InvalidPosition;
+            go.transform.localPosition = InvalidPosition;
         }
 
         protected virtual void OnDestroy(GameObject go)

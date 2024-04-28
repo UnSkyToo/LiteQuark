@@ -19,11 +19,7 @@
             }
 
             var asset = cache.LoadAssetSync<T>(assetPath);
-            if (asset != null)
-            {
-                AssetIDToPathMap_.TryAdd(asset.GetInstanceID(), assetPath);
-            }
-
+            UpdateAssetIDToPathMap(asset, assetPath);
             return asset;
         }
 
@@ -31,10 +27,7 @@
         {
             var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
             var instance = UnityEngine.Object.Instantiate(asset, parent);
-            if (instance != null)
-            {
-                AssetIDToPathMap_.TryAdd(instance.GetInstanceID(), assetPath);
-            }
+            UpdateAssetIDToPathMap(instance, assetPath);
             return instance;
         }
     }
