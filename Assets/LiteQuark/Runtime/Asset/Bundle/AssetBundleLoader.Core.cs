@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         private BundlePackInfo PackInfo_ = null;
         
         private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
-        private readonly Dictionary<int, string> AssetIDToPathMap_ = new();
+        private readonly Dictionary<int, AssetIDToPathData> AssetIDToPathMap_ = new();
         private readonly List<string> UnloadBundleList_ = new();
         
         public AssetBundleLoader()
@@ -110,15 +110,22 @@ namespace LiteQuark.Runtime
             }
 
             var instanceID = asset.GetInstanceID();
-            if (AssetIDToPathMap_.TryGetValue(instanceID, out var assetPath))
+            if (AssetIDToPathMap_.TryGetValue(instanceID, out var pathCache))
             {
-                UnloadAsset(assetPath);
-                AssetIDToPathMap_.Remove(instanceID);
+                UnloadAsset(pathCache.AssetPath);
+                pathCache.Count--;
+                if (pathCache.Count <= 0)
+                {
+                    AssetIDToPathMap_.Remove(instanceID);
+                }
             }
 
-            if (asset is UnityEngine.GameObject)
+            if (asset is UnityEngine.GameObject go)
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                if (go.scene.buildIndex != -1)
+                {
+                    UnityEngine.Object.DestroyImmediate(asset);
+                }
             }
         }
 
@@ -156,6 +163,34 @@ namespace LiteQuark.Runtime
             {
                 BundleCacheMap_[bundlePath].Unload(false);
                 BundleCacheMap_.Remove(bundlePath);
+            }
+        }
+        
+        private class AssetIDToPathData
+        {
+            internal string AssetPath { get; }
+            internal int Count { get; set; }
+
+            public AssetIDToPathData(string assetPath)
+            {
+                AssetPath = assetPath;
+                Count = 1;
+            }
+        }
+
+        private void UpdateAssetIDToPathMap(UnityEngine.Object asset, string assetPath)
+        {
+            if (asset != null)
+            {
+                var instanceID = asset.GetInstanceID();
+                if (AssetIDToPathMap_.TryGetValue(instanceID, out var data))
+                {
+                    data.Count++;
+                }
+                else
+                {
+                    AssetIDToPathMap_.Add(instanceID, new AssetIDToPathData(assetPath));
+                }
             }
         }
     }

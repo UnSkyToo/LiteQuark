@@ -10,7 +10,6 @@ namespace LiteQuark.Runtime
         public static readonly Type[] SystemTypeList =
         {
             typeof(LogSystem),
-            typeof(ObjectPoolSystem),
             typeof(EventSystem),
             typeof(TaskSystem),
             typeof(TimerSystem),
@@ -18,6 +17,7 @@ namespace LiteQuark.Runtime
             typeof(AssetSystem),
             typeof(AudioSystem),
             typeof(ConfigSystem),
+            typeof(ObjectPoolSystem),
             typeof(UISystem),
         };
     }
