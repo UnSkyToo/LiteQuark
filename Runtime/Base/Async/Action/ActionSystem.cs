@@ -36,15 +36,27 @@
             return ActionList_.Count == 0;
         }
 
-        public void AddAction(IAction action)
+        public IAction FindAction(ulong id)
+        {
+            return ActionList_.Where(action => action.ID == id);
+        }
+
+        public void StopAction(ulong id)
+        {
+            var action = FindAction(id);
+            action?.Stop();
+        }
+
+        public ulong AddAction(IAction action)
         {
             ActionList_.Add(action);
             action.Execute();
+            return action.ID;
         }
 
-        public void AddBuilder(ActionBuilder builder)
+        public ulong AddBuilder(ActionBuilder builder)
         {
-            AddAction(builder.Flush());
+            return AddAction(builder.Flush());
         }
 
         public ActionBuilder Sequence(string tag, bool isRepeat = false)
