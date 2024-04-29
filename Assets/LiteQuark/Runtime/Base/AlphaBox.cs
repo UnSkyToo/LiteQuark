@@ -2,7 +2,12 @@
 
 namespace LiteQuark.Runtime
 {
-    public class AlphaBox
+    public interface IAlphaBox
+    {
+        void SetAlpha(float alpha);
+    }
+    
+    public class AlphaBox : IAlphaBox
     {
         private readonly SpriteRenderer[] Renderers_;
         private readonly CanvasGroup[] CanvasGroups_;
