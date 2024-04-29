@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
         public override void Execute()
         {
             CurrentTime_ = 0;
-            OriginPos_ = TS_.localPosition;
+            OriginPos_ = GetValue();
             TargetPos_ = IsRelative_ ? OriginPos_ + Position_ : Position_;
             IsEnd = false;
         }
@@ -48,6 +48,11 @@ namespace LiteQuark.Runtime
                 SetValue(TargetPos_);
                 IsEnd = true;
             }
+        }
+
+        private Vector3 GetValue()
+        {
+            return IsLocal_ ? TS_.localPosition : TS_.position;
         }
         
         private void SetValue(Vector3 value)
