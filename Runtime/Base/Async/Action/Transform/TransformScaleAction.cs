@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
         {
             CurrentTime_ = 0;
             OriginScale_ = TS_.localScale;
-            TargetScale_ = IsRelative_ ? OriginScale_ + Scale_ : OriginScale_;
+            TargetScale_ = IsRelative_ ? OriginScale_ + Scale_ : Scale_;
             IsEnd = false;
         }
 
