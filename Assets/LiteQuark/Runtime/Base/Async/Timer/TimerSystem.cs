@@ -60,6 +60,11 @@ namespace LiteQuark.Runtime
             return AddTimer(frameCount * (1.0f / Application.targetFrameRate), onTick, repeatCount);
         }
 
+        public ITimer NextFrame(Action onTick)
+        {
+            return AddTimerWithFrame(1, onTick, 1);
+        }
+
         public void CancelTimer(ITimer timer)
         {
             timer?.Cancel();
