@@ -87,13 +87,13 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"<TransformSetAlpha>({TS_.name},{Alpha_})";
 
         private readonly Transform TS_;
-        private readonly AlphaBox AlphaBox_;
+        private readonly IAlphaBox AlphaBox_;
         private readonly float Alpha_;
 
-        public TransformSetAlphaAction(Transform transform, float alpha)
+        public TransformSetAlphaAction(Transform transform, float alpha, IAlphaBox box = null)
         {
             TS_ = transform;
-            AlphaBox_ = new AlphaBox(transform);
+            AlphaBox_ = box ?? new AlphaBox(transform);
             Alpha_ = alpha;
         }
 

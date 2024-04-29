@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"<TransformFade>({TS_.name},{BeginAlpha_}->{EndAlpha_},{TotalTime_},{EaseKind_})";
 
         private readonly Transform TS_;
-        private readonly AlphaBox AlphaBox_;
+        private readonly IAlphaBox AlphaBox_;
         private readonly float BeginAlpha_;
         private readonly float EndAlpha_;
         private readonly float TotalTime_;
@@ -15,10 +15,10 @@ namespace LiteQuark.Runtime
         
         private float CurrentTime_;
 
-        public TransformFadeAction(Transform transform, float beginAlpha, float endAlpha, float time, EaseKind easeKind = EaseKind.Linear)
+        public TransformFadeAction(Transform transform, float beginAlpha, float endAlpha, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)
         {
             TS_ = transform;
-            AlphaBox_ = new AlphaBox(TS_);
+            AlphaBox_ = box ?? new AlphaBox(TS_);
             BeginAlpha_ = beginAlpha;
             EndAlpha_ = endAlpha;
             TotalTime_ = Mathf.Max(time, 0.01f);
@@ -50,16 +50,16 @@ namespace LiteQuark.Runtime
     
     public class TransformFadeInAction : TransformFadeAction
     {
-        public TransformFadeInAction(Transform transform, float time, EaseKind easeKind = EaseKind.Linear)
-            : base(transform, 0, 1, time, easeKind)
+        public TransformFadeInAction(Transform transform, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)
+            : base(transform, 0, 1, time, easeKind, box)
         {
         }
     }
 
     public class TransformFadeOutAction : TransformFadeAction
     {
-        public TransformFadeOutAction(Transform transform, float time, EaseKind easeKind = EaseKind.Linear)
-            : base(transform, 1, 0, time, easeKind)
+        public TransformFadeOutAction(Transform transform, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)
+            : base(transform, 1, 0, time, easeKind, box)
         {
         }
     }
