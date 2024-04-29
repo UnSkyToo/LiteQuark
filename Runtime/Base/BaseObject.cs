@@ -2,13 +2,14 @@
 {
     public abstract class BaseObject
     {
-        public uint SerialID { get; }
-
-        private static uint ID_ = 1;
+        public ulong UniqueID { get; }
+        public abstract string DebugName { get; }
 
         protected BaseObject()
         {
-            SerialID = ID_++;
+            UniqueID = IDGenerator.NextID();
         }
+
+        public sealed override string ToString() => DebugName;
     }
 }
