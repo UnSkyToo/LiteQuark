@@ -71,19 +71,19 @@ namespace LiteQuark.Runtime
         //     yield return MonoBehaviourInstance.StartCoroutine(task.Execute());
         // }
 
-        public WriteFileAsyncTask AddTask(string filePath, byte[] data, Action<bool> callback)
-        {
-            var task = new WriteFileAsyncTask(filePath, data, callback);
-            TaskList_.Add(task);
-            return task;
-        }
-
-        public ReadFileAsyncTask AddTask(string filePath, Action<byte[]> callback)
-        {
-            var task = new ReadFileAsyncTask(filePath, callback);
-            TaskList_.Add(task);
-            return task;
-        }
+        // public WriteFileAsyncTask AddTask(string filePath, byte[] data, Action<bool> callback)
+        // {
+        //     var task = new WriteFileAsyncTask(filePath, data, callback);
+        //     TaskList_.Add(task);
+        //     return task;
+        // }
+        //
+        // public ReadFileAsyncTask AddTask(string filePath, Action<byte[]> callback)
+        // {
+        //     var task = new ReadFileAsyncTask(filePath, callback);
+        //     TaskList_.Add(task);
+        //     return task;
+        // }
 
         public void AddMainThreadTask(Action<object> taskFunc, object param)
         {
