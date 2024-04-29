@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
                 TS_.position = Position_;
             }
 
-            IsEnd = false;
+            IsEnd = true;
         }
     }
     
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
         public override void Execute()
         {
             TS_.localScale = Scale_;
-            IsEnd = false;
+            IsEnd = true;
         }
     }
     
@@ -78,7 +78,7 @@ namespace LiteQuark.Runtime
                 TS_.rotation = Rotation_;
             }
 
-            IsEnd = false;
+            IsEnd = true;
         }
     }
     
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
         public override void Execute()
         {
             AlphaBox_.SetAlpha(Alpha_);
-            IsEnd = false;
+            IsEnd = true;
         }
     }
     
@@ -123,7 +123,7 @@ namespace LiteQuark.Runtime
             {
                 TS_.gameObject.SetActive(Value_);
             }
-            IsEnd = false;
+            IsEnd = true;
         }
     }
 }
