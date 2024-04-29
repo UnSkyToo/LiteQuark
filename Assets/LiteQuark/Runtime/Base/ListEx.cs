@@ -62,24 +62,6 @@ namespace LiteQuark.Runtime
             InEach_--;
         }
 
-        /// <summary>
-        /// Return T when TickFunc return true
-        /// </summary>
-        public T ForeachReturn(Func<T, bool> TickFunc)
-        {
-            Flush();
-            InEach_++;
-            foreach (var Item in Values_)
-            {
-                if (TickFunc?.Invoke(Item) == true)
-                {
-                    return Item;
-                }
-            }
-            InEach_--;
-            return default;
-        }
-
         public void Foreach<P>(Action<T, P> func, P param)
         {
             Flush();
@@ -112,14 +94,31 @@ namespace LiteQuark.Runtime
             }
             InEach_--;
         }
+        
+        /// <summary>
+        /// Return T when func return true
+        /// </summary>
+        public T ForeachReturn(Func<T, bool> func)
+        {
+            Flush();
+            InEach_++;
+            foreach (var item in Values_)
+            {
+                if (func?.Invoke(item) == true)
+                {
+                    return item;
+                }
+            }
+            InEach_--;
+            return default;
+        }
 
         /// <summary>
-        /// Return T when TickFunc return true
+        /// Return T when func return true
         /// </summary>
         public T ForeachReturn<P>(Func<T, P, bool> func, P param)
         {
             Flush();
-
             InEach_++;
             foreach (var item in Values_)
             {
