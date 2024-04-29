@@ -279,12 +279,13 @@ namespace LiteQuark.Runtime
         
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();
-        public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static EventSystem Event => Get<EventSystem>();
         public static TaskSystem Task => Get<TaskSystem>();
         public static TimerSystem Timer => Get<TimerSystem>();
         public static GroupSystem Group => Get<GroupSystem>();
         public static AssetSystem Asset => Get<AssetSystem>();
+        public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
+        public static ActionSystem Action => Get<ActionSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
         public static ConfigSystem Config => Get<ConfigSystem>();
         public static UISystem UI => Get<UISystem>();
