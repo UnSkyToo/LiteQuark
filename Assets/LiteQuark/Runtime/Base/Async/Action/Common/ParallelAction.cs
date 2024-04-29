@@ -20,6 +20,16 @@
         {
         }
 
+        public override void Stop()
+        {
+            foreach (var action in SubActions_)
+            {
+                action.Stop();
+            }
+            
+            base.Stop();
+        }
+
         public override void Execute()
         {
             IsEnd = Count_ == 0;

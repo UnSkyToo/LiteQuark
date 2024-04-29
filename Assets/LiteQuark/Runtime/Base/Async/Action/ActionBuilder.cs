@@ -71,7 +71,7 @@ namespace LiteQuark.Runtime
             return Parent_;
         }
         
-        public BaseAction Flush()
+        public IAction Flush()
         {
             switch (BuildType_)
             {
