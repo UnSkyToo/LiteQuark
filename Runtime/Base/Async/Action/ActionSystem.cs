@@ -31,6 +31,11 @@
             }, ActionList_, deltaTime);
         }
 
+        public bool IsIdle()
+        {
+            return ActionList_.Count == 0;
+        }
+
         public void AddAction(IAction action)
         {
             ActionList_.Add(action);
