@@ -82,6 +82,30 @@ namespace LiteQuark.Runtime
         }
     }
     
+    public class TransformSetRotationAroundAction : BaseAction
+    {
+        public override string DebugName => $"<TransformSetRotationAround>({TS_.name},{Center_},{Axis_},{Angle_})";
+
+        private readonly Transform TS_;
+        private readonly Vector3 Center_;
+        private readonly Vector3 Axis_;
+        private readonly float Angle_;
+
+        public TransformSetRotationAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle)
+        {
+            TS_ = transform;
+            Center_ = center;
+            Axis_ = axis;
+            Angle_ = angle;
+        }
+
+        public override void Execute()
+        {
+            TS_.RotateAround(Center_, Axis_, Angle_);
+            IsEnd = true;
+        }
+    }
+    
     public class TransformSetAlphaAction : BaseAction
     {
         public override string DebugName => $"<TransformSetAlpha>({TS_.name},{Alpha_})";
