@@ -4,6 +4,11 @@ namespace LiteQuark.Runtime
 {
     public static class UnityUtilsEx
     {
+        public static T GetComponentUpper<T>(this Transform parent) where T : Component
+        {
+            return UnityUtils.GetComponentUpper<T>(parent);
+        }
+        
         public static T GetOrAddComponent<T>(this GameObject go) where T : Component
         {
             return UnityUtils.GetOrAddComponent<T>(go);
@@ -17,6 +22,22 @@ namespace LiteQuark.Runtime
     
     public static class UnityUtils
     {
+        public static T GetComponentUpper<T>(Transform parent) where T : Component
+        {
+            while (parent != null)
+            {
+                var component = parent.GetComponent<T>();
+                if (component != null)
+                {
+                    return component;
+                }
+
+                parent = parent.parent;
+            }
+
+            return null;
+        }
+        
         public static T GetOrAddComponent<T>(GameObject go) where T : Component
         {
             if (go == null)
@@ -62,12 +83,71 @@ namespace LiteQuark.Runtime
             child.localScale = Vector3.one;
             child.localRotation = Quaternion.identity;
         }
+
+        public static void ChangeLayer(GameObject parent, int layer)
+        {
+            parent.layer = layer;
+
+            var children = parent.GetComponentsInChildren<Transform>();
+            foreach (var child in children)
+            {
+                child.gameObject.layer = layer;
+            }
+        }
+
+        public static void ChangeSortingOrder(GameObject parent, int order)
+        {
+            var renderers = parent.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                renderer.sortingOrder = order;
+            }
+            
+            var canvases = parent.GetComponentsInChildren<Canvas>();
+            foreach (var canvas in canvases)
+            {
+                canvas.sortingOrder = order;
+            }
+        }
+
+        public static void AddSortingOrder(GameObject parent, int order)
+        {
+            var renderers = parent.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                renderer.sortingOrder += order;
+            }
+            
+            var canvases = parent.GetComponentsInChildren<Canvas>();
+            foreach (var canvas in canvases)
+            {
+                canvas.sortingOrder += order;
+            }
+        }
         
 #if UNITY_EDITOR
         public static void ShowEditorNotification(string msg)
         {
             var func = typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             func?.Invoke(null, new object[] { msg });
+        }
+        
+        public static void SetResolution(int width, int height)
+        {
+            Screen.SetResolution(width, height, false);
+
+            var gameViewType = System.Type.GetType("UnityEditor.GameView,UnityEditor");
+            var getMainGameViewFunc = gameViewType.GetMethod("GetMainGameView", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var gameView = getMainGameViewFunc.Invoke(null, null) as UnityEditor.EditorWindow;
+            var gameViewSizeProp = gameView.GetType().GetProperty("currentGameViewSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var viewSize = gameViewSizeProp.GetValue(gameView, new object[0] { });
+            var viewSizeType = viewSize.GetType();
+            
+            viewSizeType.GetProperty("width", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).SetValue(viewSize, width, new object[0] { });
+            viewSizeType.GetProperty("height", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).SetValue(viewSize, height, new object[0] { });
+
+            var updateZoomAreaAndParentFunc = gameViewType.GetMethod("UpdateZoomAreaAndParent", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            updateZoomAreaAndParentFunc.Invoke(gameView, null);
         }
 #endif
     }
