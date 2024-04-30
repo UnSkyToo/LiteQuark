@@ -60,4 +60,47 @@ namespace LiteQuark.Runtime
             }
         }
     }
+
+    public class TransformRotateAroundAction : BaseAction
+    {
+        public override string DebugName => $"<TransformRotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_},{EaseKind_})";
+
+        private readonly Transform TS_;
+        private readonly Vector3 Center_;
+        private readonly Vector3 Axis_;
+        private readonly float TotalAngle_;
+        private readonly float TotalTime_;
+        private readonly EaseKind EaseKind_;
+
+        private float AnglePerSecond_;
+        private float CurrentTime_;
+
+        public TransformRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            TS_ = transform;
+            Center_ = center;
+            Axis_ = axis;
+            TotalAngle_ = angle;
+            TotalTime_ = Mathf.Max(time, 0.01f);
+            EaseKind_ = easeKind;
+        }
+
+        public override void Execute()
+        {
+            CurrentTime_ = 0;
+            AnglePerSecond_ = TotalAngle_ / TotalTime_;
+            IsEnd = false;
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            CurrentTime_ += deltaTime;
+            TS_.RotateAround(Center_, Axis_, deltaTime * AnglePerSecond_);
+
+            if (CurrentTime_ >= TotalTime_)
+            {
+                IsEnd = true;
+            }
+        }
+    }
 }

@@ -119,21 +119,33 @@ namespace LiteQuark.Runtime
             return builder;
         }
 
-        public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 targetPos, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
-            builder.Add(new TransformMoveAction(transform, targetPos, time, true, isRelative, easeKind));
+            builder.Add(new TransformMoveAction(transform, position, time, true, isRelative, easeKind));
             return builder;
         }
 
-        public static ActionBuilder TransformWorldMove(this ActionBuilder builder, Transform transform, Vector3 targetPos, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder TransformWorldMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
-            builder.Add(new TransformMoveAction(transform, targetPos, time, false, isRelative, easeKind));
+            builder.Add(new TransformMoveAction(transform, position, time, false, isRelative, easeKind));
             return builder;
         }
 
-        public static ActionBuilder TransformScale(this ActionBuilder builder, Transform transform, Vector3 targetScale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder TransformScale(this ActionBuilder builder, Transform transform, Vector3 scale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
-            builder.Add(new TransformScaleAction(transform, targetScale, time, isRelative, easeKind));
+            builder.Add(new TransformScaleAction(transform, scale, time, isRelative, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformRotate(this ActionBuilder builder, Transform transform, Quaternion rotation, float time, bool isLocal = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformRotateAction(transform, rotation, time, isLocal, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, easeKind));
             return builder;
         }
 
@@ -182,6 +194,12 @@ namespace LiteQuark.Runtime
         public static ActionBuilder TransformSetWorldRotation(this ActionBuilder builder, Transform transform, Quaternion rotation)
         {
             builder.Add(new TransformSetRotationAction(transform, rotation, false));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetRotationAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle)
+        {
+            builder.Add(new TransformSetRotationAroundAction(transform, center, axis, angle));
             return builder;
         }
 
