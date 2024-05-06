@@ -143,9 +143,15 @@ namespace LiteQuark.Runtime
             return builder;
         }
 
-        public static ActionBuilder TransformRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder TransformLocalRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time)
         {
-            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, easeKind));
+            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, true));
+            return builder;
+        }
+        
+        public static ActionBuilder TransformWorldRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time)
+        {
+            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, false));
             return builder;
         }
 
