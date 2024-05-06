@@ -65,12 +65,12 @@ namespace LiteQuark.Runtime
     {
         public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}RotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_})";
 
-        private readonly Transform TS_;
+        protected readonly Transform TS_;
         private readonly Vector3 Center_;
         private readonly Vector3 Axis_;
         private readonly float TotalAngle_;
         private readonly float TotalTime_;
-        private readonly bool IsLocal_;
+        protected readonly bool IsLocal_;
 
         private float AnglePerSecond_;
         private float AccumulateAngle_;
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
             {
                 TS_.RotateAround(Center_, Axis_, angle);
             }
-
+            
             if (CurrentTime_ >= TotalTime_)
             {
                 IsEnd = true;
@@ -135,6 +135,39 @@ namespace LiteQuark.Runtime
             }
             
             return angle;
+        }
+    }
+
+    public class TransformTargetRotateAroundAction : TransformRotateAroundAction
+    {
+        private readonly Vector3 TargetPosition_;
+        
+        public TransformTargetRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, Vector3 targetPosition, float angle, float time, bool isLocal = true)
+            : base(transform, center, axis, angle, time, isLocal)
+        {
+            TargetPosition_ = targetPosition;
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            base.Tick(deltaTime);
+            
+            if (IsLocal_)
+            {
+                if (Vector3.Distance(TS_.localPosition, TargetPosition_) < 0.1f)
+                {
+                    TS_.localPosition = TargetPosition_;
+                    IsEnd = true;
+                }
+            }
+            else
+            {
+                if (Vector3.Distance(TS_.position, TargetPosition_) < 0.1f)
+                {
+                    TS_.position = TargetPosition_;
+                    IsEnd = true;
+                }
+            }
         }
     }
 }
