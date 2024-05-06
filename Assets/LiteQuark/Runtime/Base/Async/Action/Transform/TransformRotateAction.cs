@@ -118,7 +118,13 @@ namespace LiteQuark.Runtime
         private float CalculateNextAngle(float deltaTime)
         {
             var angle = deltaTime * AnglePerSecond_;
-            if (AccumulateAngle_ + angle > TotalAngle_)
+            
+            if (TotalAngle_ > 0 && AccumulateAngle_ + angle > TotalAngle_)
+            {
+                angle = TotalAngle_ - AccumulateAngle_;
+                AccumulateAngle_ = TotalAngle_;
+            }
+            else if (TotalAngle_ < 0 && AccumulateAngle_ + angle < TotalAngle_)
             {
                 angle = TotalAngle_ - AccumulateAngle_;
                 AccumulateAngle_ = TotalAngle_;
