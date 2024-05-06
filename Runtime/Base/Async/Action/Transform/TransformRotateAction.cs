@@ -63,44 +63,72 @@ namespace LiteQuark.Runtime
 
     public class TransformRotateAroundAction : BaseAction
     {
-        public override string DebugName => $"<TransformRotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}RotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_})";
 
         private readonly Transform TS_;
         private readonly Vector3 Center_;
         private readonly Vector3 Axis_;
         private readonly float TotalAngle_;
         private readonly float TotalTime_;
-        private readonly EaseKind EaseKind_;
+        private readonly bool IsLocal_;
 
         private float AnglePerSecond_;
+        private float AccumulateAngle_;
         private float CurrentTime_;
 
-        public TransformRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle, float time, EaseKind easeKind = EaseKind.Linear)
+        public TransformRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle, float time, bool isLocal = true)
         {
             TS_ = transform;
             Center_ = center;
             Axis_ = axis;
             TotalAngle_ = angle;
             TotalTime_ = Mathf.Max(time, 0.01f);
-            EaseKind_ = easeKind;
+            IsLocal_ = isLocal;
         }
 
         public override void Execute()
         {
             CurrentTime_ = 0;
             AnglePerSecond_ = TotalAngle_ / TotalTime_;
+            AccumulateAngle_ = 0f;
             IsEnd = false;
         }
 
         public override void Tick(float deltaTime)
         {
             CurrentTime_ += deltaTime;
-            TS_.RotateAround(Center_, Axis_, deltaTime * AnglePerSecond_);
+            var angle = CalculateNextAngle(deltaTime);
+
+            if (IsLocal_)
+            {
+                var vector3 = Quaternion.AngleAxis(angle, Axis_) * (TS_.localPosition - Center_);
+                TS_.localPosition = Center_ + vector3;
+            }
+            else
+            {
+                TS_.RotateAround(Center_, Axis_, angle);
+            }
 
             if (CurrentTime_ >= TotalTime_)
             {
                 IsEnd = true;
             }
+        }
+
+        private float CalculateNextAngle(float deltaTime)
+        {
+            var angle = deltaTime * AnglePerSecond_;
+            if (AccumulateAngle_ + angle > TotalAngle_)
+            {
+                angle = TotalAngle_ - AccumulateAngle_;
+                AccumulateAngle_ = TotalAngle_;
+            }
+            else
+            {
+                AccumulateAngle_ += angle;
+            }
+            
+            return angle;
         }
     }
 }
