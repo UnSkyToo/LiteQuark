@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class Fsm : ITick, IDispose
+    public class Fsm : IFsm
     {
         protected readonly Dictionary<int, IFsmState> StateMap_ = new Dictionary<int, IFsmState>();
         protected IFsmState CurrentState_ = default;
@@ -14,6 +14,12 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             CurrentState_?.Leave();
+
+            foreach (var chunk in StateMap_)
+            {
+                chunk.Value.Dispose();
+            }
+            StateMap_.Clear();
         }
 
         public void Tick(float deltaTime)
@@ -23,7 +29,13 @@ namespace LiteQuark.Runtime
 
         public void AddState(int id, IFsmState state)
         {
+            state.Fsm = this;
             StateMap_.TryAdd(id, state);
+        }
+
+        public IFsmState GetState(int id)
+        {
+            return StateMap_.GetValueOrDefault(id);
         }
 
         public bool ChangeToState(int id, params object[] args)
