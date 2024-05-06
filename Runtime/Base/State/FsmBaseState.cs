@@ -3,11 +3,14 @@
     public abstract class FsmBaseState : IFsmState
     {
         public abstract int ID { get; }
-        protected readonly Fsm Fsm_;
+        public IFsm Fsm { get; set; }
         
-        protected FsmBaseState(Fsm fsm)
+        protected FsmBaseState()
         {
-            Fsm_ = fsm;
+        }
+
+        public virtual void Dispose()
+        {
         }
         
         public virtual void Enter(params object[] args)
