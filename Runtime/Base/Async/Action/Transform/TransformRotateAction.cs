@@ -150,8 +150,6 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
-            base.Tick(deltaTime);
-            
             if (IsLocal_)
             {
                 if (Vector3.Distance(TS_.localPosition, TargetPosition_) < 0.1f)
@@ -167,6 +165,11 @@ namespace LiteQuark.Runtime
                     TS_.position = TargetPosition_;
                     IsEnd = true;
                 }
+            }
+
+            if (!IsEnd)
+            {
+                base.Tick(deltaTime);
             }
         }
     }
