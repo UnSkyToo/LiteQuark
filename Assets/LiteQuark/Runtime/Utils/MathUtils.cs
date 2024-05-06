@@ -36,6 +36,27 @@ namespace LiteQuark.Runtime
             var angle = AngleByVector(from, to);
             return angle;
         }
+        
+        /// <summary>Returns a Vector3 with z = 0</summary>
+        public static Vector3 Vector3FromAngle(float degrees, float magnitude)
+        {
+            var f = degrees * (Mathf.PI / 180f);
+            return new Vector3(magnitude * Mathf.Cos(f), magnitude * Mathf.Sin(f), 0.0f);
+        }
+        
+        /// <summary>Returns the 2D angle between two vectors</summary>
+        public static float Angle2D(Vector3 from, Vector3 to)
+        {
+            to -= from;
+            
+            var angle = Vector2.Angle(Vector2.right, to);
+            if (Vector3.Cross(Vector2.right, to).z > 0.0f)
+            {
+                angle = 360f - angle;
+            }
+            
+            return angle * -1f;
+        }
 
         public static Vector2 Round(this Vector2 vec)
         {

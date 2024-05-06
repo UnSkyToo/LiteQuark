@@ -185,6 +185,12 @@ namespace LiteQuark.Runtime
             return builder;
         }
 
+        public static ActionBuilder TransformShaking(this ActionBuilder builder, Transform transform, float time, float strength, int vibrato, float randomness = 90.0f)
+        {
+            builder.Add(new TransformShakingAction(transform, time, strength, vibrato, randomness));
+            return builder;
+        }
+
         public static ActionBuilder TransformSetLocalPosition(this ActionBuilder builder, Transform transform, Vector3 position)
         {
             builder.Add(new TransformSetPositionAction(transform, position, true));
