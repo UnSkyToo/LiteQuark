@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
         private const int UIStepOrder = 100;
         
         private readonly Dictionary<UIDepthMode, Transform> CanvasTransform_ = new Dictionary<UIDepthMode, Transform>();
+        private readonly List<BaseUI> OpenList_ = new List<BaseUI>();
         private readonly List<BaseUI> UIList_ = new List<BaseUI>();
         private readonly List<BaseUI> CloseList_ = new List<BaseUI>();
 
@@ -36,6 +37,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
+            HandleOpenList();
             CloseAllUI();
             HandleCloseList();
 
@@ -48,6 +50,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
+            HandleOpenList();
             HandleCloseList();
             
             foreach (var ui in UIList_)
@@ -79,11 +82,23 @@ namespace LiteQuark.Runtime
                 
                 SetupUI(ui, instance);
                 ui.Open(paramList);
-
-                UIList_.Add(ui);
+                
+                OpenList_.Add(ui);
             });
 
             return ui;
+        }
+
+        private void HandleOpenList()
+        {
+            if (OpenList_.Count > 0)
+            {
+                foreach (var ui in OpenList_)
+                {
+                    UIList_.Add(ui);
+                }
+                OpenList_.Clear();
+            }
         }
 
         public void CloseUI(BaseUI ui)
