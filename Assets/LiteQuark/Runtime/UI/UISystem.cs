@@ -70,19 +70,22 @@ namespace LiteQuark.Runtime
                     return existUI;
                 }
             }
-            
+
+            ui.State = UIState.Opening;
             var parent = GetUIParent(ui.DepthMode);
             LiteRuntime.Asset.InstantiateAsync(ui.PrefabPath, parent, (instance) =>
             {
                 if (instance == null)
                 {
+                    ui.State = UIState.Error;
                     LLog.Error($"ui prefab load error : {ui.PrefabPath}");
                     return;
                 }
                 
                 SetupUI(ui, instance);
                 ui.Open(paramList);
-                
+
+                ui.State = UIState.Opened;
                 OpenList_.Add(ui);
             });
 
@@ -103,8 +106,9 @@ namespace LiteQuark.Runtime
 
         public void CloseUI(BaseUI ui)
         {
-            if (ui != null)
+            if (ui != null && !CloseList_.Contains(ui))
             {
+                ui.State = UIState.Closing;
                 CloseList_.Add(ui);
             }
         }
@@ -122,6 +126,7 @@ namespace LiteQuark.Runtime
         {
             UIBinder.AutoUnbind(ui);
             ui.Close();
+            ui.State = UIState.Closed;
             LiteRuntime.Asset.UnloadAsset(ui.Go);
         }
 
@@ -148,7 +153,7 @@ namespace LiteQuark.Runtime
 
         public T FindUI<T>() where T : BaseUI
         {
-            return UIList_.Find((ui) => ui.GetType() == typeof(T) && !CloseList_.Contains(ui)) as T;
+            return UIList_.Find((ui) => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
         }
 
         private void SetupUI(BaseUI ui, GameObject instance)

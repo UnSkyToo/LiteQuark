@@ -113,7 +113,7 @@ namespace LiteQuark.Runtime
                     }
                     catch (Exception ex)
                     {
-                        LLog.Warning($"can't bind component : {attr.Path}\n{ex.Message}");
+                        LLog.Warning($"can't unbind component : {attr.Path}\n{ex.Message}");
                     }
                 }
             }

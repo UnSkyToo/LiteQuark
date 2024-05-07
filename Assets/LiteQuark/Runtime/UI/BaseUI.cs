@@ -9,6 +9,8 @@ namespace LiteQuark.Runtime
         public abstract UIDepthMode DepthMode { get; }
         public abstract bool IsMutex { get; }
         
+        public UIState State { get; set; }
+        
         public GameObject Go { get; private set; }
         public RectTransform RT { get; private set; }
 
