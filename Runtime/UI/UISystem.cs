@@ -148,7 +148,7 @@ namespace LiteQuark.Runtime
 
         public T FindUI<T>() where T : BaseUI
         {
-            return UIList_.Find((ui) => ui.GetType() == typeof(T)) as T;
+            return UIList_.Find((ui) => ui.GetType() == typeof(T) && !CloseList_.Contains(ui)) as T;
         }
 
         private void SetupUI(BaseUI ui, GameObject instance)
