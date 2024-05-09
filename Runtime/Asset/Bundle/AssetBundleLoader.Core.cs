@@ -122,7 +122,7 @@ namespace LiteQuark.Runtime
 
             if (asset is UnityEngine.GameObject go)
             {
-                if (go.scene.buildIndex != -1)
+                if (go.scene.isLoaded)
                 {
                     UnityEngine.Object.DestroyImmediate(asset);
                 }
