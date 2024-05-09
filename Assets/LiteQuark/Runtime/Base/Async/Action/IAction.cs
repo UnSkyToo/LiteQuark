@@ -4,7 +4,9 @@
     {
         ulong ID { get; }
         bool IsEnd { get; }
-        void Execute();
+
+        void MarkSafety();
         void Stop();
+        void Execute();
     }
 }

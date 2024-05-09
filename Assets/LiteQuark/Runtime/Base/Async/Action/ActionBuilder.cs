@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
         private ActionBuilder(BuildType buildType, string tag)
         {
             BuildType_ = buildType;
-            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : null;
+            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
             ActionList_ = new List<IAction>();
             Parent_ = null;
         }

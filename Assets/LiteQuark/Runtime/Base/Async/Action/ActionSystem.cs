@@ -47,16 +47,21 @@
             action?.Stop();
         }
 
-        public ulong AddAction(IAction action)
+        public ulong AddAction(IAction action, bool isSafety = false)
         {
+            if (isSafety)
+            {
+                action.MarkSafety();
+            }
+            
             ActionList_.Add(action);
             action.Execute();
             return action.ID;
         }
 
-        public ulong AddBuilder(ActionBuilder builder)
+        public ulong AddBuilder(ActionBuilder builder, bool isSafety = false)
         {
-            return AddAction(builder.Flush());
+            return AddAction(builder.Flush(), isSafety);
         }
 
         public ActionBuilder Sequence(string tag, bool isRepeat = false)

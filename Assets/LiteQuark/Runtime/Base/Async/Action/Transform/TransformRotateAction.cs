@@ -2,11 +2,10 @@
 
 namespace LiteQuark.Runtime
 {
-    public class TransformRotateAction : BaseAction
+    public class TransformRotateAction : TransformBaseAction
     {
         public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}Rotate>({TS_.name},{OriginRotation_}->{TargetRotation_},{TotalTime_},{EaseKind_})";
 
-        private readonly Transform TS_;
         private readonly Quaternion Rotation_;
         private readonly float TotalTime_;
         private readonly bool IsLocal_;
@@ -17,8 +16,8 @@ namespace LiteQuark.Runtime
         private float CurrentTime_;
 
         public TransformRotateAction(Transform transform, Quaternion rotation, float time, bool isLocal = true, EaseKind easeKind = EaseKind.Linear)
+            : base(transform)
         {
-            TS_ = transform;
             Rotation_ = rotation;
             TotalTime_ = Mathf.Max(time, 0.01f);
             IsLocal_ = isLocal;
@@ -27,6 +26,11 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ = 0;
             OriginRotation_ = TS_.localRotation;
             TargetRotation_ = Rotation_;
@@ -35,6 +39,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
             var v = EaseUtils.Sample(EaseKind_, step);
@@ -61,11 +70,10 @@ namespace LiteQuark.Runtime
         }
     }
 
-    public class TransformRotateAroundAction : BaseAction
+    public class TransformRotateAroundAction : TransformBaseAction
     {
         public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}RotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_})";
 
-        protected readonly Transform TS_;
         private readonly Vector3 Center_;
         private readonly Vector3 Axis_;
         private readonly float TotalAngle_;
@@ -77,8 +85,8 @@ namespace LiteQuark.Runtime
         private float CurrentTime_;
 
         public TransformRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle, float time, bool isLocal = true)
+            : base(transform)
         {
-            TS_ = transform;
             Center_ = center;
             Axis_ = axis;
             TotalAngle_ = angle;
@@ -96,6 +104,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             var angle = CalculateNextAngle(deltaTime);
 
@@ -150,6 +163,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             if (IsLocal_)
             {
                 if (Vector3.Distance(TS_.localPosition, TargetPosition_) < 0.1f)

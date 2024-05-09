@@ -2,11 +2,10 @@
 
 namespace LiteQuark.Runtime
 {
-    public class TransformScaleAction : BaseAction
+    public class TransformScaleAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformScale>({TS_.name},{OriginScale_}->{TargetScale_},{TotalTime_},{EaseKind_})";
-
-        private readonly Transform TS_;
+        
         private readonly Vector3 Scale_;
         private readonly float TotalTime_;
         private readonly bool IsRelative_;
@@ -17,8 +16,8 @@ namespace LiteQuark.Runtime
         private float CurrentTime_;
 
         public TransformScaleAction(Transform transform, Vector3 scale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+            : base(transform)
         {
-            TS_ = transform;
             Scale_ = scale;
             TotalTime_ = Mathf.Max(time, 0.01f);
             IsRelative_ = isRelative;
@@ -27,6 +26,11 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ = 0;
             OriginScale_ = TS_.localScale;
             TargetScale_ = IsRelative_ ? OriginScale_ + Scale_ : Scale_;
@@ -35,6 +39,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
             var v = EaseUtils.Sample(EaseKind_, step);
