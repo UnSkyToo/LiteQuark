@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -66,6 +67,43 @@ namespace LiteQuark.Runtime
         public static Vector3 Round(this Vector3 vec)
         {
             return new Vector3(Mathf.Round(vec.x), Mathf.Round(vec.y), Mathf.Round(vec.z));
+        }
+
+        public static Vector3[] VectorListAdd(Vector3[] list, Vector3 value)
+        {
+            if (list == null || list.Length == 0)
+            {
+                return list;
+            }
+            
+            var result = new Vector3[list.Length];
+            for (var i = 0; i < list.Length; ++i)
+            {
+                result[i] = list[i] + value;
+            }
+            return result;
+        }
+        
+        public static float VectorListLength(Vector3[] list)
+        {
+            if (list == null || list.Length == 0)
+            {
+                return 0f;
+            }
+
+            if (list.Length == 1)
+            {
+                return Vector3.Distance(Vector3.zero, list[0]);
+            }
+            
+            var length = 0f;
+            
+            for (var i = 0; i < list.Length - 1; ++i)
+            {
+                length += Vector3.Distance(list[i], list[i + 1]);
+            }
+
+            return length;
         }
     }
 }

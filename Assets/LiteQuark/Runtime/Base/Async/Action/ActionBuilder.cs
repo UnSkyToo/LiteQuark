@@ -130,6 +130,18 @@ namespace LiteQuark.Runtime
             builder.Add(new TransformMoveAction(transform, position, time, false, isRelative, easeKind));
             return builder;
         }
+        
+        public static ActionBuilder TransformLocalMovePath(this ActionBuilder builder, Transform transform, Vector3[] path, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMovePathAction(transform, path, time, true, isRelative, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformWorldMovePath(this ActionBuilder builder, Transform transform, Vector3[] path, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMovePathAction(transform, path, time, false, isRelative, easeKind));
+            return builder;
+        }
 
         public static ActionBuilder TransformScale(this ActionBuilder builder, Transform transform, Vector3 scale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
