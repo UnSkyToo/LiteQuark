@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -48,12 +47,7 @@ namespace LiteQuark.Runtime
             }
 #endif
         }
-
-        private void OnGUI()
-        {
-            LiteRuntime.Instance.OnGUI();
-        }
-
+        
         private void OnApplicationQuit()
         {
             try

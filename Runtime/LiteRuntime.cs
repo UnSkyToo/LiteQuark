@@ -93,17 +93,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void OnGUI()
-        {
-            foreach (var logic in LogicList_)
-            {
-                if (logic is IOnGUI guiLogic)
-                {
-                    guiLogic.OnGUI();
-                }
-            }
-        }
-
         private bool InitializeSystem()
         {
             try
