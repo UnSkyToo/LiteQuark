@@ -2,11 +2,10 @@
 
 namespace LiteQuark.Runtime
 {
-    public class TransformShakingAction : BaseAction
+    public class TransformShakingAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformShaking>({TS_.name},{TotalTime_},{Strength_},{Vibrato_},{Randomness_})";
 
-        private readonly Transform TS_;
         private readonly float TotalTime_;
         private readonly float PerStepTime_;
         private readonly float Strength_;
@@ -19,8 +18,8 @@ namespace LiteQuark.Runtime
         private float StepTime_;
 
         public TransformShakingAction(Transform transform, float time, float strength, int vibrato, float randomness = 90.0f)
+            : base(transform)
         {
-            TS_ = transform;
             Position_ = TS_.localPosition;
             TotalTime_ = Mathf.Max(time, 0.01f);
             PerStepTime_ = 1.0f / vibrato;
@@ -28,14 +27,14 @@ namespace LiteQuark.Runtime
             Vibrato_ = vibrato;
             Randomness_ = randomness;
         }
-
-        public override void Dispose()
-        {
-            TS_.localPosition = Position_;
-        }
-
+        
         public override void Execute()
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             Position_ = TS_.localPosition;
             CurrentTime_ = 0;
             StepTime_ = 0;
@@ -45,6 +44,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             StepTime_ += deltaTime;
 
@@ -56,6 +60,7 @@ namespace LiteQuark.Runtime
 
             if (CurrentTime_ >= TotalTime_)
             {
+                TS_.localPosition = Position_;
                 IsEnd = true;
             }
         }

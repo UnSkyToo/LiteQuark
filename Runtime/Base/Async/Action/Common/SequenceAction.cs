@@ -13,7 +13,7 @@
         public SequenceAction(string tag, params IAction[] args)
         {
             Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
-            SubActions_ = args;
+            SubActions_ = args ?? System.Array.Empty<IAction>();
             Count_ = args?.Length ?? 0;
             Index_ = -1;
             Current_ = null;
@@ -22,6 +22,22 @@
 
         public override void Dispose()
         {
+            foreach (var action in SubActions_)
+            {
+                action.Dispose();
+            }
+            
+            base.Dispose();
+        }
+        
+        public override void MarkSafety()
+        {
+            base.MarkSafety();
+
+            foreach (var action in SubActions_)
+            {
+                action.MarkSafety();
+            }
         }
         
         public override void Stop()

@@ -2,11 +2,10 @@
 
 namespace LiteQuark.Runtime
 {
-    public class TransformMoveAction : BaseAction
+    public class TransformMoveAction : TransformBaseAction
     {
         public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}Move>({TS_.name},{OriginPos_}->{TargetPos_},{TotalTime_},{EaseKind_})";
 
-        private readonly Transform TS_;
         private readonly Vector3 Position_;
         private readonly float TotalTime_;
         private readonly bool IsLocal_;
@@ -18,8 +17,8 @@ namespace LiteQuark.Runtime
         private float CurrentTime_;
 
         public TransformMoveAction(Transform transform, Vector3 position, float time, bool isLocal = true, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+            : base(transform)
         {
-            TS_ = transform;
             Position_ = position;
             TotalTime_ = Mathf.Max(time, 0.01f);
             IsLocal_ = isLocal;
@@ -29,6 +28,11 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ = 0;
             OriginPos_ = GetValue();
             TargetPos_ = IsRelative_ ? OriginPos_ + Position_ : Position_;
@@ -37,6 +41,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
             var v = EaseUtils.Sample(EaseKind_, step);
@@ -68,11 +77,10 @@ namespace LiteQuark.Runtime
         }
     }
     
-    public class TransformMovePathAction : BaseAction
+    public class TransformMovePathAction : TransformBaseAction
     {
         public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}MovePath>({TS_.name},{StartPos_}->{TargetPos_},{TotalTime_},{EaseKind_})";
 
-        private readonly Transform TS_;
         private Vector3[] Paths_;
         private readonly float TotalTime_;
         private readonly float MoveSpeed_;
@@ -86,8 +94,8 @@ namespace LiteQuark.Runtime
         private float MoveTime_;
 
         public TransformMovePathAction(Transform transform, Vector3[] path, float time, bool isLocal = true, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+            : base(transform)
         {
-            TS_ = transform;
             Paths_ = isRelative ? MathUtils.VectorListAdd(path, GetValue()) : path;
             MoveSpeed_ = MathUtils.VectorListLength(Paths_) / Mathf.Max(time, 0.01f);
             IsLocal_ = isLocal;
@@ -96,6 +104,11 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             IsEnd = Mathf.Approximately(MoveSpeed_, 0f);
             PathIndex_ = 0;
             MoveToNextPath();
@@ -103,6 +116,11 @@ namespace LiteQuark.Runtime
 
         public override void Tick(float deltaTime)
         {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
             CurrentTime_ += deltaTime;
             var step = Mathf.Clamp01(CurrentTime_ / MoveTime_);
             var v = EaseUtils.Sample(EaseKind_, step);
