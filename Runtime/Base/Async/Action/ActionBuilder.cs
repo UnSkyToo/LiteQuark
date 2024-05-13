@@ -100,14 +100,20 @@ namespace LiteQuark.Runtime
             builder.Add(action);
             return builder;
         }
-
-        public static ActionBuilder Wait(this ActionBuilder builder, float time)
+        
+        public static ActionBuilder WaitTime(this ActionBuilder builder, float time)
         {
             builder.Add(new WaitTimeAction(time));
             return builder;
         }
-
-        public static ActionBuilder Wait(this ActionBuilder builder, System.Func<bool> conditionFunc)
+        
+        public static ActionBuilder WaitFrame(this ActionBuilder builder, int frame)
+        {
+            builder.Add(new WaitFrameAction(frame));
+            return builder;
+        }
+        
+        public static ActionBuilder WaitUntil(this ActionBuilder builder, System.Func<bool> conditionFunc)
         {
             builder.Add(new WaitUntilAction(conditionFunc));
             return builder;
