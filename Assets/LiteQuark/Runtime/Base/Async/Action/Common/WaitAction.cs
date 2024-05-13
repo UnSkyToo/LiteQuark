@@ -2,7 +2,7 @@
 {
     public class WaitTimeAction : BaseAction
     {
-        public override string DebugName => $"<WaitTime>({WaitTime_})";
+        public override string DebugName => $"<WaitTime>({CurrentTime_}/{WaitTime_})";
 
         private readonly float WaitTime_ = 0f;
         private float CurrentTime_ = 0f;
@@ -25,6 +25,34 @@
         {
             CurrentTime_ = WaitTime_;
             IsEnd = CurrentTime_ <= 0f;
+        }
+    }
+
+    public class WaitFrameAction : BaseAction
+    {
+        public override string DebugName => $"<WaitFrame>({CurrentFrame_}/{WaitFrame_})";
+
+        private readonly int WaitFrame_ = 0;
+        private int CurrentFrame_ = 0;
+        
+        public WaitFrameAction(int waitFrame)
+        {
+            WaitFrame_ = waitFrame;
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            CurrentFrame_--;
+            if (CurrentFrame_ <= 0)
+            {
+                IsEnd = true;
+            }
+        }
+
+        public override void Execute()
+        {
+            CurrentFrame_ = WaitFrame_;
+            IsEnd = CurrentFrame_ <= 0;
         }
     }
 
