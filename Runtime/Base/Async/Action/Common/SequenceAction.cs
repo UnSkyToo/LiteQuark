@@ -75,7 +75,7 @@
 
         private void ActiveNextAction()
         {
-            while (true)
+            while (!IsEnd)
             {
                 Current_?.Dispose();
 
