@@ -184,6 +184,7 @@ namespace LiteQuark.Runtime
                 }
 
                 AddList_.Clear();
+                Dirty_ = false;
             }
         }
 
