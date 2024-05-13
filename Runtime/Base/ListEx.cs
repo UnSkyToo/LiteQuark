@@ -54,45 +54,69 @@ namespace LiteQuark.Runtime
         public void Foreach(Action<T> func)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                func?.Invoke(item);
+                InEach_++;
+                foreach (var item in Values_)
+                {
+                    func?.Invoke(item);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
 
         public void Foreach<P>(Action<T, P> func, P param)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                func?.Invoke(item, param);
+                InEach_++;
+                foreach (var item in Values_)
+                {
+                    func?.Invoke(item, param);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
 
         public void Foreach<P1, P2>(Action<T, P1, P2> func, P1 param1, P2 param2)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                func?.Invoke(item, param1, param2);
+                InEach_++;
+                foreach (var item in Values_)
+                {
+                    func?.Invoke(item, param1, param2);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
         
         public void Foreach<P1, P2, P3>(Action<T, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                func?.Invoke(item, param1, param2, param3);
+                InEach_++;
+                foreach (var item in Values_)
+                {
+                    func?.Invoke(item, param1, param2, param3);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
         
         /// <summary>
@@ -101,15 +125,21 @@ namespace LiteQuark.Runtime
         public T ForeachReturn(Func<T, bool> func)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                if (func?.Invoke(item) == true)
+                InEach_++;
+                foreach (var item in Values_)
                 {
-                    return item;
+                    if (func?.Invoke(item) == true)
+                    {
+                        return item;
+                    }
                 }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
             return default;
         }
 
@@ -119,15 +149,21 @@ namespace LiteQuark.Runtime
         public T ForeachReturn<P>(Func<T, P, bool> func, P param)
         {
             Flush();
-            InEach_++;
-            foreach (var item in Values_)
+            try
             {
-                if (func?.Invoke(item, param) == true)
+                InEach_++;
+                foreach (var item in Values_)
                 {
-                    return item;
+                    if (func?.Invoke(item, param) == true)
+                    {
+                        return item;
+                    }
                 }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
             return default;
         }
 
