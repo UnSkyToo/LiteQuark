@@ -36,6 +36,12 @@
             return ActionList_.Count == 0;
         }
 
+        public bool IsEnd(ulong id)
+        {
+            var action = FindAction(id);
+            return action == null || action.IsEnd;
+        }
+
         public IAction FindAction(ulong id)
         {
             return ActionList_.Where(action => action.ID == id);
@@ -44,7 +50,11 @@
         public void StopAction(ulong id)
         {
             var action = FindAction(id);
-            action?.Stop();
+            if (action == null || action.IsEnd)
+            {
+                return;
+            }
+            action.Stop();
         }
 
         public ulong AddAction(IAction action, bool isSafety = false)
