@@ -8,11 +8,7 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteDebugger))]
     internal class LiteDebuggerInspectorView : LiteInspectorBaseView
     {
-        private bool Foldout_ = true;
-        private bool AssetFoldout_ = true;
-        private bool ObjectPoolFoldout_ = false;
-
-        private Dictionary<string, bool> BundleFoldout_ = new Dictionary<string, bool>();
+        private Dictionary<string, bool> LabelFoldout_ = new Dictionary<string, bool>();
         
         protected override void OnDraw()
         {
@@ -21,17 +17,42 @@ namespace LiteQuark.Editor
                 return;
             }
             
-            DrawFoldout(ref AssetFoldout_, "Asset", DrawAsset);
-            DrawFoldout(ref ObjectPoolFoldout_, "ObjectPool", DrawObjectPool);
+            DrawFoldout("Action", DrawAction);
+            DrawFoldout("Asset", DrawAsset);
+            DrawFoldout("ObjectPool", DrawObjectPool);
         }
 
-        private void DrawFoldout(ref bool foldout, string label, System.Action func)
+        private void DrawFoldout(string label, System.Action func)
         {
-            foldout = EditorGUILayout.Foldout(foldout, label);
-            if (foldout)
+            LabelFoldout_.TryAdd(label, false);
+            
+            LabelFoldout_[label] = EditorGUILayout.Foldout(LabelFoldout_[label], label);
+            if (LabelFoldout_[label])
             {
                 func.Invoke();
             }
+        }
+
+        private void DrawAction()
+        {
+            var actionList = LiteRuntime.Action.GetActionList();
+            if (actionList.Count == 0)
+            {
+                EditorGUILayout.LabelField("Empty");
+                return;
+            }
+            
+            actionList.Foreach((ac) =>
+            {
+                if (ac is BaseAction action)
+                {
+                    EditorGUILayout.LabelField(action.DebugName);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField($"Action {ac.ID}");
+                }
+            });
         }
 
         private void DrawAsset()

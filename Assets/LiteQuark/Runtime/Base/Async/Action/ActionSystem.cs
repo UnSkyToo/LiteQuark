@@ -42,6 +42,11 @@
             return action == null || action.IsEnd;
         }
 
+        public ListEx<IAction> GetActionList()
+        {
+            return ActionList_;
+        }
+
         public IAction FindAction(ulong id)
         {
             return ActionList_.Where(action => action.ID == id);
