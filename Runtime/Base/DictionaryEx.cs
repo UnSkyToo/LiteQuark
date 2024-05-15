@@ -44,12 +44,24 @@ namespace LiteQuark.Runtime
 
         public void Add(TKey key, TValue value)
         {
+            if (RemoveList_.Contains(key))
+            {
+                RemoveList_.Remove(key);
+                return;
+            }
+            
             AddList_.Add(key, value);
             Dirty_ = true;
         }
 
         public void Remove(TKey key)
         {
+            if (AddList_.ContainsKey(key))
+            {
+                AddList_.Remove(key);
+                return;
+            }
+            
             RemoveList_.Add(key);
             Dirty_ = true;
         }
@@ -69,45 +81,69 @@ namespace LiteQuark.Runtime
         public void Foreach(Action<TKey, TValue> func)
         {
             Flush();
-            InEach_++;
-            foreach (var chunk in Values_)
+            try
             {
-                func?.Invoke(chunk.Key, chunk.Value);
+                InEach_++;
+                foreach (var chunk in Values_)
+                {
+                    func?.Invoke(chunk.Key, chunk.Value);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
 
         public void Foreach<P>(Action<TKey, TValue, P> func, P param)
         {
             Flush();
-            InEach_++;
-            foreach (var chunk in Values_)
+            try
             {
-                func?.Invoke(chunk.Key, chunk.Value, param);
+                InEach_++;
+                foreach (var chunk in Values_)
+                {
+                    func?.Invoke(chunk.Key, chunk.Value, param);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
         
         public void Foreach<P1, P2>(Action<TKey, TValue, P1, P2> func, P1 param1, P2 param2)
         {
             Flush();
-            InEach_++;
-            foreach (var chunk in Values_)
+            try
             {
-                func?.Invoke(chunk.Key, chunk.Value, param1, param2);
+                InEach_++;
+                foreach (var chunk in Values_)
+                {
+                    func?.Invoke(chunk.Key, chunk.Value, param1, param2);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
         
         public void Foreach<P1, P2, P3>(Action<TKey, TValue, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
-            InEach_++;
-            foreach (var chunk in Values_)
+            try
             {
-                func?.Invoke(chunk.Key, chunk.Value, param1, param2, param3);
+                InEach_++;
+                foreach (var chunk in Values_)
+                {
+                    func?.Invoke(chunk.Key, chunk.Value, param1, param2, param3);
+                }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
         }
         
         /// <summary>
@@ -134,15 +170,21 @@ namespace LiteQuark.Runtime
         public TValue ForeachReturn<P>(Func<TKey, TValue, P, bool> func, P param)
         {
             Flush();
-            InEach_++;
-            foreach (var chunk in Values_)
+            try
             {
-                if (func?.Invoke(chunk.Key, chunk.Value, param) == true)
+                InEach_++;
+                foreach (var chunk in Values_)
                 {
-                    return chunk.Value;
+                    if (func?.Invoke(chunk.Key, chunk.Value, param) == true)
+                    {
+                        return chunk.Value;
+                    }
                 }
             }
-            InEach_--;
+            finally
+            {
+                InEach_--;
+            }
             return default;
         }
 
@@ -150,19 +192,19 @@ namespace LiteQuark.Runtime
         {
             if (Dirty_ && InEach_ == 0)
             {
-                foreach (var key in RemoveList_)
-                {
-                    Values_.Remove(key);
-                }
-
-                RemoveList_.Clear();
-
                 foreach (var chunk in AddList_)
                 {
                     Values_.Add(chunk.Key, chunk.Value);
                 }
-
                 AddList_.Clear();
+                
+                foreach (var key in RemoveList_)
+                {
+                    Values_.Remove(key);
+                }
+                RemoveList_.Clear();
+
+                Dirty_ = false;
             }
         }
     }

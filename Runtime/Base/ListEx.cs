@@ -29,12 +29,24 @@ namespace LiteQuark.Runtime
 
         public void Add(T item)
         {
+            if (RemoveList_.Contains(item))
+            {
+                RemoveList_.Remove(item);
+                return;
+            }
+            
             AddList_.Add(item);
             Dirty_ = true;
         }
 
         public void Remove(T item)
         {
+            if (AddList_.Contains(item))
+            {
+                AddList_.Remove(item);
+                return;
+            }
+            
             RemoveList_.Add(item);
             Dirty_ = true;
         }
@@ -171,19 +183,18 @@ namespace LiteQuark.Runtime
         {
             if (Dirty_ && InEach_ == 0)
             {
-                foreach (var item in RemoveList_)
-                {
-                    Values_.Remove(item);
-                }
-
-                RemoveList_.Clear();
-
                 foreach (var item in AddList_)
                 {
                     Values_.Add(item);
                 }
-
                 AddList_.Clear();
+                
+                foreach (var item in RemoveList_)
+                {
+                    Values_.Remove(item);
+                }
+                RemoveList_.Clear();
+                
                 Dirty_ = false;
             }
         }
