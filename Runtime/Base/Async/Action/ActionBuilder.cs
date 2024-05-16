@@ -125,6 +125,12 @@ namespace LiteQuark.Runtime
             return builder;
         }
 
+        public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param) where T : struct
+        {
+            builder.Add(new CallbackAction<T>(callback, param));
+            return builder;
+        }
+
         public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
             builder.Add(new TransformMoveAction(transform, position, time, true, isRelative, easeKind));
