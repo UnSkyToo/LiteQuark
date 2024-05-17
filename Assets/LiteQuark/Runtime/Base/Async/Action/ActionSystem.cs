@@ -49,7 +49,7 @@
 
         public IAction FindAction(ulong id)
         {
-            return ActionList_.Where(action => action.ID == id);
+            return ActionList_.ForeachReturn((action, targetId) => action.ID == targetId, id);
         }
 
         public void StopAction(ulong id)
