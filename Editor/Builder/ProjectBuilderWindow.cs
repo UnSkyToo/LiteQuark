@@ -23,7 +23,15 @@ namespace LiteQuark.Editor
         {
             Target_ = EditorUserBuildSettings.activeBuildTarget;
             ResCfg_ = new ResBuildConfig();
-            AppCfg_ = new AppBuildConfig();
+            AppCfg_ = new AppBuildConfig()
+            {
+                Identifier = PlayerSettings.applicationIdentifier,
+                ProduceName = PlayerSettings.productName,
+                Version = PlayerSettings.bundleVersion,
+#if UNITY_ANDROID
+                BuildCode = PlayerSettings.Android.bundleVersionCode,
+#endif
+            };
 
             StepViewList_ = new BuilderStepView[]
             {
