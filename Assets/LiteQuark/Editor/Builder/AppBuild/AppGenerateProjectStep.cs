@@ -38,6 +38,9 @@ namespace LiteQuark.Editor
             PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
             PlayerSettings.bundleVersion = builder.AppConfig.Version;
             PlayerSettings.productName = builder.AppConfig.ProduceName;
+#if UNITY_ANDROID
+            PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
+#endif
         }
 
         private void BuildAndroid(ProjectBuilder builder)

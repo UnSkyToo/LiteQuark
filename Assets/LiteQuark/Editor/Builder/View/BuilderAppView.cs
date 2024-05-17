@@ -24,6 +24,7 @@ namespace LiteQuark.Editor
             Config_.Identifier = EditorGUILayout.TextField(new GUIContent("Identifier", "App Identifier"), Config_.Identifier);
             Config_.ProduceName = EditorGUILayout.TextField(new GUIContent("Produce Name", "Display app name"), Config_.ProduceName);
             Config_.Version = EditorGUILayout.TextField(new GUIContent("Version", "App version"), Config_.Version);
+            Config_.BuildCode = EditorGUILayout.IntField(new GUIContent("Build Code", "App build code"), Config_.BuildCode);
             Config_.Options = (BuildOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), Config_.Options, false);
             Config_.Backend = (ScriptingImplementation)EditorGUILayout.EnumPopup(new GUIContent("Backend", "Script backend"), Config_.Backend);
             Config_.IsDevelopmentBuild = EditorGUILayout.Toggle(new GUIContent("Development Build", "Is development build"), Config_.IsDevelopmentBuild);
