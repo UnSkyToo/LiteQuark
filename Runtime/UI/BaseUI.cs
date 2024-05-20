@@ -66,6 +66,13 @@ namespace LiteQuark.Runtime
             anchorMax.x /= maxWidth;
             anchorMax.y /= maxHeight;
 
+            var canvasSize = LiteRuntime.UI.CanvasRoot.sizeDelta;
+
+            OnAdaptAnchorsValue(canvasSize, anchorMin, anchorMax);
+        }
+
+        protected virtual void OnAdaptAnchorsValue(Vector2 canvasSize, Vector2 anchorMin, Vector2 anchorMax)
+        {
             RT.anchorMin = anchorMin;
             RT.anchorMax = anchorMax;
         }
