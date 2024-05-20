@@ -194,10 +194,10 @@ namespace LiteQuark.Runtime
         private void SetupCanvasRoot(GameObject go)
         {
             var rectTrans = go.GetOrAddComponent<RectTransform>();
-            rectTrans.anchorMin = Vector2.zero;
-            rectTrans.anchorMax = Vector2.one;
-            rectTrans.anchoredPosition = Vector2.zero;
-            rectTrans.sizeDelta = Vector2.zero;
+            // rectTrans.anchorMin = Vector2.zero;
+            // rectTrans.anchorMax = Vector2.one;
+            // rectTrans.anchoredPosition = Vector2.zero;
+            // rectTrans.sizeDelta = Vector2.zero;
             go.layer = LayerMask.NameToLayer("UI");
             
             // var canvas = go.GetOrAddComponent<Canvas>();
