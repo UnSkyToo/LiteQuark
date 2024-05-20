@@ -35,13 +35,13 @@ namespace LiteQuark.Editor
 
         private void DrawAction()
         {
-            var actionList = LiteRuntime.Action.GetActionList();
-            if (actionList.Count == 0)
+            var actionList = LiteRuntime.Action?.GetActionList();
+            if (actionList == null || actionList.Count == 0)
             {
                 EditorGUILayout.LabelField("Empty");
                 return;
             }
-            
+
             actionList.Foreach((ac) =>
             {
                 if (ac is BaseAction action)
@@ -57,12 +57,14 @@ namespace LiteQuark.Editor
 
         private void DrawAsset()
         {
-            var visitorInfo = LiteRuntime.Asset.GetVisitorInfo();
-            if (visitorInfo.Tag == null)
+            var visitorInfoWrap = LiteRuntime.Asset?.GetVisitorInfo();
+            if (!visitorInfoWrap.HasValue || visitorInfoWrap.Value.Tag == null)
             {
+                EditorGUILayout.LabelField("Empty");
                 return;
             }
-
+            
+            var visitorInfo = visitorInfoWrap.Value;
             if (visitorInfo.BundleVisitorList.Count == 0)
             {
                 EditorGUILayout.LabelField("Empty");
@@ -85,8 +87,8 @@ namespace LiteQuark.Editor
 
         private void DrawObjectPool()
         {
-            var cache = LiteRuntime.ObjectPool.GetPoolCache();
-            if (cache.Count == 0)
+            var cache = LiteRuntime.ObjectPool?.GetPoolCache();
+            if (cache == null || cache.Count == 0)
             {
                 EditorGUILayout.LabelField("Empty");
                 return;
