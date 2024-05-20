@@ -8,7 +8,10 @@ namespace LiteQuark.Runtime
     public sealed class UISystem : ISystem, ITick
     {
         private const int UIStepOrder = 100;
-        
+
+        public RectTransform CanvasRoot => CanvasRoot_;
+
+        private RectTransform CanvasRoot_;
         private readonly Dictionary<UIDepthMode, Transform> CanvasTransform_ = new Dictionary<UIDepthMode, Transform>();
         private readonly List<BaseUI> OpenList_ = new List<BaseUI>();
         private readonly List<BaseUI> UIList_ = new List<BaseUI>();
@@ -201,14 +204,16 @@ namespace LiteQuark.Runtime
             // canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.uiScaleMode = LiteRuntime.Setting.UI.ScaleMode;
+            scaler.screenMatchMode = LiteRuntime.Setting.UI.MatchMode;
             scaler.referenceResolution = new Vector2(LiteRuntime.Setting.UI.ResolutionWidth, LiteRuntime.Setting.UI.ResolutionHeight);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0;
+            scaler.matchWidthOrHeight = LiteRuntime.Setting.UI.MatchValue;
             scaler.referencePixelsPerUnit = 100;
             
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;
+
+            CanvasRoot_ = rectTrans;
         }
     }
 }

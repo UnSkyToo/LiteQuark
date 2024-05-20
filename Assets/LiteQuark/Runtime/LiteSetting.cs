@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
@@ -72,6 +73,9 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class UISetting
         {
+            [SerializeField] public CanvasScaler.ScaleMode ScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            [SerializeField] public CanvasScaler.ScreenMatchMode MatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            [SerializeField] public float MatchValue = 0f;
             [SerializeField] public int ResolutionWidth = 1920;
             [SerializeField] public int ResolutionHeight = 1080;
 
