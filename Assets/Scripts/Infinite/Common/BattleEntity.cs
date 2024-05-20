@@ -6,6 +6,8 @@ namespace InfiniteGame
     public abstract class BattleEntity : BaseObject, ITick
     {
         public GameObject Go { get; }
+
+        public override string DebugName => string.Empty;
         
         private CircleArea Circle_;
         private Transform Transform_;

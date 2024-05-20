@@ -60,7 +60,7 @@ namespace LiteCard.UI
 
         private void OnAgentAttrChangeEvent(AgentAttrChangeEvent evt)
         {
-            if (evt.Agent.SerialID != Data.SerialID)
+            if (evt.Agent.UniqueID != Data.UniqueID)
             {
                 return;
             }
@@ -70,7 +70,7 @@ namespace LiteCard.UI
 
         private void OnBuffLayerChangeEvent(BuffLayerChangeEvent evt)
         {
-            if (evt.Agent.SerialID != Data.SerialID)
+            if (evt.Agent.UniqueID != Data.UniqueID)
             {
                 return;
             }

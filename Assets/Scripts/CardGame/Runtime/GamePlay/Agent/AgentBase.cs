@@ -7,6 +7,7 @@ namespace LiteCard.GamePlay
     public abstract class AgentBase : BaseObject, IRoundLifeCycle
     {
         public string Name { get; }
+        public override string DebugName => Name;
 
         public int CurHp => GetAttr(AgentAttrType.CurHp);
         public int MaxHp => GetAttr(AgentAttrType.MaxHp);

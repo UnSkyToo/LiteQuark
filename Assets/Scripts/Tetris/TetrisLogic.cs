@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Tetris
 {
-    public class TetrisLogic : ILogic, IOnGUI
+    public class TetrisLogic : ILogic
     {
         private Board Board_;
         
@@ -75,12 +75,6 @@ namespace Tetris
         {
             return true;
             return Frame_ % Const.LevelRotateFrame[Level_] == 0;
-        }
-
-        public void OnGUI()
-        {
-            GUI.matrix = Matrix4x4.Scale(Vector3.one * 5);
-            GUILayout.Label($"Level:{Level_}, Score:{Board_?.GetScore() ?? 0}");
         }
     }
 }

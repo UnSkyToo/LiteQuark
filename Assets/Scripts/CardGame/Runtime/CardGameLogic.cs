@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LiteCard
 {
-    public sealed class CardGameLogic : ILogic, IOnGUI
+    public sealed class CardGameLogic : ILogic
     {
         public bool Startup()
         {
@@ -23,14 +23,6 @@ namespace LiteCard
         public void Tick(float deltaTime)
         {
             GameLogic.Instance.Update(deltaTime);
-        }
-
-        public void OnGUI()
-        {
-            if (GUILayout.Button("Test", GUILayout.Width(200), GUILayout.Height(80)))
-            {
-                GameLogic.Instance.Startup();
-            }
         }
     }
 }

@@ -5,6 +5,7 @@ namespace LiteCard.GamePlay
 {
     public sealed class Player : AgentBase
     {
+        
         public int CurEnergy { get; private set; }
         public int MaxEnergy { get; private set; }
         
