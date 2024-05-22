@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         {
             if (Source_ == null)
             {
-                Source_ = GameObject.FindObjectOfType<AudioSource>();
+                Source_ = Object.FindFirstObjectByType<AudioSource>();
             }
 
             return Source_;

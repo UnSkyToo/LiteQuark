@@ -23,6 +23,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
+                LLog.Exception(ex);
                 callback?.Invoke(false);
                 Stop();
             }
