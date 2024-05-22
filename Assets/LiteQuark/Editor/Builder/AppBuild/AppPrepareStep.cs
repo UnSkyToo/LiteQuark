@@ -1,6 +1,7 @@
 ﻿using LiteQuark.Runtime;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 
 namespace LiteQuark.Editor
 {
@@ -34,8 +35,9 @@ namespace LiteQuark.Editor
             // PlayerSettings.bundleVersion = "1.0.0";
             //
             EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
-            
-            PlayerSettings.SetScriptingBackend(targetGroup, builder.AppConfig.Backend);
+
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+            PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
 
             AssetDatabase.SaveAssets();
