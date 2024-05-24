@@ -18,7 +18,7 @@
         }
     }
     
-    public class CallbackAction<T> : BaseAction where T : struct
+    public class CallbackAction<T> : BaseAction
     {
         public override string DebugName => "<Callback>()";
 
