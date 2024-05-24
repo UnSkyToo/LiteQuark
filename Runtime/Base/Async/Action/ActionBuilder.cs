@@ -125,7 +125,7 @@ namespace LiteQuark.Runtime
             return builder;
         }
 
-        public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param) where T : struct
+        public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param)
         {
             builder.Add(new CallbackAction<T>(callback, param));
             return builder;
