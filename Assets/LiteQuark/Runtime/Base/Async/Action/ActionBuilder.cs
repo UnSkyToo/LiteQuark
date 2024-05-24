@@ -130,6 +130,18 @@ namespace LiteQuark.Runtime
             builder.Add(new CallbackAction<T>(callback, param));
             return builder;
         }
+        
+        public static ActionBuilder Callback<T1, T2>(this ActionBuilder builder, System.Action<T1, T2> callback, T1 param1, T2 param2)
+        {
+            builder.Add(new CallbackAction<T1, T2>(callback, param1, param2));
+            return builder;
+        }
+        
+        public static ActionBuilder Callback<T1, T2, T3>(this ActionBuilder builder, System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
+        {
+            builder.Add(new CallbackAction<T1, T2, T3>(callback, param1, param2, param3));
+            return builder;
+        }
 
         public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
