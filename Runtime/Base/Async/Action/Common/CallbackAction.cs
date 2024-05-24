@@ -20,7 +20,7 @@
     
     public class CallbackAction<T> : BaseAction
     {
-        public override string DebugName => "<Callback>()";
+        public override string DebugName => "<Callback1>()";
 
         private readonly System.Action<T> Callback_ = null;
         private readonly T Param_ = default;
@@ -35,6 +35,52 @@
         {
             IsEnd = true;
             Callback_?.Invoke(Param_);
+        }
+    }
+    
+    public class CallbackAction<T1, T2> : BaseAction
+    {
+        public override string DebugName => "<Callback2>()";
+
+        private readonly System.Action<T1, T2> Callback_ = null;
+        private readonly T1 Param1_ = default;
+        private readonly T2 Param2_ = default;
+        
+        public CallbackAction(System.Action<T1, T2> callback, T1 param1, T2 param2)
+        {
+            Callback_ = callback;
+            Param1_ = param1;
+            Param2_ = param2;
+        }
+
+        public override void Execute()
+        {
+            IsEnd = true;
+            Callback_?.Invoke(Param1_, Param2_);
+        }
+    }
+    
+    public class CallbackAction<T1, T2, T3> : BaseAction
+    {
+        public override string DebugName => "<Callback3>()";
+
+        private readonly System.Action<T1, T2, T3> Callback_ = null;
+        private readonly T1 Param1_ = default;
+        private readonly T2 Param2_ = default;
+        private readonly T3 Param3_ = default;
+        
+        public CallbackAction(System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
+        {
+            Callback_ = callback;
+            Param1_ = param1;
+            Param2_ = param2;
+            Param3_ = param3;
+        }
+
+        public override void Execute()
+        {
+            IsEnd = true;
+            Callback_?.Invoke(Param1_, Param2_, Param3_);
         }
     }
 }
