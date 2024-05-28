@@ -77,6 +77,11 @@ namespace LiteQuark.Runtime
             return GetPool<GameObjectPool>(path, Root_);
         }
 
+        public EmptyGameObjectPool GetEmptyGameObjectPool(string key)
+        {
+            return GetPool<EmptyGameObjectPool>(key, Root_);
+        }
+
         public ParticlePool GetParticlePool(string path)
         {
             return GetPool<ParticlePool>(path, Root_);
