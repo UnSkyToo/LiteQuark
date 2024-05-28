@@ -5,16 +5,18 @@ namespace LiteQuark.Runtime
     public class AudioObject : BaseObject
     {
         public AudioType Type { get; private set; }
+        public string Path { get; private set; }
         public bool IsLoaded { get; private set; }
         public AudioSource Source { get; private set; }
         public GameObject Carrier { get; private set; }
 
         public override string DebugName => $"AudioClip_{Source?.clip?.name}";
 
-        public AudioObject(AudioType type)
+        public AudioObject(AudioType type, string path)
             : base()
         {
             Type = type;
+            Path = path;
             IsLoaded = false;
         }
 
