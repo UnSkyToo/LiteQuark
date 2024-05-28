@@ -16,9 +16,9 @@ namespace LiteQuark.Runtime
             typeof(GroupSystem),
             typeof(AssetSystem),
             typeof(ObjectPoolSystem),
-            typeof(ActionSystem),
-            typeof(AudioSystem),
             typeof(ConfigSystem),
+            typeof(AudioSystem),
+            typeof(ActionSystem),
             typeof(UISystem),
         };
     }
