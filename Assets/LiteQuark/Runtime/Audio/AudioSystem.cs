@@ -73,10 +73,34 @@ namespace LiteQuark.Runtime
                 RemoveList_.Clear();
             }
         }
-        
-        private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, float volume = 1.0f)
+
+        private int GetAudioCountByPath(string path)
         {
-            var audio = new AudioObject(type);
+            var count = 0;
+            
+            foreach (var chunk in AudioCache_)
+            {
+                if (chunk.Value.Path == path)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+        
+        private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, int limit = 0, float volume = 1.0f)
+        {
+            if (limit > 0)
+            {
+                var count = GetAudioCountByPath(path);
+                if (count >= limit)
+                {
+                    return 0;
+                }
+            }
+            
+            var audio = new AudioObject(type, path);
             AudioCache_.Add(audio.UniqueID, audio);
 
             LiteRuntime.Asset.LoadAssetAsync<AudioClip>(path, (clip) =>
@@ -112,9 +136,9 @@ namespace LiteQuark.Runtime
             return audio.UniqueID;
         }
 
-        public ulong PlaySound(string path, bool isLoop = false, float volume = 1.0f)
+        public ulong PlaySound(string path, bool isLoop = false, int limit = 0, float volume = 1.0f)
         {
-            return PlayAudio(AudioType.Sound, Root_, path, isLoop, volume);
+            return PlayAudio(AudioType.Sound, Root_, path, isLoop, limit, volume);
         }
 
         public ulong PlayMusic(string path, bool isLoop = true, float volume = 1.0f, bool isOnly = true)
@@ -124,7 +148,7 @@ namespace LiteQuark.Runtime
                 StopAllMusic();
             }
 
-            return PlayAudio(AudioType.Music, Root_, path, isLoop, volume);
+            return PlayAudio(AudioType.Music, Root_, path, isLoop, 0, volume);
         }
 
         public void StopAudio(ulong id)
