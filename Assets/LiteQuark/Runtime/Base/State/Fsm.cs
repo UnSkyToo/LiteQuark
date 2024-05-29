@@ -38,6 +38,15 @@ namespace LiteQuark.Runtime
             return StateMap_.GetValueOrDefault(id);
         }
 
+        public void ChangeToNullState()
+        {
+            if (CurrentState_ != default)
+            {
+                CurrentState_.Leave();
+                CurrentState_ = null;
+            }
+        }
+
         public bool ChangeToState(int id, params object[] args)
         {
             if (CurrentState_ != default)
