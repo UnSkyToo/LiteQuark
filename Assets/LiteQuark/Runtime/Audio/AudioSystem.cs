@@ -46,6 +46,8 @@ namespace LiteQuark.Runtime
             }
             AudioCache_.Clear();
             
+            LiteRuntime.ObjectPool.RemovePool(Pool_);
+            
             if (Root_ != null)
             {
                 Object.DestroyImmediate(Root_.gameObject);

@@ -49,10 +49,12 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-
+            
+            LiteRuntime.Asset.UnloadAsset(Source.clip);
+            Source = null;
+            
             if (Carrier != null)
             {
-                Source = null;
                 pool.Recycle(Carrier);
                 Carrier = null;
             }
