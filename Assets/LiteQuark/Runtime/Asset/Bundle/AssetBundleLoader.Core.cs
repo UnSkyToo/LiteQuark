@@ -161,7 +161,8 @@ namespace LiteQuark.Runtime
         {
             if (BundleCacheMap_.ContainsKey(bundlePath))
             {
-                BundleCacheMap_[bundlePath].Unload(false);
+                // BundleCacheMap_[bundlePath].Unload(false);
+                BundleCacheMap_[bundlePath].Dispose();
                 BundleCacheMap_.Remove(bundlePath);
             }
         }
