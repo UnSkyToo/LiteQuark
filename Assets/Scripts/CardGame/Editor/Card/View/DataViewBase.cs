@@ -183,24 +183,24 @@ namespace LiteCard.Editor
         public void Load()
         {
             // Debug.Log($"read {Name} data");
-            var text = AssetDatabase.LoadAssetAtPath<TextAsset>(JsonFile_);
-            var data = JsonUtils.DecodeArray(text.text, typeof(T)).Cast<T>().ToArray();
-            DataList_.Clear();
-            DataList_.AddRange(data);
-            SortDataList();
+            // var text = AssetDatabase.LoadAssetAtPath<TextAsset>(JsonFile_);
+            // var data = JsonUtils.DecodeArray(text.text, typeof(T)).Cast<T>().ToArray();
+            // DataList_.Clear();
+            // DataList_.AddRange(data);
+            // SortDataList();
         }
 
         public void Save()
         {
             if (IsDirty_)
             {
-                var jsonText = JsonUtils.EncodeArray(DataList_.ToArray());
-                var dir = Path.GetDirectoryName(JsonFile_);
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                File.WriteAllText(JsonFile_, jsonText);
+                // var jsonText = JsonUtils.EncodeArray(DataList_.ToArray());
+                // var dir = Path.GetDirectoryName(JsonFile_);
+                // if (!Directory.Exists(dir))
+                // {
+                //     Directory.CreateDirectory(dir);
+                // }
+                // File.WriteAllText(JsonFile_, jsonText);
                 IsDirty_ = false;
             }
         }
