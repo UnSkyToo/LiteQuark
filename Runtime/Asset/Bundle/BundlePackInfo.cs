@@ -66,13 +66,15 @@ namespace LiteQuark.Runtime
 
         public string ToJson()
         {
-            var jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(this);
+            // var jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(this);
+            var jsonText = LitJson.JsonMapper.ToJson(this);
             return jsonText;
         }
 
         private static BundlePackInfo FromJson(string jsonText)
         {
-            var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<BundlePackInfo>(jsonText);
+            // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<BundlePackInfo>(jsonText);
+            var packInfo = LitJson.JsonMapper.ToObject<BundlePackInfo>(jsonText);
             return packInfo;
         }
         

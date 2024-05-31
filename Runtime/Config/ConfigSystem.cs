@@ -66,18 +66,18 @@ namespace LiteQuark.Runtime
         {
             LiteRuntime.Asset.LoadAssetAsync<TextAsset>(jsonFilePath, (asset) =>
             {
-                var data =  JsonUtils.DecodeArray(asset.text, type).Cast<IJsonMainConfig>().ToArray();
-                if (data == null)
-                {
-                    LLog.Info($"read json file error : {jsonFilePath}");
-                    return;
-                }
-            
-                LLog.Info($"load config : {jsonFilePath}");
-                foreach (var item in data)
-                {
-                    cache.Add(item.ID, item);
-                }
+                // var data =  JsonUtils.DecodeArray(asset.text, type).Cast<IJsonMainConfig>().ToArray();
+                // if (data == null)
+                // {
+                //     LLog.Info($"read json file error : {jsonFilePath}");
+                //     return;
+                // }
+                //
+                // LLog.Info($"load config : {jsonFilePath}");
+                // foreach (var item in data)
+                // {
+                //     cache.Add(item.ID, item);
+                // }
             });
         }
     }
