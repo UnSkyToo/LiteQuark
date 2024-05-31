@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.0.5-preview] - 2024-05-31
+- 删除NewtonJson库，内部Asset改用LitJson
+
 ## [0.0.4-preview] - 2024-05-31
 - 修复资源管理器自动释放资源导致无法再次加载的BUG
 - 修复音效资源泄露的问题
