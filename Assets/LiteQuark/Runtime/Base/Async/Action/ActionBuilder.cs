@@ -124,10 +124,22 @@ namespace LiteQuark.Runtime
             builder.Add(new CallbackAction(callback));
             return builder;
         }
+        
+        public static ActionBuilder Callback<TR>(this ActionBuilder builder, System.Func<TR> callback)
+        {
+            builder.Add(new CallbackFuncAction<TR>(callback));
+            return builder;
+        }
 
         public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param)
         {
             builder.Add(new CallbackAction<T>(callback, param));
+            return builder;
+        }
+        
+        public static ActionBuilder Callback<T, TR>(this ActionBuilder builder, System.Func<T, TR> callback, T param)
+        {
+            builder.Add(new CallbackFuncAction<T, TR>(callback, param));
             return builder;
         }
         
@@ -137,12 +149,24 @@ namespace LiteQuark.Runtime
             return builder;
         }
         
+        public static ActionBuilder Callback<T1, T2, TR>(this ActionBuilder builder, System.Func<T1, T2, TR> callback, T1 param1, T2 param2)
+        {
+            builder.Add(new CallbackFuncAction<T1, T2, TR>(callback, param1, param2));
+            return builder;
+        }
+        
         public static ActionBuilder Callback<T1, T2, T3>(this ActionBuilder builder, System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
         {
             builder.Add(new CallbackAction<T1, T2, T3>(callback, param1, param2, param3));
             return builder;
         }
-
+        
+        public static ActionBuilder Callback<T1, T2, T3, TR>(this ActionBuilder builder, System.Func<T1, T2, T3, TR> callback, T1 param1, T2 param2, T3 param3)
+        {
+            builder.Add(new CallbackFuncAction<T1, T2, T3, TR>(callback, param1, param2, param3));
+            return builder;
+        }
+        
         public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
         {
             builder.Add(new TransformMoveAction(transform, position, time, true, isRelative, easeKind));
