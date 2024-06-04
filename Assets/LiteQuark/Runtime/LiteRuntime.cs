@@ -276,7 +276,6 @@ namespace LiteQuark.Runtime
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
-        public static ConfigSystem Config => Get<ConfigSystem>();
         public static UISystem UI => Get<UISystem>();
     }
 }
