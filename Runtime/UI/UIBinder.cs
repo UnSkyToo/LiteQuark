@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
     {
         private const BindingFlags CustomFlags = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private static readonly Type TransformType = typeof(Transform);
+        private static readonly Type GameObjectType = typeof(GameObject);
         private static readonly Type ComponentType = typeof(Component);
 
         internal static void AutoBind(BaseUI ui)
@@ -34,7 +35,7 @@ namespace LiteQuark.Runtime
             var fieldList = ui.GetType().GetFields(CustomFlags);
             foreach (var field in fieldList)
             {
-                if (field.FieldType != TransformType)
+                if (field.FieldType != TransformType && field.FieldType != GameObjectType)
                 {
                     continue;
                 }
@@ -49,7 +50,14 @@ namespace LiteQuark.Runtime
                         continue;
                     }
 
-                    field.SetValue(ui, nodeValue);
+                    if (field.FieldType == TransformType)
+                    {
+                        field.SetValue(ui, nodeValue);
+                    }
+                    else if (field.FieldType == GameObjectType)
+                    {
+                        field.SetValue(ui, nodeValue.gameObject);
+                    }
                 }
             }
         }
@@ -129,7 +137,7 @@ namespace LiteQuark.Runtime
             Path = path;
         }
     }
-
+    
     public class UINodeAttribute : UIBaseAttribute
     {
         public UINodeAttribute(string path)
