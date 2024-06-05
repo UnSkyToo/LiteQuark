@@ -26,7 +26,16 @@
                 }
                 else
                 {
-                    action.Tick(dt);
+                    try
+                    {
+                        action.Tick(dt);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        action.Stop();
+                        LLog.Error($"action exception : {action.GetType().Name}");
+                        LLog.Exception(ex);
+                    }
                 }
             }, ActionList_, deltaTime);
         }
