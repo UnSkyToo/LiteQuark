@@ -166,4 +166,31 @@ namespace LiteQuark.Runtime
             MoveTime_ = Mathf.Max(Vector3.Distance(StartPos_, TargetPos_) / MoveSpeed_, 0.01f);
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformLocalMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMoveAction(transform, position, time, true, isRelative, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformWorldMove(this ActionBuilder builder, Transform transform, Vector3 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMoveAction(transform, position, time, false, isRelative, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformLocalMovePath(this ActionBuilder builder, Transform transform, Vector3[] path, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMovePathAction(transform, path, time, true, isRelative, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformWorldMovePath(this ActionBuilder builder, Transform transform, Vector3[] path, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformMovePathAction(transform, path, time, false, isRelative, easeKind));
+            return builder;
+        }
+    }
 }

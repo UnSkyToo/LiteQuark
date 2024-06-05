@@ -57,4 +57,13 @@ namespace LiteQuark.Runtime
             }
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformScale(this ActionBuilder builder, Transform transform, Vector3 scale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformScaleAction(transform, scale, time, isRelative, easeKind));
+            return builder;
+        }
+    }
 }

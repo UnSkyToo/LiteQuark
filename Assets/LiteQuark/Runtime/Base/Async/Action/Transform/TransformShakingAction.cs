@@ -73,4 +73,13 @@ namespace LiteQuark.Runtime
             TS_.localPosition = Position_ + quaternion * MathUtils.Vector3FromAngle(Degress_, Strength_);
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformShaking(this ActionBuilder builder, Transform transform, float time, float strength, int vibrato, float randomness = 90.0f)
+        {
+            builder.Add(new TransformShakingAction(transform, time, strength, vibrato, randomness));
+            return builder;
+        }
+    }
 }

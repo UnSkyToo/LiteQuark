@@ -77,4 +77,25 @@
             IsEnd = ConditionFunc_?.Invoke() ?? true;
         }
     }
+    
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder WaitTime(this ActionBuilder builder, float time)
+        {
+            builder.Add(new WaitTimeAction(time));
+            return builder;
+        }
+        
+        public static ActionBuilder WaitFrame(this ActionBuilder builder, int frame)
+        {
+            builder.Add(new WaitFrameAction(frame));
+            return builder;
+        }
+        
+        public static ActionBuilder WaitUntil(this ActionBuilder builder, System.Func<bool> conditionFunc)
+        {
+            builder.Add(new WaitUntilAction(conditionFunc));
+            return builder;
+        }
+    }
 }
