@@ -191,4 +191,37 @@ namespace LiteQuark.Runtime
             }
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformRotate(this ActionBuilder builder, Transform transform, Quaternion rotation, float time, bool isLocal = false, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformRotateAction(transform, rotation, time, isLocal, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformLocalRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time)
+        {
+            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, true));
+            return builder;
+        }
+
+        public static ActionBuilder TransformWorldRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle, float time)
+        {
+            builder.Add(new TransformRotateAroundAction(transform, center, axis, angle, time, false));
+            return builder;
+        }
+
+        public static ActionBuilder TransformLocalTargetRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, Vector3 targetPosition, float angle, float time)
+        {
+            builder.Add(new TransformTargetRotateAroundAction(transform, center, axis, targetPosition, angle, time, true));
+            return builder;
+        }
+
+        public static ActionBuilder TransformWorldTargetRotateAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, Vector3 targetPosition, float angle, float time)
+        {
+            builder.Add(new TransformTargetRotateAroundAction(transform, center, axis, targetPosition, angle, time, false));
+            return builder;
+        }
+    }
 }

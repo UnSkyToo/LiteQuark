@@ -167,4 +167,55 @@
             Callback_?.Invoke(Param1_, Param2_, Param3_);
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder Callback(this ActionBuilder builder, System.Action callback)
+        {
+            builder.Add(new CallbackAction(callback));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<TR>(this ActionBuilder builder, System.Func<TR> callback)
+        {
+            builder.Add(new CallbackFuncAction<TR>(callback));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param)
+        {
+            builder.Add(new CallbackAction<T>(callback, param));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T, TR>(this ActionBuilder builder, System.Func<T, TR> callback, T param)
+        {
+            builder.Add(new CallbackFuncAction<T, TR>(callback, param));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T1, T2>(this ActionBuilder builder, System.Action<T1, T2> callback, T1 param1, T2 param2)
+        {
+            builder.Add(new CallbackAction<T1, T2>(callback, param1, param2));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T1, T2, TR>(this ActionBuilder builder, System.Func<T1, T2, TR> callback, T1 param1, T2 param2)
+        {
+            builder.Add(new CallbackFuncAction<T1, T2, TR>(callback, param1, param2));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T1, T2, T3>(this ActionBuilder builder, System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
+        {
+            builder.Add(new CallbackAction<T1, T2, T3>(callback, param1, param2, param3));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T1, T2, T3, TR>(this ActionBuilder builder, System.Func<T1, T2, T3, TR> callback, T1 param1, T2 param2, T3 param3)
+        {
+            builder.Add(new CallbackFuncAction<T1, T2, T3, TR>(callback, param1, param2, param3));
+            return builder;
+        }
+    }
 }

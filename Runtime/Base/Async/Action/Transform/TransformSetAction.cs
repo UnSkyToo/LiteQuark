@@ -171,4 +171,55 @@ namespace LiteQuark.Runtime
             IsEnd = true;
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformSetLocalPosition(this ActionBuilder builder, Transform transform, Vector3 position)
+        {
+            builder.Add(new TransformSetPositionAction(transform, position, true));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetWorldPosition(this ActionBuilder builder, Transform transform, Vector3 position)
+        {
+            builder.Add(new TransformSetPositionAction(transform, position, false));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetScale(this ActionBuilder builder, Transform transform, Vector3 scale)
+        {
+            builder.Add(new TransformSetScaleAction(transform, scale));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetLocalRotation(this ActionBuilder builder, Transform transform, Quaternion rotation)
+        {
+            builder.Add(new TransformSetRotationAction(transform, rotation, true));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetWorldRotation(this ActionBuilder builder, Transform transform, Quaternion rotation)
+        {
+            builder.Add(new TransformSetRotationAction(transform, rotation, false));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetRotationAround(this ActionBuilder builder, Transform transform, Vector3 center, Vector3 axis, float angle)
+        {
+            builder.Add(new TransformSetRotationAroundAction(transform, center, axis, angle));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetAlpha(this ActionBuilder builder, Transform transform, float alpha)
+        {
+            builder.Add(new TransformSetAlphaAction(transform, alpha));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetActive(this ActionBuilder builder, Transform transform, bool value)
+        {
+            builder.Add(new TransformSetActiveAction(transform, value));
+            return builder;
+        }
+    }
 }

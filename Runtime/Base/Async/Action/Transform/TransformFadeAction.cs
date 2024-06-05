@@ -72,4 +72,25 @@ namespace LiteQuark.Runtime
         {
         }
     }
+
+    public static partial class ActionBuilderExtend
+    {
+        public static ActionBuilder TransformFade(this ActionBuilder builder, Transform transform, float beginAlpha, float endAlpha, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformFadeAction(transform, beginAlpha, endAlpha, time, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformFadeIn(this ActionBuilder builder, Transform transform, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformFadeInAction(transform, time, easeKind));
+            return builder;
+        }
+
+        public static ActionBuilder TransformFadeOut(this ActionBuilder builder, Transform transform, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new TransformFadeOutAction(transform, time, easeKind));
+            return builder;
+        }
+    }
 }
