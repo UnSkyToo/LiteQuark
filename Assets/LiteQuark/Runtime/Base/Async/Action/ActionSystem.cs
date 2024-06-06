@@ -74,7 +74,7 @@
 
         public ulong AddAction(IAction action, bool isSafety = false)
         {
-            if (isSafety)
+            if (isSafety || LiteRuntime.Setting.Action.SafetyMode)
             {
                 action.MarkSafety();
             }
