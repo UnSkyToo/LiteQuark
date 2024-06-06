@@ -41,6 +41,17 @@ namespace LiteQuark.Editor
         }
     }
     
+    [CustomPropertyDrawer(typeof(LiteSetting.ActionSetting))]
+    public class LiteActionSettingDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            EditorGUILayout.PropertyField(property);
+            EditorGUI.EndProperty();
+        }
+    }
+    
     [CustomPropertyDrawer(typeof(LiteSetting.LogSetting))]
     public class LiteLogSettingDrawer : PropertyDrawer
     {

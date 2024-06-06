@@ -14,6 +14,8 @@ namespace LiteQuark.Runtime
         [SerializeField] public CommonSetting Common;
         [Header("资源设置")]
         [SerializeField] public AssetSetting Asset;
+        [Header("Action设置")]
+        [SerializeField] public ActionSetting Action;
         [Header("日志设置")]
         [SerializeField] public LogSetting Log;
         [Header("界面设置")]
@@ -25,6 +27,7 @@ namespace LiteQuark.Runtime
 
             Common = new CommonSetting();
             Asset = new AssetSetting();
+            Action = new ActionSetting();
             Log = new LogSetting();
             UI = new UISetting();
         }
@@ -51,6 +54,16 @@ namespace LiteQuark.Runtime
             [SerializeField] public float BundleRetainTime = 5f;
 
             public AssetSetting()
+            {
+            }
+        }
+
+        [Serializable]
+        public class ActionSetting
+        {
+            [SerializeField] public bool SafetyMode = false;
+
+            public ActionSetting()
             {
             }
         }
