@@ -182,6 +182,14 @@ namespace LiteQuark.Runtime
             if (image != null)
             {
                 image.sprite = sprite;
+                return;
+            }
+
+            var spriteRenderer = FindComponent<SpriteRenderer>(go, path);
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sprite = sprite;
+                return;
             }
         }
 
