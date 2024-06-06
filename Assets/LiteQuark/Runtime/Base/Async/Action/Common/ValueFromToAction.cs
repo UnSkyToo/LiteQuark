@@ -11,26 +11,18 @@ namespace LiteQuark.Runtime
         private readonly Action<T> Setter_;
         private readonly T EndValue_;
         private readonly float TotalTime_ = 0f;
-        private readonly Action<T> Complete_;
         private readonly EaseKind EaseKind_;
         
         private float CurrentTime_ = 0f;
         private T StartValue_;
         
-        protected ValueFromToAction(Func<T> getter, Action<T> setter, T value, float time, Action<T> complete = null, EaseKind easeKind = EaseKind.Linear)
+        protected ValueFromToAction(Func<T> getter, Action<T> setter, T value, float time, EaseKind easeKind = EaseKind.Linear)
         {
             Getter_ = getter;
             Setter_ = setter;
             EndValue_ = value;
             TotalTime_ = Mathf.Max(time, 0.01f);
-            Complete_ = complete;
             EaseKind_ = easeKind;
-        }
-
-        public override void Dispose()
-        {
-            Complete_?.Invoke(EndValue_);
-            base.Dispose();
         }
 
         public override void Tick(float deltaTime)
@@ -45,7 +37,6 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 Setter_.Invoke(EndValue_);
-                Complete_?.Invoke(EndValue_);
                 IsEnd = true;
             }
         }
@@ -68,8 +59,8 @@ namespace LiteQuark.Runtime
 
     public class FloatValueFromToAction : ValueFromToAction<float>
     {
-        public FloatValueFromToAction(Func<float> getter, Action<float> setter, float value, float time, Action<float> complete = null, EaseKind easeKind = EaseKind.Linear)
-            : base(getter, setter, value, time, complete, easeKind)
+        public FloatValueFromToAction(Func<float> getter, Action<float> setter, float value, float time, EaseKind easeKind = EaseKind.Linear)
+            : base(getter, setter, value, time, easeKind)
         {
         }
 
@@ -81,8 +72,8 @@ namespace LiteQuark.Runtime
     
     public class IntValueFromToAction : ValueFromToAction<int>
     {
-        public IntValueFromToAction(Func<int> getter, Action<int> setter, int value, float time, Action<int> complete = null, EaseKind easeKind = EaseKind.Linear)
-            : base(getter, setter, value, time, complete, easeKind)
+        public IntValueFromToAction(Func<int> getter, Action<int> setter, int value, float time, EaseKind easeKind = EaseKind.Linear)
+            : base(getter, setter, value, time, easeKind)
         {
         }
 
@@ -94,15 +85,15 @@ namespace LiteQuark.Runtime
 
     public static partial class ActionBuilderExtend
     {
-        public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<float> getter, Action<float> setter, float value, float time, Action<float> complete = null, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<float> getter, Action<float> setter, float value, float time, EaseKind easeKind = EaseKind.Linear)
         {
-            builder.Add(new FloatValueFromToAction(getter, setter, value, time, complete, easeKind));
+            builder.Add(new FloatValueFromToAction(getter, setter, value, time, easeKind));
             return builder;
         }
         
-        public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<int> getter, Action<int> setter, int value, float time, Action<int> complete = null, EaseKind easeKind = EaseKind.Linear)
+        public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<int> getter, Action<int> setter, int value, float time, EaseKind easeKind = EaseKind.Linear)
         {
-            builder.Add(new IntValueFromToAction(getter, setter, value, time, complete, easeKind));
+            builder.Add(new IntValueFromToAction(getter, setter, value, time, easeKind));
             return builder;
         }
     }

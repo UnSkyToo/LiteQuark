@@ -5,7 +5,8 @@
         public ulong ID => UniqueID;
         public bool IsEnd { get; protected set; }
         public bool IsSafety { get; private set; } = false;
-
+        public System.Action FinalCallback { get; private set; } = null;
+        
         protected BaseAction()
         {
         }
@@ -30,6 +31,12 @@
 
         public virtual void Execute()
         {
+        }
+
+        public IAction SetFinalCallback(System.Action callback)
+        {
+            FinalCallback = callback;
+            return this;
         }
     }
 }
