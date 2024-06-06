@@ -27,6 +27,12 @@ namespace LiteQuark.Runtime
             EaseKind_ = easeKind;
         }
 
+        public override void Dispose()
+        {
+            Complete_?.Invoke(EndValue_);
+            base.Dispose();
+        }
+
         public override void Tick(float deltaTime)
         {
             CurrentTime_ += deltaTime;
