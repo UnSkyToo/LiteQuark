@@ -19,23 +19,23 @@
         {
             ActionList_.Foreach((action, list, dt) =>
             {
-                if (action.IsEnd)
+                try
                 {
-                    action.Dispose();
-                    list.Remove(action);
-                }
-                else
-                {
-                    try
+                    if (action.IsEnd)
+                    {
+                        action.Dispose();
+                        list.Remove(action);
+                    }
+                    else
                     {
                         action.Tick(dt);
                     }
-                    catch (System.Exception ex)
-                    {
-                        action.Stop();
-                        LLog.Error($"action exception : {action.GetType().Name}");
-                        LLog.Exception(ex);
-                    }
+                }
+                catch (System.Exception ex)
+                {
+                    action.Stop();
+                    LLog.Error($"action exception : {action.GetType().Name}");
+                    LLog.Exception(ex);
                 }
             }, ActionList_, deltaTime);
         }
