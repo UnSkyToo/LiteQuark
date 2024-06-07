@@ -7,8 +7,7 @@ namespace LiteQuark.Runtime
     {
         private abstract class EventListener
         {
-            public abstract void Trigger(BaseEvent msg);
-
+            public abstract void UnRegisterAll(int tag);
 #if UNITY_EDITOR
             public abstract void Check();
 #endif
@@ -16,34 +15,68 @@ namespace LiteQuark.Runtime
 
         private class EventListenerImpl<T> : EventListener where T : BaseEvent
         {
-            public event Action<T> OnEvent = null;
+            private readonly Dictionary<int, Action<T>> CallbackList_ = new Dictionary<int, Action<T>>();
 
-            public override void Trigger(BaseEvent msg)
+            public void Trigger(T msg)
             {
-                OnEvent?.Invoke((T) msg);
+                foreach (var chunk in CallbackList_)
+                {
+                    chunk.Value?.Invoke(msg);
+                }
+            }
+
+            public void Register(int tag, Action<T> callback)
+            {
+                if (!CallbackList_.TryAdd(tag, callback))
+                {
+                    CallbackList_[tag] += callback;
+                }
+            }
+
+            public void UnRegister(int tag, Action<T> callback)
+            {
+                if (CallbackList_.ContainsKey(tag))
+                {
+                    CallbackList_[tag] -= callback;
+
+                    if (CallbackList_[tag] == null)
+                    {
+                        UnRegisterAll(tag);
+                    }
+                }
+            }
+
+            public override void UnRegisterAll(int tag)
+            {
+                CallbackList_.Remove(tag);
             }
 
 #if UNITY_EDITOR
             public override void Check()
             {
-                if (OnEvent != null)
+                foreach (var chunk in CallbackList_)
                 {
-                    var CallbackList = OnEvent.GetInvocationList();
-
-                    foreach (var Callback in CallbackList)
+                    if (chunk.Value != null)
                     {
-                        LLog.Warning($"{Callback.Method.ReflectedType.Name} : {Callback.Method.Name} UnRegister");
+                        var callbackList = chunk.Value.GetInvocationList();
+
+                        foreach (var callback in callbackList)
+                        {
+                            LLog.Warning($"{chunk.Key}-{callback.Method.ReflectedType?.Name} : {callback.Method.Name} UnRegister");
+                        }
                     }
                 }
             }
 #endif
         }
 
+        private readonly int GlobalTag_ = 0;
         private readonly Dictionary<string, EventListener> EventList_ = new Dictionary<string, EventListener>();
 
         public EventSystem()
         {
             EventList_.Clear();
+            GlobalTag_ = "Global".GetHashCode();
         }
 
         public void Dispose()
@@ -80,21 +113,50 @@ namespace LiteQuark.Runtime
 
         public void Register<T>(Action<T> callback) where T : BaseEvent
         {
+            Register(GlobalTag_, callback);
+        }
+
+        public void Register<T>(int tag, Action<T> callback) where T : BaseEvent
+        {
             var eventName = GetEventName<T>();
-            if (!EventList_.ContainsKey(eventName))
+            EventListenerImpl<T> listenerImpl = null;
+            
+            if (EventList_.TryGetValue(eventName, out var value))
             {
-                EventList_.Add(eventName, new EventListenerImpl<T>());
+                listenerImpl = value as EventListenerImpl<T>;
+            }
+            else
+            {
+                listenerImpl = new EventListenerImpl<T>();
+                EventList_.Add(eventName, listenerImpl);
             }
 
-            ((EventListenerImpl<T>) EventList_[eventName]).OnEvent += callback;
+            listenerImpl?.Register(tag, callback);
         }
 
         public void UnRegister<T>(Action<T> callback) where T : BaseEvent
         {
+            UnRegister(GlobalTag_, callback);
+        }
+        
+        public void UnRegister<T>(int tag, Action<T> callback) where T : BaseEvent
+        {
             var eventName = GetEventName<T>();
-            if (EventList_.ContainsKey(eventName))
+
+            if (EventList_.TryGetValue(eventName, out var value))
             {
-                ((EventListenerImpl<T>) EventList_[eventName]).OnEvent -= callback;
+                if (value is EventListenerImpl<T> listenerImpl)
+                {
+                    listenerImpl.UnRegister(tag, callback);
+                }
+            }
+        }
+
+        public void UnRegisterAll(int tag)
+        {
+            foreach (var chunk in EventList_)
+            {
+                chunk.Value.UnRegisterAll(tag);
             }
         }
     }
