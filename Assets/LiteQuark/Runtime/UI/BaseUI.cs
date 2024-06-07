@@ -3,8 +3,10 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public abstract class BaseUI
+    public abstract class BaseUI : BaseObject
     {
+        public override string DebugName => $"UI<{DepthMode},{State}> - {PrefabPath}";
+
         public abstract string PrefabPath { get; }
         public abstract UIDepthMode DepthMode { get; }
         public abstract bool IsMutex { get; }
@@ -16,8 +18,12 @@ namespace LiteQuark.Runtime
 
         public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
 
+        private readonly int EventTag_;
+
         protected BaseUI()
+            : base()
         {
+            EventTag_ = GetType().Name.GetHashCode();
         }
 
         public void BindGo(GameObject go)
@@ -34,6 +40,7 @@ namespace LiteQuark.Runtime
 
         public void Close()
         {
+            UnRegisterAllEvent();
             OnClose();
         }
 
@@ -95,6 +102,27 @@ namespace LiteQuark.Runtime
         public void SetActive(string path, bool value)
         {
             UIUtils.SetActive(Go, path, value);
+        }
+
+        /// <summary>
+        /// 注册事件，UI会在关闭后自动反注册
+        /// </summary>
+        protected void RegisterEvent<T>(Action<T> callback) where T : BaseEvent
+        {
+            LiteRuntime.Event.Register(EventTag_, callback);
+        }
+
+        /// <summary>
+        /// 手动反注册事件
+        /// </summary>
+        protected void UnRegisterEvent<T>(Action<T> callback) where T : BaseEvent
+        {
+            LiteRuntime.Event.UnRegister(EventTag_, callback);
+        }
+        
+        private void UnRegisterAllEvent()
+        {
+            LiteRuntime.Event.UnRegisterAll(EventTag_);
         }
     }
 }
