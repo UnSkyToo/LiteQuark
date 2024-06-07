@@ -98,9 +98,12 @@ namespace LiteQuark.Runtime
 
         public void Send<T>(T msg) where T : BaseEvent
         {
-            if (EventList_.ContainsKey(msg.EventName))
+            if (EventList_.TryGetValue(msg.EventName, out var value))
             {
-                ((EventListenerImpl<T>) EventList_[msg.EventName]).Trigger(msg);
+                if (value is EventListenerImpl<T> eventListener)
+                {
+                    eventListener.Trigger(msg);
+                }
                 //OnSend?.Invoke(Event);
             }
         }
