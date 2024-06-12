@@ -1,53 +1,17 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public class SequenceAction : BaseAction
+    public class SequenceAction : CompositeAction
     {
         public override string DebugName => $"<Sequence - {Tag_}>({Index_}/{Count_})";
         
-        private readonly string Tag_;
-        private readonly IAction[] SubActions_;
-        protected readonly int Count_;
         private IAction Current_;
         protected int Index_;
         
         public SequenceAction(string tag, params IAction[] args)
+            : base(tag, args)
         {
-            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
-            SubActions_ = args ?? System.Array.Empty<IAction>();
-            Count_ = args?.Length ?? 0;
             Index_ = -1;
             Current_ = null;
-            IsEnd = Count_ == 0;
-        }
-
-        public override void Dispose()
-        {
-            foreach (var action in SubActions_)
-            {
-                action.Dispose();
-            }
-            
-            base.Dispose();
-        }
-        
-        public override void MarkSafety()
-        {
-            base.MarkSafety();
-
-            foreach (var action in SubActions_)
-            {
-                action.MarkSafety();
-            }
-        }
-        
-        public override void Stop()
-        {
-            foreach (var action in SubActions_)
-            {
-                action.Stop();
-            }
-            
-            base.Stop();
         }
 
         public override void Execute()

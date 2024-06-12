@@ -1,49 +1,12 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public class ParallelAction : BaseAction
+    public class ParallelAction : CompositeAction
     {
         public override string DebugName => $"<Parallel - {Tag_}>({Count_})";
-
-        private readonly string Tag_;
-        private readonly IAction[] SubActions_;
-        private readonly int Count_;
         
         public ParallelAction(string tag, params IAction[] args)
+            : base(tag, args)
         {
-            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
-            SubActions_ = args ?? System.Array.Empty<IAction>();
-            Count_ = args?.Length ?? 0;
-            IsEnd = Count_ == 0;
-        }
-
-        public override void Dispose()
-        {
-            foreach (var action in SubActions_)
-            {
-                action.Dispose();
-            }
-            
-            base.Dispose();
-        }
-
-        public override void MarkSafety()
-        {
-            base.MarkSafety();
-
-            foreach (var action in SubActions_)
-            {
-                action.MarkSafety();
-            }
-        }
-
-        public override void Stop()
-        {
-            foreach (var action in SubActions_)
-            {
-                action.Stop();
-            }
-            
-            base.Stop();
         }
 
         public override void Execute()
