@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
             : base(transform)
         {
             Rotation_ = rotation;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             IsLocal_ = isLocal;
             EaseKind_ = easeKind;
         }
@@ -90,7 +90,7 @@ namespace LiteQuark.Runtime
             Center_ = center;
             Axis_ = axis;
             TotalAngle_ = angle;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             IsLocal_ = isLocal;
         }
 

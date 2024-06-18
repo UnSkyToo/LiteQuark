@@ -22,6 +22,11 @@ namespace LiteQuark.Runtime
         {
             return (float)Rand_.NextDouble();
         }
+
+        public static float ClampMinTime(float time)
+        {
+            return Mathf.Max(time, LiteConst.MinIntervalTime);
+        }
         
         public static float AngleByVector(Vector2 from, Vector2 to)
         {

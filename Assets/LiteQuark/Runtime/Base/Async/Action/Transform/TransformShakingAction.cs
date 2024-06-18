@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             : base(transform)
         {
             Position_ = TS_.localPosition;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             PerStepTime_ = 1.0f / vibrato;
             Strength_ = strength;
             Vibrato_ = vibrato;
