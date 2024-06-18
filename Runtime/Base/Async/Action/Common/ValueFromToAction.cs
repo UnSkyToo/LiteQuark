@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             Getter_ = getter;
             Setter_ = setter;
             EndValue_ = value;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             EaseKind_ = easeKind;
         }
 

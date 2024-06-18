@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
             AlphaBox_ = box ?? new AlphaBox(TS_);
             BeginAlpha_ = beginAlpha;
             EndAlpha_ = endAlpha;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             EaseKind_ = easeKind;
         }
 

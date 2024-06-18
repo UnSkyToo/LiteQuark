@@ -7,6 +7,8 @@ namespace LiteQuark.Runtime
         public const string AssetRootPath = "Assets/StandaloneAssets";
         public const string BundlePackFileName = "bundle_pack.bytes";
 
+        public const float MinIntervalTime = 0.00001f;
+
         public static readonly Type[] SystemTypeList =
         {
             typeof(LogSystem),

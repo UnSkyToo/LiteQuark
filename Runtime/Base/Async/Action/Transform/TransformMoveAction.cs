@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
             : base(transform)
         {
             Position_ = position;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             IsLocal_ = isLocal;
             IsRelative_ = isRelative;
             EaseKind_ = easeKind;
@@ -97,7 +97,7 @@ namespace LiteQuark.Runtime
             : base(transform)
         {
             Paths_ = isRelative ? MathUtils.VectorListAdd(path, GetValue()) : path;
-            MoveSpeed_ = MathUtils.VectorListLength(Paths_) / Mathf.Max(time, 0.01f);
+            MoveSpeed_ = MathUtils.VectorListLength(Paths_) / MathUtils.ClampMinTime(time);
             IsLocal_ = isLocal;
             EaseKind_ = easeKind;
         }
@@ -163,7 +163,7 @@ namespace LiteQuark.Runtime
             StartPos_ = Paths_[PathIndex_ - 1];
             TargetPos_ = Paths_[PathIndex_];
             CurrentTime_ = 0f;
-            MoveTime_ = Mathf.Max(Vector3.Distance(StartPos_, TargetPos_) / MoveSpeed_, 0.01f);
+            MoveTime_ = MathUtils.ClampMinTime(Vector3.Distance(StartPos_, TargetPos_) / MoveSpeed_);
         }
     }
 

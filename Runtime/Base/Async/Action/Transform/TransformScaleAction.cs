@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
             : base(transform)
         {
             Scale_ = scale;
-            TotalTime_ = Mathf.Max(time, 0.01f);
+            TotalTime_ = MathUtils.ClampMinTime(time);
             IsRelative_ = isRelative;
             EaseKind_ = easeKind;
         }
