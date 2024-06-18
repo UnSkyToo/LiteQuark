@@ -121,7 +121,12 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
+            ProcessMove(deltaTime);
+        }
+
+        private void ProcessMove(float time)
+        {
+            CurrentTime_ += time;
             var step = Mathf.Clamp01(CurrentTime_ / MoveTime_);
             var v = EaseUtils.Sample(EaseKind_, step);
             
@@ -129,8 +134,14 @@ namespace LiteQuark.Runtime
 
             if (step >= 1)
             {
+                var remainTime = CurrentTime_ - MoveTime_;
                 SetValue(TargetPos_);
                 MoveToNextPath();
+
+                if (!IsEnd && remainTime > 0)
+                {
+                    ProcessMove(remainTime);
+                }
             }
         }
 
