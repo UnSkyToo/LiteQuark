@@ -78,6 +78,22 @@ namespace LiteQuark.Editor
                 OpenFolder(path);
             }
         }
+        
+        public static string GetSelectedFolderPath()
+        {
+            if (Selection.activeObject == null)
+            {
+                return string.Empty;
+            }
+
+            var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+            if (AssetDatabase.IsValidFolder(path))
+            {
+                return path;
+            }
+            
+            return string.Empty;
+        }
     }
 }
 #endif
