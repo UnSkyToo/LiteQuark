@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.6-preview] - 2024-06-19
+- 完善ActionSystem
+- 修复MovePathAction耗时比设定多的BUG
+- EventSystem拆分Tag储存，UI系统可以独立注册和反注册
+
 ## [0.0.5-preview] - 2024-05-31
 - 删除NewtonJson库，内部Asset改用LitJson
 
