@@ -1,5 +1,4 @@
 ﻿using LiteQuark.Runtime;
-using UnityEngine;
 using UnityEditor;
 
 namespace LiteQuark.Editor
@@ -17,9 +16,10 @@ namespace LiteQuark.Editor
 
                 return true;
             }
-            
-            PathUtils.DeleteDirectory(Application.streamingAssetsPath);
-            PathUtils.CopyDirectory(resPath, Application.streamingAssetsPath, CopyFilter);
+
+            var destPath = PathUtils.GetRuntimeRootPath();
+            PathUtils.DeleteDirectory(destPath);
+            PathUtils.CopyDirectory(resPath, destPath, CopyFilter);
             AssetDatabase.Refresh();
         }
     }

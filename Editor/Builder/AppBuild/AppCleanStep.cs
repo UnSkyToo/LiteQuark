@@ -1,5 +1,4 @@
 ﻿using LiteQuark.Runtime;
-using UnityEngine;
 using UnityEditor;
 
 namespace LiteQuark.Editor
@@ -13,8 +12,8 @@ namespace LiteQuark.Editor
 
         public void Execute(ProjectBuilder builder)
         {
-            FileUtil.DeleteFileOrDirectory(Application.streamingAssetsPath);
-            FileUtil.DeleteFileOrDirectory(PathUtils.GetAssetDataPath("StreamingAssets.meta"));
+            FileUtil.DeleteFileOrDirectory(PathUtils.GetRuntimeRootPath());
+            FileUtil.DeleteFileOrDirectory(PathUtils.ConcatPath(PathUtils.GetRuntimeRootParentPath(), $"{LiteConst.Tag}.meta"));
             AssetDatabase.Refresh();
         }
     }
