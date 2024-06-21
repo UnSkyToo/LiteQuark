@@ -102,7 +102,7 @@ namespace LiteQuark.Editor
             steps.Add(new AppPrepareStep());
             steps.Add(new AppGenerateProjectStep());
             steps.Add(new AppCompileProjectStep());
-            steps.Add(new AppCleanStep());
+            // steps.Add(new AppCleanStep());
             
             return steps.ToArray();
         }
