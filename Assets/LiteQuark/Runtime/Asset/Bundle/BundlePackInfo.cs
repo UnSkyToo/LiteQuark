@@ -80,7 +80,7 @@ namespace LiteQuark.Runtime
         
         public static BundlePackInfo LoadBundlePack()
         {
-            var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.ConcatPath(UnityEngine.Application.streamingAssetsPath, LiteConst.BundlePackFileName));
+            var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName));
             request.SendWebRequest();
             while (!request.isDone)
             {
