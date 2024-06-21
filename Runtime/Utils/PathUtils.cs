@@ -26,6 +26,11 @@ namespace LiteQuark.Runtime
             return UnifyPath(path);
         }
 
+        public static string ConcatPath(string path1, string path2, string path3)
+        {
+            return ConcatPath(ConcatPath(path1, path2), path3);
+        }
+
         public static string GetRelativePath(string rootPath, string fullPath)
         {
             var path = fullPath.Replace(rootPath, string.Empty).TrimStart(DirectorySeparatorChar);
@@ -68,16 +73,22 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.streamingAssetsPath, path);
         }
+
+        public static string GetRuntimeRootPath()
+        {
+// #if !LITE_DISABLE_PERSISTENT_PATH
+//             var fullPath = GetPersistentDataPath(LiteConst.Tag);
+//             if (Directory.Exists(fullPath))
+//             {
+//                 return fullPath;
+//             }
+// #endif
+            return GetStreamingAssetsPath(LiteConst.Tag);
+        }
         
         public static string GetFullPathInRuntime(string path)
         {
-            var fullPath = GetPersistentDataPath(path);
-            if (File.Exists(fullPath))
-            {
-                return fullPath;
-            }
-
-            return GetStreamingAssetsPath(path);
+            return ConcatPath(GetRuntimeRootPath(), path);
         }
 
         public static string GetPathFromFullPath(string fullPath)
