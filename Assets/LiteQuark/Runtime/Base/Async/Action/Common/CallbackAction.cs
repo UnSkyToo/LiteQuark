@@ -18,23 +18,23 @@
         }
     }
     
-    public class CallbackFuncAction<T> : BaseAction
-    {
-        public override string DebugName => "<Callback>()";
-
-        private readonly System.Func<T> Callback_ = null;
-        
-        public CallbackFuncAction(System.Func<T> callback)
-        {
-            Callback_ = callback;
-        }
-
-        public override void Execute()
-        {
-            IsEnd = true;
-            Callback_?.Invoke();
-        }
-    }
+    // public class CallbackFuncAction<T> : BaseAction
+    // {
+    //     public override string DebugName => "<Callback>()";
+    //
+    //     private readonly System.Func<T> Callback_ = null;
+    //     
+    //     public CallbackFuncAction(System.Func<T> callback)
+    //     {
+    //         Callback_ = callback;
+    //     }
+    //
+    //     public override void Execute()
+    //     {
+    //         IsEnd = true;
+    //         Callback_?.Invoke();
+    //     }
+    // }
     
     public class CallbackAction<T> : BaseAction
     {
@@ -176,11 +176,11 @@
             return builder;
         }
 
-        public static ActionBuilder Callback<TR>(this ActionBuilder builder, System.Func<TR> callback)
-        {
-            builder.Add(new CallbackFuncAction<TR>(callback));
-            return builder;
-        }
+        // public static ActionBuilder Callback<TR>(this ActionBuilder builder, System.Func<TR> callback)
+        // {
+        //     builder.Add(new CallbackFuncAction<TR>(callback));
+        //     return builder;
+        // }
 
         public static ActionBuilder Callback<T>(this ActionBuilder builder, System.Action<T> callback, T param)
         {
