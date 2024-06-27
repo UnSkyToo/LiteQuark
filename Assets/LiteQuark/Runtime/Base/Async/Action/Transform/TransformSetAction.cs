@@ -171,6 +171,32 @@ namespace LiteQuark.Runtime
             IsEnd = true;
         }
     }
+    
+    public class TransformSetParentAction : TransformBaseAction
+    {
+        public override string DebugName => $"<TransformSetParent>({TS_.name},{WorldStay_})";
+
+        private readonly Transform Parent_;
+        private readonly bool WorldStay_;
+
+        public TransformSetParentAction(Transform transform, Transform parent, bool worldStay)
+            : base(transform)
+        {
+            Parent_ = parent;
+            WorldStay_ = worldStay;
+        }
+
+        public override void Execute()
+        {
+            if (!CheckSafety())
+            {
+                return;
+            }
+            
+            TS_.SetParent(Parent_, WorldStay_);
+            IsEnd = true;
+        }
+    }
 
     public static partial class ActionBuilderExtend
     {
@@ -219,6 +245,12 @@ namespace LiteQuark.Runtime
         public static ActionBuilder TransformSetActive(this ActionBuilder builder, Transform transform, bool value)
         {
             builder.Add(new TransformSetActiveAction(transform, value));
+            return builder;
+        }
+
+        public static ActionBuilder TransformSetParent(this ActionBuilder builder, Transform transform, Transform parent, bool worldStay = true)
+        {
+            builder.Add(new TransformSetParentAction(transform, parent, worldStay));
             return builder;
         }
     }
