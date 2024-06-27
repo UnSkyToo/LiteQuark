@@ -59,6 +59,11 @@
 
         public IAction FindAction(ulong id)
         {
+            if (id == 0)
+            {
+                return null;
+            }
+            
             return ActionList_.ForeachReturn((action, targetId) => action.ID == targetId, id);
         }
 
