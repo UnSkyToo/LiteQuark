@@ -45,6 +45,11 @@ namespace LiteQuark.Runtime
 
         private string FormatPath(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+            
             return path.TrimStart('/').ToLower();
         }
 
