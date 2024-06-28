@@ -56,7 +56,8 @@ namespace LiteQuark.Editor
 
             if (GUILayout.Button("Build"))
             {
-                BuildProject();
+                EditorApplication.delayCall += BuildProject;
+                // BuildProject();
             }
             
             GUILayout.EndArea();
