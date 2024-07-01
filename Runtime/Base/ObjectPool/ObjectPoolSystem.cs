@@ -10,13 +10,7 @@ namespace LiteQuark.Runtime
 
         public ObjectPoolSystem()
         {
-            if (Root_ == null)
-            {
-                Root_ = new GameObject("ObjectPool").transform;
-                Root_.hideFlags = HideFlags.NotEditable;
-                Object.DontDestroyOnLoad(Root_);
-            }
-            
+            Root_ = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
             PoolCache_.Clear();
         }
 

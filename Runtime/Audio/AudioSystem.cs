@@ -15,13 +15,7 @@ namespace LiteQuark.Runtime
         
         public AudioSystem()
         {
-            if (Root_ == null)
-            {
-                Root_ = new GameObject("Audio").transform;
-                Root_.hideFlags = HideFlags.NotEditable;
-                Object.DontDestroyOnLoad(Root_);
-            }
-            
+            Root_ = UnityUtils.CreateHoldGameObject("Audio").transform;
             Pool_ = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
             
             AudioCache_.Clear();
