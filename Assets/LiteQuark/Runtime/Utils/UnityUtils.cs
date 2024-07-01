@@ -71,6 +71,14 @@ namespace LiteQuark.Runtime
             return go;
         }
 
+        public static GameObject CreateHoldGameObject(string name)
+        {
+            var go = new GameObject(name);
+            go.hideFlags = HideFlags.NotEditable;
+            Object.DontDestroyOnLoad(go);
+            return go;
+        }
+
         public static void SetParent(Transform parent, GameObject child)
         {
             SetParent(parent, child.transform);
