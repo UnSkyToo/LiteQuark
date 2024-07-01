@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    public sealed class ProjectBuilderWindow : EditorWindow
+    internal sealed class ProjectBuilderWindow : EditorWindow
     {
         private BuildTarget Target_;
         private ResBuildConfig ResCfg_;
@@ -51,7 +51,7 @@ namespace LiteQuark.Editor
                 view.Draw();
             }
             
-            GUILayout.BeginArea(new Rect(0, 410, 400, position.height - 410));
+            GUILayout.BeginArea(new Rect(5, 410, 640, position.height - 410));
             Target_ = (BuildTarget) EditorGUILayout.EnumPopup("Target", Target_);
 
             if (GUILayout.Button("Build"))
