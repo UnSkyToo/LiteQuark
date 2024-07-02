@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.7-preview] - 2024-07-02
+- Bundle打包增加根目录，避免冲突
+- ActionSystem新增SetParent，完成部分接口
+- 打包工具界面优化，修复打包结束后的报错
+- 修复GetPool部分情况下的报错
+
 ## [0.0.6-preview] - 2024-06-19
 - 完善ActionSystem
 - 修复MovePathAction耗时比设定多的BUG
