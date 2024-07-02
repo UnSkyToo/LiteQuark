@@ -37,7 +37,7 @@ namespace LiteQuark.Editor
         {
             rootPath = PathUtils.UnifyPath(rootPath);
 
-            if (rootPath.Contains("#"))
+            if (!PathFilter(rootPath))
             {
                 return;
             }
@@ -131,12 +131,7 @@ namespace LiteQuark.Editor
         
         private bool AssetFilter(string filePath)
         {
-            if (filePath.StartsWith("Packages"))
-            {
-                return false;
-            }
-            
-            if (filePath.Contains("#"))
+            if (!PathFilter(filePath))
             {
                 return false;
             }
@@ -148,6 +143,21 @@ namespace LiteQuark.Editor
             }
 
             if (ext is ".ttf" or ".ttc" or ".otf")
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool PathFilter(string filePath)
+        {
+            if (filePath.StartsWith("Packages"))
+            {
+                return false;
+            }
+            
+            if (filePath.Contains("#"))
             {
                 return false;
             }
