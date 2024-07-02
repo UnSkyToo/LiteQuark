@@ -22,9 +22,13 @@ namespace LiteQuark.Runtime
         public void Initialize(string key, params object[] args)
         {
             Key_ = key;
-            var root = (Transform)args[0];
             Parent_ = new GameObject(key).transform;
             Parent_.hideFlags = HideFlags.NotEditable;
+            var root = args.Length > 0 && args[0] is Transform ? (Transform)args[0] : null;
+            if (root != null)
+            {
+                Parent_.SetParent(root, false);
+            }
             Parent_.SetParent(root, false);
             Parent_.localPosition = Vector3.zero;
             Pool_ = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
