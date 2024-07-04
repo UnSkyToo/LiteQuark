@@ -75,63 +75,63 @@ namespace LiteQuark.Runtime
             return null;
         }
         
-        public static Vector2 ScreenPosToCanvasPos(RectTransform parent, Vector2 screenPos, Camera camera = null)
+        public static Vector2 ScreenPointToCanvasPoint(RectTransform parent, Vector2 screenPoint, Camera camera = null)
         {
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPos, camera, out var pos);
-            return pos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, camera, out var localPoint);
+            return localPoint;
         }
 
-        public static Vector2 ScreenPosToCanvasPos(Transform parent, Vector2 screenPos)
+        public static Vector2 ScreenPointToCanvasPoint(Transform parent, Vector2 screenPoint)
         {
-            var rectTrans = parent.GetComponent<RectTransform>();
-            if (rectTrans == null)
+            var rt = parent.GetComponent<RectTransform>();
+            if (rt == null)
             {
                 return Vector2.zero;
             }
 
-            return ScreenPosToCanvasPos(rectTrans, screenPos);
+            return ScreenPointToCanvasPoint(rt, screenPoint);
         }
 
-        public static Vector2 CanvasPosToScreenPos(RectTransform parent, Vector2 canvasPos)
+        public static Vector2 CanvasPointToScreenPoint(RectTransform parent, Vector2 canvasPoint)
         {
-            var worldPos = CanvasPosToWorldPos(parent, canvasPos);
-            return WorldPosToScreenPos(worldPos);
+            var worldPoint = CanvasPointToWorldPoint(parent, canvasPoint);
+            return WorldPointToScreenPoint(worldPoint);
         }
 
-        public static Vector2 CanvasPosToScreenPos(Transform parent, Vector2 canvasPos)
+        public static Vector2 CanvasPointToScreenPoint(Transform parent, Vector2 canvasPoint)
         {
-            var rectTrans = parent.GetComponent<RectTransform>();
-            if (rectTrans == null)
+            var rt = parent.GetComponent<RectTransform>();
+            if (rt == null)
             {
                 return Vector2.zero;
             }
 
-            return CanvasPosToScreenPos(rectTrans, canvasPos);
+            return CanvasPointToScreenPoint(rt, canvasPoint);
         }
 
-        public static Vector2 WorldPosToScreenPos(Vector3 worldPos, Camera camera = null)
+        public static Vector2 WorldPointToScreenPoint(Vector3 worldPoint, Camera camera = null)
         {
-            return RectTransformUtility.WorldToScreenPoint(camera, worldPos);
+            return RectTransformUtility.WorldToScreenPoint(camera, worldPoint);
         }
 
-        public static Vector2 WorldPosToCanvasPos(RectTransform parent, Vector3 worldPos, Camera camera= null)
+        public static Vector2 WorldPointToCanvasPoint(RectTransform parent, Vector3 worldPoint, Camera camera = null)
         {
-            return ScreenPosToCanvasPos(parent, WorldPosToScreenPos(worldPos, camera));
+            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint, camera));
         }
 
-        public static Vector2 WorldPosToCanvasPos(Transform parent, Vector3 worldPos)
+        public static Vector2 WorldPointToCanvasPoint(Transform parent, Vector3 worldPoint)
         {
-            return ScreenPosToCanvasPos(parent, WorldPosToScreenPos(worldPos));
+            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint));
         }
 
-        public static Vector3 CanvasPosToWorldPos(RectTransform parent, Vector2 canvasPos)
+        public static Vector3 CanvasPointToWorldPoint(RectTransform parent, Vector2 canvasPoint)
         {
-            return parent.TransformPoint(canvasPos);
+            return parent.TransformPoint(canvasPoint);
         }
 
-        public static Vector3 CanvasPosToWorldPos(Transform parent, Vector2 canvasPos)
+        public static Vector3 CanvasPointToWorldPoint(Transform parent, Vector2 canvasPoint)
         {
-            return parent.TransformPoint(canvasPos);
+            return parent.TransformPoint(canvasPoint);
         }
 
         public static void SetActive(GameObject parent, string path, bool value)
@@ -176,42 +176,41 @@ namespace LiteQuark.Runtime
             return obj.transform;
         }
         
-        public static void ReplaceSprite(GameObject go, string path, Sprite sprite)
+        public static void ReplaceSprite(GameObject parent, string path, Sprite sprite)
         {
-            var image = FindComponent<Image>(go, path);
+            var image = FindComponent<Image>(parent, path);
             if (image != null)
             {
                 image.sprite = sprite;
                 return;
             }
 
-            var spriteRenderer = FindComponent<SpriteRenderer>(go, path);
+            var spriteRenderer = FindComponent<SpriteRenderer>(parent, path);
             if (spriteRenderer != null)
             {
                 spriteRenderer.sprite = sprite;
-                return;
             }
         }
 
-        public static void ReplaceSprite(GameObject go, string path, string resPath, bool async)
+        public static void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
         {
             if (async)
             {
                 LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
                 {
-                    ReplaceSprite(go, path, sprite);
+                    ReplaceSprite(parent, path, sprite);
                 });
             }
             else
             {
                 var sprite = LiteRuntime.Asset.LoadAssetSync<Sprite>(resPath);
-                ReplaceSprite(go, path, sprite);
+                ReplaceSprite(parent, path, sprite);
             }
         }
 
-        public static void ReplaceSprite(GameObject go, string resPath, bool async)
+        public static void ReplaceSprite(GameObject parent, string resPath, bool async)
         {
-            ReplaceSprite(go, null, resPath, async);
+            ReplaceSprite(parent, null, resPath, async);
         }
     }
 }
