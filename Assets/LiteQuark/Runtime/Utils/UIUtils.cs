@@ -17,8 +17,8 @@ namespace LiteQuark.Runtime
             {
                 return parent;
             }
-            
-            return parent.Find(path); 
+
+            return parent.Find(path);
         }
 
         public static Component FindComponent(GameObject parent, string path, Type type)
@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
         public static T FindComponent<T>(Transform parent, string path) where T : Component
         {
             var child = FindChild(parent, path);
-            
+
             if (child != null)
             {
                 return child.GetComponent<T>();
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-        
+
         public static T FindComponentUpper<T>(GameObject current) where T : Component
         {
             return FindComponentUpper<T>(current.transform);
@@ -69,12 +69,13 @@ namespace LiteQuark.Runtime
                 {
                     return component;
                 }
+
                 current = current.parent;
             }
 
             return null;
         }
-        
+
         public static Vector2 ScreenPointToCanvasPoint(RectTransform parent, Vector2 screenPoint, Camera camera = null)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, camera, out var localPoint);
@@ -156,10 +157,10 @@ namespace LiteQuark.Runtime
 
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
-            
+
             return canvas;
         }
-        
+
         public static Transform CreatePanel(Transform parent, string name, int order)
         {
             var obj = new GameObject(name);
@@ -175,8 +176,8 @@ namespace LiteQuark.Runtime
             obj.AddComponent<GraphicRaycaster>();
             return obj.transform;
         }
-        
-        public static void ReplaceSprite(GameObject parent, string path, Sprite sprite)
+
+        public static void ReplaceSprite(Transform parent, string path, Sprite sprite)
         {
             var image = FindComponent<Image>(parent, path);
             if (image != null)
@@ -192,14 +193,16 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public static void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
+        public static void ReplaceSprite(GameObject parent, string path, Sprite sprite)
+        {
+            ReplaceSprite(parent.transform, path, sprite);
+        }
+
+        public static void ReplaceSprite(Transform parent, string path, string resPath, bool async)
         {
             if (async)
             {
-                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
-                {
-                    ReplaceSprite(parent, path, sprite);
-                });
+                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) => { ReplaceSprite(parent, path, sprite); });
             }
             else
             {
@@ -208,9 +211,19 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public static void ReplaceSprite(GameObject parent, string resPath, bool async)
+        public static void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
         {
-            ReplaceSprite(parent, null, resPath, async);
+            ReplaceSprite(parent.transform, path, resPath, async);
+        }
+
+        public static void ReplaceSprite(Transform ts, string resPath, bool async)
+        {
+            ReplaceSprite(ts, null, resPath, async);
+        }
+
+        public static void ReplaceSprite(GameObject go, string resPath, bool async)
+        {
+            ReplaceSprite(go.transform, null, resPath, async);
         }
     }
 }
