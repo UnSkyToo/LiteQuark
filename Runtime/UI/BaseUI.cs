@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -18,6 +19,7 @@ namespace LiteQuark.Runtime
 
         public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
 
+        private readonly List<Sprite> LoadSpriteList_ = new List<Sprite>();
         private readonly int EventTag_;
 
         protected BaseUI()
@@ -40,6 +42,7 @@ namespace LiteQuark.Runtime
 
         public void Close()
         {
+            UnloadSprites();
             UnRegisterAllEvent();
             OnClose();
         }
@@ -102,6 +105,68 @@ namespace LiteQuark.Runtime
         public void SetActive(string path, bool value)
         {
             UIUtils.SetActive(Go, path, value);
+        }
+
+        public Sprite LoadSprite(string resPath)
+        {
+            var sprite = LiteRuntime.Asset.LoadAssetSync<Sprite>(resPath);
+            LoadSpriteList_.Add(sprite);
+            return sprite;
+        }
+
+        public void LoadSprite(string resPath, Action<Sprite> callback)
+        {
+            LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
+            {
+                LoadSpriteList_.Add(sprite);
+                callback?.Invoke(sprite);
+            });
+        }
+        
+        public void ReplaceSprite(string path, string resPath, bool async)
+        {
+            if (async)
+            {
+                LoadSprite(resPath, (sprite) =>
+                {
+                    UIUtils.ReplaceSprite(Go, path, sprite);
+                });
+            }
+            else
+            {
+                var sprite = LoadSprite(resPath);
+                UIUtils.ReplaceSprite(Go, path, sprite);
+            }
+        }
+
+        public void ReplaceSprite(Transform parent, string path, string resPath, bool async)
+        {
+            if (async)
+            {
+                LoadSprite(resPath, (sprite) =>
+                {
+                    UIUtils.ReplaceSprite(parent, path, sprite);
+                });
+            }
+            else
+            {
+                var sprite = LoadSprite(resPath);
+                UIUtils.ReplaceSprite(parent, path, sprite);
+            }
+        }
+
+        public void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
+        {
+            ReplaceSprite(parent.transform, path, resPath, async);
+        }
+
+        private void UnloadSprites()
+        {
+            foreach (var sprite in LoadSpriteList_)
+            {
+                LiteRuntime.Asset.UnloadAsset(sprite);
+            }
+            LoadSpriteList_.Clear();
         }
 
         /// <summary>

@@ -179,6 +179,11 @@ namespace LiteQuark.Runtime
 
         public static void ReplaceSprite(Transform parent, string path, Sprite sprite)
         {
+            if (sprite == null)
+            {
+                return;
+            }
+            
             var image = FindComponent<Image>(parent, path);
             if (image != null)
             {
@@ -202,7 +207,10 @@ namespace LiteQuark.Runtime
         {
             if (async)
             {
-                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) => { ReplaceSprite(parent, path, sprite); });
+                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
+                {
+                    ReplaceSprite(parent, path, sprite);
+                });
             }
             else
             {
