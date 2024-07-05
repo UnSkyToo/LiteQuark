@@ -36,7 +36,20 @@ namespace LiteQuark.Editor
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
-            EditorGUILayout.PropertyField(property);
+            EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetMode"));
+            
+            var enableRetainProperty = property.FindPropertyRelative("EnableRetain");
+            EditorGUILayout.PropertyField(enableRetainProperty);
+            
+            if (enableRetainProperty.boolValue)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetRetainTime"));
+                    EditorGUILayout.PropertyField(property.FindPropertyRelative("BundleRetainTime"));
+                }
+            }
+            
             EditorGUI.EndProperty();
         }
     }
