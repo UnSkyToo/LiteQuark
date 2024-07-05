@@ -57,7 +57,15 @@ namespace LiteQuark.Runtime
 
         internal static void Exception(Exception ex)
         {
-            Error($"{ex.Message}\n{ex.StackTrace}");
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+            else
+            {
+                log.Fatal(ex.Message, ex);
+            }
         }
     }
 }
