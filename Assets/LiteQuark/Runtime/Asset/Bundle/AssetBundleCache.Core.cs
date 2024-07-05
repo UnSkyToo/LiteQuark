@@ -146,8 +146,16 @@ namespace LiteQuark.Runtime
 
             if (RefCount_ <= 0)
             {
-                Stage = AssetCacheStage.Retained;
-                RetainTime_ = LiteRuntime.Setting.Asset.BundleRetainTime;
+                if (LiteRuntime.Setting.Asset.EnableRetain)
+                {
+                    Stage = AssetCacheStage.Retained;
+                    RetainTime_ = LiteRuntime.Setting.Asset.BundleRetainTime;
+                }
+                else
+                {
+                    Stage = AssetCacheStage.Unloading;
+                    RetainTime_ = 0f;
+                }
             }
         }
 
