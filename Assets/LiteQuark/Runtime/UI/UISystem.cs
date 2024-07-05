@@ -112,7 +112,6 @@ namespace LiteQuark.Runtime
             if (ui != null && !CloseList_.Contains(ui))
             {
                 ui.State = UIState.Closing;
-                UIBinder.AutoUnbind(ui);
                 ui.Close();
                 CloseList_.Add(ui);
             }
@@ -130,6 +129,7 @@ namespace LiteQuark.Runtime
         private void CloseUIInternal(BaseUI ui)
         {
             ui.State = UIState.Closed;
+            UIBinder.AutoUnbind(ui);
             LiteRuntime.Asset.UnloadAsset(ui.Go);
         }
 
