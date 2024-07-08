@@ -200,8 +200,9 @@ namespace LiteQuark.Runtime
             // rectTrans.sizeDelta = Vector2.zero;
             go.layer = LayerMask.NameToLayer("UI");
             
-            // var canvas = go.GetOrAddComponent<Canvas>();
-            // canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var canvas = go.GetOrAddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = Camera.main;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
             scaler.uiScaleMode = LiteRuntime.Setting.UI.ScaleMode;
