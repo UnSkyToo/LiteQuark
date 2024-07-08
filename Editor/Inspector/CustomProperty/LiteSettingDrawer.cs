@@ -33,23 +33,34 @@ namespace LiteQuark.Editor
     [CustomPropertyDrawer(typeof(LiteSetting.AssetSetting))]
     public class LiteAssetSettingDrawer : PropertyDrawer
     {
+        private bool Foldout_ = false;
+        
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
-            EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetMode"));
+            Foldout_ = EditorGUILayout.BeginFoldoutHeaderGroup(Foldout_, "Asset");
             
-            var enableRetainProperty = property.FindPropertyRelative("EnableRetain");
-            EditorGUILayout.PropertyField(enableRetainProperty);
-            
-            if (enableRetainProperty.boolValue)
+            using (new EditorGUI.IndentLevelScope(2))
             {
-                using (new EditorGUI.IndentLevelScope())
+                if (Foldout_)
                 {
-                    EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetRetainTime"));
-                    EditorGUILayout.PropertyField(property.FindPropertyRelative("BundleRetainTime"));
+                    EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetMode"));
+
+                    var enableRetainProperty = property.FindPropertyRelative("EnableRetain");
+                    EditorGUILayout.PropertyField(enableRetainProperty);
+
+                    if (enableRetainProperty.boolValue)
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetRetainTime"));
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("BundleRetainTime"));
+                        }
+                    }
                 }
             }
-            
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUI.EndProperty();
         }
     }
@@ -74,25 +85,28 @@ namespace LiteQuark.Editor
         {
             EditorGUI.BeginProperty(position, label, property);
             Foldout_ = EditorGUILayout.BeginFoldoutHeaderGroup(Foldout_, "Log");
-            
-            if (Foldout_)
+
+            using (new EditorGUI.IndentLevelScope(2))
             {
-                var receiveLogProperty = property.FindPropertyRelative("ReceiveLog");
-                EditorGUILayout.PropertyField(receiveLogProperty);
-            
-                if (receiveLogProperty.boolValue)
+                if (Foldout_)
                 {
-                    using (new EditorGUI.IndentLevelScope())
+                    var receiveLogProperty = property.FindPropertyRelative("ReceiveLog");
+                    EditorGUILayout.PropertyField(receiveLogProperty);
+
+                    if (receiveLogProperty.boolValue)
                     {
-                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogInfo"));
-                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogWarn"));
-                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogError"));
-                        EditorGUILayout.PropertyField(property.FindPropertyRelative("LogFatal"));
-                        EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowLogViewer"));
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("LogInfo"));
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("LogWarn"));
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("LogError"));
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("LogFatal"));
+                            EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowLogViewer"));
+                        }
                     }
                 }
             }
-            
+
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUI.EndProperty();
         }
