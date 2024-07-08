@@ -49,10 +49,10 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class AssetSetting
         {
-            [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Bundle;
+            [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
             [SerializeField] public bool EnableRetain = true;
-            [SerializeField] public float AssetRetainTime = 5f;
-            [SerializeField] public float BundleRetainTime = 5f;
+            [SerializeField] public float AssetRetainTime = 10f;
+            [SerializeField] public float BundleRetainTime = 10f;
 
             public AssetSetting()
             {
@@ -89,7 +89,7 @@ namespace LiteQuark.Runtime
         {
             [SerializeField] public CanvasScaler.ScaleMode ScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             [SerializeField] public CanvasScaler.ScreenMatchMode MatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            [SerializeField] public float MatchValue = 0f;
+            [SerializeField] [Range(0, 1)] public float MatchValue = 0f;
             [SerializeField] public int ResolutionWidth = 1920;
             [SerializeField] public int ResolutionHeight = 1080;
 
