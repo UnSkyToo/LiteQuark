@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.8-preview] - 2024-07-09
+- Bundle自动收集规则排除Package目录
+- AssetSystem增加Retain开关
+- 修复UI同一帧关闭再打开生命周期错误的问题
+- 增加RectTransformMoveAction，操作anchorPosition
+- BaseUI增加ReplaceSprite接口，缓存所有Load的Asset，统一释放
+- 部分界面细节优化
+
 ## [0.0.7-preview] - 2024-07-02
 - Bundle打包增加根目录，避免冲突
 - ActionSystem新增SetParent，完成部分接口
