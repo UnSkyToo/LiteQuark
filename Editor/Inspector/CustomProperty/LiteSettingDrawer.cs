@@ -90,6 +90,8 @@ namespace LiteQuark.Editor
             {
                 if (Foldout_)
                 {
+                    EditorGUILayout.PropertyField(property.FindPropertyRelative("SimpleLog"));
+                    
                     var receiveLogProperty = property.FindPropertyRelative("ReceiveLog");
                     EditorGUILayout.PropertyField(receiveLogProperty);
 
