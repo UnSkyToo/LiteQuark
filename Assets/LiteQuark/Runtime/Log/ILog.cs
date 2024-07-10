@@ -31,15 +31,17 @@ namespace LiteQuark.Runtime
     public sealed class LogImpl : ILog
     {
         public ILogger Logger { get; }
+        public bool SimpleLog { get; }
 
         public bool IsInfoEnabled => Logger.IsLevelEnable(LogLevel.Info);
         public bool IsWarnEnabled => Logger.IsLevelEnable(LogLevel.Warn);
         public bool IsErrorEnabled => Logger.IsLevelEnable(LogLevel.Error);
         public bool IsFatalEnabled => Logger.IsLevelEnable(LogLevel.Fatal);
 
-        public LogImpl(ILogger logger)
+        public LogImpl(ILogger logger, bool simpleLog)
         {
             Logger = logger;
+            SimpleLog = simpleLog;
         }
 
         public void EnableLevel(LogLevel level, bool enabled)
@@ -51,7 +53,14 @@ namespace LiteQuark.Runtime
         {
             if (IsInfoEnabled)
             {
-                Logger.Log(LogLevel.Info, message, null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.Log(message);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Info, message, null);
+                }
             }
         }
 
@@ -59,7 +68,14 @@ namespace LiteQuark.Runtime
         {
             if (IsInfoEnabled)
             {
-                Logger.Log(LogLevel.Info, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.Log(string.Format(CultureInfo.InvariantCulture, format, args));
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Info, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                }
             }
         }
 
@@ -67,7 +83,14 @@ namespace LiteQuark.Runtime
         {
             if (IsWarnEnabled)
             {
-                Logger.Log(LogLevel.Warn, message, null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogWarning(message);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Warn, message, null);
+                }
             }
         }
 
@@ -75,7 +98,14 @@ namespace LiteQuark.Runtime
         {
             if (IsWarnEnabled)
             {
-                Logger.Log(LogLevel.Warn, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, format, args));
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Warn, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                }
             }
         }
 
@@ -83,7 +113,14 @@ namespace LiteQuark.Runtime
         {
             if (IsErrorEnabled)
             {
-                Logger.Log(LogLevel.Error, message, null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogError(message);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Error, message, null);
+                }
             }
         }
 
@@ -91,7 +128,14 @@ namespace LiteQuark.Runtime
         {
             if (IsErrorEnabled)
             {
-                Logger.Log(LogLevel.Error, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogError(string.Format(CultureInfo.InvariantCulture, format, args));
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Error, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                }
             }
         }
 
@@ -99,7 +143,14 @@ namespace LiteQuark.Runtime
         {
             if (IsFatalEnabled)
             {
-                Logger.Log(LogLevel.Fatal, message, null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogException(new Exception(message));
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Fatal, message, null);
+                }
             }
         }
 
@@ -107,7 +158,14 @@ namespace LiteQuark.Runtime
         {
             if (IsFatalEnabled)
             {
-                Logger.Log(LogLevel.Fatal, message, exception);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogException(exception);
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Fatal, message, exception);
+                }
             }
         }
 
@@ -115,7 +173,14 @@ namespace LiteQuark.Runtime
         {
             if (IsFatalEnabled)
             {
-                Logger.Log(LogLevel.Fatal, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                if (SimpleLog)
+                {
+                    UnityEngine.Debug.LogException(new Exception(string.Format(CultureInfo.InvariantCulture, format, args)));
+                }
+                else
+                {
+                    Logger.Log(LogLevel.Fatal, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                }
             }
         }
     }

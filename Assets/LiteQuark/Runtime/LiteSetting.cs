@@ -72,6 +72,7 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class LogSetting
         {
+            [SerializeField] public bool SimpleLog = true;
             [SerializeField] public bool ReceiveLog = true;
             [SerializeField] public bool LogInfo = true;
             [SerializeField] public bool LogWarn = true;

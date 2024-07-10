@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
             }
             
             var logger = Repository_.GetLogger(name);
-            log = new LogImpl(logger);
+            log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
             LogCache_.Add(name, log);
             return log;
         }
@@ -58,7 +58,7 @@ namespace LiteQuark.Runtime
             }
             
             var logger = Repository_.GetLogger(name, loggerFactory);
-            log = new LogImpl(logger);
+            log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
             LogCache_.Add(name, log);
             return log;
         }
