@@ -17,7 +17,14 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Exception(ex);
+                if (Setting.Common.ThrowException)
+                {
+                    throw;
+                }
+                else
+                {
+                    LLog.Exception(ex);
+                }
             }
         }
 
@@ -29,7 +36,16 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Exception(ex);
+                LiteRuntime.Instance.IsPause = true;
+                
+                if (Setting.Common.ThrowException)
+                {
+                    throw;
+                }
+                else
+                {
+                    LLog.Exception(ex);
+                }
             }
 
 #if UNITY_EDITOR
@@ -56,7 +72,14 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LLog.Exception(ex);
+                if (Setting.Common.ThrowException)
+                {
+                    throw;
+                }
+                else
+                {
+                    LLog.Exception(ex);
+                }
             }
         }
 

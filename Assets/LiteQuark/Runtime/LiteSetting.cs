@@ -41,6 +41,8 @@ namespace LiteQuark.Runtime
             [SerializeField] public bool AutoRestartInBackground = false;
             [SerializeField] public float BackgroundLimitTime = 90.0f;
 
+            [SerializeField] public bool ThrowException = false;
+
             public CommonSetting()
             {
             }

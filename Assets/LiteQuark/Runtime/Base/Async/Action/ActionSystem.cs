@@ -32,11 +32,10 @@
                         action.Tick(dt);
                     }
                 }
-                catch (System.Exception ex)
+                catch
                 {
                     action.Stop();
-                    LLog.Error($"action exception : {action.GetType().Name}");
-                    LLog.Exception(ex);
+                    throw;
                 }
             }, ActionList_, deltaTime);
         }
