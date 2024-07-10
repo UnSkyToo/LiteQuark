@@ -28,27 +28,17 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public bool Startup(LiteLauncher launcher)
+        public void Startup(LiteLauncher launcher)
         {
-            IsPause = true;
+            IsPause = false;
             IsFocus = true;
             Launcher = launcher;
 
-            if (!InitializeSystem())
-            {
-                return false;
-            }
-
-            if (!InitializeLogic())
-            {
-                return false;
-            }
+            InitializeSystem();
+            
+            InitializeLogic();
 
             InitializeConfigure();
-            
-            IsPause = false;
-            
-            return true;
         }
 
         public void Shutdown()
@@ -93,29 +83,19 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private bool InitializeSystem()
+        private void InitializeSystem()
         {
-            try
-            {
-                SystemList_.Clear();
-                SystemTypeMap_.Clear();
+            SystemList_.Clear();
+            SystemTypeMap_.Clear();
 
-                foreach (var type in LiteConst.SystemTypeList)
+            foreach (var type in LiteConst.SystemTypeList)
+            {
+                LLog.Info($"Initialize {type}");
+                if (System.Activator.CreateInstance(type) is ISystem sys)
                 {
-                    LLog.Info($"Initialize {type}");
-                    if (System.Activator.CreateInstance(type) is ISystem sys)
-                    {
-                        SystemList_.Add(sys);
-                        SystemTypeMap_.Add(type, sys);
-                    }
+                    SystemList_.Add(sys);
+                    SystemTypeMap_.Add(type, sys);
                 }
-
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                LLog.Exception(ex);
-                return false;
             }
         }
 
@@ -130,49 +110,36 @@ namespace LiteQuark.Runtime
             SystemTypeMap_.Clear();
         }
 
-        private bool InitializeLogic()
+        private void InitializeLogic()
         {
-            try
+            LogicList_.Clear();
+            
+            foreach (var logicEntry in Launcher.Setting.LogicList)
             {
-                LogicList_.Clear();
-                
-                foreach (var logicEntry in Launcher.Setting.LogicList)
+                if (logicEntry.Disabled)
                 {
-                    if (logicEntry.Disabled)
-                    {
-                        continue;
-                    }
-                    
-                    LLog.Info($"initialize {logicEntry.TypeName} system");
+                    continue;
+                }
+                
+                LLog.Info($"initialize {logicEntry.TypeName} system");
 
-                    var logicType = TypeUtils.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
-                    if (logicType == null)
-                    {
-                        LLog.Error($"can't not find logic class type : {logicEntry.TypeName}");
-                        continue;
-                    }
-
-                    if (System.Activator.CreateInstance(logicType) is not ILogic logic)
-                    {
-                        LLog.Error($"incorrect logic class type : {logicEntry.TypeName}");
-                        continue;
-                    }
-
-                    if (!logic.Startup())
-                    {
-                        LLog.Error($"{logicEntry.TypeName} startup failed");
-                        continue;
-                    }
-
-                    LogicList_.Add(logic);
+                var logicType = TypeUtils.GetTypeWithAssembly(logicEntry.AssemblyName, logicEntry.TypeName);
+                if (logicType == null)
+                {
+                    throw new System.Exception($"can't not find logic class type : {logicEntry.TypeName}");
                 }
 
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                LLog.Exception(ex);
-                return false;
+                if (System.Activator.CreateInstance(logicType) is not ILogic logic)
+                {
+                    throw new System.Exception($"incorrect logic class type : {logicEntry.TypeName}");
+                }
+
+                if (!logic.Startup())
+                {
+                    throw new System.Exception($"{logicEntry.TypeName} startup failed");
+                }
+
+                LogicList_.Add(logic);
             }
         }
 
@@ -207,7 +174,7 @@ namespace LiteQuark.Runtime
             RestartWhenNextFrame_ = false;
             Debug.ClearDeveloperConsole();
             Shutdown();
-            IsPause = !Startup(Launcher);
+            Startup(Launcher);
         }
 
         public void OnEnterForeground()

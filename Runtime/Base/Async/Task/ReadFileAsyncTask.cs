@@ -21,11 +21,11 @@ namespace LiteQuark.Runtime
                 Data_ = new List<byte>();
                 Callback_ = callback;
             }
-            catch (Exception ex)
+            catch
             {
-                LLog.Exception(ex);
                 callback?.Invoke(null);
                 Stop();
+                throw;
             }
         }
         

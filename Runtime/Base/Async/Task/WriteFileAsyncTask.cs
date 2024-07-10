@@ -21,11 +21,11 @@ namespace LiteQuark.Runtime
                 Callback_ = callback;
                 Offset_ = 0;
             }
-            catch (Exception ex)
+            catch
             {
-                LLog.Exception(ex);
                 callback?.Invoke(false);
                 Stop();
+                throw;
             }
         }
         
