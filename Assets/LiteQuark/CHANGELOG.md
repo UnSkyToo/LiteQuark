@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9-preview] - 2024-07-12
+- 修复还在使用Text的项目字体丢失BUG
+- 增加异常抛出选项，可以关闭框架异常处理，由项目组上报
+- 增加Simple开关，开启后直接使用UnityLog
+
 ## [0.0.8-preview] - 2024-07-09
 - Bundle自动收集规则排除Package目录
 - AssetSystem增加Retain开关
