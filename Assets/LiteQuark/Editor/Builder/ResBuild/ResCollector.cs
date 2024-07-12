@@ -142,10 +142,11 @@ namespace LiteQuark.Editor
                 return false;
             }
 
-            if (ext is ".ttf" or ".ttc" or ".otf")
-            {
-                return false;
-            }
+            // Fix font loss caused by using Text component in old projects.
+            // if (ext is ".ttf" or ".ttc" or ".otf")
+            // {
+            //     return false;
+            // }
 
             return true;
         }
