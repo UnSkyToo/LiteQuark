@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
             [SerializeField] public bool MultiTouch = false;
 
             [SerializeField] public bool AutoRestartInBackground = false;
-            [SerializeField] public float BackgroundLimitTime = 90.0f;
+            [ConditionalHide(nameof(AutoRestartInBackground), true), SerializeField] public float BackgroundLimitTime = 90.0f;
 
             [SerializeField] public bool ThrowException = false;
 
@@ -53,8 +53,8 @@ namespace LiteQuark.Runtime
         {
             [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
             [SerializeField] public bool EnableRetain = true;
-            [SerializeField] public float AssetRetainTime = 10f;
-            [SerializeField] public float BundleRetainTime = 10f;
+            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float AssetRetainTime = 10f;
+            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float BundleRetainTime = 10f;
 
             public AssetSetting()
             {
@@ -76,11 +76,11 @@ namespace LiteQuark.Runtime
         {
             [SerializeField] public bool SimpleLog = true;
             [SerializeField] public bool ReceiveLog = true;
-            [SerializeField] public bool LogInfo = true;
-            [SerializeField] public bool LogWarn = true;
-            [SerializeField] public bool LogError = true;
-            [SerializeField] public bool LogFatal = true;
-            [SerializeField] public bool ShowLogViewer = true;
+            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogInfo = true;
+            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogWarn = true;
+            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogError = true;
+            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogFatal = true;
+            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = true;
 
             public LogSetting()
             {
