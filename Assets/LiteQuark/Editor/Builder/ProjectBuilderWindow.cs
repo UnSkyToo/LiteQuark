@@ -28,10 +28,16 @@ namespace LiteQuark.Editor
                 Identifier = PlayerSettings.applicationIdentifier,
                 ProduceName = PlayerSettings.productName,
                 Version = PlayerSettings.bundleVersion,
-#if UNITY_ANDROID
-                BuildCode = PlayerSettings.Android.bundleVersionCode,
-#endif
             };
+            
+#if UNITY_ANDROID
+            AppCfg_.BuildCode = PlayerSettings.Android.bundleVersionCode;
+#elif UNITY_IOS
+            if (int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode))
+            {
+                AppCfg_.BuildCode = buildCode;
+            }
+#endif
 
             StepViewList_ = new BuilderStepView[]
             {
