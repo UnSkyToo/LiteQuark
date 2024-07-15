@@ -11,6 +11,8 @@ namespace LiteQuark.Editor
         private SearchField SearchField_;
         private AssetViewerTreeItem SelectItem_ = null;
         private Vector2 DetailScrollPos_ = Vector2.zero;
+
+        private bool CombineMode_ = false;
         
         [MenuItem("Lite/Asset Viewer")]
         private static void ShowWin()
@@ -44,6 +46,17 @@ namespace LiteQuark.Editor
 
         private void OnGUI()
         {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUI.BeginChangeCheck();
+                CombineMode_ = EditorGUILayout.Toggle(new GUIContent("Combine Mode", "Displaying bundles that merge sub paths"), CombineMode_);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    AssetTreeView_.CombineMode = CombineMode_;
+                    AssetTreeView_.Reload();
+                }
+            }
+            
             var searchRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(true), GUILayout.Height(EditorGUIUtility.singleLineHeight));
             AssetTreeView_.searchString = SearchField_.OnGUI(searchRect, AssetTreeView_.searchString);
 
