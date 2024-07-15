@@ -54,21 +54,40 @@ namespace LiteQuark.Runtime
             return result;
         }
 
+        /// <summary>
+        /// Get the full path in the standalone root.
+        /// </summary>
+        /// <returns>Assets/StandaloneAssets/{path}</returns>
         public static string GetFullPathInAssetRoot(string path)
         {
+            if (path.ToLower().StartsWith("assets"))
+            {
+                return path;
+            }
+            
             return ConcatPath(LiteConst.AssetRootPath, path);
         }
         
+        /// <summary>
+        /// Get the full path in the asset data.
+        /// </summary>
+        /// <returns>Assets/{path}</returns>
         public static string GetAssetDataPath(string path)
         {
             return ConcatPath(Application.dataPath, path);
         }
 
+        /// <summary>
+        /// Get the full path in persistent root.
+        /// </summary>
         public static string GetPersistentDataPath(string path)
         {
             return ConcatPath(Application.persistentDataPath, path);
         }
 
+        /// <summary>
+        /// Get the full path in streaming assets.
+        /// </summary>
         public static string GetStreamingAssetsPath(string path)
         {
             return ConcatPath(Application.streamingAssetsPath, path);
