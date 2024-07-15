@@ -40,6 +40,8 @@ namespace LiteQuark.Editor
             PlayerSettings.productName = builder.AppConfig.ProduceName;
 #if UNITY_ANDROID
             PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
+#elif UNITY_IOS
+            PlayerSettings.iOS.buildNumber = builder.AppConfig.BuildCode.ToString();
 #endif
         }
 
