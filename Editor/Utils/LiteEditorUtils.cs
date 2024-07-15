@@ -53,7 +53,14 @@ namespace LiteQuark.Editor
                     }
                     else if (setFunc != null)
                     {
-                        setFunc.Invoke(instance, new object[] { new[] { obj.GetInstanceID() }, false });
+                        try
+                        {
+                            setFunc.Invoke(instance, new object[] { new[] { obj.GetInstanceID() }, false });
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
                     }
                 }
             }
