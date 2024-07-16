@@ -25,7 +25,10 @@ namespace LiteQuark.Editor
         /// Script backend
         /// </summary>
         public ScriptingImplementation Backend { get; set; } = ScriptingImplementation.IL2CPP;
-
+        
+        public AndroidArchitecture Architecture { get; set; } = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
+        public iOSTargetDevice TargetDevice { get; set; } = iOSTargetDevice.iPhoneAndiPad;
+        
         /// <summary>
         /// Is development build Mode
         /// </summary>

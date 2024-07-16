@@ -9,7 +9,7 @@
 
         public void Execute(ProjectBuilder builder)
         {
-            ProjectBuilderUtils.CopyToStreamingAssets(builder.GetResOutputPath());
+            ProjectBuilderUtils.CopyToStreamingAssets(builder.GetResOutputPath(), builder.ResConfig.CleanStreamingAssetsBeforeCopy);
         }
     }
 }

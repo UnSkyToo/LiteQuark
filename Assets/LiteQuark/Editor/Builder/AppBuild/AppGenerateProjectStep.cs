@@ -17,8 +17,6 @@ namespace LiteQuark.Editor
             var outputPath = builder.GetAppOutputPath();
             PathUtils.CreateDirectory(outputPath);
             
-            ApplySetting(builder);
-            
             switch (builder.Target)
             {
                 case BuildTarget.Android:
@@ -31,18 +29,6 @@ namespace LiteQuark.Editor
                     builder.LogError($"unsupported platform : {builder.Target}");
                     break;
             }
-        }
-
-        private void ApplySetting(ProjectBuilder builder)
-        {
-            PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
-            PlayerSettings.bundleVersion = builder.AppConfig.Version;
-            PlayerSettings.productName = builder.AppConfig.ProduceName;
-#if UNITY_ANDROID
-            PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
-#elif UNITY_IOS
-            PlayerSettings.iOS.buildNumber = builder.AppConfig.BuildCode.ToString();
-#endif
         }
 
         private void BuildAndroid(ProjectBuilder builder)

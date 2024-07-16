@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
         
         private readonly AppBuildConfig Config_;
         
-        public BuilderAppView(string title, Rect rect, AppBuildConfig config)
-            : base(title, rect)
+        public BuilderAppView(ProjectBuilderWindow window, string title, Rect rect, AppBuildConfig config)
+            : base(window, title, rect)
         {
             Config_ = config;
         }
@@ -41,6 +41,16 @@ namespace LiteQuark.Editor
 
             Config_.Options = (BuildOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), Config_.Options, false);
             Config_.Backend = (ScriptingImplementation)EditorGUILayout.EnumPopup(new GUIContent("Backend", "Script backend"), Config_.Backend);
+
+            if (Window.Target == BuildTarget.Android)
+            {
+                Config_.Architecture = (AndroidArchitecture)EditorGUILayout.EnumFlagsField(new GUIContent("Architecture", "Android CPU architecture"), Config_.Architecture);
+            }
+            else if (Window.Target == BuildTarget.iOS)
+            {
+                Config_.TargetDevice = (iOSTargetDevice)EditorGUILayout.EnumPopup(new GUIContent("TargetDevice", "Target iOS device"), Config_.TargetDevice);
+            }
+
             Config_.IsDevelopmentBuild = EditorGUILayout.Toggle(new GUIContent("Development Build", "Is development build"), Config_.IsDevelopmentBuild);
         }
     }

@@ -5,6 +5,8 @@ namespace LiteQuark.Editor
 {
     internal sealed class ProjectBuilderWindow : EditorWindow
     {
+        public BuildTarget Target => Target_;
+        
         private BuildTarget Target_;
         private ResBuildConfig ResCfg_;
         private AppBuildConfig AppCfg_;
@@ -41,8 +43,8 @@ namespace LiteQuark.Editor
 
             StepViewList_ = new BuilderStepView[]
             {
-                new BuilderResView("Res - Compile Resource Step", new Rect(5, 5, 300, 400), ResCfg_),
-                new BuilderAppView("App - Build Application Step", new Rect(350, 5, 300, 400), AppCfg_),
+                new BuilderResView(this, "Res - Compile Resource Step", new Rect(5, 5, 300, 400), ResCfg_),
+                new BuilderAppView(this, "App - Build Application Step", new Rect(350, 5, 300, 400), AppCfg_),
             };
         }
 

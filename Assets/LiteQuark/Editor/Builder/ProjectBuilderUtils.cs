@@ -5,7 +5,7 @@ namespace LiteQuark.Editor
 {
     public static class ProjectBuilderUtils
     {
-        public static void CopyToStreamingAssets(string resPath)
+        public static void CopyToStreamingAssets(string resPath, bool removeOriginFolder)
         {
             bool CopyFilter(string path)
             {
@@ -18,7 +18,11 @@ namespace LiteQuark.Editor
             }
 
             var destPath = PathUtils.GetRuntimeRootPath();
-            PathUtils.DeleteDirectory(destPath);
+            if (removeOriginFolder)
+            {
+                PathUtils.DeleteDirectory(destPath);
+            }
+
             PathUtils.CopyDirectory(resPath, destPath, CopyFilter);
             AssetDatabase.Refresh();
         }
