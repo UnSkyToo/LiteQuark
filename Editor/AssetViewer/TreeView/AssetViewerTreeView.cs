@@ -18,8 +18,9 @@ namespace LiteQuark.Editor
         private const string BundleType = "bundle";
 
         private readonly Dictionary<int, AssetViewerTreeItem> ItemCacheMap_ = new Dictionary<int, AssetViewerTreeItem>();
-        private int SizeSortedAscending_ = 0;
-
+        private int IDGenerator_ = 1;
+        private int SizeSortedAscendingType_ = 0;
+        
         public AssetViewerTreeView(TreeViewState state)
             : base(state, CreateHeader())
         {
@@ -63,11 +64,13 @@ namespace LiteQuark.Editor
         protected override TreeViewItem BuildRoot()
         {
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            IDGenerator_ = 1;
             
             var collector = new ResCollector();
             var packInfo = collector.GenerateBundlePackInfo(EditorUserBuildSettings.activeBuildTarget);
             
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
+            AssetViewerUtils.SortTreeItemList(items, SizeSortedAscendingType_);
             
             SetupParentsAndChildrenFromDepths(root, items);
             return root;
@@ -77,61 +80,26 @@ namespace LiteQuark.Editor
         {
             var items = new List<TreeViewItem>();
             ItemCacheMap_.Clear();
-
-            var idCounter = 1;
+            
             foreach (var bundle in packInfo.BundleList)
             {
-                var bundleFullPath = PathUtils.GetFullPathInAssetRoot(bundle.BundlePath).ToLower();
-                var bundleItem = new AssetViewerTreeItem
-                {
-                    id = idCounter++,
-                    displayName = $"{Path.GetFileNameWithoutExtension(bundle.BundlePath)}({bundle.AssetList.Length})",
-                    depth = 0,
-                    TypeIcon = null,
-                    Type = BundleType,
-                    Size = 0,
-                    Path = bundleFullPath,
-                    DependencyList = bundle.DependencyList,
-                };
+                var bundleItem = CreateBundleItem(bundle.BundlePath, $"{Path.GetFileNameWithoutExtension(bundle.BundlePath)}({bundle.AssetList.Length})", 0);
+                items.Add(bundleItem);
+                ItemCacheMap_.Add(bundleItem.id, bundleItem);
 
                 var totalSize = 0L;
-                foreach (var asset in bundle.AssetList)
+                foreach (var assetPath in bundle.AssetList)
                 {
-                    var assetFullPath = PathUtils.GetFullPathInAssetRoot(asset).ToLower();
-                    var info = new FileInfo(assetFullPath);
-                    if (!info.Exists)
-                    {
-                        Debug.LogError($"asset not exist : {assetFullPath}");
-                        continue;
-                    }
-
-                    var size = info.Length;
-                    totalSize += size;
-
-                    var assetItem = new AssetViewerTreeItem
-                    {
-                        id = idCounter++,
-                        displayName = Path.GetFileNameWithoutExtension(asset),
-                        depth = 1,
-                        TypeIcon = AssetDatabase.GetCachedIcon(assetFullPath),
-                        Type = Path.GetExtension(asset).TrimStart('.'),
-                        Size = size,
-                        Path = assetFullPath,
-                        DependencyList = Array.Empty<string>(),
-                    };
+                    var assetItem = CreateAssetItem(assetPath, bundleItem.depth + 1);
+                    totalSize += assetItem.Size;
                     bundleItem.AddChild(assetItem);
                     ItemCacheMap_.Add(assetItem.id, assetItem);
                 }
-
-                AssetViewerUtils.SortTreeItemList(bundleItem.children, SizeSortedAscending_);
-
                 bundleItem.Size = totalSize;
+                bundleItem.DependencyList = bundle.DependencyList;
 
-                items.Add(bundleItem);
-                ItemCacheMap_.Add(bundleItem.id, bundleItem);
+                AssetViewerUtils.SortTreeItemList(bundleItem.children, SizeSortedAscendingType_);
             }
-
-            AssetViewerUtils.SortTreeItemList(items, SizeSortedAscending_);
 
             return items;
         }
@@ -142,11 +110,10 @@ namespace LiteQuark.Editor
             ItemCacheMap_.Clear();
 
             var treeDict = new Dictionary<string, AssetViewerTreeItem>();
-            var idCounter = 1;
 
             foreach (var bundle in packInfo.BundleList)
             {
-                var parent = default(AssetViewerTreeItem);
+                var bundleItem = default(AssetViewerTreeItem);
                 var subPaths = bundle.BundlePath.Split(PathUtils.DirectorySeparatorChar);
                 var stepPath = new StringBuilder();
                 
@@ -158,69 +125,37 @@ namespace LiteQuark.Editor
                     
                     if (!treeDict.TryGetValue(key, out var item))
                     {
-                        var bundleFullPath = PathUtils.GetFullPathInAssetRoot(key).ToLower();
-                        item = new AssetViewerTreeItem
-                        {
-                            id = idCounter++,
-                            displayName = subPaths[i],
-                            depth = i,
-                            TypeIcon = null,
-                            Type = BundleType,
-                            Size = 0,
-                            Path = bundleFullPath,
-                            DependencyList = Array.Empty<string>(),
-                        };
+                        item = CreateBundleItem(key, subPaths[i], i);
                         treeDict.Add(key, item);
 
-                        if (parent == null)
+                        if (bundleItem == null)
                         {
                             items.Add(item);
                         }
                         else
                         {
-                            parent.AddChild(item);
+                            bundleItem.AddChild(item);
                         }
                         ItemCacheMap_.Add(item.id, item);
                     }
                     
-                    parent = item;
+                    bundleItem = item;
                 }
 
                 var totalSize = 0L;
-                foreach (var asset in bundle.AssetList)
+                foreach (var assetPath in bundle.AssetList)
                 {
-                    var assetFullPath = PathUtils.GetFullPathInAssetRoot(asset).ToLower();
-                    var info = new FileInfo(assetFullPath);
-                    if (!info.Exists)
-                    {
-                        Debug.LogError($"asset not exist : {assetFullPath}");
-                        continue;
-                    }
-
-                    var size = info.Length;
-                    totalSize += size;
-
-                    var assetItem = new AssetViewerTreeItem
-                    {
-                        id = idCounter++,
-                        displayName = Path.GetFileNameWithoutExtension(asset),
-                        depth = parent.depth + 1,
-                        TypeIcon = AssetDatabase.GetCachedIcon(assetFullPath),
-                        Type = Path.GetExtension(asset).TrimStart('.'),
-                        Size = size,
-                        Path = assetFullPath,
-                        DependencyList = Array.Empty<string>(),
-                    };
-                    parent.AddChild(assetItem);
+                    var assetItem = CreateAssetItem(assetPath, bundleItem.depth + 1);
+                    totalSize += assetItem.Size;
+                    bundleItem.AddChild(assetItem);
                     ItemCacheMap_.Add(assetItem.id, assetItem);
                 }
+                bundleItem.Size = totalSize;
+                bundleItem.DependencyList = bundle.DependencyList;
 
-                AssetViewerUtils.SortTreeItemList(parent.children, SizeSortedAscending_);
-                
-                parent.Size = totalSize;
-                parent.DependencyList = bundle.DependencyList;
+                AssetViewerUtils.SortTreeItemList(bundleItem.children, SizeSortedAscendingType_);
 
-                var cacheItem = parent.parent as AssetViewerTreeItem;
+                var cacheItem = bundleItem.parent as AssetViewerTreeItem;
                 while (cacheItem != null)
                 {
                     cacheItem.Size += totalSize;
@@ -228,9 +163,51 @@ namespace LiteQuark.Editor
                 }
             }
 
-            AssetViewerUtils.SortTreeItemList(items, SizeSortedAscending_);
-
             return items;
+        }
+
+        private AssetViewerTreeItem CreateBundleItem(string bundlePath, string displayName, int depth)
+        {
+            var bundleFullPath = PathUtils.GetFullPathInAssetRoot(bundlePath).ToLower();
+            
+            var bundleItem = new AssetViewerTreeItem
+            {
+                id = IDGenerator_++,
+                displayName = displayName,
+                depth = depth,
+                TypeIcon = null,
+                Type = BundleType,
+                Size = 0,
+                Path = bundleFullPath,
+                DependencyList = Array.Empty<string>(),
+            };
+
+            return bundleItem;
+        }
+
+        private AssetViewerTreeItem CreateAssetItem(string assetPath, int depth)
+        {
+            var assetFullPath = PathUtils.GetFullPathInAssetRoot(assetPath).ToLower();
+            var info = new FileInfo(assetFullPath);
+            if (!info.Exists)
+            {
+                Debug.LogError($"asset not exist : {assetFullPath}");
+                return null;
+            }
+            
+            var assetItem = new AssetViewerTreeItem
+            {
+                id = IDGenerator_++,
+                displayName = Path.GetFileNameWithoutExtension(assetPath),
+                depth = depth,
+                TypeIcon = AssetDatabase.GetCachedIcon(assetFullPath),
+                Type = Path.GetExtension(assetPath).TrimStart('.'),
+                Size = info.Length,
+                Path = assetFullPath,
+                DependencyList = Array.Empty<string>(),
+            };
+
+            return assetItem;
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -281,7 +258,7 @@ namespace LiteQuark.Editor
             switch (header.sortedColumnIndex)
             {
                 case 2: // size
-                    SizeSortedAscending_ = header.state.columns[2].sortedAscending ? 1 : -1;
+                    SizeSortedAscendingType_ = header.state.columns[2].sortedAscending ? 1 : -1;
                     Reload();
                     break;
             }
