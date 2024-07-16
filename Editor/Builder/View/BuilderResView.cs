@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
 
         private readonly ResBuildConfig Config_;
         
-        public BuilderResView(string title, Rect rect, ResBuildConfig config)
-            : base(title, rect)
+        public BuilderResView(ProjectBuilderWindow window, string title, Rect rect, ResBuildConfig config)
+            : base(window, title, rect)
         {
             Config_ = config;
         }
@@ -26,6 +26,14 @@ namespace LiteQuark.Editor
             Config_.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will be delete last build file"), Config_.CleanBuildMode);
 
             Config_.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), Config_.CopyToStreamingAssets);
+
+            if (Config_.CopyToStreamingAssets)
+            {
+                using (new IndentLevelScope())
+                {
+                    Config_.CleanStreamingAssetsBeforeCopy = EditorGUILayout.Toggle(new GUIContent("Clean Before Copy", "Clean streaming assets before copy to streaming assets path"), Config_.CleanStreamingAssetsBeforeCopy);
+                }
+            }
         }
     }
 }

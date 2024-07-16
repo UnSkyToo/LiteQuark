@@ -23,5 +23,10 @@ namespace LiteQuark.Editor
         /// Copy asset bundle to streaming asset folder
         /// </summary>
         public bool CopyToStreamingAssets { get; set; } = true;
+        
+        /// <summary>
+        /// Clean folder before copy asset bundle to streaming asset
+        /// </summary>
+        public bool CleanStreamingAssetsBeforeCopy { get; set; } = true;
     }
 }

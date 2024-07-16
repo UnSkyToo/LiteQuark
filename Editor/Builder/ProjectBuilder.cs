@@ -116,7 +116,13 @@ namespace LiteQuark.Editor
 
             Log($"Start build");
             string error = null;
-            
+
+            if (EditorUserBuildSettings.activeBuildTarget != Target)
+            {
+                var targetGroup = BuildPipeline.GetBuildTargetGroup(Target);
+                EditorUserBuildSettings.SwitchActiveBuildTarget(targetGroup, Target);
+            }
+
             foreach (var step in stepList)
             {
                 var sw = new Stopwatch();

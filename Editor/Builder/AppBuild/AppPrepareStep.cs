@@ -1,6 +1,4 @@
-﻿using LiteQuark.Runtime;
-using UnityEngine;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.Build;
 
 namespace LiteQuark.Editor
@@ -12,13 +10,7 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             CleanOutputFile(builder);
-            CopyResToStreamingAssets(builder);
             ApplySetting(builder);
-        }
-
-        private void CopyResToStreamingAssets(ProjectBuilder builder)
-        {
-            ProjectBuilderUtils.CopyToStreamingAssets(builder.GetResOutputPath());
         }
 
         private void CleanOutputFile(ProjectBuilder builder)
@@ -29,16 +21,21 @@ namespace LiteQuark.Editor
         private void ApplySetting(ProjectBuilder builder)
         {
             var targetGroup = BuildPipeline.GetBuildTargetGroup(builder.Target);
-            // PlayerSettings.SetApplicationIdentifier(targetGroup, "com.lite.quark.demo");
-            // PlayerSettings.companyName = "lite";
-            // PlayerSettings.productName = "demo";
-            // PlayerSettings.bundleVersion = "1.0.0";
-            //
-            EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
-
             var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
             PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
+            
+            EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
+            PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
+            PlayerSettings.bundleVersion = builder.AppConfig.Version;
+            PlayerSettings.productName = builder.AppConfig.ProduceName;
+#if UNITY_ANDROID
+            PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
+            PlayerSettings.Android.targetArchitectures = builder.AppConfig.Architecture;
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
+#elif UNITY_IOS
+            PlayerSettings.iOS.buildNumber = builder.AppConfig.BuildCode.ToString();
+            PlayerSettings.iOS.targetDevice = builder.AppConfig.TargetDevice;
+#endif
 
             AssetDatabase.SaveAssets();
         }

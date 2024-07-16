@@ -5,13 +5,15 @@ namespace LiteQuark.Editor
 {
     internal abstract class BuilderStepView
     {
+        public ProjectBuilderWindow Window { get; }
         public abstract bool Enabled { get; protected set; }
 
         private readonly string Title_;
         private readonly Rect Rect_;
 
-        public BuilderStepView(string title, Rect rect)
+        public BuilderStepView(ProjectBuilderWindow window, string title, Rect rect)
         {
+            Window = window;
             Title_ = title;
             Rect_ = rect;
         }
