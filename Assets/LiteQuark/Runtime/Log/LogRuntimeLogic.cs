@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         public bool Startup()
         {
             var setting = LiteRuntime.Setting.Log;
-            var logEnable = setting.ReceiveLog && LiteRuntime.DebugMode;
+            var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
             
             if (logEnable && setting.ShowLogViewer)
             {

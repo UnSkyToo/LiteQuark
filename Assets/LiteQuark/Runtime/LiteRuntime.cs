@@ -5,6 +5,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class LiteRuntime : Singleton<LiteRuntime>
     {
+        public static bool IsDebugMode { get; private set; } = false;
+        
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
 
@@ -30,7 +32,8 @@ namespace LiteQuark.Runtime
             IsFocus = true;
             Launcher = launcher;
             Setting_ = launcher.Setting;
-
+            IsDebugMode = Debug.isDebugBuild && Setting_.Debug.DebugMode;
+            
             InitializeConfigure();
             
             InitializeSystem();
@@ -263,19 +266,6 @@ namespace LiteQuark.Runtime
         }
 
         public static LiteSetting Setting => Instance.Setting_;
-
-        public static bool DebugMode
-        {
-            get
-            {
-                if (Debug.isDebugBuild)
-                {
-                    return Instance.Setting_.Debug.DebugMode;
-                }
-
-                return false;
-            }
-        }
         
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();
