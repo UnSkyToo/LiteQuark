@@ -6,27 +6,6 @@ using UnityEditor;
 
 namespace LiteQuark.Editor
 {
-    internal interface IBuildStep
-    {
-        string Name { get; }
-        
-        void Execute(ProjectBuilder builder);
-    }
-
-    internal class ProjectBuildResult
-    {
-        public bool IsSuccess { get; }
-        public float ElapsedSeconds { get; }
-        public string OutputPath { get; }
-
-        public ProjectBuildResult(bool isSuccess, float elapsedSeconds, string outputPath)
-        {
-            IsSuccess = isSuccess;
-            ElapsedSeconds = elapsedSeconds;
-            OutputPath = outputPath;
-        }
-    }
-
     internal sealed class ProjectBuilder
     {
         public ProjectBuildConfig BuildConfig { get; private set; }
@@ -53,6 +32,8 @@ namespace LiteQuark.Editor
         private IBuildStep[] GenerateBuildStep(ProjectBuildConfig config)
         {
             var stepList = new List<IBuildStep>();
+            
+            stepList.Add(new SwitchPlatformStep());
             
             var resStep = GenerateResBuildStep(ResConfig);
             stepList.AddRange(resStep);
@@ -116,12 +97,6 @@ namespace LiteQuark.Editor
 
             Log($"Start build");
             string error = null;
-
-            if (EditorUserBuildSettings.activeBuildTarget != Target)
-            {
-                var targetGroup = BuildPipeline.GetBuildTargetGroup(Target);
-                EditorUserBuildSettings.SwitchActiveBuildTarget(targetGroup, Target);
-            }
 
             foreach (var step in stepList)
             {
