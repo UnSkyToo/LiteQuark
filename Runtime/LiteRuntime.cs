@@ -16,6 +16,7 @@ namespace LiteQuark.Runtime
         private Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
 
         private List<ILogic> LogicList_ = new List<ILogic>();
+        private List<ILogic> LogicAddList_ = new List<ILogic>();
         
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
@@ -41,6 +42,8 @@ namespace LiteQuark.Runtime
         {
             OnEnterBackground();
 
+            ProcessLogicAdd();
+            
             UnInitializeLogic();
             UnInitializeSystem();
 
@@ -62,6 +65,8 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
+            
+            ProcessLogicAdd();
 
             var time = deltaTime * TimeScale;
 
@@ -146,6 +151,33 @@ namespace LiteQuark.Runtime
                 logic.Shutdown();
             }
             LogicList_.Clear();
+        }
+
+        public void AddLogic(ILogic logic)
+        {
+            LogicAddList_.Add(logic);
+        }
+
+        private void ProcessLogicAdd()
+        {
+            if (LogicAddList_.Count > 0)
+            {
+                foreach (var logic in LogicAddList_)
+                {
+                    if (logic == null)
+                    {
+                        continue;
+                    }
+                    
+                    if (!logic.Startup())
+                    {
+                        throw new System.Exception($"{logic.GetType().Name} startup failed");
+                    }
+                    
+                    LogicList_.Add(logic);
+                }
+                LogicAddList_.Clear();
+            }
         }
         
         private void InitializeConfigure()
