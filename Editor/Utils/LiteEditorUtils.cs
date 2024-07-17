@@ -1,18 +1,18 @@
-﻿using System.Reflection;
+﻿#if UNITY_EDITOR
+using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-#if UNITY_EDITOR
     public static class LiteEditorUtils
     {
         public static void OpenFolder(string path)
         {
 #if UNITY_EDITOR_WIN
             Application.OpenURL(path);
-#elif UNITY_STANDALONE_OSX
+#elif UNITY_EDITOR_OSX
             EditorUtility.RevealInFinder(path);
 #endif
         }
