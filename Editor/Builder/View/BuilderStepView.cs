@@ -11,7 +11,7 @@ namespace LiteQuark.Editor
         private readonly string Title_;
         private readonly Rect Rect_;
 
-        public BuilderStepView(ProjectBuilderWindow window, string title, Rect rect)
+        protected BuilderStepView(ProjectBuilderWindow window, string title, Rect rect)
         {
             Window = window;
             Title_ = title;
