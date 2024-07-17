@@ -10,19 +10,9 @@ namespace LiteQuark.Runtime
         public bool Startup()
         {
             var setting = LiteRuntime.Setting.Log;
-            if (setting.ReceiveLog)
-            {
-                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Info, setting.LogInfo);
-                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Warn, setting.LogWarn);
-                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Error, setting.LogError);
-                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.Fatal, setting.LogFatal);
-            }
-            else
-            {
-                LiteRuntime.Log.GetRepository().EnableLevel(LogLevel.All, false);
-            }
+            var logEnable = setting.ReceiveLog && LiteRuntime.DebugMode;
             
-            if (setting.ReceiveLog && setting.ShowLogViewer)
+            if (logEnable && setting.ShowLogViewer)
             {
                 Go_ = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
                 var scaler = Go_.GetOrAddComponent<CanvasScaler>();
