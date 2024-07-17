@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             CommonLogger_ = GetLogger("Default");
             
             var setting = LiteRuntime.Setting.Log;
-            var logEnable = setting.ReceiveLog && LiteRuntime.DebugMode;
+            var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
             if (logEnable)
             {
                 Repository_.EnableLevel(LogLevel.Info, setting.LogInfo);
