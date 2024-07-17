@@ -7,17 +7,16 @@ namespace LiteQuark.Runtime
     {
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
-        
-        public float TimeScale { get; private set; } = 1.0f;
 
         public LiteLauncher Launcher { get; private set; }
-
-        private List<ISystem> SystemList_ = new List<ISystem>();
-        private Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
-
-        private List<ILogic> LogicList_ = new List<ILogic>();
-        private List<ILogic> LogicAddList_ = new List<ILogic>();
         
+        private readonly List<ISystem> SystemList_ = new List<ISystem>();
+        private readonly Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
+        
+        private readonly List<ILogic> LogicList_ = new List<ILogic>();
+        private readonly List<ILogic> LogicAddList_ = new List<ILogic>();
+        
+        private LiteSetting Setting_ = null;
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
 
@@ -30,12 +29,13 @@ namespace LiteQuark.Runtime
             IsPause = false;
             IsFocus = true;
             Launcher = launcher;
+            Setting_ = launcher.Setting;
 
+            InitializeConfigure();
+            
             InitializeSystem();
             
             InitializeLogic();
-
-            InitializeConfigure();
         }
 
         public void Shutdown()
@@ -68,7 +68,11 @@ namespace LiteQuark.Runtime
             
             ProcessLogicAdd();
 
-            var time = deltaTime * TimeScale;
+#if UNITY_EDITOR
+            var time = deltaTime * Setting_.Debug.TimeScale;
+#else
+            var time = deltaTime;
+#endif
 
             foreach (var system in SystemList_)
             {
@@ -115,7 +119,7 @@ namespace LiteQuark.Runtime
         {
             LogicList_.Clear();
             
-            foreach (var logicEntry in Launcher.Setting.LogicList)
+            foreach (var logicEntry in Setting_.LogicList)
             {
                 if (logicEntry.Disabled)
                 {
@@ -182,12 +186,11 @@ namespace LiteQuark.Runtime
         
         private void InitializeConfigure()
         {
-            Application.targetFrameRate = Launcher.Setting.Common.TargetFrameRate;
-            Input.multiTouchEnabled = Launcher.Setting.Common.MultiTouch;
+            Application.targetFrameRate = Setting_.Common.TargetFrameRate;
+            Input.multiTouchEnabled = Setting_.Common.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int) System.DateTime.Now.Ticks);
             
-            TimeScale = 1.0f;
             EnterBackgroundTime_ = 0.0f;
             RestartWhenNextFrame_ = false;
         }
@@ -218,7 +221,7 @@ namespace LiteQuark.Runtime
             LLog.Info("OnEnterForeground");
             GetSystem<EventSystem>().Send<EnterForegroundEvent>();
 
-            if (Launcher.Setting.Common.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Launcher.Setting.Common.BackgroundLimitTime)
+            if (Setting_.Common.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Setting_.Common.BackgroundLimitTime)
             {
                 Restart();
                 return;
@@ -259,7 +262,20 @@ namespace LiteQuark.Runtime
             return Instance.GetSystem<T>();
         }
 
-        public static LiteSetting Setting => Instance.Launcher.Setting;
+        public static LiteSetting Setting => Instance.Setting_;
+
+        public static bool DebugMode
+        {
+            get
+            {
+                if (Debug.isDebugBuild)
+                {
+                    return Instance.Setting_.Debug.DebugMode;
+                }
+
+                return false;
+            }
+        }
         
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();

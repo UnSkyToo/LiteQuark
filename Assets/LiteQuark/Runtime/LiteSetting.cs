@@ -20,6 +20,8 @@ namespace LiteQuark.Runtime
         [SerializeField] public LogSetting Log;
         [Header("界面设置")]
         [SerializeField] public UISetting UI;
+        [Header("调试设置")]
+        [SerializeField] public DebugSetting Debug;
 
         public LiteSetting()
         {
@@ -30,6 +32,7 @@ namespace LiteQuark.Runtime
             Action = new ActionSetting();
             Log = new LogSetting();
             UI = new UISetting();
+            Debug = new DebugSetting();
         }
 
         [Serializable]
@@ -97,6 +100,17 @@ namespace LiteQuark.Runtime
             [SerializeField] public int ResolutionHeight = 1080;
 
             public UISetting()
+            {
+            }
+        }
+
+        [Serializable]
+        public class DebugSetting
+        {
+            [SerializeField] public bool DebugMode;
+            [SerializeField, Range(0f, 5f)] public float TimeScale = 1.0f;
+            
+            public DebugSetting()
             {
             }
         }
