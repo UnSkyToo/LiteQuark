@@ -10,7 +10,7 @@ namespace LiteQuark.Editor
         private NavigationData Data_;
         private Vector2 ScrollPos_;
         
-        [MenuItem("Lite/Navigation")]
+        [MenuItem("Lite/Common/Navigation")]
         private static void ShowWin()
         {
             var win = GetWindow<NavigationEditorWindow>("Navigation");
