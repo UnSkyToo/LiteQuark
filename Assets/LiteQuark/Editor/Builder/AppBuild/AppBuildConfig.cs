@@ -13,6 +13,11 @@ namespace LiteQuark.Editor
         /// Build app options
         /// </summary>
         public BuildOptions Options { get; set; } = BuildOptions.None;
+        
+        /// <summary>
+        /// Clean mode will delete last build file
+        /// </summary>
+        public bool CleanBuildMode { get; set; } = true;
 
         public string Identifier { get; set; } = "com.lite.game";
         public string ProduceName { get; set; } = "game";

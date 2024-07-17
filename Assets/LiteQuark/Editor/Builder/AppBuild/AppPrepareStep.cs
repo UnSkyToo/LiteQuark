@@ -15,7 +15,11 @@ namespace LiteQuark.Editor
 
         private void CleanOutputFile(ProjectBuilder builder)
         {
-            FileUtil.DeleteFileOrDirectory(builder.GetAppOutputPath());
+            if (builder.AppConfig.CleanBuildMode)
+            {
+                FileUtil.DeleteFileOrDirectory(builder.GetAppOutputPath());
+                AssetDatabase.Refresh();
+            }
         }
 
         private void ApplySetting(ProjectBuilder builder)
