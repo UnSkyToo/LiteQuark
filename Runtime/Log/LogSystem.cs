@@ -14,6 +14,22 @@ namespace LiteQuark.Runtime
             Repository_ = new DefaultLoggerRepository();
             LogCache_ = new Dictionary<string, ILog>();
             CommonLogger_ = GetLogger("Default");
+            
+            var setting = LiteRuntime.Setting.Log;
+            var logEnable = setting.ReceiveLog && LiteRuntime.DebugMode;
+            if (logEnable)
+            {
+                Repository_.EnableLevel(LogLevel.Info, setting.LogInfo);
+                Repository_.EnableLevel(LogLevel.Warn, setting.LogWarn);
+                Repository_.EnableLevel(LogLevel.Error, setting.LogError);
+                Repository_.EnableLevel(LogLevel.Fatal, setting.LogFatal);
+                UnityEngine.Debug.unityLogger.logEnabled = true;
+            }
+            else
+            {
+                Repository_.EnableLevel(LogLevel.All, false);
+                UnityEngine.Debug.unityLogger.logEnabled = false;
+            }
         }
 
         public void Dispose()
