@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.11-preview] - 2024-07-17
+- 增加Asset Viewer资源查看器
+- 增加若干新的打包参数
+- 现在运行时可增加Logic
+- 增加DebugSetting
+
 ## [0.0.10-preview] - 2024-07-12
 - 修复Setting Inspector界面报错BUG
 
