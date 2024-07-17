@@ -7,12 +7,8 @@ namespace LiteQuark.Runtime
     {
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
-
-        public float TimeScale
-        {
-            get => Time.timeScale;
-            set => Time.timeScale = value;
-        }
+        
+        public float TimeScale { get; private set; } = 1.0f;
 
         public LiteLauncher Launcher { get; private set; }
 
