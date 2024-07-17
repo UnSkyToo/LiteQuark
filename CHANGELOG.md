@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.12-preview] - 2024-07-17
+- 增加App Clean Build选项
+- 修复Mac无法打开目录的BUG
+- 完善命令行编译模式
+- 修复DebugMode报空的BUG
+
 ## [0.0.11-preview] - 2024-07-17
 - 增加Asset Viewer资源查看器
 - 增加若干新的打包参数
