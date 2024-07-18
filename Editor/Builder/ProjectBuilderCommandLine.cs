@@ -40,6 +40,7 @@ namespace LiteQuark.Editor
                 BuildCode = argumentData.GetAppCode(),
                 Backend = ScriptingImplementation.IL2CPP,
                 Architecture = argumentData.GetArm64() ? AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64 : AndroidArchitecture.ARMv7,
+                IsAAB = argumentData.GetIsAAB(),
                 TargetDevice = iOSTargetDevice.iPhoneAndiPad,
                 IsDevelopmentBuild = argumentData.GetDebugBuild(),
             };
@@ -195,6 +196,11 @@ namespace LiteQuark.Editor
 #else
                 return false;
 #endif
+            }
+
+            public bool GetIsAAB()
+            {
+                return GetBoolValue("isAAB", false);
             }
 
             public bool GetDebugBuild()

@@ -36,6 +36,7 @@ namespace LiteQuark.Editor
             PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
             PlayerSettings.Android.targetArchitectures = builder.AppConfig.Architecture;
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
+            EditorUserBuildSettings.buildAppBundle = builder.AppConfig.IsAAB;
 #elif UNITY_IOS
             PlayerSettings.iOS.buildNumber = builder.AppConfig.BuildCode.ToString();
             PlayerSettings.iOS.targetDevice = builder.AppConfig.TargetDevice;

@@ -46,6 +46,7 @@ namespace LiteQuark.Editor
             if (Window.Target == BuildTarget.Android)
             {
                 Config_.Architecture = (AndroidArchitecture)EditorGUILayout.EnumFlagsField(new GUIContent("Architecture", "Android CPU architecture"), Config_.Architecture);
+                Config_.IsAAB = EditorGUILayout.Toggle(new GUIContent("IsAAB", "Build with app bundle"), Config_.IsAAB);
             }
             else if (Window.Target == BuildTarget.iOS)
             {

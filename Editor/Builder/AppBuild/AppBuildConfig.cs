@@ -33,6 +33,8 @@ namespace LiteQuark.Editor
         
         public AndroidArchitecture Architecture { get; set; } = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
         public iOSTargetDevice TargetDevice { get; set; } = iOSTargetDevice.iPhoneAndiPad;
+
+        public bool IsAAB { get; set; } = false;
         
         /// <summary>
         /// Is development build Mode
