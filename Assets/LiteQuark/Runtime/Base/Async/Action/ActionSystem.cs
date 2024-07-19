@@ -23,7 +23,7 @@
                 {
                     if (action.IsEnd)
                     {
-                        action.FinalCallback?.Invoke();
+                        action.FinalCallback?.Invoke(action);
                         action.Dispose();
                         list.Remove(action);
                     }

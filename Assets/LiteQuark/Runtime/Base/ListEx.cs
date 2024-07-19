@@ -147,6 +147,14 @@ namespace LiteQuark.Runtime
                         return item;
                     }
                 }
+
+                foreach (var item in AddList_)
+                {
+                    if (func?.Invoke(item) == true)
+                    {
+                        return item;
+                    }
+                }
             }
             finally
             {
@@ -165,6 +173,14 @@ namespace LiteQuark.Runtime
             {
                 InEach_++;
                 foreach (var item in Values_)
+                {
+                    if (func?.Invoke(item, param) == true)
+                    {
+                        return item;
+                    }
+                }
+                
+                foreach (var item in AddList_)
                 {
                     if (func?.Invoke(item, param) == true)
                     {
@@ -197,37 +213,6 @@ namespace LiteQuark.Runtime
                 
                 Dirty_ = false;
             }
-        }
-
-        public T Where(Func<T, bool> condition)
-        {
-            Flush();
-
-            foreach (var item in Values_)
-            {
-                if (condition?.Invoke(item) == true)
-                {
-                    return item;
-                }
-            }
-
-            return default;
-        }
-
-        public List<T> All(Func<T, bool> condition)
-        {
-            Flush();
-            var result = new List<T>();
-
-            foreach (var item in Values_)
-            {
-                if (condition?.Invoke(item) == true)
-                {
-                    result.Add(item);
-                }
-            }
-
-            return result;
         }
 
         // GC Alloc 40B
