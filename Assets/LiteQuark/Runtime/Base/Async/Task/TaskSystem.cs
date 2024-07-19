@@ -39,17 +39,17 @@ namespace LiteQuark.Runtime
                 {
                     task.Execute();
                 }
-                
+
                 if (task.IsEnd)
                 {
                     task.Dispose();
                     list.Remove(task);
                 }
             }, TaskList_);
-
-            if (MainThreadTaskList_.Count > 0)
+            
+            lock (MainThreadLock_)
             {
-                lock (MainThreadLock_)
+                if (MainThreadTaskList_.Count > 0)
                 {
                     MainThreadTaskList_.Foreach((task) => { task?.Execute(); });
                     MainThreadTaskList_.Clear();
