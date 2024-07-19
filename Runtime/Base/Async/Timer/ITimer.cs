@@ -2,6 +2,7 @@
 {
     public interface ITimer : ITick
     {
+        ulong ID { get; }
         bool IsEnd { get; }
         
         public void Pause();

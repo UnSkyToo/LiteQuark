@@ -31,43 +31,58 @@ namespace LiteQuark.Runtime
             }, TimerList_, deltaTime);
         }
 
-        public ITimer AddTimer(float interval, Action onTick, int repeatCount = RepeatCountForever)
+        public ulong AddTimer(float interval, Action onTick, int repeatCount = 1)
         {
             return AddTimer(interval, onTick, null, repeatCount);
         }
 
-        public ITimer AddTimer(float interval, Action onTick, float totalTime)
+        public ulong AddTimer(float interval, Action onTick, float totalTime)
         {
             interval = Mathf.Max(interval, 0.0001f);
             return AddTimer(interval, onTick, (int)(totalTime / interval));
         }
 
-        public ITimer AddTimer(float interval, Action onTick, Action onComplete, int repeatCount = RepeatCountForever)
-        {
-            var newTimer = new NormalTimer(interval, repeatCount, onTick, onComplete);
-            TimerList_.Add(newTimer);
-            return newTimer;
-        }
-
-        public ITimer AddTimer(float interval, Action onTick, Action onComplete, float totalTime)
+        public ulong AddTimer(float interval, Action onTick, Action onComplete, float totalTime)
         {
             interval = Mathf.Max(interval, 0.0001f);
             return AddTimer(interval, onTick, onComplete, (int)(totalTime / interval));
         }
 
-        public ITimer AddTimerWithFrame(int frameCount, Action onTick, int repeatCount = RepeatCountForever)
+        public ulong AddTimerWithFrame(int frameCount, Action onTick, int repeatCount = 1)
         {
             return AddTimer(frameCount * (1.0f / Application.targetFrameRate), onTick, repeatCount);
         }
 
-        public ITimer NextFrame(Action onTick)
+        public ulong NextFrame(Action onTick)
         {
             return AddTimerWithFrame(1, onTick, 1);
         }
-
-        public void CancelTimer(ITimer timer)
+        
+        public ulong AddTimer(float interval, Action onTick, Action onComplete, int repeatCount = 1)
         {
-            timer?.Cancel();
+            var newTimer = new NormalTimer(interval, repeatCount, onTick, onComplete);
+            TimerList_.Add(newTimer);
+            return newTimer.ID;
+        }
+        
+        public ITimer FindTimer(ulong id)
+        {
+            if (id == 0)
+            {
+                return null;
+            }
+            
+            return TimerList_.ForeachReturn((timer, targetId) => timer.ID == targetId, id);
+        }
+
+        public void StopTimer(ulong id)
+        {
+            var timer = FindTimer(id);
+            if (timer == null || timer.IsEnd)
+            {
+                return;
+            }
+            timer.Cancel();
         }
     }
 }

@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
     public sealed class GroupWaitTimeSubTask : GroupSubTask
     {
         private readonly float WaitTime_;
-        private ITimer Timer_;
+        private ulong TimerID_;
 
         public GroupWaitTimeSubTask(GroupMainTask mainTask, float waitTime)
             : base(mainTask, null)
@@ -78,22 +78,25 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            LiteRuntime.Timer.CancelTimer(Timer_);
-            Timer_ = null;
-            
+            if (TimerID_ != 0)
+            {
+                LiteRuntime.Timer.StopTimer(TimerID_);
+                TimerID_ = 0;
+            }
+
             base.Dispose();
         }
 
         public override void Execute()
         {
-            Timer_ = LiteRuntime.Timer.AddTimer(WaitTime_, Done, 1);
+            TimerID_ = LiteRuntime.Timer.AddTimer(WaitTime_, Done, 1);
         }
     }
 
     public sealed class GroupWaitConditionSubTask : GroupSubTask
     {
         private readonly Func<bool> ConditionFunc_;
-        private ITimer Timer_;
+        private ulong TimerID_;
 
         public GroupWaitConditionSubTask(GroupMainTask mainTask, Func<bool> conditionFunc)
             : base(mainTask, null)
@@ -103,15 +106,18 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            LiteRuntime.Timer.CancelTimer(Timer_);
-            Timer_ = null;
+            if (TimerID_ != 0)
+            {
+                LiteRuntime.Timer.StopTimer(TimerID_);
+                TimerID_ = 0;
+            }
 
             base.Dispose();
         }
 
         public override void Execute()
         {
-            Timer_ = LiteRuntime.Timer.AddTimer(0, TickFunc);
+            TimerID_ = LiteRuntime.Timer.AddTimer(0, TickFunc);
         }
 
         private void TickFunc()
