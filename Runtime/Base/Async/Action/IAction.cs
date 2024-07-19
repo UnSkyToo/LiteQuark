@@ -4,12 +4,12 @@
     {
         ulong ID { get; }
         bool IsEnd { get; }
-        System.Action FinalCallback { get; }
+        System.Action<IAction> FinalCallback { get; }
 
         void MarkSafety();
         void Stop();
         void Execute();
         
-        IAction SetFinalCallback(System.Action callback);
+        IAction SetFinalCallback(System.Action<IAction> callback);
     }
 }
