@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.13-preview] - 2024-07-19
+- 增加AAB支持
+- 修复Action循环中无法停止其它新增Action的BUG
+- 统一Timer风格和其它系统一致用ID
+
 ## [0.0.12-preview] - 2024-07-17
 - 增加App Clean Build选项
 - 修复Mac无法打开目录的BUG
