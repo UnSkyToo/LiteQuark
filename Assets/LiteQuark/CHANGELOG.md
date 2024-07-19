@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.0.14-preview] - 2024-07-19
+- 修复打包Debug参数未生效的BUG
+
 ## [0.0.13-preview] - 2024-07-19
 - 增加AAB支持
 - 修复Action循环中无法停止其它新增Action的BUG
