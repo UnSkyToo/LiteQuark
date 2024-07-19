@@ -29,6 +29,14 @@ namespace LiteQuark.Editor
             PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
             
             EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
+            if (builder.AppConfig.IsDevelopmentBuild)
+            {
+                builder.AppConfig.Options |= BuildOptions.Development;
+            }
+            else
+            {
+                builder.AppConfig.Options &= ~BuildOptions.Development;
+            }
             PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
             PlayerSettings.bundleVersion = builder.AppConfig.Version;
             PlayerSettings.productName = builder.AppConfig.ProduceName;
@@ -43,6 +51,7 @@ namespace LiteQuark.Editor
 #endif
 
             AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
     }
 }
