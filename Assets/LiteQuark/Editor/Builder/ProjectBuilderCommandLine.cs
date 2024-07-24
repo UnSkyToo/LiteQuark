@@ -187,6 +187,7 @@ namespace LiteQuark.Editor
 #elif UNITY_IOS
                 return GetIntValue("code", int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode) ? buildCode : 1);
 #endif
+                return 0;
             }
 
             public bool GetArm64()
