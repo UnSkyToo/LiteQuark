@@ -177,15 +177,15 @@ namespace LiteQuark.Editor
 
             public string GetAppVersion()
             {
-                return GetStringValue("version", PlayerSettings.bundleVersion);
+                return GetStringValue("appVersion", PlayerSettings.bundleVersion);
             }
 
             public int GetAppCode()
             {
 #if UNITY_ANDROID
-                return GetIntValue("code", PlayerSettings.Android.bundleVersionCode);
+                return GetIntValue("appCode", PlayerSettings.Android.bundleVersionCode);
 #elif UNITY_IOS
-                return GetIntValue("code", int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode) ? buildCode : 1);
+                return GetIntValue("appCode", int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode) ? buildCode : 1);
 #endif
                 return 0;
             }
@@ -206,7 +206,7 @@ namespace LiteQuark.Editor
 
             public bool GetDebugBuild()
             {
-                return GetBoolValue("debug", false);
+                return GetBoolValue("debugBuild", false);
             }
 #endregion
         }
