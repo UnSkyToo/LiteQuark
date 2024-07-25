@@ -36,6 +36,8 @@ namespace LiteQuark.Editor
             {
                 Enable = argumentData.GetEnableAppBuild(),
                 CleanBuildMode = true,
+                Identifier = PlayerSettings.applicationIdentifier,
+                ProduceName = PlayerSettings.productName,
                 Version = argumentData.GetAppVersion(),
                 BuildCode = argumentData.GetAppCode(),
                 Backend = ScriptingImplementation.IL2CPP,
