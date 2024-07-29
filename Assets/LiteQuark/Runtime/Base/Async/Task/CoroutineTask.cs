@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
 
         private IEnumerator ExecuteInternal()
         {
-            while (!IsEnd)
+            while (State == TaskState.InProgress)
             {
                 /*if (IsPause)
                 {

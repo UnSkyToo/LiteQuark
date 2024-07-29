@@ -4,35 +4,37 @@ namespace LiteQuark.Runtime
 {
     public sealed class MainThreadTask : ITask
     {
-        public bool IsEnd { get; private set; }
-        public bool IsExecute { get; private set; }
-        
+        public TaskState State { get; private set; }
+
         private readonly Action<object> Func_;
         private readonly object Param_;
 
         public MainThreadTask(Action<object> func, object param)
         {
-            IsEnd = false;
-            IsExecute = false;
-            
+            State = TaskState.Waiting;
+
             Func_ = func;
             Param_ = param;
         }
-        
+
         public void Dispose()
         {
         }
 
         public void Execute()
         {
-            if (IsExecute || IsEnd)
+            if (State != TaskState.Waiting)
             {
                 return;
             }
 
-            IsEnd = true;
-            IsExecute = true;
+            State = TaskState.InProgress;
             Func_?.Invoke(Param_);
+            State = TaskState.Completed;
+        }
+
+        public void Tick(float deltaTime)
+        {
         }
     }
 }
