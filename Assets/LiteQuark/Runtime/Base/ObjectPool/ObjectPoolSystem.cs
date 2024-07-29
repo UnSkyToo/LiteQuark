@@ -29,6 +29,11 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public Transform GetPoolRoot()
+        {
+            return Root_;
+        }
+
         public Dictionary<string, IBasePool> GetPoolCache()
         {
             return PoolCache_;
@@ -66,14 +71,19 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public GameObjectPool GetGameObjectPool(string path)
-        {
-            return GetPool<GameObjectPool>(path, Root_);
-        }
-
         public EmptyGameObjectPool GetEmptyGameObjectPool(string key)
         {
             return GetPool<EmptyGameObjectPool>(key, Root_);
+        }
+
+        public ActiveGameObjectPool GetActiveGameObjectPool(string key)
+        {
+            return GetPool<ActiveGameObjectPool>(key, Root_);
+        }
+
+        public PositionGameObjectPool GetPositionGameObjectPool(string key)
+        {
+            return GetPool<PositionGameObjectPool>(key, Root_);
         }
 
         public ParticlePool GetParticlePool(string path)

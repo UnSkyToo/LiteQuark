@@ -83,6 +83,12 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public virtual void GenerateAsync(int count, System.Action<IBasePool> callback)
+        {
+            Generate(count);
+            callback?.Invoke(this);
+        }
+
         public virtual GameObject Alloc()
         {
             return Alloc(null);

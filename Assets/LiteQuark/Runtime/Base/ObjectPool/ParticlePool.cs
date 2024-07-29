@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public class ParticlePool : GameObjectPool
+    public class ParticlePool : ActiveGameObjectPool
     {
         public ParticlePool()
             : base()

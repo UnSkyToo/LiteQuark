@@ -12,6 +12,7 @@ namespace LiteQuark.Runtime
         
         void Initialize(string key, params object[] args);
         void Generate(int count);
+        void GenerateAsync(int count, System.Action<IBasePool> callback);
     }
 
     public interface IObjectPool<T> : IBasePool

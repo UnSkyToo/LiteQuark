@@ -1,9 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Pool;
 
 namespace LiteQuark.Runtime
 {
-    public class GameObjectPool : IGameObjectPool
+    public abstract class BaseGameObjectPool : IGameObjectPool
     {
         public string Key => Path_;
         public string Name => PathUtils.GetFileName(Path_);
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         protected GameObject Template_;
         protected ObjectPool<GameObject> Pool_;
         
-        public GameObjectPool()
+        protected BaseGameObjectPool()
         {
         }
 
@@ -88,6 +88,22 @@ namespace LiteQuark.Runtime
             {
                 Recycle(go[i]);
             }
+        }
+
+        public virtual void GenerateAsync(int count, System.Action<IBasePool> callback)
+        {
+            LiteRuntime.Task.AddTask(Template_, Parent_, count, (list) =>
+            {
+                foreach (var go in list)
+                {
+                    if (go != null)
+                    {
+                        Recycle(go);
+                    }
+                }
+
+                callback?.Invoke(this);
+            });
         }
 
         public virtual GameObject Alloc()
