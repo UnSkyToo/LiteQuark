@@ -64,6 +64,13 @@ namespace LiteQuark.Runtime
             return task;
         }
 
+        public InstantiateGameObjectTask AddTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
+        {
+            var task = new InstantiateGameObjectTask(template, parent, count, callback);
+            TaskList_.Add(task);
+            return task;
+        }
+
         // public IEnumerator WaitTask(IEnumerator taskFunc, Action callback = null)
         // {
         //     var task = new CoroutineTask(taskFunc, callback);
