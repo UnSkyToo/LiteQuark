@@ -80,27 +80,34 @@ namespace LiteQuark.Runtime
         
         public static BundlePackInfo LoadBundlePack()
         {
-            var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName));
-            request.SendWebRequest();
-            while (!request.isDone)
+            try
             {
-            }
+                var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName));
+                request.SendWebRequest();
+                while (!request.isDone)
+                {
+                }
 
-            if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-            {
-                LLog.Error($"load bundle package error\n{request.error}");
-                return null;
-            }
+                if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    LLog.Error($"load bundle package error\n{request.error}");
+                    return null;
+                }
 
-            var info = FromJson(request.downloadHandler.text);
-            
-            if (info is not {IsValid: true})
-            {
-                return null;
+                var info = FromJson(request.downloadHandler.text);
+
+                if (info is not { IsValid: true })
+                {
+                    return null;
+                }
+
+                info.Initialize();
+                return info;
             }
-            
-            info.Initialize();
-            return info;
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
     }
 }
