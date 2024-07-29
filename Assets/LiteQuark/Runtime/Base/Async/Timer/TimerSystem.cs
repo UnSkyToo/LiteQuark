@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
 
         public ulong NextFrame(Action onTick)
         {
-            return AddTimerWithFrame(1, onTick, 1);
+            return AddTimer(0, onTick, 1);
         }
         
         public ulong AddTimer(float interval, Action onTick, Action onComplete, int repeatCount = 1)
