@@ -33,19 +33,24 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            TaskList_.Foreach((task, list) =>
+            TaskList_.Foreach((task, list, dt) =>
             {
-                if (!task.IsExecute)
+                if (task.State == TaskState.Waiting)
                 {
                     task.Execute();
                 }
 
-                if (task.IsEnd)
+                if (task.State == TaskState.InProgress)
+                {
+                    task.Tick(dt);
+                }
+
+                if (task.State == TaskState.Completed)
                 {
                     task.Dispose();
                     list.Remove(task);
                 }
-            }, TaskList_);
+            }, TaskList_, deltaTime);
             
             lock (MainThreadLock_)
             {
@@ -67,6 +72,13 @@ namespace LiteQuark.Runtime
         public InstantiateGameObjectTask AddTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
             var task = new InstantiateGameObjectTask(template, parent, count, callback);
+            TaskList_.Add(task);
+            return task;
+        }
+
+        public PipelineTask AddTask(IPipelineSubTask[] subTasks)
+        {
+            var task = new PipelineTask(subTasks);
             TaskList_.Add(task);
             return task;
         }

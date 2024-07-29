@@ -2,33 +2,45 @@
 {
     public abstract class BaseTask : ITask
     {
-        public bool IsEnd { get; private set; }
-        public bool IsExecute { get; private set; }
+        public TaskState State { get; protected set; }
 
         protected BaseTask()
         {
-            IsEnd = false;
-            IsExecute = false;
+            State = TaskState.Waiting;
         }
 
         public abstract void Dispose();
         
         public void Execute()
         {
-            if (IsExecute || IsEnd)
+            if (State != TaskState.Waiting)
             {
                 return;
             }
 
-            IsExecute = true;
+            State = TaskState.InProgress;
             OnExecute();
+        }
+
+        public void Tick(float deltaTime)
+        {
+            if (State != TaskState.InProgress)
+            {
+                return;
+            }
+            
+            OnTick(deltaTime);
         }
 
         public void Stop()
         {
-            IsEnd = true;
+            State = TaskState.Completed;
         }
 
         protected abstract void OnExecute();
+
+        protected virtual void OnTick(float deltaTime)
+        {
+        }
     }
 }
