@@ -27,6 +27,7 @@ namespace LiteQuark.Runtime
             if (Task_ != null)
             {
                 Task_.Cancel();
+                Task_.WaitForCompletion();
                 Task_ = null;
             }
             Callback_ = null;
