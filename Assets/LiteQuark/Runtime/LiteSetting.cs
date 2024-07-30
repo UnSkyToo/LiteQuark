@@ -56,8 +56,8 @@ namespace LiteQuark.Runtime
         {
             [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
             [SerializeField] public bool EnableRetain = true;
-            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float AssetRetainTime = 10f;
-            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float BundleRetainTime = 10f;
+            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float AssetRetainTime = 120; // 2 min
+            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float BundleRetainTime = 300f; // 5 min
 
             public AssetSetting()
             {
