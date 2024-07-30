@@ -6,6 +6,7 @@ namespace LiteQuark.Runtime
     {
         public AudioType Type { get; private set; }
         public string Path { get; private set; }
+        public float Delay { get; private set; }
         public bool IsLoaded { get; private set; }
         public AudioSource Source { get; private set; }
         public GameObject Carrier { get; private set; }
@@ -20,7 +21,7 @@ namespace LiteQuark.Runtime
             IsLoaded = false;
         }
 
-        public void Load(EmptyGameObjectPool pool, Transform parent, AudioClip clip, bool isLoop, float volume, bool isMute)
+        public void Load(EmptyGameObjectPool pool, Transform parent, AudioClip clip, bool isLoop, float volume, float delay, bool isMute)
         {
             if (IsLoaded)
             {
@@ -40,6 +41,7 @@ namespace LiteQuark.Runtime
             Source.pitch = 1.0f;
             Source.mute = isMute;
             Carrier.name = DebugName;
+            Delay = delay;
             IsLoaded = true;
         }
 
@@ -84,7 +86,15 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
-            Source.Play();
+            if (Delay > 0)
+            {
+                Source.PlayDelayed(Delay);
+            }
+            else
+            {
+                Source.Play();
+            }
+            
             return true;
         }
 

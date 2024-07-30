@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
             return count;
         }
         
-        private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, int limit = 0, float volume = 1.0f)
+        private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
         {
             if (limit > 0)
             {
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                audio.Load(Pool_, parent, clip, isLoop, volume, false);
+                audio.Load(Pool_, parent, clip, isLoop, volume, delay, false);
 
                 switch (type)
                 {
@@ -132,9 +132,9 @@ namespace LiteQuark.Runtime
             return audio.UniqueID;
         }
 
-        public ulong PlaySound(string path, bool isLoop = false, int limit = 0, float volume = 1.0f)
+        public ulong PlaySound(string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
         {
-            return PlayAudio(AudioType.Sound, Root_, path, isLoop, limit, volume);
+            return PlayAudio(AudioType.Sound, Root_, path, isLoop, limit, volume, delay);
         }
 
         public ulong PlayMusic(string path, bool isLoop = true, float volume = 1.0f, bool isOnly = true)
