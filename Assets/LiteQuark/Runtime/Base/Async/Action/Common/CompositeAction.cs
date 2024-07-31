@@ -6,7 +6,7 @@
         protected readonly IAction[] SubActions_;
         protected readonly int Count_;
 
-        protected CompositeAction(string tag, params IAction[] args)
+        protected CompositeAction(string tag, IAction[] args)
         {
             Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
             SubActions_ = args ?? System.Array.Empty<IAction>();
