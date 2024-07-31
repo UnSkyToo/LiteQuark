@@ -7,7 +7,7 @@
         private IAction Current_;
         protected int Index_;
         
-        public SequenceAction(string tag, params IAction[] args)
+        public SequenceAction(string tag, IAction[] args)
             : base(tag, args)
         {
             Index_ = -1;
@@ -83,7 +83,7 @@
 
     public class RepeatSequenceAction : SequenceAction
     {
-        public RepeatSequenceAction(string tag, params IAction[] args)
+        public RepeatSequenceAction(string tag, IAction[] args)
             : base(tag, args)
         {
         }

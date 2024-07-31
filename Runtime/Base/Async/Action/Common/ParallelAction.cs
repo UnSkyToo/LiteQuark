@@ -4,7 +4,7 @@
     {
         public override string DebugName => $"<Parallel - {Tag_}>({Count_})";
         
-        public ParallelAction(string tag, params IAction[] args)
+        public ParallelAction(string tag, IAction[] args)
             : base(tag, args)
         {
         }
