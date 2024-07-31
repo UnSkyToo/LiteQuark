@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.16-preview] - 2024-07-31
+- Timer.NextFrame默认采用0延迟
+- TaskSystem增加PipelineTask
+- AudioSystem增加延迟播放参数
+- 缓存池增加异步实例化接口
+
 ## [0.0.15-preview] - 2024-07-25
 - 修复Window平台打包脚本报错
 - 修复打包命令行参数与unity重复的BUG
