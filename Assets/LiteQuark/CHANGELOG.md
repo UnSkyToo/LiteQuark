@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.17-preview] - 2024-08-26
+- Project Builder增加CreateSymbols选项
+- Task新增AsyncOperation和AsyncResult类别的Task
+- ObjectSystem增加UnityEngine.Pool.CollectionPool的部分封装
+
 ## [0.0.16-preview] - 2024-07-31
 - Timer.NextFrame默认采用0延迟
 - TaskSystem增加PipelineTask
