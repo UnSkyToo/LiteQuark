@@ -37,6 +37,11 @@ namespace LiteQuark.Editor
         public bool IsAAB { get; set; } = false;
         
         /// <summary>
+        /// Is Create Symbols.zip
+        /// </summary>
+        public AndroidCreateSymbols CreateSymbols { get; set; } = AndroidCreateSymbols.Disabled;
+        
+        /// <summary>
         /// Is development build Mode
         /// </summary>
         public bool IsDevelopmentBuild { get; set; } = true;

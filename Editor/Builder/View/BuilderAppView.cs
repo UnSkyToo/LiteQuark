@@ -47,6 +47,7 @@ namespace LiteQuark.Editor
             {
                 Config_.Architecture = (AndroidArchitecture)EditorGUILayout.EnumFlagsField(new GUIContent("Architecture", "Android CPU architecture"), Config_.Architecture);
                 Config_.IsAAB = EditorGUILayout.Toggle(new GUIContent("IsAAB", "Build with app bundle"), Config_.IsAAB);
+                Config_.CreateSymbols = (AndroidCreateSymbols)EditorGUILayout.EnumPopup(new GUIContent("Create Symbols", "Create Symbol for this build"), Config_.CreateSymbols);
             }
             else if (Window.Target == BuildTarget.iOS)
             {
