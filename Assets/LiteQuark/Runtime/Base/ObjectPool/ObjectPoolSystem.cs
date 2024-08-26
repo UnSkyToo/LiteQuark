@@ -71,6 +71,46 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public TCollection AllocCollection<TCollection, TItem>() where TCollection : class, ICollection<TItem>, new()
+        {
+            return UnityEngine.Pool.CollectionPool<TCollection, TItem>.Get();
+        }
+
+        public void RecycleCollection<TCollection, TItem>(TCollection value) where TCollection : class, ICollection<TItem>, new()
+        {
+            UnityEngine.Pool.CollectionPool<TCollection, TItem>.Release(value);
+        }
+
+        public List<TItem> AllocList<TItem>()
+        {
+            return AllocCollection<List<TItem>, TItem>();
+        }
+
+        public void RecycleList<TItem>(List<TItem> list)
+        {
+            RecycleCollection<List<TItem>, TItem>(list);
+        }
+        
+        public Dictionary<TKey, TValue> AllocDictionary<TKey, TValue>()
+        {
+            return AllocCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>();
+        }
+
+        public void RecycleDictionary<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        {
+            RecycleCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>(dictionary);
+        }
+        
+        public HashSet<TItem> AllocHashSet<TItem>()
+        {
+            return AllocCollection<HashSet<TItem>, TItem>();
+        }
+
+        public void RecycleHashSet<TItem>(HashSet<TItem> hash)
+        {
+            RecycleCollection<HashSet<TItem>, TItem>(hash);
+        }
+
         public EmptyGameObjectPool GetEmptyGameObjectPool(string key)
         {
             return GetPool<EmptyGameObjectPool>(key, Root_);
