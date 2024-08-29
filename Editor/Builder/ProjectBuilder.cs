@@ -144,17 +144,22 @@ namespace LiteQuark.Editor
         
         public string GetResOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/Res");
+            return $"{GetRootOutputPath()}/Res";
         }
         
         public string GetAppOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/App");
+            return $"{GetRootOutputPath()}/App/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}";
         }
 
         public string GetRootOutputPath()
         {
             return PathUtils.GetLiteQuarkRootPath($"Build/{Target}");
+        }
+
+        public string GetIOSWorkspaceName()
+        {
+            return "XCodeProject";
         }
         
         public string[] GetBuildSceneList()

@@ -34,7 +34,7 @@ namespace LiteQuark.Editor
         private void BuildAndroid(ProjectBuilder builder)
         {
             var time = DateTime.Now;
-            var apkName = $"{builder.AppConfig.ProduceName.Replace(' ', '_')}_Android_{(builder.AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}_{builder.AppConfig.Version}_{builder.AppConfig.BuildCode}_{time.Hour}_{time.Minute}_{time.Second}.{(builder.AppConfig.IsAAB ? "aab" : "apk")}";
+            var apkName = $"{builder.AppConfig.ProduceName.Replace(' ', '_')}_Android_{(builder.AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}_{builder.AppConfig.Version}_{builder.AppConfig.BuildCode}_{time.Year}{time.Month}_{time.Day}{time.Hour}_{time.Minute}{time.Second}.{(builder.AppConfig.IsAAB ? "aab" : "apk")}";
             
             var buildSetting = new BuildPlayerOptions();
             buildSetting.target = BuildTarget.Android;
@@ -59,7 +59,7 @@ namespace LiteQuark.Editor
             buildSetting.target = BuildTarget.iOS;
             buildSetting.targetGroup = BuildTargetGroup.iOS;
             buildSetting.options = builder.AppConfig.Options;
-            buildSetting.locationPathName = $"{builder.GetAppOutputPath()}/XCodeProject";
+            buildSetting.locationPathName = $"{builder.GetAppOutputPath()}/{builder.GetIOSWorkspaceName()}";
             buildSetting.scenes = builder.GetBuildSceneList();
 
             var report = BuildPipeline.BuildPlayer(buildSetting);
