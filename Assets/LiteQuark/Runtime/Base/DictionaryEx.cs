@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
         public void Clear()
         {
             RemoveList_.Clear();
-            AddList_.Clear();
+            // AddList_.Clear();
             Values_.Clear();
         }
 
