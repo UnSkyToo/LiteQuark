@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.18-preview] - 2024-08-29
+- Project Builder增加Callback回调支持（继承IBuildCallback）
+- 优化打包结束后的弹窗逻辑，只有成功才弹窗
+- 使用SynchronizationContext代替TaskSystem中执行主线程的方法
+- 修复ListEx、DictionaryEx中同一帧Foreach中Add后Clear导致Add的数据被清掉的BUG
+
 ## [0.0.17-preview] - 2024-08-26
 - Project Builder增加CreateSymbols选项
 - Task新增AsyncOperation和AsyncResult类别的Task
