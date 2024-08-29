@@ -1,11 +1,13 @@
-﻿using LiteQuark.Runtime;
+﻿using System;
+using System.Collections.Generic;
+using LiteQuark.Runtime;
 using UnityEditor;
 
 namespace LiteQuark.Editor
 {
-    public static class ProjectBuilderUtils
+    internal static class ProjectBuilderUtils
     {
-        public static void CopyToStreamingAssets(string resPath, bool removeOriginFolder)
+        internal static void CopyToStreamingAssets(string resPath, bool removeOriginFolder)
         {
             bool CopyFilter(string path)
             {
@@ -25,6 +27,30 @@ namespace LiteQuark.Editor
 
             PathUtils.CopyDirectory(resPath, destPath, CopyFilter);
             AssetDatabase.Refresh();
+        }
+
+        internal static IBuildCallback[] CreateBuildCallbackInstance()
+        {
+            try
+            {
+                var result = new List<IBuildCallback>();
+                var typeList = TypeCache.GetTypesDerivedFrom<IBuildCallback>();
+
+                foreach (var type in typeList)
+                {
+                    if (Activator.CreateInstance(type) is IBuildCallback instance)
+                    {
+                        result.Add(instance);
+                    }
+                }
+
+                return result.ToArray();
+            }
+            catch (Exception ex)
+            {
+                LEditorLog.Error(ex.Message);
+                return Array.Empty<IBuildCallback>();
+            }
         }
     }
 }
