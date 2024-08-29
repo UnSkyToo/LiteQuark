@@ -16,6 +16,8 @@ namespace LiteQuark.Editor
 
         private readonly List<string> Logs_ = new List<string>();
 
+        private IBuildCallback[] BuildCallbacks_ = Array.Empty<IBuildCallback>();
+
         public ProjectBuilder()
         {
         }
@@ -23,7 +25,8 @@ namespace LiteQuark.Editor
         public ProjectBuildResult Build(ProjectBuildConfig buildConfig)
         {
             BuildConfig = buildConfig;
-
+            BuildCallbacks_ = ProjectBuilderUtils.CreateBuildCallbackInstance();
+            
             var stepList = GenerateBuildStep(buildConfig);
             
             return Execute(stepList);
@@ -97,6 +100,8 @@ namespace LiteQuark.Editor
 
             Log($"Start build");
             string error = null;
+            
+            PreProjectCallback();
 
             foreach (var step in stepList)
             {
@@ -104,7 +109,9 @@ namespace LiteQuark.Editor
                 sw.Start();
                 try
                 {
+                    PreStepCallback(step.GetType(), step.Name);
                     step.Execute(this);
+                    PostStepCallback(step.GetType(), step.Name);
                 }
                 catch (Exception ex)
                 {
@@ -119,6 +126,8 @@ namespace LiteQuark.Editor
                     break;
                 }
             }
+            
+            PostProjectCallback();
 
             stopwatch.Stop();
             var isSuccess = string.IsNullOrEmpty(error);
@@ -130,6 +139,66 @@ namespace LiteQuark.Editor
             }
 
             return new ProjectBuildResult(isSuccess, stopwatch.ElapsedMilliseconds / 1000f, GetRootOutputPath());
+        }
+
+        private void PreProjectCallback()
+        {
+            try
+            {
+                foreach (var callback in BuildCallbacks_)
+                {
+                    callback?.PreProjectBuild(BuildConfig);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex.Message);
+            }
+        }
+        
+        private void PostProjectCallback()
+        {
+            try
+            {
+                foreach (var callback in BuildCallbacks_)
+                {
+                    callback?.PostProjectBuild(BuildConfig);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex.Message);
+            }
+        }
+
+        private void PreStepCallback(Type stepType, string stepName)
+        {
+            try
+            {
+                foreach (var callback in BuildCallbacks_)
+                {
+                    callback?.PreStepBuild(BuildConfig, stepType, stepName);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex.Message);
+            }
+        }
+        
+        private void PostStepCallback(Type stepType, string stepName)
+        {
+            try
+            {
+                foreach (var callback in BuildCallbacks_)
+                {
+                    callback?.PostStepBuild(BuildConfig, stepType, stepName);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError(ex.Message);
+            }
         }
 
         public void Log(string msg)
