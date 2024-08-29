@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Threading;
 
 namespace LiteQuark.Runtime
 {
@@ -9,13 +10,15 @@ namespace LiteQuark.Runtime
         
         private readonly ListEx<ITask> TaskList_ = new ListEx<ITask>();
         private readonly object MainThreadLock_ = new object();
-        private readonly ListEx<MainThreadTask> MainThreadTaskList_ = new ListEx<MainThreadTask>();
+        // private readonly ListEx<MainThreadTask> MainThreadTaskList_ = new ListEx<MainThreadTask>();
+        private readonly SynchronizationContext MainThreadSynchronizationContext_ = null;
 
         public TaskSystem()
         {
             MonoBehaviourInstance = LiteRuntime.Instance.Launcher;
             TaskList_.Clear();
-            MainThreadTaskList_.Clear();
+            // MainThreadTaskList_.Clear();
+            MainThreadSynchronizationContext_ = SynchronizationContext.Current;
         }
 
         public void Dispose()
@@ -25,10 +28,10 @@ namespace LiteQuark.Runtime
             TaskList_.Foreach((task) => task.Dispose());
             TaskList_.Clear();
 
-            lock (MainThreadLock_)
-            {
-                MainThreadTaskList_.Clear();
-            }
+            // lock (MainThreadLock_)
+            // {
+            //     MainThreadTaskList_.Clear();
+            // }
         }
 
         public void Tick(float deltaTime)
@@ -52,14 +55,14 @@ namespace LiteQuark.Runtime
                 }
             }, TaskList_, deltaTime);
             
-            lock (MainThreadLock_)
-            {
-                if (MainThreadTaskList_.Count > 0)
-                {
-                    MainThreadTaskList_.Foreach((task) => { task?.Execute(); });
-                    MainThreadTaskList_.Clear();
-                }
-            }
+            // lock (MainThreadLock_)
+            // {
+            //     if (MainThreadTaskList_.Count > 0)
+            //     {
+            //         MainThreadTaskList_.Foreach((task) => { task?.Execute(); });
+            //         MainThreadTaskList_.Clear();
+            //     }
+            // }
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)
@@ -118,12 +121,22 @@ namespace LiteQuark.Runtime
         //     return task;
         // }
 
-        public void AddMainThreadTask(Action<object> taskFunc, object param)
+        // public void AddMainThreadTask(Action<object> taskFunc, object param)
+        // {
+        //     lock (MainThreadLock_)
+        //     {
+        //         MainThreadTaskList_.Add(new MainThreadTask(taskFunc, param));
+        //     }
+        // }
+        
+        public void PostMainThreadTask(SendOrPostCallback callback, object state)
         {
-            lock (MainThreadLock_)
-            {
-                MainThreadTaskList_.Add(new MainThreadTask(taskFunc, param));
-            }
+            MainThreadSynchronizationContext_?.Post(callback, state);
+        }
+
+        public void SendMainThreadTask(SendOrPostCallback callback, object state)
+        {
+            MainThreadSynchronizationContext_?.Send(callback, state);
         }
     }
 }
