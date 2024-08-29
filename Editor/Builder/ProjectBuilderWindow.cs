@@ -87,7 +87,10 @@ namespace LiteQuark.Editor
 
             if (EditorUtility.DisplayDialog("Project Builder", $"{resultMsg}\n{timeMsg}", "Confirm"))
             {
-                LiteEditorUtils.OpenFolder(result.OutputPath);
+                if (result.IsSuccess)
+                {
+                    LiteEditorUtils.OpenFolder(result.OutputPath);
+                }
             }
         }
     }
