@@ -54,7 +54,18 @@ namespace LiteQuark.Editor
                 Config_.TargetDevice = (iOSTargetDevice)EditorGUILayout.EnumPopup(new GUIContent("TargetDevice", "Target iOS device"), Config_.TargetDevice);
             }
 
+            EditorGUI.BeginChangeCheck();
             Config_.IsDevelopmentBuild = EditorGUILayout.Toggle(new GUIContent("Development Build", "Is development build"), Config_.IsDevelopmentBuild);
+            if (EditorGUI.EndChangeCheck())
+            {
+                // force open clean mode when release build
+                if (!Config_.IsDevelopmentBuild)
+                {
+                    Config_.CleanBuildMode = true;
+                    Window.ResCfg.CleanBuildMode = true;
+                    Window.ResCfg.CleanStreamingAssetsBeforeCopy = true;
+                }
+            }
         }
     }
 }

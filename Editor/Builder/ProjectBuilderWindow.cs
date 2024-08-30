@@ -6,6 +6,8 @@ namespace LiteQuark.Editor
     internal sealed class ProjectBuilderWindow : EditorWindow
     {
         public BuildTarget Target => Target_;
+        public ResBuildConfig ResCfg => ResCfg_;
+        private AppBuildConfig AppCfg => AppCfg_;
         
         private BuildTarget Target_;
         private ResBuildConfig ResCfg_;
