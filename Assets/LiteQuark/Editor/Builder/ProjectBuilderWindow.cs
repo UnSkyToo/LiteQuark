@@ -80,16 +80,16 @@ namespace LiteQuark.Editor
             }
 
             var buildCfg = new ProjectBuildConfig(Target_, ResCfg_, AppCfg_);
-            var result = new ProjectBuilder().Build(buildCfg);
+            var buildReport = new ProjectBuilder().Build(buildCfg);
             
-            var resultMsg = result.IsSuccess ? "Build Success" : "Build Failed";
-            var timeMsg = $"Time : {result.ElapsedSeconds:0.00}s";
+            var resultMsg = buildReport.IsSuccess ? "Build Success" : "Build Failed";
+            var timeMsg = $"Time : {buildReport.ElapsedSeconds:0.00}s";
 
             if (EditorUtility.DisplayDialog("Project Builder", $"{resultMsg}\n{timeMsg}", "Confirm"))
             {
-                if (result.IsSuccess)
+                if (buildReport.IsSuccess)
                 {
-                    LiteEditorUtils.OpenFolder(result.OutputPath);
+                    LiteEditorUtils.OpenFolder(buildReport.OutputRootPath);
                 }
             }
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using LiteQuark.Runtime;
 using UnityEditor;
 
@@ -14,15 +15,13 @@ namespace LiteQuark.Editor
         public ResBuildConfig ResConfig => BuildConfig.ResConfig;
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
 
-        private readonly List<string> Logs_ = new List<string>();
-
         private IBuildCallback[] BuildCallbacks_ = Array.Empty<IBuildCallback>();
 
         public ProjectBuilder()
         {
         }
 
-        public ProjectBuildResult Build(ProjectBuildConfig buildConfig)
+        public ProjectBuildReport Build(ProjectBuildConfig buildConfig)
         {
             BuildConfig = buildConfig;
             BuildCallbacks_ = ProjectBuilderUtils.CreateBuildCallbackInstance();
@@ -91,15 +90,15 @@ namespace LiteQuark.Editor
             return steps.ToArray();
         }
 
-        private ProjectBuildResult Execute(IBuildStep[] stepList)
+        private ProjectBuildReport Execute(IBuildStep[] stepList)
         {
-            Logs_.Clear();
-            
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            Log($"Start build");
+            Log("Start build");
             string error = null;
+            var buildReport = new ProjectBuildReport();
+            buildReport.StartTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
             
             PreProjectCallback();
 
@@ -115,7 +114,8 @@ namespace LiteQuark.Editor
                 }
                 catch (Exception ex)
                 {
-                    LogError($"{step.Name} error{Environment.NewLine}{ex.Message}");
+                    buildReport.ErrorInfo = $"{step.Name} error{Environment.NewLine}{ex.Message}";
+                    LogError(buildReport.ErrorInfo);
                     error = ex.Message;
                 }
 
@@ -132,13 +132,15 @@ namespace LiteQuark.Editor
             stopwatch.Stop();
             var isSuccess = string.IsNullOrEmpty(error);
             Log($"Complete build {(isSuccess ? "success" : $"failed({error})")} with {stopwatch.ElapsedMilliseconds / 1000f}s.");
-
-            foreach (var log in Logs_)
-            {
-                LEditorLog.Info(log);
-            }
-
-            return new ProjectBuildResult(isSuccess, stopwatch.ElapsedMilliseconds / 1000f, GetRootOutputPath());
+            
+            buildReport.IsSuccess = isSuccess;
+            buildReport.ElapsedSeconds = stopwatch.ElapsedMilliseconds / 1000f;
+            buildReport.OutputRootPath = GetRootOutputPath();
+            buildReport.OutputResPath = GetResOutputPath();
+            buildReport.OutputAppPath = GetAppOutputPath();
+            buildReport.EndTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            
+            return buildReport;
         }
 
         private void PreProjectCallback()
@@ -203,7 +205,7 @@ namespace LiteQuark.Editor
 
         public void Log(string msg)
         {
-            Logs_.Add(msg);
+            LEditorLog.Info(msg);
         }
 
         public void LogError(string msg)
