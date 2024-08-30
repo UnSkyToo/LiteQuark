@@ -92,7 +92,7 @@ namespace LiteQuark.Runtime
 
         public virtual void GenerateAsync(int count, System.Action<IBasePool> callback)
         {
-            LiteRuntime.Task.AddTask(Template_, Parent_, count, (list) =>
+            LiteRuntime.Task.InstantiateGoTask(Template_, Parent_, count, (list) =>
             {
                 foreach (var go in list)
                 {
