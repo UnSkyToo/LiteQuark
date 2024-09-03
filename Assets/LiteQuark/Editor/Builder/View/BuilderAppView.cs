@@ -47,6 +47,10 @@ namespace LiteQuark.Editor
             {
                 Config_.Architecture = (AndroidArchitecture)EditorGUILayout.EnumFlagsField(new GUIContent("Architecture", "Android CPU architecture"), Config_.Architecture);
                 Config_.IsAAB = EditorGUILayout.Toggle(new GUIContent("IsAAB", "Build with app bundle"), Config_.IsAAB);
+                if (Config_.IsAAB)
+                {
+                    Config_.SplitApplicationBinary = EditorGUILayout.Toggle(new GUIContent("Split Application Binary", "Split application binary for Play Asset Delivery"), Config_.SplitApplicationBinary);
+                }
                 Config_.CreateSymbols = (AndroidCreateSymbols)EditorGUILayout.EnumPopup(new GUIContent("Create Symbols", "Create Symbol for this build"), Config_.CreateSymbols);
             }
             else if (Window.Target == BuildTarget.iOS)

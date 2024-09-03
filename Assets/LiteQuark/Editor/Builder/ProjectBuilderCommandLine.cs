@@ -43,6 +43,7 @@ namespace LiteQuark.Editor
                 Backend = ScriptingImplementation.IL2CPP,
                 Architecture = argumentData.GetArm64() ? AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64 : AndroidArchitecture.ARMv7,
                 IsAAB = argumentData.GetIsAAB(),
+                CreateSymbols = argumentData.GetCreateSymbols() ? AndroidCreateSymbols.Debugging : AndroidCreateSymbols.Disabled,
                 TargetDevice = iOSTargetDevice.iPhoneAndiPad,
                 IsDevelopmentBuild = argumentData.GetDebugBuild(),
             };
@@ -205,10 +206,15 @@ namespace LiteQuark.Editor
             {
                 return GetBoolValue("isAAB", false);
             }
-
+            
             public bool GetDebugBuild()
             {
                 return GetBoolValue("debugBuild", false);
+            }
+            
+            public bool GetCreateSymbols()
+            {
+                return GetBoolValue("createSymbols", false);
             }
 #endregion
         }
