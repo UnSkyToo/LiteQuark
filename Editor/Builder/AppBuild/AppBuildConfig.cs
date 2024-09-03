@@ -35,6 +35,7 @@ namespace LiteQuark.Editor
         public iOSTargetDevice TargetDevice { get; set; } = iOSTargetDevice.iPhoneAndiPad;
 
         public bool IsAAB { get; set; } = false;
+        public bool SplitApplicationBinary { get; set; } = false;
         
         /// <summary>
         /// Is Create Symbols.zip
