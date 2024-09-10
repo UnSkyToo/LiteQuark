@@ -2,6 +2,7 @@
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 namespace LiteQuark.Editor
@@ -100,6 +101,37 @@ namespace LiteQuark.Editor
             }
             
             return string.Empty;
+        }
+
+        public static NamedBuildTarget GetNamedBuildTarget(BuildTarget target)
+        {
+            var targetGroup = BuildPipeline.GetBuildTargetGroup(target);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+            return namedBuildTarget;
+        }
+
+        public static void AddScriptingDefineSymbols(BuildTarget target, string addSymbol)
+        {
+            var namedBuildTarget = GetNamedBuildTarget(target);
+            var symbols = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+
+            if (!symbols.Contains(addSymbol))
+            {
+                symbols += $";{addSymbol}";
+                PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
+            }
+        }
+
+        public static void RemoveScriptingDefineSymbols(BuildTarget target, string removeSymbol)
+        {
+            var namedBuildTarget = GetNamedBuildTarget(target);
+            var symbols = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            
+            if (symbols.Contains(removeSymbol))
+            {
+                symbols = symbols.Replace(removeSymbol, string.Empty).Replace(";;", ";").Trim(';');
+                PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
+            }
         }
     }
 }

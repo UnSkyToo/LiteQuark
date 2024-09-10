@@ -1,5 +1,4 @@
 ﻿using UnityEditor;
-using UnityEditor.Build;
 
 namespace LiteQuark.Editor
 {
@@ -24,8 +23,7 @@ namespace LiteQuark.Editor
 
         private void ApplySetting(ProjectBuilder builder)
         {
-            var targetGroup = BuildPipeline.GetBuildTargetGroup(builder.Target);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+            var namedBuildTarget = LiteEditorUtils.GetNamedBuildTarget(builder.Target);
             PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
             
             EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
