@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.19-preview] - 2024-09-10
+- Project Builder添加AAB对Split Binary支持
+- Project Builder关联CleanModel和DebugBuild选项
+- 增加宏管理接口
+- 修复出包命名错误的问题
+
 ## [0.0.18-preview] - 2024-08-29
 - Project Builder增加Callback回调支持（继承IBuildCallback）
 - 优化打包结束后的弹窗逻辑，只有成功才弹窗
