@@ -1,6 +1,6 @@
 {
     "name": "com.lite.litequark",
-    "version": "0.0.19-preview",
+    "version": "0.0.20-preview",
     "displayName": "LiteQuark",
     "description": "simple framework",
     "unity": "2021.1",
