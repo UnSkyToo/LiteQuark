@@ -104,8 +104,7 @@ namespace LiteQuark.Editor
                 {
                     return Map_[key];
                 }
-
-                Debug.LogError($"Argument {key} is not found.");
+                
                 return string.Empty;
             }
 
@@ -127,9 +126,15 @@ namespace LiteQuark.Editor
 
             private bool GetBoolValue(string key, bool defaultValue)
             {
-                if (HasArgument(key))
+                var argument = GetArgument(key);
+                if (string.IsNullOrWhiteSpace(argument))
                 {
-                    return true;
+                    return defaultValue;
+                }
+                
+                if (bool.TryParse(argument, out var boolValue))
+                {
+                    return boolValue;
                 }
 
                 return defaultValue;
