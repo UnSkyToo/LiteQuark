@@ -42,9 +42,10 @@ namespace LiteQuark.Editor
                 BuildCode = argumentData.GetAppCode(),
                 Backend = ScriptingImplementation.IL2CPP,
                 Architecture = argumentData.GetArm64() ? AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64 : AndroidArchitecture.ARMv7,
-                IsAAB = argumentData.GetIsAAB(),
-                CreateSymbols = argumentData.GetCreateSymbols() ? AndroidCreateSymbols.Debugging : AndroidCreateSymbols.Disabled,
                 TargetDevice = iOSTargetDevice.iPhoneAndiPad,
+                IsAAB = argumentData.GetIsAAB(),
+                SplitApplicationBinary = argumentData.GetSplitApp(),
+                CreateSymbols = argumentData.GetCreateSymbols() ? AndroidCreateSymbols.Debugging : AndroidCreateSymbols.Disabled,
                 IsDevelopmentBuild = argumentData.GetDebugBuild(),
             };
 
@@ -210,6 +211,11 @@ namespace LiteQuark.Editor
             public bool GetIsAAB()
             {
                 return GetBoolValue("isAAB", false);
+            }
+
+            public bool GetSplitApp()
+            {
+                return GetBoolValue("splitApp", false);
             }
             
             public bool GetDebugBuild()
