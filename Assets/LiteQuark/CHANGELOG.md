@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.20-preview] - 2024-09-20
+- Project Builder增加SplitApplicationBinary命令行打包参数支持
+- 修复命令行打包Bool参数解析错误的BUG
+
 ## [0.0.19-preview] - 2024-09-10
 - Project Builder添加AAB对Split Binary支持
 - Project Builder关联CleanModel和DebugBuild选项
