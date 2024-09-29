@@ -60,7 +60,7 @@ namespace LiteQuark.Editor
             //Handle primary property
             SerializedProperty sourcePropertyValue = null;
             //Get the full relative property path of the sourcefield so we can have nested hiding.Use old method when dealing with arrays
-            if (!property.isArray)
+            if (!property.isArray || property.propertyType == SerializedPropertyType.String)
             {
                 string propertyPath = property.propertyPath; //returns the property path of the property we want to apply the attribute to
                 string conditionPath = propertyPath.Replace(property.name, condHAtt.ConditionalSourceField); //changes the path to the conditionalsource property path
@@ -93,7 +93,7 @@ namespace LiteQuark.Editor
 
             //handle secondary property
             SerializedProperty sourcePropertyValue2 = null;
-            if (!property.isArray)
+            if (!property.isArray || property.propertyType == SerializedPropertyType.String)
             {
                 string propertyPath = property.propertyPath; //returns the property path of the property we want to apply the attribute to
                 string conditionPath = propertyPath.Replace(property.name, condHAtt.ConditionalSourceField2); //changes the path to the conditionalsource property path
@@ -134,7 +134,7 @@ namespace LiteQuark.Editor
             for (int index = 0; index < conditionalSourceFieldArray.Length; ++index)
             {
                 SerializedProperty sourcePropertyValueFromArray = null;
-                if (!property.isArray)
+                if (!property.isArray || property.propertyType == SerializedPropertyType.String)
                 {
                     string propertyPath = property.propertyPath; //returns the property path of the property we want to apply the attribute to
                     string conditionPath = propertyPath.Replace(property.name, conditionalSourceFieldArray[index]); //changes the path to the conditionalsource property path
