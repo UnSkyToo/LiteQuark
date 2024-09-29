@@ -106,6 +106,13 @@ namespace LiteQuark.Runtime
             TaskList_.Add(task);
             return task;
         }
+
+        public DownloadBundleTask DownloadBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        {
+            var task = new DownloadBundleTask(bundleUri, callback);
+            TaskList_.Add(task);
+            return task;
+        }
         
         // public IEnumerator WaitTask(IEnumerator taskFunc, Action callback = null)
         // {
