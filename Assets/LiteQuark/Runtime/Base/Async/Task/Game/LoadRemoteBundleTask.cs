@@ -5,13 +5,13 @@ using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public class DownloadBundleTask : BaseTask
+    public class LoadRemoteBundleTask : BaseTask
     {
         private readonly string BundleUri_;
         private Action<AssetBundle> Callback_;
         private UnityWebRequest Request_;
         
-        public DownloadBundleTask(string bundleUri, Action<AssetBundle> callback)
+        public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base()
         {
             BundleUri_ = bundleUri;
