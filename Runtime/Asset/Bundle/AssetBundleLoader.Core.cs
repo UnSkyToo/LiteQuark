@@ -10,6 +10,8 @@ namespace LiteQuark.Runtime
         private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
         private readonly Dictionary<int, AssetIDToPathData> AssetIDToPathMap_ = new();
         private readonly List<string> UnloadBundleList_ = new();
+        private bool IsEnableRemoteBundle_ = false;
+        private string BundleRemoteUri_ = string.Empty;
         
         public AssetBundleLoader()
         {
@@ -17,7 +19,25 @@ namespace LiteQuark.Runtime
         
         public bool Initialize()
         {
-            PackInfo_ = BundlePackInfo.LoadBundlePack();
+            var bundlePackUri = string.Empty;
+            
+            IsEnableRemoteBundle_ = LiteRuntime.Setting.Asset.EnableRemoteBundle;
+            if (IsEnableRemoteBundle_)
+            {
+                BundleRemoteUri_ = PathUtils.ConcatPath(
+                    LiteRuntime.Setting.Asset.BundleRemoteUri,
+                    AppUtils.GetCurrentPlatform(),
+                    AppUtils.GetVersion()).ToLower();
+                LLog.Info("BundleRemoteUri: " + BundleRemoteUri_);
+
+                bundlePackUri = PathUtils.ConcatPath(BundleRemoteUri_, LiteConst.BundlePackFileName);
+            }
+            else
+            {
+                bundlePackUri = PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName);
+            }
+
+            PackInfo_ = BundlePackInfo.LoadBundlePack(bundlePackUri);
             if (PackInfo_ == null)
             {
                 return false;
@@ -193,6 +213,16 @@ namespace LiteQuark.Runtime
                     AssetIDToPathMap_.Add(instanceID, new AssetIDToPathData(assetPath));
                 }
             }
+        }
+
+        internal bool IsEnableRemoteBundle()
+        {
+            return IsEnableRemoteBundle_;
+        }
+
+        internal string GetRemoteBundleUri()
+        {
+            return BundleRemoteUri_;
         }
     }
 }
