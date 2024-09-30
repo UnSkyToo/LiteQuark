@@ -65,6 +65,11 @@ namespace LiteQuark.Runtime
             // }
         }
 
+        public void AddTask(ITask task)
+        {
+            TaskList_.Add(task);
+        }
+
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)
         {
             var task = new CoroutineTask(taskFunc, callback);
