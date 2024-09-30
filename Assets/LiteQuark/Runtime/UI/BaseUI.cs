@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         public GameObject Go { get; private set; }
         public RectTransform RT { get; private set; }
 
-        public int SortingOrder => Go.GetComponent<Canvas>().sortingOrder;
+        public int SortingOrder { get; private set; }
 
         private readonly List<Sprite> LoadSpriteList_ = new List<Sprite>();
         private readonly int EventTag_;
@@ -32,6 +32,7 @@ namespace LiteQuark.Runtime
         {
             Go = go;
             RT = Go.GetComponent<RectTransform>();
+            SortingOrder = Go.GetComponent<Canvas>().sortingOrder;
         }
 
         public void Open(params object[] paramList)
