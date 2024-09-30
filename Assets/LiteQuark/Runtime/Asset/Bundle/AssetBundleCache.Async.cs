@@ -78,9 +78,18 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
-            BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
-            BundleRequest_.completed += OnBundleRequestCompleted;
+            
+            if (Loader_.IsEnableRemoteBundle())
+            {
+                var bundleUri = PathUtils.ConcatPath(Loader_.GetRemoteBundleUri(), BundlePath_);
+                LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
+            }
+            else
+            {
+                var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
+                BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
+                BundleRequest_.completed += OnBundleRequestCompleted;
+            }
         }
         
         private void OnBundleRequestCompleted(UnityEngine.AsyncOperation op)
@@ -88,6 +97,11 @@ namespace LiteQuark.Runtime
             op.completed -= OnBundleRequestCompleted;
 
             var bundle = (op as UnityEngine.AssetBundleCreateRequest)?.assetBundle;
+            HandleBundleLoadCompleted(bundle);
+        }
+
+        private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
+        {
             if (bundle != null)
             {
                 OnBundleLoaded(bundle);

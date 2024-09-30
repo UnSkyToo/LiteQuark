@@ -106,6 +106,13 @@ namespace LiteQuark.Runtime
             TaskList_.Add(task);
             return task;
         }
+        
+        public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, Action<UnityEngine.Networking.DownloadHandler> callback)
+        {
+            var task = new UnityWebGetRequestTask(uri, callback);
+            TaskList_.Add(task);
+            return task;
+        }
 
         public LoadLocalBundleTask LoadLocalBundleTask(string bundlePath, Action<UnityEngine.AssetBundle> callback)
         {

@@ -58,7 +58,9 @@ namespace LiteQuark.Runtime
             [SerializeField] public bool EnableRetain = true;
             [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float AssetRetainTime = 120; // 2 min
             [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float BundleRetainTime = 300f; // 5 min
-
+            [SerializeField] public bool EnableRemoteBundle = false;
+            [ConditionalHide(nameof(EnableRemoteBundle), true), SerializeField] public string BundleRemoteUri = "https://localhost:8000/";
+            
             public AssetSetting()
             {
             }

@@ -78,11 +78,11 @@ namespace LiteQuark.Runtime
             return packInfo;
         }
         
-        public static BundlePackInfo LoadBundlePack()
+        public static BundlePackInfo LoadBundlePack(string bundleUri)
         {
             try
             {
-                var request = UnityEngine.Networking.UnityWebRequest.Get(PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName));
+                var request = UnityEngine.Networking.UnityWebRequest.Get(bundleUri);
                 request.SendWebRequest();
                 while (!request.isDone)
                 {
