@@ -119,9 +119,9 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public LoadLocalBundleTask LoadLocalBundleTask(string bundlePath, Action<UnityEngine.AssetBundle> callback)
+        public LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
-            var task = new LoadLocalBundleTask(bundlePath, callback);
+            var task = new LoadLocalBundleTask(bundleUri, callback);
             TaskList_.Add(task);
             return task;
         }

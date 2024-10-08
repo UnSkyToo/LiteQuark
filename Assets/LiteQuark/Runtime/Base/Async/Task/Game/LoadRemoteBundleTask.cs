@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -25,15 +24,15 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            LiteRuntime.Task.MonoBehaviourInstance.StartCoroutine(ExecuteInternal());
-        }
-
-        private IEnumerator ExecuteInternal()
-        {
             Request_ = UnityWebRequestAssetBundle.GetAssetBundle(BundleUri_);
             var asyncOperation = Request_.SendWebRequest();
-            yield return asyncOperation;
-
+            asyncOperation.completed += OnBundleRequestCompleted;
+        }
+        
+        private void OnBundleRequestCompleted(AsyncOperation op)
+        {
+            op.completed -= OnBundleRequestCompleted;
+            
             if (Request_.result != UnityWebRequest.Result.Success)
             {
                 LLog.Error($"Failed to download bundle : {BundleUri_}");
@@ -44,7 +43,7 @@ namespace LiteQuark.Runtime
                 var bundle = DownloadHandlerAssetBundle.GetContent(Request_);
                 Callback_?.Invoke(bundle);
             }
-
+            
             Stop();
         }
     }
