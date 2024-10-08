@@ -110,6 +110,12 @@ namespace LiteQuark.Editor
             return namedBuildTarget;
         }
 
+        public static void AddScriptingDefineSymbols(string addSymbol)
+        {
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            AddScriptingDefineSymbols(target, addSymbol);
+        }
+
         public static void AddScriptingDefineSymbols(BuildTarget target, string addSymbol)
         {
             var namedBuildTarget = GetNamedBuildTarget(target);
@@ -120,6 +126,12 @@ namespace LiteQuark.Editor
                 symbols += $";{addSymbol}";
                 PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
             }
+        }
+        
+        public static void RemoveScriptingDefineSymbols(string removeSymbol)
+        {
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            RemoveScriptingDefineSymbols(target, removeSymbol);
         }
 
         public static void RemoveScriptingDefineSymbols(BuildTarget target, string removeSymbol)
