@@ -5,14 +5,14 @@ namespace LiteQuark.Runtime
 {
     public class LoadLocalBundleTask : BaseTask
     {
-        private readonly string BundlePath_;
+        private readonly string BundleUri_;
         private Action<AssetBundle> Callback_;
         private AssetBundleCreateRequest BundleRequest_;
         
-        public LoadLocalBundleTask(string bundlePath, Action<AssetBundle> callback)
+        public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base()
         {
-            BundlePath_ = bundlePath;
+            BundleUri_ = bundleUri;
             Callback_ = callback;
         }
 
@@ -23,8 +23,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
-            BundleRequest_ = AssetBundle.LoadFromFileAsync(fullPath);
+            BundleRequest_ = AssetBundle.LoadFromFileAsync(BundleUri_);
             BundleRequest_.completed += OnBundleRequestCompleted;
         }
 
@@ -33,7 +32,7 @@ namespace LiteQuark.Runtime
             op.completed -= OnBundleRequestCompleted;
             
             var bundle = (op as AssetBundleCreateRequest)?.assetBundle;
-            Callback_?.Invoke(bundle != null ? bundle : null);
+            Callback_?.Invoke(bundle);
             Stop();
         }
     }

@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using UnityEngine;
 using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
@@ -24,15 +24,15 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            LiteRuntime.Task.MonoBehaviourInstance.StartCoroutine(ExecuteInternal());
-        }
-
-        private IEnumerator ExecuteInternal()
-        {
             Request_ = UnityWebRequest.Get(Uri_);
             var asyncOperation = Request_.SendWebRequest();
-            yield return asyncOperation;
-
+            asyncOperation.completed += OnBundleRequestCompleted;
+        }
+        
+        private void OnBundleRequestCompleted(AsyncOperation op)
+        {
+            op.completed -= OnBundleRequestCompleted;
+            
             if (Request_.result != UnityWebRequest.Result.Success)
             {
                 LLog.Error($"get request uri : {Uri_}\r\n{Request_.error}");
