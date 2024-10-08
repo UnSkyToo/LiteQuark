@@ -70,3 +70,6 @@ crashlytics-build.properties
 
 # Slay The Sprie Assets
 *slaythesprie_assets*
+
+# DS_Store
+.DS_Store
