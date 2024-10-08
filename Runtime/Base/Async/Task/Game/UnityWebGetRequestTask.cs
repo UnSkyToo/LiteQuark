@@ -6,14 +6,14 @@ namespace LiteQuark.Runtime
 {
     public class UnityWebGetRequestTask : BaseTask
     {
-        private readonly string Uri_;
+        private readonly Uri Uri_;
         private Action<DownloadHandler> Callback_;
         private UnityWebRequest Request_;
         
         public UnityWebGetRequestTask(string uri, Action<DownloadHandler> callback)
             : base()
         {
-            Uri_ = uri;
+            Uri_ = new Uri(uri);
             Callback_ = callback;
         }
 
