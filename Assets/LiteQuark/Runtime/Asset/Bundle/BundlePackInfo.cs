@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                var request = UnityEngine.Networking.UnityWebRequest.Get(bundleUri);
+                var request = UnityEngine.Networking.UnityWebRequest.Get(new Uri(bundleUri));
                 request.SendWebRequest();
                 while (!request.isDone)
                 {
