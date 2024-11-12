@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public abstract class BaseObject
+    public abstract class BaseObject : IUnique
     {
         public ulong UniqueID { get; }
         public abstract string DebugName { get; }
