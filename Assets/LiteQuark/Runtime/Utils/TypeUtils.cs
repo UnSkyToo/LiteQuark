@@ -117,6 +117,11 @@ namespace LiteQuark.Runtime
         
         public static object CreateInstance(Type type)
         {
+            if (type.IsInterface)
+            {
+                return null;
+            }
+            
             if (type.IsArray)
             {
                 return Array.CreateInstance(GetElementType(type), 0);
@@ -127,6 +132,11 @@ namespace LiteQuark.Runtime
 
         public static object CreateInstance(Type type, int count)
         {
+            if (type.IsInterface)
+            {
+                return null;
+            }
+            
             if (type.IsArray)
             {
                 return Array.CreateInstance(GetElementType(type), count);
@@ -169,6 +179,11 @@ namespace LiteQuark.Runtime
         
         public static string GetTypeDisplayName(Type type)
         {
+            if (type == null)
+            {
+                return "null";
+            }
+            
             var labelAttr = GetAttribute<LiteLabelAttribute>(type, null);
             return labelAttr != null ? labelAttr.Label : type.Name;
         }
