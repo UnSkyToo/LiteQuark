@@ -15,8 +15,6 @@ namespace LiteQuark.Runtime
         public event Action<int, int> Progress;
         public event Action Completed;
         
-        public TaskState State { get; private set; }
-        
         private readonly List<IPipelineSubTask> SubTaskList_ = null;
         private IPipelineSubTask CurrentSubTask_ = null;
         private int Index_ = 0;

@@ -104,7 +104,7 @@ namespace LiteQuark.Runtime
                 info.Initialize();
                 return info;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

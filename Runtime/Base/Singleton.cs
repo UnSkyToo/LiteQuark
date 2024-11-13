@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
             {
                 return Activator.CreateInstance<T>();
             }
-            catch (MissingMethodException ex)
+            catch (MissingMethodException)
             {
                 throw;
             }
