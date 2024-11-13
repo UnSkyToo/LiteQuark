@@ -127,6 +127,11 @@ namespace LiteQuark.Runtime
 
         public static object CreateInstance(Type type, int count)
         {
+            if (type.IsArray)
+            {
+                return Array.CreateInstance(GetElementType(type), count);
+            }
+            
             return Array.CreateInstance(type, count);
         }
 
@@ -160,6 +165,52 @@ namespace LiteQuark.Runtime
                 result = type?.GetCustomAttribute<T>();
             }
             return result;
+        }
+        
+        public static string GetTypeDisplayName(Type type)
+        {
+            var labelAttr = GetAttribute<LiteLabelAttribute>(type, null);
+            return labelAttr != null ? labelAttr.Label : type.Name;
+        }
+        
+        public static List<string> TypeListToString(List<Type> typeList)
+        {
+            var results = new List<string>();
+
+            foreach (var type in typeList)
+            {
+                results.Add(GetTypeDisplayName(type));
+            }
+
+            return results;
+        }
+        
+        public static void PrioritySort(List<Type> sortList)
+        {
+            sortList.Sort((a, b) =>
+            {
+                var priorityA = GetPriorityFromType(a);
+                var priorityB = GetPriorityFromType(b);
+
+                if (priorityA == priorityB)
+                {
+                    return 0;
+                }
+
+                if (priorityA > priorityB)
+                {
+                    return -1;
+                }
+
+                return 1;
+            });
+        }
+        
+        public static uint GetPriorityFromType(Type type)
+        {
+            var priorityAttr = type.GetCustomAttribute<LitePriorityAttribute>();
+            var value = priorityAttr != null ? priorityAttr.Value : 0;
+            return value;
         }
     }
 }

@@ -111,5 +111,66 @@ namespace LiteQuark.Runtime
 
             return array.ToArray();
         }
+        
+        public static IList AddToList(IList list, object element)
+        {
+            if (list == null)
+            {
+                return null;
+            }
+            
+            if (TypeUtils.IsListType(list.GetType()))
+            {
+                list.Add(element);
+                return list;
+            }
+            else
+            {
+                var newList = TypeUtils.CreateInstance(list.GetType(), list.Count + 1) as IList;
+                if (newList == null)
+                {
+                    return list;
+                }
+                
+                for (var i = 0; i < list.Count; ++i)
+                {
+                    newList[i] = list[i];
+                }
+
+                newList[^1] = element;
+                list = newList;
+                return list;
+            }
+        }
+
+        public static IList RemoveAtList(IList list, int index)
+        {
+            if (TypeUtils.IsListType(list.GetType()))
+            {
+                list.RemoveAt(index);
+                return list;
+            }
+            else
+            {
+                var newList = TypeUtils.CreateInstance(list.GetType(), list.Count - 1) as IList;
+                if (newList == null)
+                {
+                    return list;
+                }
+                
+                for (var i = 0; i < index; ++i)
+                {
+                    newList[i] = list[i];
+                }
+
+                for (var i = index; i < list.Count - 1; ++i)
+                {
+                    newList[i] = list[i + 1];
+                }
+
+                list = newList;
+                return list;
+            }
+        }
     }
 }
