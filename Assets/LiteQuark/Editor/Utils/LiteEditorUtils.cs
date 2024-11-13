@@ -1,14 +1,22 @@
 ﻿#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace LiteQuark.Editor
 {
     public static class LiteEditorUtils
     {
+        public static void UnsupportedType(string title, Type type)
+        {
+            LEditorLog.Error($"Unsupported {title} type: {type}");
+        }
+        
         public static void OpenFolder(string path)
         {
 #if UNITY_EDITOR_WIN
@@ -44,11 +52,11 @@ namespace LiteQuark.Editor
                 var browserType = typeof(EditorWindow).Assembly.GetType("UnityEditor.ProjectBrowser");
                 if (browserType != null)
                 {
-                    var instance = browserType.GetField("s_LastInteractedProjectBrowser", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+                    var instance = browserType.GetField("s_LastInteractedProjectBrowser", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
                     var setFunc = ReflectionUtils.GetMethod(browserType, "SetFolderSelection", 2, BindingFlags.NonPublic | BindingFlags.Instance);
                     // var setFunc = browserType.GetMethod("SetFolderSelection", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    var viewMode = (int)browserType.GetField("m_ViewMode", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);
-                    if (viewMode == 0)
+                    var viewMode = browserType.GetField("m_ViewMode", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(instance);
+                    if (viewMode != null && (int)viewMode == 0)
                     {
                         Selection.activeObject = obj;
                     }
@@ -144,6 +152,29 @@ namespace LiteQuark.Editor
                 symbols = symbols.Replace(removeSymbol, string.Empty).Replace(";;", ";").Trim(';');
                 PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
             }
+        }
+        
+        public static bool ShowConfirmDialog(string msg)
+        {
+            return EditorUtility.DisplayDialog("Lite Quark", msg, "Confirm", "Cancel");
+        }
+        
+        public static GUIContent GetTitleFromFieldInfo(FieldInfo info)
+        {
+            var labelAttr = info.GetCustomAttribute<LiteLabelAttribute>();
+            var title = labelAttr != null ? new GUIContent(labelAttr.Label) : new GUIContent(info.Name);
+            return title;
+        }
+
+        public static List<Type> GetTypeListWithBaseType(Type baseType)
+        {
+            var results = new List<Type>();
+            
+            results.AddRange(TypeCache.GetTypesDerivedFrom(baseType));
+            
+            TypeUtils.PrioritySort(results);
+
+            return results;
         }
     }
 }
