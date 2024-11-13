@@ -100,7 +100,7 @@ namespace LiteQuark.Editor
         {
             var typeList = LiteEditorUtils.GetTypeListWithBaseType(baseType);
             var nameList = TypeUtils.TypeListToString(typeList);
-            var currentType = v.GetType();
+            var currentType = v?.GetType();
             var selectIndex = nameList.IndexOf(TypeUtils.GetTypeDisplayName(currentType));
             
             EditorGUI.BeginChangeCheck();
