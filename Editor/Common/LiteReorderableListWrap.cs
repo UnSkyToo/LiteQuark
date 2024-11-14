@@ -83,7 +83,7 @@ namespace LiteQuark.Editor
 
         private object DrawElementField(Rect rect, int index, object element)
         {
-            return LiteEditorDrawer.DrawElement(rect, new GUIContent($"Element {index}"), element, ElementType_, Attributes_);
+            return LiteEditorDrawer.DrawElement(rect, new GUIContent($"Item {index}"), element, ElementType_, Attributes_);
         }
 
         private void OnDrawElement(Rect rect, int index, bool isActive, bool isFocused)

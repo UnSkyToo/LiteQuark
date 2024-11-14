@@ -353,7 +353,7 @@ namespace LiteQuark.Editor
         private static string DrawCustomPopupStringList(GUIContent title, string v, object[] attrs)
         {
             var customAttr = TypeUtils.GetAttribute<LiteCustomPopupListAttribute>(null, attrs);
-            var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>{"error attribute"};
+            var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>{"error custom list"};
             return DrawPopupStringList(title, list, v);
         }
         
@@ -452,6 +452,7 @@ namespace LiteQuark.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
+                            GUILayout.Space(EditorGUI.indentLevel * 15);
                             if (GUILayout.Button("↑", GUILayout.ExpandWidth(false)) && i > 0)
                             {
                                 (list[i - 1], list[i]) = (list[i], list[i - 1]);
