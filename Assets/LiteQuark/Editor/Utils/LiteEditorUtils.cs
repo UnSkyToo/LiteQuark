@@ -159,7 +159,7 @@ namespace LiteQuark.Editor
             return EditorUtility.DisplayDialog("Lite Quark", msg, "Confirm", "Cancel");
         }
         
-        public static GUIContent GetTitleFromFieldInfo(FieldInfo info)
+        public static GUIContent GetTitleFromMemberInfo(MemberInfo info)
         {
             var labelAttr = info.GetCustomAttribute<LiteLabelAttribute>();
             var title = labelAttr != null ? new GUIContent(labelAttr.Label) : new GUIContent(info.Name);
