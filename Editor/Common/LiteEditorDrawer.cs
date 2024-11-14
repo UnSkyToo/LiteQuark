@@ -7,36 +7,6 @@ namespace LiteQuark.Editor
 {
     internal static class LiteEditorDrawer
     {
-        private static object DrawIntField(Rect rect, GUIContent title, int v, Type type, object[] attrs)
-        {
-            var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
-            return delayedIntAttr == null ? EditorGUI.IntField(rect, title, v) : EditorGUI.DelayedIntField(rect, title, v);
-        }
-
-        private static float DrawFloatField(Rect rect, GUIContent title, float v, Type type, object[] attrs)
-        {
-            var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
-            return delayedFloatAttr == null ? EditorGUI.FloatField(rect, title, v) : EditorGUI.DelayedFloatField(rect, title, v);
-        }
-
-        private static double DrawDoubleField(Rect rect, GUIContent title, double v, Type type, object[] attrs)
-        {
-            var delayedDoubleAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
-            return delayedDoubleAttr == null ? EditorGUI.DoubleField(rect, title, v) : EditorGUI.DelayedDoubleField(rect, title, v);
-        }
-
-        private static string DrawStringField(Rect rect, GUIContent title, string v, Type type, object[] attrs)
-        {
-            var delayedStringAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
-            return delayedStringAttr == null ? EditorGUI.TextField(rect, title, v) : EditorGUI.DelayedTextField(rect, title, v);
-        }
-
-        private static Enum DrawEnumField(Rect rect, GUIContent title, Enum v, Type type, object[] attrs)
-        {
-            var enumFlagsAttr = TypeUtils.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
-            return enumFlagsAttr == null ? EditorGUI.EnumPopup(rect, title, v) : EditorGUI.EnumFlagsField(rect, title, v);
-        }
-        
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -105,6 +75,36 @@ namespace LiteQuark.Editor
                     break;
             }
             return data;
+        }
+        
+        private static object DrawIntField(Rect rect, GUIContent title, int v, Type type, object[] attrs)
+        {
+            var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            return delayedIntAttr == null ? EditorGUI.IntField(rect, title, v) : EditorGUI.DelayedIntField(rect, title, v);
+        }
+
+        private static float DrawFloatField(Rect rect, GUIContent title, float v, Type type, object[] attrs)
+        {
+            var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            return delayedFloatAttr == null ? EditorGUI.FloatField(rect, title, v) : EditorGUI.DelayedFloatField(rect, title, v);
+        }
+
+        private static double DrawDoubleField(Rect rect, GUIContent title, double v, Type type, object[] attrs)
+        {
+            var delayedDoubleAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            return delayedDoubleAttr == null ? EditorGUI.DoubleField(rect, title, v) : EditorGUI.DelayedDoubleField(rect, title, v);
+        }
+
+        private static string DrawStringField(Rect rect, GUIContent title, string v, Type type, object[] attrs)
+        {
+            var delayedStringAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            return delayedStringAttr == null ? EditorGUI.TextField(rect, title, v) : EditorGUI.DelayedTextField(rect, title, v);
+        }
+
+        private static Enum DrawEnumField(Rect rect, GUIContent title, Enum v, Type type, object[] attrs)
+        {
+            var enumFlagsAttr = TypeUtils.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
+            return enumFlagsAttr == null ? EditorGUI.EnumPopup(rect, title, v) : EditorGUI.EnumFlagsField(rect, title, v);
         }
     }
 }
