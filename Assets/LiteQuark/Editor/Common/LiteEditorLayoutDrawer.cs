@@ -11,6 +11,31 @@ namespace LiteQuark.Editor
 {
     public static class LiteEditorLayoutDrawer
     {
+        public static void LabelError(string label)
+        {
+            using (new ColorScope(Color.red))
+            {
+                EditorGUILayout.LabelField(label);
+            }
+        }
+        
+        /// <summary>
+        /// <para>Support Data Type</para>
+        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
+        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
+        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
+        /// </summary>
+        public static T DrawObject<T>(string name, T data) where T : class
+        {
+            return DrawObject(name, data, LitePropertyType.Object) as T;
+        }
+        
+        /// <summary>
+        /// <para>Support Data Type</para>
+        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
+        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
+        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
+        /// </summary>
         public static T DrawObject<T>(GUIContent title, T data) where T : class
         {
             return DrawObject(title, data, LitePropertyType.Object) as T;
@@ -20,7 +45,18 @@ namespace LiteQuark.Editor
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
         /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
-        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalListType</para>
+        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
+        /// </summary>
+        public static object DrawObject(string name, object data, LitePropertyType propertyType)
+        {
+            return DrawObject(new GUIContent(name), data, propertyType);
+        }
+        
+        /// <summary>
+        /// <para>Support Data Type</para>
+        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
+        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
+        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
         /// </summary>
         public static object DrawObject(GUIContent title, object data, LitePropertyType propertyType)
         {
@@ -293,74 +329,17 @@ namespace LiteQuark.Editor
                 EditorGUI.EndDisabledGroup();
             }
         }
-        
+
         private static object DrawObjectList(GUIContent title, object v, object[] attrs)
         {
-            var list = v as IList;
-            if (list == null)
-            {
-                return v;
-            }
-            
-            var currentType = v.GetType();
-            using (new EditorGUILayout.VerticalScope(LiteEditorStyle.FrameBox))
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    using (new EditorGUILayout.HorizontalScope(LiteEditorStyle.FrameBox))
-                    {
-                        GUILayout.Label(title);
-                        GUILayout.FlexibleSpace();
-                        GUILayout.Label($"{list.Count} items");
-                    }
-
-                    using (new EditorGUILayout.HorizontalScope(LiteEditorStyle.FrameBox))
-                    {
-                        if (GUILayout.Button("+"))
-                        {
-                            list = ArrayUtils.AddToList(list, TypeUtils.CreateInstance(TypeUtils.GetElementType(currentType)));
-                        }
-                    }
-                }
-
-                for (var i = 0; i < list.Count; ++i)
-                {
-                    using (new EditorGUILayout.VerticalScope(LiteEditorStyle.FrameBox))
-                    {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            if (GUILayout.Button("↑", GUILayout.ExpandWidth(false)) && i > 0)
-                            {
-                                (list[i - 1], list[i]) = (list[i], list[i - 1]);
-                            }
-
-                            if (GUILayout.Button("↓", GUILayout.ExpandWidth(false)) && i < list.Count - 1)
-                            {
-                                (list[i], list[i + 1]) = (list[i + 1], list[i]);
-                            }
-
-                            if (GUILayout.Button("X", GUILayout.ExpandWidth(false)))
-                            {
-                                if (LiteEditorUtils.ShowConfirmDialog($"{TypeUtils.GetElementType(currentType).Name} {i} ?"))
-                                {
-                                    list = ArrayUtils.RemoveAtList(list, i);
-                                    continue;
-                                }
-                            }
-                        }
-
-                        DrawObject(new GUIContent($"Element {i}"), list[i], LitePropertyType.Object);
-                    }
-                }
-            }
-
-            return list;
+            return DrawCustomList(title, v, TypeUtils.GetElementType(v.GetType()), null,
+                (list, i) => DrawObject(new GUIContent($"Item {i}"), list[i], LitePropertyType.Object));
         }
-        
+
         private static string DrawCustomPopupStringList(GUIContent title, string v, object[] attrs)
         {
             var customAttr = TypeUtils.GetAttribute<LiteCustomPopupListAttribute>(null, attrs);
-            var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>(){"error attribute"};
+            var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>{"error attribute"};
             return DrawPopupStringList(title, list, v);
         }
         
@@ -412,9 +391,10 @@ namespace LiteQuark.Editor
             
             if (v is IHasData { HasData: true })
             {
-                DrawObject(new GUIContent(optionalTypeAttr.DataTitle), v, LitePropertyType.Object);
+                return DrawObject(new GUIContent(optionalTypeAttr.DataTitle), v, LitePropertyType.Object);
             }
-
+            
+            LabelError($"{optionalTypeAttr.BaseType} not implement IHasData");
             return v;
         }
 
@@ -426,6 +406,22 @@ namespace LiteQuark.Editor
                 return v;
             }
 
+            return DrawCustomList(title, v, optionalTypeListAttr.DefaultType,
+                (list, i) => DrawOptionalTypeSelector(new GUIContent($"{optionalTypeListAttr.ElementTitle} {i}"), optionalTypeListAttr.BaseType, list[i]),
+                (list, i) =>
+                {
+                    if (list[i] is IHasData { HasData: true })
+                    {
+                        return DrawObject(new GUIContent(optionalTypeListAttr.DataTitle), list[i], LitePropertyType.Object);
+                    }
+                    
+                    LabelError($"{optionalTypeListAttr.BaseType} not implement IHasData");
+                    return list[i];
+                });
+        }
+
+        private static object DrawCustomList(GUIContent title, object v, Type elementType, Func<IList, int, object> drawHeader, Func<IList, int, object> drawObject)
+        {
             var list = v as IList;
             if (list == null)
             {
@@ -445,10 +441,9 @@ namespace LiteQuark.Editor
 
                     using (new EditorGUILayout.HorizontalScope(LiteEditorStyle.FrameBox))
                     {
-                        // if (GUILayout.Button($"New {optionalTypeListAttr.ElementTitle}"))
                         if (GUILayout.Button("+"))
                         {
-                            list.Add(TypeUtils.CreateInstance(optionalTypeListAttr.DefaultType));
+                            list = ArrayUtils.AddToList(list, TypeUtils.CreateInstance(elementType));
                         }
                     }
                 }
@@ -471,19 +466,22 @@ namespace LiteQuark.Editor
 
                             if (GUILayout.Button("X", GUILayout.ExpandWidth(false)))
                             {
-                                if (LiteEditorUtils.ShowConfirmDialog($"{optionalTypeListAttr.ElementTitle} {i} ?"))
+                                if (LiteEditorUtils.ShowConfirmDialog($"Item {i} ?"))
                                 {
-                                    list.RemoveAt(i);
+                                    list = ArrayUtils.RemoveFromList(list, i);
                                     continue;
                                 }
                             }
 
-                            list[i] = DrawOptionalTypeSelector(new GUIContent($"{optionalTypeListAttr.ElementTitle} {i}"), optionalTypeListAttr.BaseType, list[i]);
+                            if (drawHeader != null)
+                            {
+                                list[i] = drawHeader.Invoke(list, i);
+                            }
                         }
 
-                        if (list[i] is IHasData {HasData: true})
+                        if (drawObject != null)
                         {
-                            DrawObject(new GUIContent(optionalTypeListAttr.DataTitle), list[i], LitePropertyType.Object);
+                            list[i] = drawObject.Invoke(list, i);
                         }
                     }
                 }
