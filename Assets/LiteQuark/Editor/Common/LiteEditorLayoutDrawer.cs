@@ -432,7 +432,18 @@ namespace LiteQuark.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope(LiteEditorStyle.FrameBox))
                     {
-                        GUILayout.Label(title);
+                        // GUILayout.Label(title);
+                        if (!Foldout_.ContainsKey(v))
+                        {
+                            Foldout_.Add(v, true);
+                        }
+                
+                        Foldout_[v] = EditorGUILayout.Foldout(Foldout_[v], title);
+                        if (!Foldout_[v])
+                        {
+                            return v;
+                        }
+                        
                         GUILayout.FlexibleSpace();
                         GUILayout.Label($"{list.Count} items");
                     }
