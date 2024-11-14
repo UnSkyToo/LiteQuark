@@ -4,7 +4,7 @@ using UnityEngine;
 namespace LiteQuark.Runtime
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
-    public class ConditionalHideAttribute : PropertyAttribute
+    public sealed class ConditionalHideAttribute : PropertyAttribute
     {
         public string ConditionalSourceField = "";
         public string ConditionalSourceField2 = "";
