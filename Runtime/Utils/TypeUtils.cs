@@ -94,6 +94,11 @@ namespace LiteQuark.Runtime
 
             return a.Equals(b);
         }
+
+        public static bool IsAssignableTo<T>(this Type type)
+        {
+            return typeof(T).IsAssignableFrom(type);
+        }
         
         public static bool IsListType(Type type)
         {
@@ -113,6 +118,11 @@ namespace LiteQuark.Runtime
             }
 
             return null;
+        }
+
+        public static bool CanCreateType(Type type)
+        {
+            return !(type.IsAbstract || type.IsInterface);
         }
         
         public static object CreateInstance(Type type)

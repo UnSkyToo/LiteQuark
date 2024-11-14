@@ -119,6 +119,11 @@ namespace LiteQuark.Runtime
                 return null;
             }
             
+            if (element == null)
+            {
+                return list;
+            }
+            
             if (TypeUtils.IsListType(list.GetType()))
             {
                 list.Add(element);
@@ -148,6 +153,11 @@ namespace LiteQuark.Runtime
             if (list == null)
             {
                 return null;
+            }
+            
+            if (index < 0 || index >= list.Count)
+            {
+                return list;
             }
             
             if (TypeUtils.IsListType(list.GetType()))
