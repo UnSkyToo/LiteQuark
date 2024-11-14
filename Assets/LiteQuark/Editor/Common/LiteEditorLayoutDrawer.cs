@@ -71,7 +71,7 @@ namespace LiteQuark.Editor
         
         private static object DrawElement(GUIContent title, object data, Type type, LitePropertyType propertyType, object[] attrs = null)
         {
-            if (data == null)
+            if (data == null && TypeUtils.CanCreateType(type))
             {
                 data = TypeUtils.CreateInstance(type);
             }
@@ -388,14 +388,7 @@ namespace LiteQuark.Editor
             }
 
             v = DrawOptionalTypeSelector(title, optionalTypeAttr.BaseType, v);
-            
-            if (v is IHasData { HasData: true })
-            {
-                return DrawObject(new GUIContent(optionalTypeAttr.DataTitle), v, LitePropertyType.Object);
-            }
-            
-            LabelError($"{optionalTypeAttr.BaseType} not implement IHasData");
-            return v;
+            return DrawIHasData(optionalTypeAttr.DataTitle, v, optionalTypeAttr.BaseType);
         }
 
         private static object DrawOptionalTypeList(GUIContent title, object v, object[] attrs)
@@ -408,16 +401,7 @@ namespace LiteQuark.Editor
 
             return DrawCustomList(title, v, optionalTypeListAttr.DefaultType,
                 (list, i) => DrawOptionalTypeSelector(new GUIContent($"{optionalTypeListAttr.ElementTitle} {i}"), optionalTypeListAttr.BaseType, list[i]),
-                (list, i) =>
-                {
-                    if (list[i] is IHasData { HasData: true })
-                    {
-                        return DrawObject(new GUIContent(optionalTypeListAttr.DataTitle), list[i], LitePropertyType.Object);
-                    }
-                    
-                    LabelError($"{optionalTypeListAttr.BaseType} not implement IHasData");
-                    return list[i];
-                });
+                (list, i) => DrawIHasData(optionalTypeListAttr.DataTitle, list[i], optionalTypeListAttr.BaseType));
         }
 
         private static object DrawCustomList(GUIContent title, object v, Type elementType, Func<IList, int, object> drawHeader, Func<IList, int, object> drawObject)
@@ -488,6 +472,23 @@ namespace LiteQuark.Editor
             }
 
             return list;
+        }
+
+        private static object DrawIHasData(string title, object data, Type type)
+        {
+            // if (typeof(IHasData).IsAssignableFrom(type))
+            if (type.IsAssignableTo<IHasData>())
+            {
+                if (data is IHasData { HasData: true })
+                {
+                    return DrawObject(new GUIContent(title), data, LitePropertyType.Object);
+                }
+
+                return data;
+            }
+
+            LabelError($"{type} not implement IHasData");
+            return data;
         }
 
         [InitializeOnLoadMethod]
