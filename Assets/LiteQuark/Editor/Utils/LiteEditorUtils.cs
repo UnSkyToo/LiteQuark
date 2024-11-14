@@ -171,6 +171,8 @@ namespace LiteQuark.Editor
             var results = new List<Type>();
             
             results.AddRange(TypeCache.GetTypesDerivedFrom(baseType));
+            // 剔除不能实例化的类型
+            results.RemoveAll(type => type.IsAbstract || type.IsInterface);
             
             TypeUtils.PrioritySort(results);
 
