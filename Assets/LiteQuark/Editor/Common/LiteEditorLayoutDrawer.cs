@@ -159,12 +159,24 @@ namespace LiteQuark.Editor
         
         private static object DrawIntField(GUIContent title, int v, Type type, object[] attrs)
         {
+            var rangeIntAttr = TypeUtils.GetAttribute<LiteIntRangeAttribute>(type, attrs);
+            if (rangeIntAttr != null)
+            {
+                return EditorGUILayout.IntSlider(title, v, rangeIntAttr.Min, rangeIntAttr.Max);
+            }
+            
             var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedIntAttr == null ? EditorGUILayout.IntField(title, v) : EditorGUILayout.DelayedIntField(title, v);
         }
         
         private static float DrawFloatField(GUIContent title, float v, Type type, object[] attrs)
         {
+            var rangeIntAttr = TypeUtils.GetAttribute<LiteFloatRangeAttribute>(type, attrs);
+            if (rangeIntAttr != null)
+            {
+                return EditorGUILayout.Slider(title, v, rangeIntAttr.Min, rangeIntAttr.Max);
+            }
+            
             var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedFloatAttr == null ? EditorGUILayout.FloatField(title, v) : EditorGUILayout.DelayedFloatField(title, v);
         }
