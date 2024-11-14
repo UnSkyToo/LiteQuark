@@ -23,20 +23,12 @@ namespace LiteQuark.Runtime
             var properties = type.GetProperties();
             var data = new Dictionary<string, object>();
 
-            void AddToList(string key, object val)
-            {
-                if (val != null)
-                {
-                    data.Add(key, val);
-                }
-            }
-
             foreach (var field in fields)
             {
                 var sourceAttr = field.GetCustomAttribute<LiteEnableSourceAttribute>();
                 if (sourceAttr != null)
                 {
-                    AddToList(field.Name, field.GetValue(target));
+                    data[field.Name] = field.GetValue(target);
                 }
             }
             
@@ -45,7 +37,7 @@ namespace LiteQuark.Runtime
                 var sourceAttr = property.GetCustomAttribute<LiteEnableSourceAttribute>();
                 if (sourceAttr != null)
                 {
-                    AddToList(property.Name, property.GetValue(target));
+                    data[property.Name] = property.GetValue(target);
                 }
             }
 
@@ -55,29 +47,29 @@ namespace LiteQuark.Runtime
     
     /// <summary>
     /// 控制字段是否在编辑器上展示。
-    /// <para>其中FieldName和FiledValue决定了依据哪个字段进行控制，该字段需要被LiteEnableSourceAttribute标记。</para>
-    /// CompareEqual字段决定FieldValue是比较相等还是不相等，默认为相等。
+    /// <para>其中CheckName和CheckValue决定了依据哪个字段进行控制，该字段需要被LiteEnableSourceAttribute标记。</para>
+    /// CompareEqual字段决定CheckValue是比较相等还是不相等，默认为相等。
     /// </summary>
     [Conditional("UNITY_EDITOR")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
     public sealed class LiteEnableCheckerAttribute : Attribute
     {
-        public string FieldName { get; }
-        public object FieldValue { get; }
+        public string CheckName { get; }
+        public object CheckValue { get; }
         public bool CompareEqual { get; }
         
-        public LiteEnableCheckerAttribute(string fieldName, object fieldValue, bool compareEqual = true)
+        public LiteEnableCheckerAttribute(string checkName, object checkValue, bool compareEqual = true)
         {
-            FieldName = fieldName;
-            FieldValue = fieldValue;
+            CheckName = checkName;
+            CheckValue = checkValue;
             CompareEqual = compareEqual;
         }
 
         public bool Check(Dictionary<string, object> data)
         {
-            if (data.ContainsKey(FieldName))
+            if (data.ContainsKey(CheckName))
             {
-                var isEqual = TypeUtils.Equal(FieldValue, data[FieldName]);
+                var isEqual = TypeUtils.Equal(CheckValue, data[CheckName]);
                 return CompareEqual ? isEqual : !isEqual;
             } 
 
