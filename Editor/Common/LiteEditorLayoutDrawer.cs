@@ -467,15 +467,18 @@ namespace LiteQuark.Editor
             if (litePropertyAttrs.Length == 1 && litePropertyAttrs[0] is LitePropertyAttribute propertyAttr)
             {
                 var title = new GUIContent(propertyAttr.Name);
-                // var title = LiteEditorUtils.GetTitleFromPropertyInfo(info);
+                // var title = LiteEditorUtils.GetTitleFromMemberInfo(info);
                 var propertyValue = info.GetValue(target);
                 var attrs = info.GetCustomAttributes(true);
+                
+                EditorGUI.BeginDisabledGroup(!info.CanWrite);
                 EditorGUI.BeginChangeCheck();
                 propertyValue = DrawElement(title, propertyValue, info.PropertyType, propertyAttr.Type, attrs);
                 if (EditorGUI.EndChangeCheck())
                 {
                     info.SetValue(target, propertyValue);
                 }
+                EditorGUI.EndDisabledGroup();
             }
         }
         
