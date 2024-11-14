@@ -259,7 +259,8 @@ namespace LiteQuark.Editor
                 {
                     var enableSourceData = LiteEnableSourceAttribute.GetSourceData(data);
                     
-                    var fields = type.GetFields().OrderBy(p => p.MetadataToken).ToArray();;
+                    // var fields = type.GetFields().OrderBy(p => p.MetadataToken).ToArray();
+                    var fields = TypeUtils.PrioritySort(type.GetFields());
                     foreach (var field in fields)
                     {
                         if (LiteEnableCheckerAttribute.Check(field, enableSourceData))
@@ -268,7 +269,8 @@ namespace LiteQuark.Editor
                         }
                     }
 
-                    var properties = type.GetProperties().OrderBy(p => p.MetadataToken).ToArray();;
+                    // var properties = type.GetProperties().OrderBy(p => p.MetadataToken).ToArray();
+                    var properties = TypeUtils.PrioritySort(type.GetProperties());
                     foreach (var property in properties)
                     {
                         if (LiteEnableCheckerAttribute.Check(property, enableSourceData))

@@ -224,7 +224,42 @@ namespace LiteQuark.Runtime
             return results;
         }
         
+        public static Type[] PrioritySort(Type[] sortList)
+        {
+            var list = new List<Type>(sortList);
+            PrioritySort(list);
+            return list.ToArray();
+        }
+        
         public static void PrioritySort(List<Type> sortList)
+        {
+            sortList.Sort((a, b) =>
+            {
+                var priorityA = GetPriorityFromType(a);
+                var priorityB = GetPriorityFromType(b);
+
+                if (priorityA == priorityB)
+                {
+                    return 0;
+                }
+
+                if (priorityA > priorityB)
+                {
+                    return -1;
+                }
+
+                return 1;
+            });
+        }
+
+        public static T[] PrioritySort<T>(T[] sortList) where T : MemberInfo
+        {
+            var list = new List<T>(sortList);
+            PrioritySort(list);
+            return list.ToArray();
+        }
+        
+        public static void PrioritySort<T>(List<T> sortList) where T : MemberInfo
         {
             sortList.Sort((a, b) =>
             {
@@ -248,6 +283,13 @@ namespace LiteQuark.Runtime
         public static uint GetPriorityFromType(Type type)
         {
             var priorityAttr = type.GetCustomAttribute<LitePriorityAttribute>();
+            var value = priorityAttr != null ? priorityAttr.Value : 0;
+            return value;
+        }
+        
+        public static uint GetPriorityFromType<T>(T info) where T : MemberInfo
+        {
+            var priorityAttr = info.GetCustomAttribute<LitePriorityAttribute>();
             var value = priorityAttr != null ? priorityAttr.Value : 0;
             return value;
         }
