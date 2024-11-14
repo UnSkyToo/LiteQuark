@@ -143,8 +143,13 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public static IList RemoveAtList(IList list, int index)
+        public static IList RemoveFromList(IList list, int index)
         {
+            if (list == null)
+            {
+                return null;
+            }
+            
             if (TypeUtils.IsListType(list.GetType()))
             {
                 list.RemoveAt(index);

@@ -119,11 +119,13 @@ namespace LiteQuark.Runtime
         {
             if (type.IsInterface)
             {
+                LLog.Error($"can't create instance of interface type {type.Name}");
                 return null;
             }
 
             if (type.IsAbstract)
             {
+                LLog.Error($"can't create instance of abstract type {type.Name}");
                 return null;
             }
             
@@ -131,7 +133,7 @@ namespace LiteQuark.Runtime
             {
                 return Array.CreateInstance(GetElementType(type), 0);
             }
-
+            
             return type == typeof(string) ? string.Empty : Activator.CreateInstance(type);
         }
 
@@ -139,11 +141,13 @@ namespace LiteQuark.Runtime
         {
             if (type.IsInterface)
             {
+                LLog.Error($"can't create instance of interface type {type.Name}");
                 return null;
             }
 
             if (type.IsAbstract)
             {
+                LLog.Error($"can't create instance of abstract type {type.Name}");
                 return null;
             }
             
