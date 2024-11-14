@@ -121,6 +121,11 @@ namespace LiteQuark.Runtime
             {
                 return null;
             }
+
+            if (type.IsAbstract)
+            {
+                return null;
+            }
             
             if (type.IsArray)
             {
@@ -133,6 +138,11 @@ namespace LiteQuark.Runtime
         public static object CreateInstance(Type type, int count)
         {
             if (type.IsInterface)
+            {
+                return null;
+            }
+
+            if (type.IsAbstract)
             {
                 return null;
             }

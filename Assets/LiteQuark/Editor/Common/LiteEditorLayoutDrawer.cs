@@ -110,7 +110,7 @@ namespace LiteQuark.Editor
                 var newType = selectIndex >= 0 && selectIndex < typeList.Count ? typeList[selectIndex] : currentType;
                 if (newType != currentType)
                 {
-                    v = Activator.CreateInstance(newType);
+                    v = TypeUtils.CreateInstance(newType);
                 }
             }
 
