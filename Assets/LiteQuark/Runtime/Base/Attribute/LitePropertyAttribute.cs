@@ -29,11 +29,13 @@ namespace LiteQuark.Runtime
         ObjectList,
         CustomPopupList,
         /// <summary>
-        /// 自定义类需要继承IHasData来决定编辑器是否显示内容
+        /// 可选类（可以选择所有继承自制定BaseType的类）
+        /// <para>例如 public IData Data</para>
+        /// 必须配合属性LiteOptionalType(typeof(IData), "数据")来声明类型
         /// </summary>
         OptionalType,
         /// <summary>
-        /// 自定义类列表需要继承IHasData来决定编辑器是否显示内容
+        /// 可选类列表，同OptionalType
         /// </summary>
         OptionalTypeList,
     }
