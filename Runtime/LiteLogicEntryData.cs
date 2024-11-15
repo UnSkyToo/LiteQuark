@@ -9,9 +9,7 @@ namespace LiteQuark.Runtime
         [SerializeField]
         public bool Disabled;
         [SerializeField]
-        public string AssemblyName;
-        [SerializeField]
-        public string TypeName;
+        public string AssemblyQualifiedName;
 
         public LiteLogicEntryData()
         {
