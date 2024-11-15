@@ -165,8 +165,14 @@ namespace LiteQuark.Runtime
             {
                 return Array.CreateInstance(GetElementType(type), count);
             }
+
+            if (IsListType(type))
+            {
+                return CreateGenericList(GetElementType(type), count);
+            }
             
-            return Array.CreateInstance(type, count);
+            LLog.Error($"can't create instance of array type {type.Name}");
+            return null;
         }
 
         public static T CreateInstance<T>()
@@ -174,16 +180,11 @@ namespace LiteQuark.Runtime
             return (T) CreateInstance(typeof(T));
         }
         
-        public static IList CreateGenericList(Type elementType, object[] array)
+        public static object CreateGenericList(Type elementType, int count)
         {
             var typeList = typeof(List<>);
             var genericType = typeList.MakeGenericType(elementType);
-            var result = Activator.CreateInstance(genericType) as IList;
-            foreach (var item in array)
-            {
-                result.Add(item);
-            }
-            return result;
+            return Activator.CreateInstance(genericType, count);
         }
         
         public static T GetAttribute<T>(Type type, object[] attrs) where T : Attribute
