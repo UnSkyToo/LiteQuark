@@ -14,11 +14,10 @@ namespace LiteQuark.Editor
             EditorGUI.BeginProperty(position, label, property);
 
             var disabledProperty = property.FindPropertyRelative("Disabled");
-            var assemblyNameProperty = property.FindPropertyRelative("AssemblyName");
-            var typeNameProperty = property.FindPropertyRelative("TypeName");
+            var assemblyQualifiedNameProperty = property.FindPropertyRelative("AssemblyQualifiedName");
             
             var typeList = GetLogicTypeList();
-            var selectIndex = Array.FindIndex(typeList, s => s == $"{typeNameProperty.stringValue}|{assemblyNameProperty.stringValue}");
+            var selectIndex = Array.FindIndex(typeList, s => s == assemblyQualifiedNameProperty.stringValue);
             
             var disabledRect = new Rect(position.x, position.y, position.height, position.height);
             disabledProperty.boolValue = !EditorGUI.Toggle(disabledRect, !disabledProperty.boolValue);
@@ -30,12 +29,7 @@ namespace LiteQuark.Editor
             selectIndex = EditorGUI.Popup(popupRect, selectIndex, typeList);
             if (EditorGUI.EndChangeCheck())
             {
-                var chunks = typeList[selectIndex].Split('|');
-                if (chunks.Length == 2)
-                {
-                    assemblyNameProperty.stringValue = chunks[1];
-                    typeNameProperty.stringValue = chunks[0];
-                }
+                assemblyQualifiedNameProperty.stringValue = typeList[selectIndex];
             }
             
             EditorGUI.EndDisabledGroup();
@@ -50,7 +44,7 @@ namespace LiteQuark.Editor
 
             foreach (var type in typeList)
             {
-                nameList.Add($"{type.FullName}|{type.Assembly.FullName}");
+                nameList.Add(type.AssemblyQualifiedName);
             }
 
             return nameList.ToArray();
