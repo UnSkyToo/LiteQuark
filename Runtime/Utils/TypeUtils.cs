@@ -105,11 +105,21 @@ namespace LiteQuark.Runtime
             return type.IsGenericType && type.GenericTypeArguments.Length == 1;
         }
         
+        public static bool IsDictionaryType(Type type)
+        {
+            return type.IsGenericType && type.GenericTypeArguments.Length == 2;
+        }
+        
         public static Type GetElementType(Type type)
         {
             if (type.IsArray)
             {
                 return type.GetElementType();
+            }
+
+            if (type.GenericTypeArguments.Length > 1)
+            {
+                return type.GenericTypeArguments[1];
             }
 
             if (type.GenericTypeArguments.Length > 0)
@@ -144,6 +154,16 @@ namespace LiteQuark.Runtime
                 return Array.CreateInstance(GetElementType(type), 0);
             }
             
+            if (IsListType(type))
+            {
+                return CreateGenericList(GetElementType(type));
+            }
+
+            if (IsDictionaryType(type))
+            {
+                return CreateGenericDictionary(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
+            }
+            
             return type == typeof(string) ? string.Empty : Activator.CreateInstance(type);
         }
 
@@ -168,7 +188,12 @@ namespace LiteQuark.Runtime
 
             if (IsListType(type))
             {
-                return CreateGenericList(GetElementType(type), count);
+                return CreateGenericList(GetElementType(type));
+            }
+
+            if (IsDictionaryType(type))
+            {
+                return CreateGenericDictionary(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
             }
             
             LLog.Error($"can't create instance of array type {type.Name}");
@@ -180,11 +205,18 @@ namespace LiteQuark.Runtime
             return (T) CreateInstance(typeof(T));
         }
         
-        public static object CreateGenericList(Type elementType, int count)
+        public static object CreateGenericList(Type elementType)
         {
             var typeList = typeof(List<>);
             var genericType = typeList.MakeGenericType(elementType);
-            return Activator.CreateInstance(genericType, count);
+            return Activator.CreateInstance(genericType);
+        }
+
+        public static object CreateGenericDictionary(Type keyType, Type valueType)
+        {
+            var typeDict = typeof(Dictionary<,>);
+            var genericType = typeDict.MakeGenericType(keyType, valueType);
+            return Activator.CreateInstance(genericType);
         }
         
         public static T GetAttribute<T>(Type type, object[] attrs) where T : Attribute
