@@ -114,72 +114,82 @@ namespace LiteQuark.Runtime
                     writer.Write(colorValue);
                     break;
                 case IList list:
-                {
-                    writer.Write(list.Count);
-                    foreach (var item in list)
-                    {
-                        var itemType = item?.GetType() ?? TypeUtils.GetElementType(type);
-                        WriteType(writer,  itemType);
-                        Encode(writer, item, itemType);
-                    }
+                    EncodeList(writer, list, type);
                     break;
-                }
                 case IDictionary dictionary:
-                {
-                    writer.Write(dictionary.Count);
-                    foreach (DictionaryEntry item in dictionary)
-                    {
-                        var itemType = item.Key?.GetType() ?? TypeUtils.GetElementType(type);
-                        WriteType(writer, itemType);
-                        Encode(writer, item.Key, itemType);
-                        itemType = item.Value?.GetType() ?? TypeUtils.GetElementType(type);
-                        WriteType(writer, itemType);
-                        Encode(writer, item.Value, itemType);
-                    }
+                    EncodeDictionary(writer, dictionary, type);
                     break;
-                }
                 case { } objectValue:
-                {
-                    if (!type.IsPrimitive && (type.IsClass || type.IsValueType))
-                    {
-                        writer.Write(false);
-                        
-                        var fields = type.GetFields();
-                        writer.Write(fields.Length);
-                        foreach (var field in fields)
-                        {
-                            var fieldValue = field.GetValue(objectValue);
-                            var fieldType = fieldValue?.GetType() ?? field.FieldType;
-                            writer.Write(field.Name);
-                            WriteType(writer, fieldType);
-                            Encode(writer, fieldValue, fieldType);
-                        }
-
-                        var properties = type.GetProperties().Where(x => x.CanWrite).ToArray();
-                        writer.Write(properties.Length);
-                        foreach (var property in properties)
-                        {
-                            var propertyValue = property.GetValue(objectValue);
-                            var propertyType = propertyValue?.GetType() ?? property.PropertyType;
-                            writer.Write(property.Name);
-                            WriteType(writer, propertyType);
-                            Encode(writer, propertyValue, propertyType);
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception($"Unsupported type: {type}");
-                    }
-                }
+                    EncodeObject(writer, objectValue, type);
                     break;
                 case null:
-                {
                     writer.Write(true);
-                }
                     break;
                 default:
                     throw new Exception($"Unsupported type: {type}");
             }
+        }
+
+        private void EncodeList(BinaryWriter writer, IList list, Type type)
+        {
+            writer.Write(list.Count);
+            foreach (var item in list)
+            {
+                var itemType = item?.GetType() ?? TypeUtils.GetElementType(type);
+                WriteType(writer,  itemType);
+                Encode(writer, item, itemType);
+            }
+        }
+
+        private void EncodeDictionary(BinaryWriter writer, IDictionary dictionary, Type type)
+        {
+            writer.Write(dictionary.Count);
+            foreach (DictionaryEntry item in dictionary)
+            {
+                var itemType = item.Key?.GetType() ?? TypeUtils.GetElementType(type);
+                WriteType(writer, itemType);
+                Encode(writer, item.Key, itemType);
+                itemType = item.Value?.GetType() ?? TypeUtils.GetElementType(type);
+                WriteType(writer, itemType);
+                Encode(writer, item.Value, itemType);
+            }
+        }
+
+        private void EncodeObject(BinaryWriter writer, object objectValue, Type type)
+        {
+            if (!type.IsPrimitive && (type.IsClass || type.IsValueType))
+            {
+                writer.Write(false);
+                        
+                var fields = type.GetFields();
+                writer.Write(fields.Length);
+                foreach (var field in fields)
+                {
+                    var fieldValue = field.GetValue(objectValue);
+                    var fieldType = fieldValue?.GetType() ?? field.FieldType;
+                    EncodeMember(writer, field.Name, fieldType, fieldValue);
+                }
+
+                var properties = type.GetProperties().Where(x => x.CanWrite).ToArray();
+                writer.Write(properties.Length);
+                foreach (var property in properties)
+                {
+                    var propertyValue = property.GetValue(objectValue);
+                    var propertyType = propertyValue?.GetType() ?? property.PropertyType;
+                    EncodeMember(writer, property.Name, propertyType, propertyValue);
+                }
+            }
+            else
+            {
+                throw new Exception($"Unsupported type: {type}");
+            }
+        }
+        
+        private void EncodeMember(BinaryWriter writer, string memberName, Type memberType, object memberValue)
+        {
+            writer.Write(memberName);
+            WriteType(writer, memberType);
+            Encode(writer, memberValue, memberType);
         }
 
         private void WriteType(BinaryWriter writer, Type type)
