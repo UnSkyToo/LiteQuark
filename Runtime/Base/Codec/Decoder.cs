@@ -79,79 +79,88 @@ namespace LiteQuark.Runtime
                 case var t when t == typeof(Color):
                     return reader.ReadColor();
                 case var t when t.IsArray || TypeUtils.IsListType(t):
-                {
-                    var count = reader.ReadInt32();
-                    var list = TypeUtils.CreateInstance(type, count) as IList;
-
-                    for (var i = 0; i < count; i++)
-                    {
-                        var elementType = ReadType(reader);
-                        var item = Decode(reader, elementType);
-                        if (TypeUtils.IsListType(type))
-                        {
-                            list.Add(item);
-                        }
-                        else
-                        {
-                            list[i] = item;
-                        }
-                    }
-
-                    return list;
-                }
+                    return DecodeList(reader, type);
                 case var t when TypeUtils.IsDictionaryType(t):
-                {
-                    var count = reader.ReadInt32();
-                    var dictionary = TypeUtils.CreateInstance(type) as IDictionary;
-                    
-                    for (var i = 0; i < count; i++)
-                    {
-                        var keyType = ReadType(reader);
-                        var key = Decode(reader, keyType);
-                        var valueType = ReadType(reader);
-                        var value = Decode(reader, valueType);
-                        dictionary.Add(key, value);
-                    }
-                    
-                    return dictionary;
-                }
+                    return DecodeDictionary(reader, type);
                 case var t when !t.IsPrimitive && (t.IsClass || t.IsValueType):
-                {
-                    var isNull = reader.ReadBoolean();
-                    if (isNull)
-                    {
-                        return null;
-                    }
-
-                    var objectValue = TypeUtils.CreateInstance(type);
-
-                    var fieldCount = reader.ReadInt32();
-                    for (var i = 0; i < fieldCount; i++)
-                    {
-                        var fieldName = reader.ReadString();
-                        var fieldType = ReadType(reader);
-                        var field = type.GetField(fieldName);
-                        var fieldValue = Decode(reader, fieldType);
-                        field.SetValue(objectValue, fieldValue);
-                    }
-
-                    var propertyCount = reader.ReadInt32();
-                    for (var i = 0; i < propertyCount; i++)
-                    {
-                        var propertyName = reader.ReadString();
-                        var propertyType = ReadType(reader);
-                        var property = type.GetProperty(propertyName);
-                        var propertyValue = Decode(reader, propertyType);
-                        property.SetValue(objectValue, propertyValue);
-                    }
-
-                    return objectValue;
-                }
+                    return DecodeObject(reader, type);
                 default:
                     throw new Exception($"Unsupported type: {type}");
             }
 
             throw new Exception($"Unsupported type: {type}");
+        }
+
+        private IList DecodeList(BinaryReader reader, Type type)
+        {
+            var count = reader.ReadInt32();
+            var list = TypeUtils.CreateInstance(type, count) as IList;
+
+            for (var i = 0; i < count; i++)
+            {
+                var elementType = ReadType(reader);
+                var item = Decode(reader, elementType);
+                if (TypeUtils.IsListType(type))
+                {
+                    list.Add(item);
+                }
+                else
+                {
+                    list[i] = item;
+                }
+            }
+
+            return list;
+        }
+
+        private IDictionary DecodeDictionary(BinaryReader reader, Type type)
+        {
+            var count = reader.ReadInt32();
+            var dictionary = TypeUtils.CreateInstance(type) as IDictionary;
+                    
+            for (var i = 0; i < count; i++)
+            {
+                var keyType = ReadType(reader);
+                var key = Decode(reader, keyType);
+                var valueType = ReadType(reader);
+                var value = Decode(reader, valueType);
+                dictionary.Add(key, value);
+            }
+                    
+            return dictionary;
+        }
+
+        private object DecodeObject(BinaryReader reader, Type type)
+        {
+            var isNull = reader.ReadBoolean();
+            if (isNull)
+            {
+                return null;
+            }
+
+            var objectValue = TypeUtils.CreateInstance(type);
+
+            var fieldCount = reader.ReadInt32();
+            for (var i = 0; i < fieldCount; i++)
+            {
+                var fieldName = reader.ReadString();
+                var field = type.GetField(fieldName);
+                var fieldType = ReadType(reader);
+                var fieldValue = Decode(reader, fieldType);
+                field.SetValue(objectValue, fieldValue);
+            }
+
+            var propertyCount = reader.ReadInt32();
+            for (var i = 0; i < propertyCount; i++)
+            {
+                var propertyName = reader.ReadString();
+                var property = type.GetProperty(propertyName);
+                var propertyType = ReadType(reader);
+                var propertyValue = Decode(reader, propertyType);
+                property.SetValue(objectValue, propertyValue);
+            }
+
+            return objectValue;
         }
         
         private Type ReadType(BinaryReader reader)
