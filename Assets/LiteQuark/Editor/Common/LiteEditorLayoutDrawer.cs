@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -347,7 +346,7 @@ namespace LiteQuark.Editor
         private static object DrawObjectList(GUIContent title, object v, object[] attrs)
         {
             return DrawCustomList(title, v, TypeUtils.GetElementType(v.GetType()), null,
-                (list, i) => DrawObject(new GUIContent($"Item {i}"), list[i], LitePropertyType.Object));
+                (list, i) => DrawObject(new GUIContent(GetObjectDisplayName(list[i], $"Item {i}")), list[i], LitePropertyType.Object));
         }
 
         private static string DrawCustomPopupStringList(GUIContent title, string v, object[] attrs)
@@ -414,7 +413,7 @@ namespace LiteQuark.Editor
             }
 
             return DrawCustomList(title, v, optionalTypeListAttr.DefaultType,
-                (list, i) => DrawOptionalTypeSelector(new GUIContent($"{optionalTypeListAttr.ElementTitle} {i}"), optionalTypeListAttr.BaseType, list[i]),
+                (list, i) => DrawOptionalTypeSelector(new GUIContent(GetObjectDisplayName(list[i], $"Item {i}")), optionalTypeListAttr.BaseType, list[i]),
                 (list, i) => DrawIHasData(optionalTypeListAttr.DataTitle, list[i], optionalTypeListAttr.BaseType));
         }
 
@@ -432,7 +431,6 @@ namespace LiteQuark.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope(LiteEditorStyle.FrameBox))
                     {
-                        // GUILayout.Label(title);
                         if (!Foldout_.ContainsKey(v))
                         {
                             Foldout_.Add(v, true);
@@ -476,7 +474,7 @@ namespace LiteQuark.Editor
 
                             if (GUILayout.Button("X", GUILayout.ExpandWidth(false)))
                             {
-                                if (LiteEditorUtils.ShowConfirmDialog($"Item {i} ?"))
+                                if (LiteEditorUtils.ShowConfirmDialog(GetObjectDisplayName(list[i], $"Item {i} ?")))
                                 {
                                     list = ArrayUtils.RemoveFromList(list, i);
                                     continue;
@@ -515,6 +513,17 @@ namespace LiteQuark.Editor
 
             LabelError($"{type} not implement IHasData");
             return data;
+        }
+        
+        private static string GetObjectDisplayName(object data, string defaultName)
+        {
+            var methodInfo = data?.GetType().GetMethod("ToString");
+            if (methodInfo == null || methodInfo.DeclaringType == typeof(object))
+            {
+                return defaultName;
+            }
+            
+            return methodInfo.Invoke(data, null)?.ToString() ?? defaultName;
         }
 
         [InitializeOnLoadMethod]
