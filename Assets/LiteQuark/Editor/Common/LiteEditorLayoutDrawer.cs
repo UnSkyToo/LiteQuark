@@ -15,7 +15,7 @@ namespace LiteQuark.Editor
         {
             using (new ColorScope(Color.red))
             {
-                EditorGUILayout.LabelField(label);
+                EditorGUILayout.LabelField(new GUIContent(label, EditorGUIUtility.FindTexture("console.warnicon.sml")));
             }
         }
         
