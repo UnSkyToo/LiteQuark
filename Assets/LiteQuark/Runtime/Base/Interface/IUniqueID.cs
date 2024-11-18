@@ -1,6 +1,6 @@
 namespace LiteQuark.Runtime
 {
-    public interface IUnique
+    public interface IUniqueID
     {
         public ulong UniqueID { get; }
     }
