@@ -33,7 +33,6 @@ namespace LiteQuark.Runtime
     /// <param name="BaseType">基类类型（推荐用接口）</param>
     /// <param name="DataTitle">数据字段的标题</param>
     /// <param name="DefaultType">添加数据时，默认实例的子类类型</param>
-    /// <param name="ElementTitle">每个元素的标题开头</param>
     /// </summary>
     [Conditional("UNITY_EDITOR")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
@@ -42,18 +41,15 @@ namespace LiteQuark.Runtime
         public Type BaseType { get; }
         public string DataTitle { get; }
         public Type DefaultType { get; }
-        public string ElementTitle { get; }
         
         /// <param name="baseType">基类类型（推荐用接口）</param>
         /// <param name="dataTitle">数据字段的标题</param>
         /// <param name="defaultType">添加数据时，默认实例的子类类型</param>
-        /// <param name="elementTitle">每个元素的标题开头</param>
-        public LiteOptionalTypeListAttribute(Type baseType, string dataTitle, Type defaultType, string elementTitle)
+        public LiteOptionalTypeListAttribute(Type baseType, string dataTitle, Type defaultType)
         {
             BaseType = baseType;
             DataTitle = dataTitle;
             DefaultType = defaultType;
-            ElementTitle = elementTitle;
         }
     }
 }
