@@ -118,8 +118,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                // var newList = Array.CreateInstance(ElementType_, List_.list.Count + 1) as IList;
-                var newList = TypeUtils.CreateInstance(ElementType_, List_.list.Count + 1) as IList;
+                var newList = Array.CreateInstance(ElementType_, List_.list.Count + 1) as IList;
                 for (var i = 0; i < List_.list.Count; ++i)
                 {
                     newList[i] = List_.list[i];
@@ -138,8 +137,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                // var newList = Array.CreateInstance(ElementType_, List_.list.Count - 1) as IList;
-                var newList = TypeUtils.CreateInstance(ElementType_, List_.count - 1) as IList;
+                var newList = Array.CreateInstance(ElementType_, List_.list.Count - 1) as IList;
                 for (var i = 0; i < index; ++i)
                 {
                     newList[i] = List_.list[i];
