@@ -74,7 +74,7 @@ namespace LiteQuark.Editor
 
             GUILayout.FlexibleSpace();
 
-            EditorGUILayout.LabelField("Click the path to select it, and press and hold alt to open it directly");
+            EditorGUILayout.LabelField("Click the path to select it, and press and hold alt to open it directly. Drag path to add it.");
 
             if (mouseOverWindow == this)
             {
