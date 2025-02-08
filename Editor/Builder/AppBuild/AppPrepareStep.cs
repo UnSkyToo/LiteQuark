@@ -25,6 +25,7 @@ namespace LiteQuark.Editor
         {
             var namedBuildTarget = LiteEditorUtils.GetNamedBuildTarget(builder.Target);
             PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
+            PlayerSettings.SplashScreen.showUnityLogo = false;
             
             EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
             if (builder.AppConfig.IsDevelopmentBuild)
