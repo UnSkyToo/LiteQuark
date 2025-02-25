@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0-preview] - 2025-02-25
+- 重构并扩展Task模块
+- Asset模块支持远程资源，可把所有Bundle放到远端
+- 新增编辑器扩展模块，可直接绘制object，支持绝大部分类型
+- 新增Codec模块，可以序列化较为复杂的类型
+- 优化Logic type记录方式，使用系统自带的名次代替自己记录，更健壮
+- 修复TypeUtils中数组动态创建的特定bug
+- 修复打包showunitylogo选项会被错误关闭的bug
+- 若干显示优化
+
 ## [0.0.20-preview] - 2024-09-20
 - Project Builder增加SplitApplicationBinary命令行打包参数支持
 - 修复命令行打包Bool参数解析错误的BUG
