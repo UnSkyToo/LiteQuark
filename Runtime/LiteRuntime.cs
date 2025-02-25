@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LiteRuntime : Singleton<LiteRuntime>
+    public sealed partial class LiteRuntime : Singleton<LiteRuntime>
     {
         public static bool IsDebugMode { get; private set; } = false;
         
@@ -12,6 +12,7 @@ namespace LiteQuark.Runtime
 
         public LiteLauncher Launcher { get; private set; }
         
+        private static readonly Dictionary<System.Type, int> RegisterSystemMap_ = new Dictionary<System.Type, int>();
         private readonly List<ISystem> SystemList_ = new List<ISystem>();
         private readonly Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
         
@@ -96,9 +97,12 @@ namespace LiteQuark.Runtime
             SystemList_.Clear();
             SystemTypeMap_.Clear();
 
-            foreach (var type in LiteConst.SystemTypeList)
+            var registerSystemList = new List<System.Type>(RegisterSystemMap_.Keys);
+            registerSystemList.Sort((x, y) => RegisterSystemMap_[y].CompareTo(RegisterSystemMap_[x]));
+            
+            foreach (var type in registerSystemList)
             {
-                LLog.Info($"Initialize {type}");
+                LLog.Info($"Initialize {type.AssemblyQualifiedName}");
                 if (System.Activator.CreateInstance(type) is ISystem sys)
                 {
                     SystemList_.Add(sys);
@@ -277,6 +281,36 @@ namespace LiteQuark.Runtime
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
-        public static UISystem UI => Get<UISystem>();
+        
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        private static void RegisterSystem()
+        {
+            RegisterSystemMap_.Clear();
+            
+            RegisterSystem<LogSystem>(99900);
+            RegisterSystem<EventSystem>(99800);
+            RegisterSystem<TaskSystem>(99700);
+            RegisterSystem<TimerSystem>(99600);
+            RegisterSystem<GroupSystem>(99500);
+            RegisterSystem<AssetSystem>(99400);
+            RegisterSystem<ObjectPoolSystem>(99300);
+            RegisterSystem<AudioSystem>(99200);
+            RegisterSystem<ActionSystem>(99100);
+        }
+
+        /// <summary>
+        /// Register LiteQuark runtime module
+        /// </summary>
+        /// <param name="priority">Sort by priority value from high to low, can't greater than 90000</param>
+        public static void RegisterSystem<T>(int priority) where T : ISystem
+        {
+            var type = typeof(T);
+            if (RegisterSystemMap_.ContainsKey(type))
+            {
+                return;
+            }
+            
+            RegisterSystemMap_.Add(type, priority);
+        }
     }
 }

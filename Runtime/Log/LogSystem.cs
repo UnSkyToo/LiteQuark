@@ -28,6 +28,7 @@ namespace LiteQuark.Runtime
             else
             {
                 Repository_.EnableLevel(LogLevel.All, false);
+                UnityEngine.Debug.LogWarning("DebugMode is false, disable all log!");
                 UnityEngine.Debug.unityLogger.logEnabled = false;
             }
         }

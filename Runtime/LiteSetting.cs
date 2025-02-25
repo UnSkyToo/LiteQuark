@@ -18,10 +18,12 @@ namespace LiteQuark.Runtime
         [SerializeField] public ActionSetting Action;
         [Header("日志设置")]
         [SerializeField] public LogSetting Log;
-        [Header("界面设置")]
-        [SerializeField] public UISetting UI;
         [Header("调试设置")]
         [SerializeField] public DebugSetting Debug;
+#if LITE_QUARK_ENABLE_UI
+        [Header("界面设置")]
+        [SerializeField] public UISetting UI;
+#endif
 
         public LiteSetting()
         {
@@ -31,8 +33,10 @@ namespace LiteQuark.Runtime
             Asset = new AssetSetting();
             Action = new ActionSetting();
             Log = new LogSetting();
-            UI = new UISetting();
             Debug = new DebugSetting();
+#if LITE_QUARK_ENABLE_UI
+            UI = new UISetting();
+#endif
         }
 
         [Serializable]
@@ -93,6 +97,18 @@ namespace LiteQuark.Runtime
         }
 
         [Serializable]
+        public class DebugSetting
+        {
+            [SerializeField] public bool DebugMode;
+            [SerializeField, Range(0f, 5f)] public float TimeScale = 1.0f;
+            
+            public DebugSetting()
+            {
+            }
+        }
+        
+#if LITE_QUARK_ENABLE_UI
+        [Serializable]
         public class UISetting
         {
             [SerializeField] public CanvasScaler.ScaleMode ScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -105,16 +121,6 @@ namespace LiteQuark.Runtime
             {
             }
         }
-
-        [Serializable]
-        public class DebugSetting
-        {
-            [SerializeField] public bool DebugMode;
-            [SerializeField, Range(0f, 5f)] public float TimeScale = 1.0f;
-            
-            public DebugSetting()
-            {
-            }
-        }
+#endif
     }
 }
