@@ -20,6 +20,8 @@ To get started with LiteQuark, you need:
 
 ### Installation
 
+#### With Source Code
+
 1. Clone this repository into your Unity project’s `Assets` folder.
 
    ```bash
@@ -27,8 +29,18 @@ To get started with LiteQuark, you need:
    ```
 
 2. Import the cloned assets into your Unity project.
-   
+
 3. After importing, you will find the LiteQuark folder within your project’s Assets directory.
+
+#### With Package
+
+1. Open Window > Package Manager.
+
+2. Click '+' and select 'Add Package from git URL'.
+
+3. use lastest version with URL https://github.com/UnSkyToo/LiteQuark.git#LiteQuark
+   
+4. or specify a version with URL https://github.com/UnSkyToo/LiteQuark.git#0.1.0
 
 ### Usage
 
@@ -43,11 +55,11 @@ Once the framework is added to your project:
 Here’s a simple example of how to use one of the included systems:
 
 ``` bash
-1. Create Empy GameObject and attatch LiteLauncher
+1. Create Empty GameObject and attach LiteLauncher
 2. Create GameLogic.cs and implement ILogic interface
 3. add your logic in LiteLauncher Inspector
 4. use LiteRuntime to access all modules
-5. create StandaloneAssets folder, it's main assets folder
+5. Create a StandaloneAssets folder, it's the main assets folder.
 ```
 
 ```csharp
@@ -58,7 +70,7 @@ public class GameLogic : ILogic
 {
     public bool Startup()
     {
-        LiteRuntime.Audio.PlayMusic("xxxx.ogg", true, 0.5f); // play music with Audio Module
+        LiteRuntime.Audio.PlayMusic("xxxx.ogg", true, 0.5f); // Play music with Audio Module
         return true;
     }
 
