@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace LiteQuark.Runtime
 {
@@ -20,11 +21,11 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                return Activator.CreateInstance<T>();
+                return Activator.CreateInstance(typeof(T), BindingFlags.Instance | BindingFlags.NonPublic, null, null, null) as T;
             }
-            catch (MissingMethodException)
+            catch (MissingMethodException ex)
             {
-                throw;
+                throw new Exception($"(单例模式下，构造函数不能为public)\n{ex.Message}");
             }
         }
     }
