@@ -17,6 +17,12 @@ namespace LiteQuark.Runtime
         private readonly List<BaseUI> UIList_ = new List<BaseUI>();
         private readonly List<BaseUI> CloseList_ = new List<BaseUI>();
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSystem()
+        {
+            LiteRuntime.RegisterSystem<UISystem>(50000);
+        }
+
         public UISystem()
         {
             var parent = GameObject.Find("Canvas");
@@ -74,6 +80,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
+            ui.System = this;
             ui.State = UIState.Opening;
             var parent = GetUIParent(ui.DepthMode);
             LiteRuntime.Asset.InstantiateAsync(ui.PrefabPath, parent, (instance) =>

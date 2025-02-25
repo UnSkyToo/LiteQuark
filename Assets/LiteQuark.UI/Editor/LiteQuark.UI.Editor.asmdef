@@ -1,0 +1,18 @@
+{
+    "name": "LiteQuark.UI.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:70cc8e28ad336ff488b406869409d3f1"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

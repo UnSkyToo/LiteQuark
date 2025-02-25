@@ -12,6 +12,7 @@ namespace LiteQuark.Runtime
         public abstract UIDepthMode DepthMode { get; }
         public abstract bool IsMutex { get; }
         
+        public UISystem System { get; set; }
         public UIState State { get; set; }
         
         public GameObject Go { get; private set; }
@@ -77,7 +78,7 @@ namespace LiteQuark.Runtime
             anchorMax.x /= maxWidth;
             anchorMax.y /= maxHeight;
 
-            var canvasSize = LiteRuntime.UI.CanvasRoot.sizeDelta;
+            var canvasSize = System.CanvasRoot.sizeDelta;
 
             OnAdaptAnchorsValue(canvasSize, anchorMin, anchorMax);
         }

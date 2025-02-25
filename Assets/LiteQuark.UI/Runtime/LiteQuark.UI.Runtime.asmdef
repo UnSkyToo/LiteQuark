@@ -1,0 +1,16 @@
+{
+    "name": "LiteQuark.UI.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:4d0f6ef532c59e64a8bf7b34db570772"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
