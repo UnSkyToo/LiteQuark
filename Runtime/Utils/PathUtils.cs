@@ -127,6 +127,11 @@ namespace LiteQuark.Runtime
             var path = PathIsFile(fullPath) ? Path.GetDirectoryName(fullPath) : fullPath;
             return UnifyPath(path);
         }
+        
+        public static bool FileExists(string path)
+        {
+            return File.Exists(path);
+        }
 
         public static void DeleteFile(string path)
         {
@@ -154,6 +159,11 @@ namespace LiteQuark.Runtime
         public static string GetFileName(string path)
         {
             return Path.GetFileName(path);
+        }
+
+        public static string GetFileNameWithoutExt(string path)
+        {
+            return Path.GetFileNameWithoutExtension(path);
         }
 
         public static void CreateDirectory(string path)
