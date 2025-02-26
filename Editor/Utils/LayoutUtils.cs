@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    public static class LiteLayoutUtils
+    public static class LayoutUtils
     {
         public const string DefaultLayoutPrefsKey = "LiteQuark.DefaultLayoutName";
         public const string DefaultLayoutName = "LiteQuark.Layout";
