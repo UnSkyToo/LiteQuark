@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using LiteBattle.Runtime;
+using LiteQuark.Runtime;
 using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -113,10 +114,10 @@ namespace LiteBattle.Editor
                 throw new Exception("can't find TimelineWindow type");
             }
 
-            var instance = LiteReflectionHelper.GetPropertyValue(timelineWindowType, "instance");
-            var state = LiteReflectionHelper.GetPropertyValue(instance, "state");
-            var editSequence = LiteReflectionHelper.GetPropertyValue(state, "editSequence");
-            LiteReflectionHelper.SetPropertyValue(editSequence, "time", time);
+            var instance = ReflectionUtils.GetPropertyValue(timelineWindowType, "instance");
+            var state = ReflectionUtils.GetPropertyValue(instance, "state");
+            var editSequence = ReflectionUtils.GetPropertyValue(state, "editSequence");
+            ReflectionUtils.SetPropertyValue(editSequence, "time", time);
         }
 
         public static double GetTimelineTrackTime()
@@ -127,10 +128,10 @@ namespace LiteBattle.Editor
                 throw new Exception("can't find TimelineWindow type");
             }
 
-            var instance = LiteReflectionHelper.GetPropertyValue(timelineWindowType, "instance");
-            var state = LiteReflectionHelper.GetPropertyValue(instance, "state");
-            var editSequence = LiteReflectionHelper.GetPropertyValue(state, "editSequence");
-            return (double)LiteReflectionHelper.GetPropertyValue(editSequence, "time");
+            var instance = ReflectionUtils.GetPropertyValue(timelineWindowType, "instance");
+            var state = ReflectionUtils.GetPropertyValue(instance, "state");
+            var editSequence = ReflectionUtils.GetPropertyValue(state, "editSequence");
+            return (double)ReflectionUtils.GetPropertyValue(editSequence, "time");
         }
 
         public static void SetTimelineFrameChange(Action<int> onFrame)
@@ -141,11 +142,11 @@ namespace LiteBattle.Editor
                 throw new Exception("can't find TimelineWindow type");
             }
 
-            var instance = LiteReflectionHelper.GetPropertyValue(timelineWindowType, "instance");
-            var state = LiteReflectionHelper.GetPropertyValue(instance, "state");
-            var editSequence = LiteReflectionHelper.GetPropertyValue(state, "editSequence");
+            var instance = ReflectionUtils.GetPropertyValue(timelineWindowType, "instance");
+            var state = ReflectionUtils.GetPropertyValue(instance, "state");
+            var editSequence = ReflectionUtils.GetPropertyValue(state, "editSequence");
 
-            var winStateInfo = LiteReflectionHelper.GetFieldInfo(editSequence, "m_WindowState");
+            var winStateInfo = ReflectionUtils.GetFieldInfo(editSequence, "m_WindowState");
             if (winStateInfo != null)
             {
                 var winState = winStateInfo.GetValue(editSequence);

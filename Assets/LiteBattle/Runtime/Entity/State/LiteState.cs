@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace LiteBattle.Runtime
@@ -22,7 +23,7 @@ namespace LiteBattle.Runtime
 
             foreach (var clip in Clips_)
             {
-                Duration = LiteMathHelper.Max(Duration, clip.Start + clip.Duration);
+                Duration = Math.Max(Duration, clip.Start + clip.Duration);
             }
         }
 
