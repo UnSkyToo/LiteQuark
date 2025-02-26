@@ -178,6 +178,32 @@ namespace LiteQuark.Editor
 
             return results;
         }
+        
+        public static void ShowStandaloneGameView(string tag)
+        {
+            tag = string.IsNullOrWhiteSpace(tag) ? "LiteStandaloneGameView" : tag;
+            
+            var inst = EditorWindow.CreateInstance(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")) as EditorWindow;
+            inst.position = new Rect((Screen.width - 960) / 2, 150, 960, 640);
+            inst.titleContent = new GUIContent(tag);
+            inst.Show();
+            inst.name = tag;
+        }
+
+        public static void HideStandaloneGameView(string tag)
+        {
+            tag = string.IsNullOrWhiteSpace(tag) ? "LiteStandaloneGameView" : tag;
+            
+            var gameViews = Resources.FindObjectsOfTypeAll(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+            foreach (var game in gameViews)
+            {
+                if (game.name == tag && game is EditorWindow previewWin)
+                {
+                    previewWin.Close();
+                    break;
+                }
+            }
+        }
     }
 }
 #endif
