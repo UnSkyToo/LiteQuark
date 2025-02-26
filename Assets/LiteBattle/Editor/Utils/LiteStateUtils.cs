@@ -8,6 +8,12 @@ namespace LiteBattle.Editor
     {
         public static void OpenStateEditorScene()
         {
+            var activeScene = EditorSceneManager.GetActiveScene();
+            if (activeScene.path.Contains("LiteStateEditorScene"))
+            {
+                return;
+            }
+            
             // 搜索所有名为 "LiteStateEditorScene.scene" 的文件
             var guids = AssetDatabase.FindAssets("LiteStateEditorScene t:Scene");
             foreach (var guid in guids)

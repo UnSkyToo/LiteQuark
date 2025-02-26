@@ -141,15 +141,21 @@ namespace LiteBattle.Editor
             UnBindTimeline();
             CurrentTimeline_ = asset;
             LiteTimelineHelper.SetTimeline(asset);
-            TimelineDirector_.playableAsset = asset;
-            Selection.activeObject = TimelineDirector_.gameObject;
+            if (TimelineDirector_ != null)
+            {
+                TimelineDirector_.playableAsset = asset;
+                Selection.activeObject = TimelineDirector_.gameObject;
+            }
         }
 
         public void UnBindTimeline()
         {
             CurrentTimeline_ = null;
             LiteTimelineHelper.ClearTimeline();
-            TimelineDirector_.playableAsset = null;
+            if (TimelineDirector_ != null)
+            {
+                TimelineDirector_.playableAsset = null;
+            }
         }
 
         public bool IsBindAttackRange()
