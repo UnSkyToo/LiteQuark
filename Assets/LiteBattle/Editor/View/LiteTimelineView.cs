@@ -52,13 +52,13 @@ namespace LiteBattle.Editor
             
             protected override List<string> GetList()
             {
-                var results = StateEditor_.GetCurrentAgentTimelinePathList();
+                var results = LiteEditorBinder.Instance.GetCurrentAgentTimelinePathList();
                 return results;
             }
 
             protected override bool CreateItem()
             {
-                LiteAssetHelper.CreateAsset<TimelineAsset>(StateEditor_.GetCurrentAgentTimelineRootPath(), $"{LiteAssetHelper.RandomAssetName("timeline_")}.playable");
+                LiteAssetHelper.CreateAsset<TimelineAsset>(LiteEditorBinder.Instance.GetCurrentAgentTimelineRootPath(), $"{LiteAssetHelper.RandomAssetName("timeline_")}.playable");
                 return true;
             }
 

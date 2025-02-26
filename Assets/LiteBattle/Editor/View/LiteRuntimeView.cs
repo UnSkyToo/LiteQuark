@@ -69,7 +69,7 @@ namespace LiteBattle.Editor
             }
             
             var currentTime = state.GetCurrentTime();
-            LiteStateEditor.Instance.GetTimelineCtrlView().SetFrameIndex(LiteTimelineHelper.TimeToFrame(currentTime));
+            StateEditor.GetTimelineCtrlView().SetFrameIndex(LiteTimelineHelper.TimeToFrame(currentTime));
 
             if (TimelineEditor.inspectedAsset != null && TimelineEditor.inspectedAsset.name == state.Name)
             {

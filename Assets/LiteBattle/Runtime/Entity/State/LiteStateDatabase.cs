@@ -1,15 +1,16 @@
 using System.Collections.Generic;
-using System.IO;
 using LiteQuark.Runtime;
+using UnityEngine;
 using UnityEngine.Timeline;
 
 namespace LiteBattle.Runtime
 {
-    public sealed class LiteStateDataset : Singleton<LiteStateDataset>
+    public sealed class LiteStateDatabase : Singleton<LiteStateDatabase>
     {
-        private readonly Dictionary<string, Dictionary<string, LiteStateData>> StateDataList_ = new ();
+        private readonly Dictionary<string, LiteGroupData> GroupDataList_ = new();
+        private readonly Dictionary<string, Dictionary<string, LiteStateData>> StateDataList_ = new();
 
-        private LiteStateDataset()
+        private LiteStateDatabase()
         {
         }
         
@@ -25,17 +26,22 @@ namespace LiteBattle.Runtime
 
         private void Load()
         {
-            var stateDirectoryList = LiteAssetMgr.Instance.GetDirectoryList("StateData/Timeline/");
-            foreach (var stateDirectory in stateDirectoryList)
+            // TODO : get path from config
+            var jsonPath = "demo/StateData/Database.json";
+            var json = LiteRuntime.Asset.LoadAssetSync<TextAsset>(jsonPath).text;
+            var groupDataList = LitJson.JsonMapper.ToObject<List<LiteGroupData>>(json);
+            foreach (var groupData in groupDataList)
             {
-                var name = Path.GetFileName(stateDirectory);
-                var group = LoadStateGroup(stateDirectory);
-                StateDataList_.Add(name, group);
+                GroupDataList_.Add(groupData.Name, groupData);
+                
+                var group = LoadStateGroup(groupData);
+                StateDataList_.Add(groupData.Name, group);
             }
         }
 
         private void Unload()
         {
+            GroupDataList_.Clear();
             StateDataList_.Clear();
         }
 
@@ -45,14 +51,13 @@ namespace LiteBattle.Runtime
             Load();
         }
 
-        private Dictionary<string, LiteStateData> LoadStateGroup(string stateGroupPath)
+        private Dictionary<string, LiteStateData> LoadStateGroup(LiteGroupData groupData)
         {
             var group = new Dictionary<string, LiteStateData>();
             
-            var fileList = LiteAssetMgr.Instance.GetFileList(stateGroupPath, ".playable");
-            foreach (var file in fileList)
+            foreach (var file in groupData.TimelineList)
             {
-                var timelineAsset = LiteAssetMgr.Instance.LoadAsset<TimelineAsset>(file);
+                var timelineAsset = LiteRuntime.Asset.LoadAssetSync<TimelineAsset>(file);
                 if (timelineAsset == null)
                 {
                     LLog.Error($"can't load timeline asset : {file}");
@@ -118,6 +123,22 @@ namespace LiteBattle.Runtime
 
             var state = new LiteStateData(timelineAsset.name, clipList.ToArray());
             return state;
+        }
+
+        public LiteGroupData GetGroupData(string stateGroupID)
+        {
+            if (string.IsNullOrWhiteSpace(stateGroupID))
+            {
+                return default;
+            }
+
+            if (GroupDataList_.TryGetValue(stateGroupID, out var groupData))
+            {
+                return groupData;
+            }
+
+            LLog.Error($"can't get state group, state group id = {stateGroupID}");
+            return default;
         }
 
         public LiteStateData GetStateData(string stateGroupID, string stateID)

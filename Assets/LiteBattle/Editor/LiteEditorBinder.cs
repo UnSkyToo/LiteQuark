@@ -78,7 +78,23 @@ namespace LiteBattle.Editor
         {
             return AgentBinder_ != null ? AgentBinder_.GetAnimatorStateLength(stateName) : 0f;
         }
-
+        
+        public string GetCurrentAgentTimelineRootPath()
+        {
+            var stateGroup = GetCurrentStateGroup();
+            return PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), stateGroup);
+        }
+        
+        public List<string> GetCurrentAgentTimelinePathList()
+        {
+            if (string.IsNullOrWhiteSpace(GetCurrentStateGroup()))
+            {
+                return new List<string>();
+            }
+            
+            return LiteAssetHelper.GetAssetPathList("TimelineAsset", GetCurrentAgentTimelineRootPath());
+        }
+        
         public void BindAgent(LiteAgentConfig config)
         {
             UnBindAgent();

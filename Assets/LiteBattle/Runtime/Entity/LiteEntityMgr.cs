@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
 
         public void Startup()
         {
-            LiteStateDataset.Instance.Startup();
+            LiteStateDatabase.Instance.Startup();
             
             EntityList_.Clear();
             AddList_.Clear();
@@ -36,7 +36,7 @@ namespace LiteBattle.Runtime
             }
             EntityList_.Clear();
             
-            LiteStateDataset.Instance.Shutdown();
+            LiteStateDatabase.Instance.Shutdown();
         }
 
         public void Tick(float deltaTime)
@@ -97,12 +97,13 @@ namespace LiteBattle.Runtime
             return null;
         }
 
-        public LiteAgent AddAgent(string agentPath)
+        public LiteAgent AddAgent(string stateGroupID)
         {
-            var asset = LiteAssetMgr.Instance.LoadAsset<LiteAgentConfig>(agentPath);
+            var data = LiteStateDatabase.Instance.GetGroupData(stateGroupID);
+            var asset = LiteRuntime.Asset.LoadAssetSync<LiteAgentConfig>(data.AgentPath);
             if (asset == null)
             {
-                LLog.Error($"can't load {nameof(LiteAgentConfig)} : {agentPath}");
+                LLog.Error($"can't load {nameof(LiteAgentConfig)} : {stateGroupID}");
                 return null;
             }
 

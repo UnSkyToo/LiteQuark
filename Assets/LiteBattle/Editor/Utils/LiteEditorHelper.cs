@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using LiteQuark.Runtime;
 using LiteConst = LiteBattle.Runtime.LiteConst;
-using LiteLabelAttribute = LiteBattle.Runtime.LiteLabelAttribute;
 
 namespace LiteBattle.Editor
 {
@@ -12,7 +10,7 @@ namespace LiteBattle.Editor
         {
             var stateNameList = new List<string>();
 
-            foreach (var timelinePath in LiteStateEditor.Instance.GetCurrentAgentTimelinePathList())
+            foreach (var timelinePath in LiteEditorBinder.Instance.GetCurrentAgentTimelinePathList())
             {
                 stateNameList.Add(PathUtils.GetFileNameWithoutExt(timelinePath));
             }

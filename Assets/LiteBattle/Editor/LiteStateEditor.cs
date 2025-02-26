@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.IO;
+using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -7,20 +9,6 @@ namespace LiteBattle.Editor
 {
     public sealed class LiteStateEditor : EditorWindow
     {
-        private static LiteStateEditor Instance_;
-        public static LiteStateEditor Instance
-        {
-            get
-            {
-                if (Instance_ == null)
-                {
-                    ShowEditor();
-                }
-
-                return Instance_;
-            }
-        }
-
         private bool IsInit_ = false;
         private readonly List<ILiteEditorView> ViewList_ = new List<ILiteEditorView>();
         private LiteStateSceneView SceneView_;
@@ -35,7 +23,6 @@ namespace LiteBattle.Editor
 
         private void OnEnable()
         {
-            Instance_ = this;
             IsInit_ = false;
             
             LiteStateUtils.OpenStateEditorScene();
@@ -51,8 +38,6 @@ namespace LiteBattle.Editor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChange;
 
             Shutdown();
-
-            Instance_ = null;
         }
 
         private void OnPlayModeStateChange(PlayModeStateChange state)
@@ -123,6 +108,8 @@ namespace LiteBattle.Editor
             // LiteEditorLayoutDrawer.Clear();
             LiteEditorPreviewer.Instance.Shutdown();
             LiteEditorBinder.Instance.Shutdown();
+            
+            SaveGroupData();
         }
 
         public T GetView<T>() where T : ILiteEditorView
@@ -153,20 +140,55 @@ namespace LiteBattle.Editor
             return !EditorApplication.isPlaying;
         }
 
-        public string GetCurrentAgentTimelineRootPath()
+        private void SaveGroupData()
         {
-            var subPath = LiteEditorBinder.Instance.GetCurrentStateGroup();
-            return PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), subPath);
-        }
-        
-        public List<string> GetCurrentAgentTimelinePathList()
-        {
-            if (string.IsNullOrWhiteSpace(LiteEditorBinder.Instance.GetCurrentStateGroup()))
+            var groupData = new List<LiteGroupData>();
+            var agentFullPathList = LiteAssetHelper.GetAssetPathList("LiteAgentConfig", LiteStateUtils.GetAgentRootPath());
+            foreach (var agentFullPath in agentFullPathList)
             {
-                return new List<string>();
+                var agentConfig = AssetDatabase.LoadAssetAtPath<LiteAgentConfig>(agentFullPath);
+                if (agentConfig == null)
+                {
+                    Debug.LogError($"{agentFullPath} is not LiteAgentConfig");
+                    continue;
+                }
+                
+                if (string.IsNullOrWhiteSpace(agentConfig.StateGroup))
+                {
+                    Debug.LogError($"{agentFullPath} StateGroup is empty");
+                    continue;
+                }
+
+                var timelineRootPath = PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), agentConfig.StateGroup);
+                var timelineFullPathList = LiteAssetHelper.GetAssetPathList("TimelineAsset", timelineRootPath);
+                var timelineList = new List<string>(timelineFullPathList.Count);
+                
+                foreach (var timelineFullPath in timelineFullPathList)
+                {
+                    var timelinePath = PathUtils.GetRelativeAssetRootPath(timelineFullPath);
+                    timelineList.Add(timelinePath);
+                }
+
+                var agentPath = PathUtils.GetRelativeAssetRootPath(agentFullPath);
+                groupData.Add(new LiteGroupData(agentConfig.StateGroup, agentPath, timelineList));
+            }
+            
+            // save to json
+            var json = LitJson.JsonMapper.ToJson(groupData);
+            if (string.IsNullOrWhiteSpace(json) || json == "{}")
+            {
+                Debug.LogError("SaveGroupData json is empty");
+                return;
             }
 
-            return LiteAssetHelper.GetAssetPathList("TimelineAsset", GetCurrentAgentTimelineRootPath());
+            var jsonPath = PathUtils.ConcatPath(LiteStateConfig.Instance.DataPath, "Database.json");
+            if (File.Exists(jsonPath))
+            {
+                File.Delete(jsonPath);
+                AssetDatabase.Refresh();
+            }
+            File.WriteAllText(jsonPath, json);
+            AssetDatabase.Refresh();
         }
     }
 }

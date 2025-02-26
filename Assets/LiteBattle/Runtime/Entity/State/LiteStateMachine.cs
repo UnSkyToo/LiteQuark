@@ -46,7 +46,7 @@ namespace LiteBattle.Runtime
         private void ChangeToState(string stateGroupID, string stateID)
         {
             CurrentState_?.Leave();
-            CurrentState_ = new LiteState(LiteStateDataset.Instance.GetStateData(stateGroupID, stateID));
+            CurrentState_ = new LiteState(LiteStateDatabase.Instance.GetStateData(stateGroupID, stateID));
             CurrentState_?.Enter(this);
         }
     }

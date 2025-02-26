@@ -188,7 +188,7 @@ namespace LiteBattle.Editor
             if (GUILayout.Button("Reload"))
             {
                 LiteTimelineHelper.SaveTimelineChanges();
-                LiteStateDataset.Instance.Reload();
+                LiteStateDatabase.Instance.Reload();
             }
         }
     }

@@ -153,9 +153,10 @@ namespace LiteBattle.Runtime
         public void LoadPrefab(string prefabPath, Vector3 position, Vector3 scale, Quaternion rotation)
         {
             RecyclePrefab();
-            PrefabPath_ = prefabPath;
+            // TODO : fixed StateEngine root path and LiteQuark root path
+            PrefabPath_ = $"demo/{prefabPath}";
             
-            Go_ = LiteObjectPoolMgr.Instance.Get(PrefabPath_).Alloc();
+            Go_ = LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc();
             Go_.transform.localPosition = position;
             Go_.transform.localScale = scale;
             Go_.transform.localRotation = rotation;
@@ -171,7 +172,7 @@ namespace LiteBattle.Runtime
         {
             if (Go_ != null)
             {
-                LiteObjectPoolMgr.Instance.Get(PrefabPath_).Recycle(Go_);
+                LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Recycle(Go_);
                 Go_ = null;
             }
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteBattle.Runtime
 {
-    public sealed class LiteBattleEngine : Singleton<LiteBattleEngine>
+    public class LiteBattleEngine : Singleton<LiteBattleEngine>
     {
         public LiteContext GlobalContext { get; }
 
@@ -16,13 +16,11 @@ namespace LiteBattle.Runtime
 
         public void Startup(string playerAssetName)
         {
-            LiteObjectPoolMgr.Instance.Startup();
-            
             LiteInputMgr.Instance.Startup();
             LiteEntityMgr.Instance.Startup();
             LiteCameraMgr.Instance.Startup();
 
-            var agent = LiteEntityMgr.Instance.AddAgent($"StateData/Agent/{playerAssetName}.asset");
+            var agent = LiteEntityMgr.Instance.AddAgent(playerAssetName);
             LiteCameraMgr.Instance.Bind(UnityEngine.Camera.main, agent);
             agent.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 100);
             agent.Camp = LiteEntityCamp.Light;
@@ -30,7 +28,7 @@ namespace LiteBattle.Runtime
 
             PlayerController_ = new LitePlayerController(agent);
 
-            var monster = LiteEntityMgr.Instance.AddAgent("StateData/Agent/player_test.asset");
+            var monster = LiteEntityMgr.Instance.AddAgent("player_test");
             monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 100);
             monster.Position = new Vector3(3, 0, 3);
             monster.Camp = LiteEntityCamp.Dark;
@@ -39,13 +37,11 @@ namespace LiteBattle.Runtime
 
         public void Shutdown()
         {
-            PlayerController_.Dispose();
+            PlayerController_?.Dispose();
             
             LiteCameraMgr.Instance.Shutdown();
             LiteEntityMgr.Instance.Shutdown();
             LiteInputMgr.Instance.Shutdown();
-            
-            LiteObjectPoolMgr.Instance.Shutdown();
         }
 
         public void Tick(float deltaTime)

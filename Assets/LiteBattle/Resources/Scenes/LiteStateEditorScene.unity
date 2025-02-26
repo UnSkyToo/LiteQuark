@@ -440,7 +440,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &826093108
+--- !u!1 &321517259
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -448,35 +448,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 826093110}
-  - component: {fileID: 826093109}
+  - component: {fileID: 321517260}
+  - component: {fileID: 321517261}
   m_Layer: 0
-  m_Name: test
+  m_Name: Launcher
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &826093109
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 826093108}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 870c3d9a517b4729b1f752cb17737e5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PlayerAssetName: player
---- !u!4 &826093110
+--- !u!4 &321517260
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 826093108}
+  m_GameObject: {fileID: 321517259}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -485,6 +472,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &321517261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 321517259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 720617ee455f4ab1a59ef3674019ad90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Setting:
+    LogicList:
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Demo.DemoLogic, Assembly-CSharp, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+    Common:
+      TargetFrameRate: 60
+      MultiTouch: 0
+      AutoRestartInBackground: 0
+      BackgroundLimitTime: 90
+      ThrowException: 1
+    Asset:
+      AssetMode: 0
+      EnableRetain: 0
+      AssetRetainTime: 120
+      BundleRetainTime: 300
+      EnableRemoteBundle: 0
+      BundleRemoteUri: https://localhost:8000/
+    Action:
+      SafetyMode: 0
+    Log:
+      SimpleLog: 1
+      ReceiveLog: 1
+      LogInfo: 1
+      LogWarn: 1
+      LogError: 1
+      LogFatal: 1
+      ShowLogViewer: 1
+    Debug:
+      DebugMode: 1
+      TimeScale: 1
+    UI:
+      ScaleMode: 1
+      MatchMode: 0
+      MatchValue: 0
+      ResolutionWidth: 1920
+      ResolutionHeight: 1080
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -493,4 +529,4 @@ SceneRoots:
   - {fileID: 263237799}
   - {fileID: 234528430}
   - {fileID: 230417445}
-  - {fileID: 826093110}
+  - {fileID: 321517260}
