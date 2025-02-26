@@ -352,7 +352,7 @@ namespace LiteQuark.Editor
         private static string DrawCustomPopupStringList(GUIContent title, string v, object[] attrs)
         {
             var customAttr = TypeUtils.GetAttribute<LiteCustomPopupListAttribute>(null, attrs);
-            var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>{"error custom list"};
+            var list = customAttr?.GetList() ?? new List<string>{"error custom list"};
             return DrawPopupStringList(title, list, v);
         }
         
