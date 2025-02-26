@@ -1,5 +1,6 @@
 using System;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -59,11 +60,11 @@ namespace LiteBattle.Editor
             
             if (range is LiteBoxRange boxRange)
             {
-                LiteHandles.DrawBox(agentBinder.transform.position + boxRange.Offset, boxRange.Size, RangeColor_);
+                HandleUtils.DrawBox(agentBinder.transform.position + boxRange.Offset, boxRange.Size, RangeColor_);
             }
             else if (range is LiteSphereRange sphereRange)
             {
-                LiteHandles.DrawSphere(agentBinder.transform.position + sphereRange.Offset, sphereRange.Radius, RangeColor_);
+                HandleUtils.DrawSphere(agentBinder.transform.position + sphereRange.Offset, sphereRange.Radius, RangeColor_);
             }
         }
 
