@@ -6,9 +6,9 @@ using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
-namespace LiteBattle.Editor
+namespace LiteQuark.Editor
 {
-    public static class LiteAssetHelper
+    public static class AssetUtils
     {
         public static List<string> GetAssetPathList(string assetType, string rootPath)
         {
