@@ -1,4 +1,5 @@
 using System;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {
@@ -6,7 +7,8 @@ namespace LiteBattle.Runtime
     [Serializable]
     public sealed class LitePlayAnimationEvent : ILiteEvent
     {
-        [LiteProperty("动画名字", LitePropertyType.AnimationNameList)]
+        [LiteProperty("动画名字", LitePropertyType.CustomPopupList)]
+        [LiteCustomPopupList(typeof(LiteAgentBinder), nameof(LiteAgentBinder.GetAnimatorStateNameListForAttribute))]
         public string AnimationName;
         
         public bool HasData => true;

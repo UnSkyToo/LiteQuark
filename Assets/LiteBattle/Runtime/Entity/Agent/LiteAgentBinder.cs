@@ -1,28 +1,41 @@
 ﻿#if UNITY_EDITOR
 using System.Collections.Generic;
+using LiteQuark.Editor;
+using LiteQuark.Runtime;
 using UnityEditor.Animations;
 using UnityEngine;
 
 namespace LiteBattle.Runtime
 {
-    public sealed class LiteAgentBinder : MonoBehaviour
+    // TODO : replace LiteEditorBinder with LiteAgentBinder ???
+    public sealed class LiteAgentBinder : Singleton<LiteAgentBinder>
     {
+        private LiteAgentConfig CurrentAgent_;
+        private GameObject GameObject_;
         private Animator[] Animators_;
         private readonly List<string> AnimatorStateNameList_ = new List<string>();
         private readonly Dictionary<string, AnimatorState> AnimatorStateList_ = new Dictionary<string, AnimatorState>();
 
         private int PreviewAnimatorStateIndex_ = -1;
         private float PreviewAnimatorStateTime_ = 0f;
-        
-        public void Initialize()
+
+        private LiteAgentBinder()
         {
+        }
+        
+        public void Bind(LiteAgentConfig config, GameObject go)
+        {
+            UnBind();
+            
+            CurrentAgent_ = config;
+            GameObject_ = go;
             AnimatorStateNameList_.Clear();
             AnimatorStateList_.Clear();
 
             PreviewAnimatorStateIndex_ = -1;
             PreviewAnimatorStateTime_ = 0f;
             
-            Animators_ = GetComponentsInChildren<Animator>();
+            Animators_ = go.GetComponentsInChildren<Animator>();
             
             foreach (var animator in Animators_)
             {
@@ -41,9 +54,72 @@ namespace LiteBattle.Runtime
             }
         }
         
+        public void UnBind()
+        {
+            GameObject_ = null;
+            Animators_ = null;
+            AnimatorStateNameList_.Clear();
+            AnimatorStateList_.Clear();
+        }
+        
+        public bool IsBindAgent()
+        {
+            return CurrentAgent_ != null;
+        }
+
+        public LiteAgentConfig GetAgent()
+        {
+            return CurrentAgent_;
+        }
+
+        public GameObject GetAgentGo()
+        {
+            return GameObject_;
+        }
+        
+        public string GetCurrentStateGroup()
+        {
+            if (!IsBindAgent())
+            {
+                return string.Empty;
+            }
+
+            return CurrentAgent_.StateGroup;
+        }
+        
+        public string GetCurrentAgentTimelineRootPath()
+        {
+            var stateGroup = GetCurrentStateGroup();
+            // TODO : use config path
+            return PathUtils.ConcatPath("Assets/StandaloneAssets/demo/StateData/Timeline", stateGroup);
+        }
+        
+        public static List<string> GetCurrentAgentTimelinePathListForAttribute()
+        {
+            if (string.IsNullOrWhiteSpace(Instance.GetCurrentStateGroup()))
+            {
+                return new List<string>();
+            }
+            
+            var timelinePathList = AssetUtils.GetAssetPathList("TimelineAsset", Instance.GetCurrentAgentTimelineRootPath());
+            var stateNameList = new List<string>();
+
+            foreach (var timelinePath in timelinePathList)
+            {
+                stateNameList.Add(PathUtils.GetFileNameWithoutExt(timelinePath));
+            }
+
+            return stateNameList;
+        }
+        
         public List<string> GetAnimatorStateNameList()
         {
             return AnimatorStateNameList_;
+        }
+
+        public static List<string> GetAnimatorStateNameListForAttribute()
+        {
+            return Instance.GetAnimatorStateNameList();
         }
 
         public string GetAnimatorStateName(int index)
@@ -76,7 +152,7 @@ namespace LiteBattle.Runtime
             var state = GetAnimatorState(stateName);
             if (state == null)
             {
-                return 0;
+                return 0f;
             }
 
             return state.motion.averageDuration;
@@ -133,7 +209,7 @@ namespace LiteBattle.Runtime
 
             if (state.motion is AnimationClip clip)
             {
-                clip.SampleAnimation(gameObject, time);
+                clip.SampleAnimation(GameObject_, time);
             }
         }
     }

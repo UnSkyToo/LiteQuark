@@ -58,7 +58,7 @@ namespace LiteBattle.Editor
 
             protected override bool CreateItem()
             {
-                LiteAssetHelper.CreateAsset<TimelineAsset>(LiteEditorBinder.Instance.GetCurrentAgentTimelineRootPath(), $"{LiteAssetHelper.RandomAssetName("timeline_")}.playable");
+                AssetUtils.CreateAsset<TimelineAsset>(LiteEditorBinder.Instance.GetCurrentAgentTimelineRootPath(), $"{AssetUtils.RandomAssetName("timeline_")}.playable");
                 return true;
             }
 
@@ -69,7 +69,7 @@ namespace LiteBattle.Editor
                 if (LiteEditorUtils.ShowConfirmDialog($"Delete Timeline {name}"))
                 {
                     LiteEditorBinder.Instance.UnBindTimeline();
-                    LiteAssetHelper.DeleteAsset(val);
+                    AssetUtils.DeleteAsset(val);
                     OnDataChanged();
                     return true;
                 }
@@ -83,7 +83,7 @@ namespace LiteBattle.Editor
                 var name = PathUtils.GetFileNameWithoutExt(timelineFullPath);
                 LiteInputTextDialog.ShowDialog("Change Name", name, (newName) =>
                 {
-                    LiteAssetHelper.RenameAsset(timelineFullPath, newName);
+                    AssetUtils.RenameAsset(timelineFullPath, newName);
                     OnDataChanged();
                 });
                 
@@ -120,7 +120,7 @@ namespace LiteBattle.Editor
 
                     menu.AddItem(new GUIContent("Duplicate"), false, () =>
                     {
-                        LiteAssetHelper.DuplicateAsset(timelineFullPath);
+                        AssetUtils.DuplicateAsset(timelineFullPath);
                         OnDataChanged();
                     });
 

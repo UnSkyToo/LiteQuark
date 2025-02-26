@@ -24,11 +24,7 @@ namespace LiteBattle.Editor
         public void OnFrame(int frame)
         {
             var time = (float) LiteTimelineHelper.FrameToTime(frame);
-            var binder = LiteEditorBinder.Instance.GetAgentBinder();
-            if (binder != null)
-            {
-                binder.SampleAnimation(AnimationName_, time);
-            }
+            LiteAgentBinder.Instance.SampleAnimation(AnimationName_, time);
         }
     }
 }

@@ -52,19 +52,19 @@ namespace LiteBattle.Editor
 
         private void DrawAttackRange(ILiteRange range)
         {
-            var agentBinder = LiteEditorBinder.Instance.GetAgentBinder();
-            if (agentBinder == null)
+            var agentGo = LiteAgentBinder.Instance.GetAgentGo();
+            if (agentGo == null)
             {
                 return;
             }
             
             if (range is LiteBoxRange boxRange)
             {
-                HandleUtils.DrawBox(agentBinder.transform.position + boxRange.Offset, boxRange.Size, RangeColor_);
+                HandleUtils.DrawBox(agentGo.transform.position + boxRange.Offset, boxRange.Size, RangeColor_);
             }
             else if (range is LiteSphereRange sphereRange)
             {
-                HandleUtils.DrawSphere(agentBinder.transform.position + sphereRange.Offset, sphereRange.Radius, RangeColor_);
+                HandleUtils.DrawSphere(agentGo.transform.position + sphereRange.Offset, sphereRange.Radius, RangeColor_);
             }
         }
 

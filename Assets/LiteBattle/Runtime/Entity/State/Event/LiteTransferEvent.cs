@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LiteQuark.Runtime;
 using UnityEngine;
 
 namespace LiteBattle.Runtime
@@ -9,11 +10,12 @@ namespace LiteBattle.Runtime
     [Serializable]
     public sealed class LiteTransferEvent : ILiteEvent
     {
-        [LiteProperty("目标", LitePropertyType.LiteStateNameList)]
+        [LiteProperty("目标", LitePropertyType.CustomPopupList)]
+        [LiteCustomPopupList(typeof(LiteAgentBinder), nameof(LiteAgentBinder.GetCurrentAgentTimelinePathListForAttribute))]
         public string StateName;
 
         [LiteProperty("条件列表", LitePropertyType.OptionalTypeList)]
-        [LiteOptionalTypeList(typeof(ILiteCondition), typeof(LiteFalseCondition), "Condition", "Condition Data")]
+        [LiteOptionalTypeList(typeof(ILiteCondition), "Condition", typeof(LiteFalseCondition))]
         [SerializeReference]
         [HideInInspector]
         public List<ILiteCondition> ConditionList = new List<ILiteCondition>();

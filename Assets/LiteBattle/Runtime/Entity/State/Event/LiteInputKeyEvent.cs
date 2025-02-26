@@ -1,4 +1,5 @@
 using System;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {
@@ -6,7 +7,8 @@ namespace LiteBattle.Runtime
     [Serializable]
     public sealed class LiteInputKeyEvent : ILiteEvent
     {
-        [LiteProperty("监测按键", LitePropertyType.InputKeyList)]
+        [LiteProperty("监测按键", LitePropertyType.CustomPopupList)]
+        [LiteCustomPopupList(typeof(LiteConst.KeyName), nameof(LiteConst.KeyName.GetKeyList))]
         public string CheckKeyName;
 
         [LiteProperty("监测类型", LitePropertyType.Enum)]

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using LiteQuark.Runtime;
-using LiteConst = LiteBattle.Runtime.LiteConst;
 
 namespace LiteBattle.Editor
 {
@@ -16,21 +15,6 @@ namespace LiteBattle.Editor
             }
 
             return stateNameList;
-        }
-
-        public static List<string> GetAnimationNameList()
-        {
-            if (LiteEditorBinder.Instance.IsBindAgent())
-            {
-                return LiteEditorBinder.Instance.GetAnimatorStateNameList();
-            }
-
-            return new List<string>();
-        }
-
-        public static List<string> GetInputKeyList()
-        {
-            return LiteConst.KeyName.GetKeyList();
         }
     }
 }

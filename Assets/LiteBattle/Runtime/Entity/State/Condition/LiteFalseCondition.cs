@@ -1,4 +1,5 @@
 using System;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {

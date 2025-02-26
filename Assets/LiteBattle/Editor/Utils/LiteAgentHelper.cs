@@ -1,5 +1,6 @@
 using System.IO;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
 using LiteQuark.Runtime;
 using UnityEditor;
 
@@ -19,7 +20,7 @@ namespace LiteBattle.Editor
                     AssetDatabase.DeleteAsset(statePath);
                 }
             }
-            LiteAssetHelper.DeleteAsset(fullPath);
+            AssetUtils.DeleteAsset(fullPath);
         }
     }
 }

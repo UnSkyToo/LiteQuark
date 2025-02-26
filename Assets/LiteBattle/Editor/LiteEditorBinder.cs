@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -15,7 +16,6 @@ namespace LiteBattle.Editor
         
         private LiteAgentConfig CurrentAgent_ = null;
         private GameObject AgentGo_ = null;
-        private LiteAgentBinder AgentBinder_ = null;
 
         private PlayableDirector TimelineDirector_;
         private TimelineAsset CurrentTimeline_ = null;
@@ -48,11 +48,6 @@ namespace LiteBattle.Editor
         {
             return CurrentAgent_;
         }
-
-        public LiteAgentBinder GetAgentBinder()
-        {
-            return AgentBinder_;
-        }
         
         public string GetCurrentStateGroup()
         {
@@ -66,17 +61,17 @@ namespace LiteBattle.Editor
 
         public List<string> GetAnimatorStateNameList()
         {
-            return AgentBinder_.GetAnimatorStateNameList();
+            return LiteAgentBinder.Instance.GetAnimatorStateNameList();
         }
 
         public AnimatorState GetAnimatorState(string stateName)
         {
-            return AgentBinder_.GetAnimatorState(stateName);
+            return LiteAgentBinder.Instance.GetAnimatorState(stateName);
         }
 
         public float GetAnimatorStateLength(string stateName)
         {
-            return AgentBinder_ != null ? AgentBinder_.GetAnimatorStateLength(stateName) : 0f;
+            return LiteAgentBinder.Instance.GetAnimatorStateLength(stateName);
         }
         
         public string GetCurrentAgentTimelineRootPath()
@@ -92,7 +87,7 @@ namespace LiteBattle.Editor
                 return new List<string>();
             }
             
-            return LiteAssetHelper.GetAssetPathList("TimelineAsset", GetCurrentAgentTimelineRootPath());
+            return AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentAgentTimelineRootPath());
         }
         
         public void BindAgent(LiteAgentConfig config)
@@ -111,8 +106,7 @@ namespace LiteBattle.Editor
 
             AgentGo_ = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
             AgentGo_.name = config.name;
-            AgentBinder_ = LiteUnityExtension.GetOrAddComponent<LiteAgentBinder>(AgentGo_);
-            AgentBinder_.Initialize();
+            LiteAgentBinder.Instance.Bind(config, AgentGo_);
         }
 
         public void BindAgentRuntime(LiteAgent agent)
@@ -126,12 +120,7 @@ namespace LiteBattle.Editor
             UnBindTimeline();
             
             CurrentAgent_ = null;
-
-            if (AgentBinder_ != null)
-            {
-                Object.DestroyImmediate(AgentBinder_);
-                AgentBinder_ = null;
-            }
+            LiteAgentBinder.Instance.UnBind();
 
             if (AgentGo_ != null)
             {

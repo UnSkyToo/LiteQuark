@@ -1,4 +1,6 @@
-﻿namespace LiteBattle.Runtime
+﻿using LiteQuark.Runtime;
+
+namespace LiteBattle.Runtime
 {
     public enum LiteEventSignal : byte
     {

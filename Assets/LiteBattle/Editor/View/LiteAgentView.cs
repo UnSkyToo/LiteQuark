@@ -58,13 +58,13 @@ namespace LiteBattle.Editor
             
             protected override List<string> GetList()
             {
-                var results = LiteAssetHelper.GetAssetPathList("LiteAgentConfig", LiteStateUtils.GetAgentRootPath());
+                var results = AssetUtils.GetAssetPathList("LiteAgentConfig", LiteStateUtils.GetAgentRootPath());
                 return results;
             }
 
             protected override bool CreateItem()
             {
-                LiteAssetHelper.CreateAsset<LiteAgentConfig>(LiteStateUtils.GetAgentRootPath(), $"{LiteAssetHelper.RandomAssetName("agent_")}.asset");
+                AssetUtils.CreateAsset<LiteAgentConfig>(LiteStateUtils.GetAgentRootPath(), $"{AssetUtils.RandomAssetName("agent_")}.asset");
                 return true;
             }
 
@@ -90,7 +90,7 @@ namespace LiteBattle.Editor
                 var name = PathUtils.GetFileNameWithoutExt(agentConfigFullPath);
                 LiteInputTextDialog.ShowDialog("Change Name", name, (newName) =>
                 {
-                    LiteAssetHelper.RenameAsset(agentConfigFullPath, newName);
+                    AssetUtils.RenameAsset(agentConfigFullPath, newName);
                     OnDataChanged();
                 });
                 

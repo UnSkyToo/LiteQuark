@@ -1,3 +1,5 @@
+using LiteQuark.Runtime;
+
 namespace LiteBattle.Runtime
 {
     /// <summary>

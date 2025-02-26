@@ -1,3 +1,4 @@
+using LiteQuark.Runtime;
 using UnityEngine;
 
 namespace LiteBattle.Runtime
