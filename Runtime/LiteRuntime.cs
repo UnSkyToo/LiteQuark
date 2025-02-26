@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         private float EnterBackgroundTime_ = 0.0f;
         private bool RestartWhenNextFrame_ = false;
 
-        public LiteRuntime()
+        private LiteRuntime()
         {
         }
         
