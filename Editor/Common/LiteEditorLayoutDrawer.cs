@@ -515,7 +515,7 @@ namespace LiteQuark.Editor
                 return data;
             }
 
-            LabelError($"{type} not implement IHasData");
+            LabelError($"{data?.GetType() ?? type} not implement IHasData");
             return data;
         }
         
