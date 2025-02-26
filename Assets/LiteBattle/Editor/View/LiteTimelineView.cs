@@ -66,7 +66,7 @@ namespace LiteBattle.Editor
             {
                 var val = GetItem(index);
                 var name = PathUtils.GetFileNameWithoutExt(val);
-                if (LiteEditorHelper.ShowConfirmDialog($"Delete Timeline {name}"))
+                if (LiteEditorUtils.ShowConfirmDialog($"Delete Timeline {name}"))
                 {
                     LiteEditorBinder.Instance.UnBindTimeline();
                     LiteAssetHelper.DeleteAsset(val);

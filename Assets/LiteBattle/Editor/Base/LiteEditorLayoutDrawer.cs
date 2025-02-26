@@ -4,8 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
+using IHasData = LiteBattle.Runtime.IHasData;
+using LiteCustomPopupListAttribute = LiteBattle.Runtime.LiteCustomPopupListAttribute;
+using LiteDelayedAttribute = LiteBattle.Runtime.LiteDelayedAttribute;
+using LiteEnableCheckerAttribute = LiteBattle.Runtime.LiteEnableCheckerAttribute;
+using LiteEnableSourceAttribute = LiteBattle.Runtime.LiteEnableSourceAttribute;
+using LiteEnumFlagsAttribute = LiteBattle.Runtime.LiteEnumFlagsAttribute;
+using LiteOptionalTypeAttribute = LiteBattle.Runtime.LiteOptionalTypeAttribute;
+using LiteOptionalTypeListAttribute = LiteBattle.Runtime.LiteOptionalTypeListAttribute;
+using LitePropertyAttribute = LiteBattle.Runtime.LitePropertyAttribute;
+using LitePropertyType = LiteBattle.Runtime.LitePropertyType;
 
 namespace LiteBattle.Editor
 {
@@ -13,31 +25,31 @@ namespace LiteBattle.Editor
     {
         private static object DrawIntField(GUIContent title, int v, Type type, object[] attrs)
         {
-            var delayedIntAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedIntAttr == null ? EditorGUILayout.IntField(title, v) : EditorGUILayout.DelayedIntField(title, v);
         }
         
         private static float DrawFloatField(GUIContent title, float v, Type type, object[] attrs)
         {
-            var delayedFloatAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedFloatAttr == null ? EditorGUILayout.FloatField(title, v) : EditorGUILayout.DelayedFloatField(title, v);
         }
         
         private static double DrawDoubleField(GUIContent title, double v, Type type, object[] attrs)
         {
-            var delayedDoubleAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedDoubleAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedDoubleAttr == null ? EditorGUILayout.DoubleField(title, v) : EditorGUILayout.DelayedDoubleField(title, v);
         }
 
         private static string DrawStringField(GUIContent title, string v, Type type, object[] attrs)
         {
-            var delayedStringAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedStringAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedStringAttr == null ? EditorGUILayout.TextField(title, v) : EditorGUILayout.DelayedTextField(title, v);
         }
 
         private static Enum DrawEnumField(GUIContent title, Enum v, Type type, object[] attrs)
         {
-            var enumFlagsAttr = LiteEditorHelper.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
+            var enumFlagsAttr = TypeUtils.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
             return enumFlagsAttr == null ? EditorGUILayout.EnumPopup(title, v) : EditorGUILayout.EnumFlagsField(title, v);
         }
 
@@ -76,7 +88,7 @@ namespace LiteBattle.Editor
         
         private static string DrawPopupStringList(GUIContent title, List<string> list, string v)
         {
-            var selectIndex = LiteEditorHelper.GetStringIndex(list, v);
+            var selectIndex = list.IndexOf(v);
             
             EditorGUI.BeginChangeCheck();
             selectIndex = EditorGUILayout.Popup(title, selectIndex, list.ToArray());
@@ -91,17 +103,17 @@ namespace LiteBattle.Editor
         
         private static string DrawCustomPopupStringList(GUIContent title, string v, object[] attrs)
         {
-            var customAttr = LiteEditorHelper.GetAttribute<LiteCustomPopupListAttribute>(null, attrs);
+            var customAttr = TypeUtils.GetAttribute<LiteCustomPopupListAttribute>(null, attrs);
             var list = customAttr?.GetListFunc?.Invoke() ?? new List<string>(){"error attribute"};
             return DrawPopupStringList(title, list, v);
         }
 
         private static object DrawOptionalTypeSelector(GUIContent title, Type baseType, object v)
         {
-            var typeList = LiteEditorHelper.GetTypeListWithBaseType(baseType);
-            var nameList = LiteEditorHelper.TypeListToString(typeList);
+            var typeList = LiteEditorUtils.GetTypeListWithBaseType(baseType);
+            var nameList = TypeUtils.TypeListToString(typeList);
             var currentType = v.GetType();
-            var selectIndex = LiteEditorHelper.GetStringIndex(nameList, LiteEditorHelper.GetTypeDisplayName(currentType));
+            var selectIndex = nameList.IndexOf(TypeUtils.GetTypeDisplayName(currentType));
             
             EditorGUI.BeginChangeCheck();
             selectIndex = EditorGUILayout.Popup(title, selectIndex, nameList.ToArray());
@@ -119,7 +131,7 @@ namespace LiteBattle.Editor
 
         private static object DrawOptionalTypeData(GUIContent title, object v, object[] attrs)
         {
-            var optionalTypeAttr = LiteEditorHelper.GetAttribute<LiteOptionalTypeAttribute>(null, attrs);
+            var optionalTypeAttr = TypeUtils.GetAttribute<LiteOptionalTypeAttribute>(null, attrs);
             if (optionalTypeAttr == null)
             {
                 return v;
@@ -137,7 +149,7 @@ namespace LiteBattle.Editor
 
         private static object DrawOptionalTypeList(GUIContent title, object v, object[] attrs)
         {
-            var optionalTypeListAttr = LiteEditorHelper.GetAttribute<LiteOptionalTypeListAttribute>(null, attrs);
+            var optionalTypeListAttr = TypeUtils.GetAttribute<LiteOptionalTypeListAttribute>(null, attrs);
             if (optionalTypeListAttr == null)
             {
                 return v;
@@ -188,7 +200,7 @@ namespace LiteBattle.Editor
                         
                         if (GUILayout.Button("X", GUILayout.ExpandWidth(false)))
                         {
-                            if (LiteEditorHelper.ShowConfirmDialog($"{optionalTypeListAttr.ElementTitle} {i} ?"))
+                            if (LiteEditorUtils.ShowConfirmDialog($"{optionalTypeListAttr.ElementTitle} {i} ?"))
                             {
                                 list.RemoveAt(i);
                                 continue;
@@ -315,7 +327,7 @@ namespace LiteBattle.Editor
                     break;
                 #endregion
                 default:
-                    LiteEditorHelper.UnsupportedType(type);
+                    LiteEditorUtils.UnsupportedType("Element DataType", type);
                     break;
             }
             return data;
@@ -378,7 +390,7 @@ namespace LiteBattle.Editor
                 // }
                 else
                 {
-                    LiteEditorHelper.UnsupportedType(type);
+                    LiteEditorUtils.UnsupportedType("Object", type);
                 }
                 EditorGUI.indentLevel -= depth;
             }

@@ -72,7 +72,7 @@ namespace LiteBattle.Editor
             {
                 var val = GetItem(index);
                 var name = PathUtils.GetFileNameWithoutExt(val);
-                if (LiteEditorHelper.ShowConfirmDialog($"Delete Agent {name}"))
+                if (LiteEditorUtils.ShowConfirmDialog($"Delete Agent {name}"))
                 {
                     LiteEditorBinder.Instance.UnBindAgent();
                     // LiteAssetHelper.DeleteAsset(val);

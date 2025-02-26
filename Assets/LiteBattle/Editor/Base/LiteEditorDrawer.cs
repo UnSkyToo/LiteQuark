@@ -1,7 +1,11 @@
 ﻿using System;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
+using LiteDelayedAttribute = LiteBattle.Runtime.LiteDelayedAttribute;
+using LiteEnumFlagsAttribute = LiteBattle.Runtime.LiteEnumFlagsAttribute;
 
 namespace LiteBattle.Editor
 {
@@ -9,31 +13,31 @@ namespace LiteBattle.Editor
     {
         private static object DrawIntField(Rect rect, GUIContent title, int v, Type type, object[] attrs)
         {
-            var delayedIntAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedIntAttr == null ? EditorGUI.IntField(rect, title, v) : EditorGUI.DelayedIntField(rect, title, v);
         }
 
         private static float DrawFloatField(Rect rect, GUIContent title, float v, Type type, object[] attrs)
         {
-            var delayedFloatAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedFloatAttr == null ? EditorGUI.FloatField(rect, title, v) : EditorGUI.DelayedFloatField(rect, title, v);
         }
 
         private static double DrawDoubleField(Rect rect, GUIContent title, double v, Type type, object[] attrs)
         {
-            var delayedDoubleAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedDoubleAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedDoubleAttr == null ? EditorGUI.DoubleField(rect, title, v) : EditorGUI.DelayedDoubleField(rect, title, v);
         }
 
         private static string DrawStringField(Rect rect, GUIContent title, string v, Type type, object[] attrs)
         {
-            var delayedStringAttr = LiteEditorHelper.GetAttribute<LiteDelayedAttribute>(type, attrs);
+            var delayedStringAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedStringAttr == null ? EditorGUI.TextField(rect, title, v) : EditorGUI.DelayedTextField(rect, title, v);
         }
 
         private static Enum DrawEnumField(Rect rect, GUIContent title, Enum v, Type type, object[] attrs)
         {
-            var enumFlagsAttr = LiteEditorHelper.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
+            var enumFlagsAttr = TypeUtils.GetAttribute<LiteEnumFlagsAttribute>(type, attrs);
             return enumFlagsAttr == null ? EditorGUI.EnumPopup(rect, title, v) : EditorGUI.EnumFlagsField(rect, title, v);
         }
         
@@ -101,7 +105,7 @@ namespace LiteBattle.Editor
                     break;
                 #endregion
                 default:
-                    LiteEditorHelper.UnsupportedType(type);
+                    LiteEditorUtils.UnsupportedType("Element DataType", type);
                     break;
             }
             return data;

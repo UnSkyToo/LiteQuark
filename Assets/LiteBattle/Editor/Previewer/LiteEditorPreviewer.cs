@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LiteBattle.Runtime;
+using LiteQuark.Editor;
 using LiteQuark.Runtime;
 using UnityEngine.Timeline;
 
@@ -160,11 +161,11 @@ namespace LiteBattle.Editor
 
         private Type GetPerformerType(ILiteEvent evt)
         {
-            var performerTypes = LiteEditorHelper.GetTypeListWithBaseType(typeof(ILiteEventEditorPerformer));
+            var performerTypes = LiteEditorUtils.GetTypeListWithBaseType(typeof(ILiteEventEditorPerformer));
             
             foreach (var performerType in performerTypes)
             {
-                var performerAttr = LiteEditorHelper.GetAttribute<LiteEventEditorPerformerAttribute>(performerType, null);
+                var performerAttr = TypeUtils.GetAttribute<LiteEventEditorPerformerAttribute>(performerType, null);
                 if (performerAttr != null && performerAttr.BindType == evt.GetType())
                 {
                     return performerType;
