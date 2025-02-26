@@ -1,3 +1,5 @@
+using LiteQuark.Runtime;
+
 namespace LiteBattle.Runtime
 {
     public sealed class LiteStateMachine
@@ -36,7 +38,7 @@ namespace LiteBattle.Runtime
 
             if (CurrentState_?.IsEnd() == true && string.IsNullOrWhiteSpace(NextStateID_))
             {
-                LiteLog.Error($"{CurrentState_?.Name} is end, but there is no state to be transferred");
+                LLog.Error($"{CurrentState_?.Name} is end, but there is no state to be transferred");
                 ChangeToState(null, null);
             }
         }

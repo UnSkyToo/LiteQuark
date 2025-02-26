@@ -108,7 +108,7 @@ namespace LiteBattle.Runtime
             }
             catch
             {
-                LiteLog.Error($"can create instance : {typeof(T)}, please check constructor param");
+                LLog.Error($"can create instance : {typeof(T)}, please check constructor param");
             }
 
             return module;

@@ -55,7 +55,7 @@ namespace LiteBattle.Runtime
                 var timelineAsset = LiteAssetMgr.Instance.LoadAsset<TimelineAsset>(file);
                 if (timelineAsset == null)
                 {
-                    LiteLog.Error($"can't load timeline asset : {file}");
+                    LLog.Error($"can't load timeline asset : {file}");
                     continue;
                 }
 
@@ -97,7 +97,7 @@ namespace LiteBattle.Runtime
                     }
                     else
                     {
-                        LiteLog.Error($"unexpect clip type : {clip.GetType()}");
+                        LLog.Error($"unexpected clip type : {clip.GetType()}");
                     }
                 }
 
@@ -111,7 +111,7 @@ namespace LiteBattle.Runtime
                     }
                     else
                     {
-                        LiteLog.Error($"unexpect clip type : {marker.GetType()}");
+                        LLog.Error($"unexpected marker type : {marker.GetType()}");
                     }
                 }
             }
@@ -135,7 +135,7 @@ namespace LiteBattle.Runtime
                 }
             }
 
-            LiteLog.Error($"can't get state, state group id = {stateGroupID}, state id = {stateID}");
+            LLog.Error($"can't get state, state group id = {stateGroupID}, state id = {stateID}");
             return null;
         }
     }

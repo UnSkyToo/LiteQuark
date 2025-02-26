@@ -15,7 +15,7 @@ namespace LiteBattle.Editor
     {
         public static void UnsupportedType(Type type)
         {
-            LiteLog.Error($"Unsupported type: {type}");
+            LLog.Error($"Unsupported type: {type}");
         }
 
         public static bool ShowConfirmDialog(string msg)

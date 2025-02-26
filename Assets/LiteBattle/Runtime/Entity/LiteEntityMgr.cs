@@ -102,7 +102,7 @@ namespace LiteBattle.Runtime
             var asset = LiteAssetMgr.Instance.LoadAsset<LiteAgentConfig>(agentPath);
             if (asset == null)
             {
-                LiteLog.Error($"can't load {nameof(LiteAgentConfig)} : {agentPath}");
+                LLog.Error($"can't load {nameof(LiteAgentConfig)} : {agentPath}");
                 return null;
             }
 

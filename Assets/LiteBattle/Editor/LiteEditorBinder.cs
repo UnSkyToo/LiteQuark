@@ -89,7 +89,7 @@ namespace LiteBattle.Editor
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(goPath);
             if (go == null)
             {
-                LiteLog.Error($"can't load agent prefab : {goPath}");
+                LLog.Error($"can't load agent prefab : {goPath}");
                 return;
             }
 
