@@ -5,21 +5,21 @@ namespace LiteQuark.Runtime
 {
     public static class ReflectionUtils
     {
-        public const BindingFlags DefaultBindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
+        public const BindingFlags DefaultInstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        public const BindingFlags DefaultStaticFlags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
         
-        public static MethodInfo GetMethod(Type type, string methodName, BindingFlags flags = DefaultBindingFlags)
+        public static MethodInfo GetMethod(Type type, string methodName, BindingFlags flags)
         {
             var methodInfo = type.GetMethod(methodName, flags);
             if (methodInfo == null)
             {
-                LLog.Warning($"can't find {methodName} method in {type}");
-                return null;
+                throw new Exception($"can't find {methodName} method in {type}");
             }
 
             return methodInfo;
         }
 
-        public static MethodInfo GetMethod(Type type, string methodName, int paramCount, BindingFlags flags = DefaultBindingFlags)
+        public static MethodInfo GetMethod(Type type, string methodName, int paramCount, BindingFlags flags)
         {
             var methods = type.GetMethods(flags);
 
@@ -34,87 +34,171 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            return null;
-        }
-
-        public static object GetFieldValue(Type type, string fieldName, BindingFlags flags = DefaultBindingFlags)
-        {
-            return GetFieldValue(type, null, fieldName, flags);
+            throw new Exception($"can't find {methodName} with {paramCount} params method in {type}");
         }
         
-        public static object GetFieldValue(object instance, string fieldName, BindingFlags flags = DefaultBindingFlags)
-        {
-            return GetFieldValue(instance.GetType(), instance, fieldName, flags);
-        }
-        
-        public static object GetFieldValue(Type type, object instance, string fieldName, BindingFlags flags = DefaultBindingFlags)
-        {
-            var fieldInfo = type.GetField(fieldName, flags);
-            if (fieldInfo == null)
-            {
-                LLog.Warning($"can't find {fieldName} field in {type}");
-                return null;
-            }
-            
-            var fieldVal = fieldInfo.GetValue(instance);
-            if (fieldVal == null)
-            {
-                LLog.Warning($"can't get {fieldName} instance value");
-                return null;
-            }
-
-            return fieldVal;
-        }
-        
-        public static object GetPropertyValue(Type type, string propertyName, BindingFlags flags = DefaultBindingFlags)
-        {
-            return GetPropertyValue(type, null, propertyName, flags);
-        }
-        
-        public static object GetPropertyValue(object instance, string propertyName, BindingFlags flags = DefaultBindingFlags)
-        {
-            return GetPropertyValue(instance.GetType(), instance, propertyName, flags);
-        }
-        
-        public static object GetPropertyValue(Type type, object instance, string propertyName, BindingFlags flags = DefaultBindingFlags)
-        {
-            var propertyInfo = type.GetProperty(propertyName, flags);
-            if (propertyInfo == null)
-            {
-                LLog.Warning($"can't find {propertyName} property in {type}");
-                return null;
-            }
-
-            var propertyVal = propertyInfo.GetValue(instance);
-            if (propertyVal == null)
-            {
-                LLog.Warning($"can't get {propertyName} instance value");
-                return null;
-            }
-
-            return propertyVal;
-        }
-
-        public static void InvokeMethod(Type type, string methodName, BindingFlags flags = DefaultBindingFlags)
+        public static void InvokeMethod(Type type, string methodName, BindingFlags flags = DefaultStaticFlags)
         {
             InvokeMethod(type, null, methodName, flags);
         }
 
-        public static void InvokeMethod(object instance, string methodName, BindingFlags flags = DefaultBindingFlags)
+        public static void InvokeMethod(object instance, string methodName, BindingFlags flags = DefaultInstanceFlags)
         {
             InvokeMethod(instance.GetType(), instance, methodName, flags);
         }
         
-        public static void InvokeMethod(Type type, object instance, string methodName, BindingFlags flags = DefaultBindingFlags)
+        public static void InvokeMethod(Type type, object instance, string methodName, BindingFlags flags)
         {
-            var methodInfo = type.GetMethod(methodName, flags);
-            if (methodInfo == null)
+            var methodInfo = GetMethod(type, methodName, flags);
+            methodInfo.Invoke(instance, null);
+        }
+        
+        public static object InvokeGenericMethod<T>(Type type, string methodName, object[] paramList, BindingFlags flags)
+        {
+            var methodInfo = GetMethod(type, methodName, flags);
+            var method = methodInfo.MakeGenericMethod(typeof(T));
+            return method.Invoke(null, paramList);
+        }
+
+        public static object InvokeGenericMethod<T>(object instance, string methodName, object[] paramList, BindingFlags flags)
+        {
+            if (instance == null)
             {
-                LLog.Warning($"can't find {methodName} method in {type}");
+                return null;
+            }
+
+            var type = instance.GetType();
+            var methodInfo = GetMethod(type, methodName, flags);
+            var method = methodInfo.MakeGenericMethod(typeof(T));
+            return method.Invoke(instance, paramList);
+        }
+        
+        public static FieldInfo GetFieldInfo(object instance, string fieldName, BindingFlags flags = DefaultInstanceFlags)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            var type = instance.GetType();
+            return GetFieldInfo(type, fieldName, flags);
+        }
+        
+        public static FieldInfo GetFieldInfo(Type type, string fieldName, BindingFlags flags = DefaultStaticFlags)
+        {
+            return type.GetField(fieldName, flags);
+        }
+
+        public static object GetFieldValue(Type type, string fieldName, BindingFlags flags = BindingFlags.Static)
+        {
+            return GetFieldValue(type, null, fieldName, flags);
+        }
+        
+        public static object GetFieldValue(object instance, string fieldName, BindingFlags flags = BindingFlags.Instance)
+        {
+            return GetFieldValue(instance.GetType(), instance, fieldName, flags);
+        }
+        
+        public static object GetFieldValue(Type type, object instance, string fieldName, BindingFlags flags)
+        {
+            var fieldInfo = GetFieldInfo(type, fieldName, flags);
+            if (fieldInfo == null)
+            {
+                throw new Exception($"can't find {type}.{fieldName}");
+            }
+            
+            var fieldVal = fieldInfo.GetValue(instance);
+            return fieldVal;
+        }
+        
+        public static void SetFieldValue(Type type, string fieldName, object fieldValue, BindingFlags flags = DefaultStaticFlags)
+        {
+            SetFieldValue(type, null, fieldName, fieldValue, flags);
+        }
+        
+        public static void SetFieldValue(object instance, string fieldName, object fieldValue, BindingFlags flags = DefaultInstanceFlags)
+        {
+            if (instance == null)
+            {
                 return;
             }
             
-            methodInfo.Invoke(instance, null);
+            SetFieldValue(instance.GetType(), instance, fieldName, fieldValue, flags);
+        }
+        
+        public static void SetFieldValue(Type type, object instance, string fieldName, object fieldValue, BindingFlags flags)
+        {
+            var fieldInfo = GetFieldInfo(type, fieldName, flags);
+            if (fieldInfo == null)
+            {
+                throw new Exception($"can't find {type}.{fieldName}");
+            }
+            
+            fieldInfo.SetValue(instance, fieldValue);
+        }
+        
+        public static PropertyInfo GetPropertyInfo(object instance, string propertyName, BindingFlags flags = DefaultStaticFlags)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            var type = instance.GetType();
+            return GetPropertyInfo(type, propertyName, flags);
+        }
+        
+        public static PropertyInfo GetPropertyInfo(Type type, string propertyName, BindingFlags flags = DefaultInstanceFlags)
+        {
+            return type.GetProperty(propertyName, flags);
+        }
+        
+        public static object GetPropertyValue(Type type, string propertyName, BindingFlags flags = DefaultStaticFlags)
+        {
+            return GetPropertyValue(type, null, propertyName, flags | BindingFlags.Static);
+        }
+        
+        public static object GetPropertyValue(object instance, string propertyName, BindingFlags flags = DefaultInstanceFlags)
+        {
+            return GetPropertyValue(instance.GetType(), instance, propertyName, flags);
+        }
+        
+        public static object GetPropertyValue(Type type, object instance, string propertyName, BindingFlags flags)
+        {
+            var propertyInfo = GetPropertyInfo(type, propertyName, flags);
+            if (propertyInfo == null)
+            {
+                throw new Exception($"can't find {type}.{propertyName}");
+            }
+
+            var propertyVal = propertyInfo.GetValue(instance);
+            return propertyVal;
+        }
+        
+        public static void SetPropertyValue(Type type, string propertyName, object propertyValue, BindingFlags flags = DefaultStaticFlags)
+        {
+            SetPropertyValue(type, null, propertyName, propertyValue, flags | BindingFlags.Static);
+        }
+        
+        public static void SetPropertyValue(object instance, string propertyName, object propertyValue, BindingFlags flags = DefaultInstanceFlags)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+            
+            SetPropertyValue(instance.GetType(), instance, propertyName, propertyValue, flags);
+        }
+        
+        public static void SetPropertyValue(Type type, object instance, string propertyName, object propertyValue, BindingFlags flags)
+        {
+            var propertyInfo = GetPropertyInfo(type, propertyName, flags);
+            if (propertyInfo == null)
+            {
+                throw new Exception($"can't find {type}.{propertyName}");
+            }
+            
+            propertyInfo.SetValue(instance, propertyValue);
         }
     }
 }
