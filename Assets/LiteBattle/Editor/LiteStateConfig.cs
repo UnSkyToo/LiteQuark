@@ -9,9 +9,6 @@ namespace LiteBattle.Editor
         private const string ConfigName = "LiteStateConfig.asset";
 
         [SerializeField]
-        public string RootPath = "Assets/StandaloneAssets";
-
-        [SerializeField]
         public string DataPath = "Assets/StandaloneAssets/StateData";
 
         public static LiteStateConfig Instance

@@ -50,6 +50,28 @@ namespace LiteQuark.Editor
                 PlayerPrefs.SetString(DefaultLayoutPrefsKey, lastLoadName);
             }
         }
+
+        public static void OpenScene(string sceneName)
+        {
+            var activeScene = EditorSceneManager.GetActiveScene();
+            if (activeScene.path.Contains(sceneName))
+            {
+                return;
+            }
+            
+            var guids = AssetDatabase.FindAssets($"{sceneName} t:Scene");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.Contains(sceneName))
+                {
+                    EditorSceneManager.OpenScene(path);
+                    return;
+                }
+            }
+            
+            Debug.LogError($"无法找到 {sceneName}.scene 文件！");
+        }
     }
 }
 #endif

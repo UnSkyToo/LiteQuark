@@ -26,7 +26,7 @@ namespace LiteBattle.Editor
         {
             IsInit_ = false;
             
-            LiteStateUtils.OpenStateEditorScene();
+            LayoutUtils.OpenScene("LiteStateEditorScene");
             Startup();
 
             SceneView.duringSceneGui += OnSceneGUI;
