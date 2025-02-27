@@ -8,7 +8,7 @@ namespace LiteBattle.Runtime
     public sealed class LitePlayAnimationEvent : ILiteEvent
     {
         [LiteProperty("动画名字", LitePropertyType.CustomPopupList)]
-        [LiteCustomPopupList(typeof(LiteUnitBinder), nameof(LiteUnitBinder.GetAnimatorStateNameListForAttribute))]
+        [LiteCustomPopupList(typeof(LiteUnitBinderDataForEditor), nameof(LiteUnitBinderDataForEditor.GetAnimatorStateNameList))]
         public string AnimationName;
         
         public bool HasData => true;

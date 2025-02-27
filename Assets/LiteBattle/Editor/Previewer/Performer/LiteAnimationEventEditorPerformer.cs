@@ -5,7 +5,6 @@ namespace LiteBattle.Editor
     [LiteEventEditorPerformer(typeof(LitePlayAnimationEvent))]
     public class LiteAnimationEventEditorPerformer : ILiteEventEditorPerformer
     {
-        private readonly LiteUnitBinder UnitBinder_;
         private string AnimationName_;
         
         public void OnExecute(ILiteEvent evt)
@@ -24,7 +23,7 @@ namespace LiteBattle.Editor
         public void OnFrame(int frame)
         {
             var time = (float) LiteTimelineHelper.FrameToTime(frame);
-            LiteUnitBinder.Instance.SampleAnimation(AnimationName_, time);
+            LiteEditorBinder.Instance.SampleAnimation(AnimationName_, time);
         }
     }
 }

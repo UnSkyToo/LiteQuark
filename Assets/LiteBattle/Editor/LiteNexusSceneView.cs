@@ -52,7 +52,7 @@ namespace LiteBattle.Editor
 
         private void DrawAttackRange(ILiteRange range)
         {
-            var unitGo = LiteUnitBinder.Instance.GetUnitGo();
+            var unitGo = LiteEditorBinder.Instance.GetUnitGo();
             if (unitGo == null)
             {
                 return;

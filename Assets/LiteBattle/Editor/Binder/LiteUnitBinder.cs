@@ -1,34 +1,69 @@
-﻿#if UNITY_EDITOR
-using System.Collections.Generic;
-using LiteQuark.Editor;
+﻿using System.Collections.Generic;
+using LiteBattle.Runtime;
 using LiteQuark.Runtime;
+using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-namespace LiteBattle.Runtime
+namespace LiteBattle.Editor
 {
-    // TODO : replace LiteEditorBinder with LiteUnitBinder ???
-    public sealed class LiteUnitBinder : Singleton<LiteUnitBinder>
+    internal class LiteUnitBinder : IDispose
     {
-        private LiteUnitConfig CurrentUnit_;
-        private GameObject GameObject_;
+        private bool IsRuntime_ = false;
+        private LiteUnitConfig CurrentUnit_ = null;
+        private GameObject UnitGo_ = null;
         private Animator[] Animators_;
         private readonly List<string> AnimatorStateNameList_ = new List<string>();
         private readonly Dictionary<string, AnimatorState> AnimatorStateList_ = new Dictionary<string, AnimatorState>();
 
         private int PreviewAnimatorStateIndex_ = -1;
         private float PreviewAnimatorStateTime_ = 0f;
-
-        private LiteUnitBinder()
+        
+        public LiteUnitBinder()
         {
         }
-        
-        public void Bind(LiteUnitConfig config, GameObject go)
+
+        public void Dispose()
         {
-            UnBind();
-            
+            UnBindUnit();
+        }
+        
+        public void BindUnit(LiteUnitConfig config)
+        {
+            UnBindUnit();
             CurrentUnit_ = config;
-            GameObject_ = go;
+            Selection.activeObject = config;
+
+            var prefabFullPath = PathUtils.GetFullPathInAssetRoot(config.PrefabPath);
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFullPath);
+            if (go == null)
+            {
+                LLog.Error($"can't load unit prefab : {prefabFullPath}");
+                return;
+            }
+
+            UnitGo_ = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
+            UnitGo_.name = config.name;
+            GenerateAnimatorData(UnitGo_);
+            
+            LiteUnitBinderDataForEditor.SetCurrentStateGroup(CurrentUnit_.StateGroup);
+            LiteUnitBinderDataForEditor.SetAnimatorStateNameList(AnimatorStateNameList_);
+        }
+
+        public void BindUnitRuntime(LiteUnit unit)
+        {
+            UnBindUnit();
+            CurrentUnit_ = unit.GetUnitConfig();
+            UnitGo_ = unit.GetGo();
+            IsRuntime_ = true;
+            GenerateAnimatorData(UnitGo_);
+            
+            LiteUnitBinderDataForEditor.SetCurrentStateGroup(CurrentUnit_.StateGroup);
+            LiteUnitBinderDataForEditor.SetAnimatorStateNameList(AnimatorStateNameList_);
+        }
+
+        private void GenerateAnimatorData(GameObject go)
+        {
             AnimatorStateNameList_.Clear();
             AnimatorStateList_.Clear();
 
@@ -52,16 +87,27 @@ namespace LiteBattle.Runtime
                     AnimatorStateList_.Add(state.state.name, state.state);
                 }
             }
+
         }
-        
-        public void UnBind()
+
+        public void UnBindUnit()
         {
-            GameObject_ = null;
+            if (!IsRuntime_ && UnitGo_ != null)
+            {
+                Object.DestroyImmediate(UnitGo_);
+                UnitGo_ = null;
+            }
+            
+            IsRuntime_ = false;
+            CurrentUnit_ = null;
             Animators_ = null;
             AnimatorStateNameList_.Clear();
             AnimatorStateList_.Clear();
+            
+            LiteUnitBinderDataForEditor.SetCurrentStateGroup(string.Empty);
+            LiteUnitBinderDataForEditor.SetAnimatorStateNameList(null);
         }
-        
+
         public bool IsBindUnit()
         {
             return CurrentUnit_ != null;
@@ -74,7 +120,7 @@ namespace LiteBattle.Runtime
 
         public GameObject GetUnitGo()
         {
-            return GameObject_;
+            return UnitGo_;
         }
         
         public string GetCurrentStateGroup()
@@ -93,34 +139,6 @@ namespace LiteBattle.Runtime
             return PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
         
-        public static List<string> GetCurrentUnitTimelinePathListForAttribute()
-        {
-            if (string.IsNullOrWhiteSpace(Instance.GetCurrentStateGroup()))
-            {
-                return new List<string>();
-            }
-            
-            var timelinePathList = AssetUtils.GetAssetPathList("TimelineAsset", Instance.GetCurrentUnitTimelineRootPath());
-            var stateNameList = new List<string>();
-
-            foreach (var timelinePath in timelinePathList)
-            {
-                stateNameList.Add(PathUtils.GetFileNameWithoutExt(timelinePath));
-            }
-
-            return stateNameList;
-        }
-        
-        public List<string> GetAnimatorStateNameList()
-        {
-            return AnimatorStateNameList_;
-        }
-
-        public static List<string> GetAnimatorStateNameListForAttribute()
-        {
-            return Instance.GetAnimatorStateNameList();
-        }
-
         public string GetAnimatorStateName(int index)
         {
             if (index < 0 || index >= AnimatorStateNameList_.Count)
@@ -130,7 +148,12 @@ namespace LiteBattle.Runtime
 
             return AnimatorStateNameList_[index];
         }
-        
+
+        public List<string> GetAnimatorStateNameList()
+        {
+            return AnimatorStateNameList_;
+        }
+
         public AnimatorState GetAnimatorState(string stateName)
         {
             if (string.IsNullOrWhiteSpace(stateName))
@@ -145,7 +168,7 @@ namespace LiteBattle.Runtime
 
             return null;
         }
-        
+
         public float GetAnimatorStateLength(string stateName)
         {
             var state = GetAnimatorState(stateName);
@@ -156,13 +179,13 @@ namespace LiteBattle.Runtime
 
             return state.motion.averageDuration;
         }
-
+        
         public float GetAnimatorStateLength(int index)
         {
             var stateName = GetAnimatorStateName(index);
             return GetAnimatorStateLength(stateName);
         }
-
+        
         public int GetPreviewAnimatorStateIndex()
         {
             return PreviewAnimatorStateIndex_;
@@ -208,9 +231,8 @@ namespace LiteBattle.Runtime
 
             if (state.motion is AnimationClip clip)
             {
-                clip.SampleAnimation(GameObject_, time);
+                clip.SampleAnimation(UnitGo_, time);
             }
         }
     }
 }
-#endif

@@ -11,7 +11,7 @@ namespace LiteBattle.Runtime
     public sealed class LiteTransferEvent : ILiteEvent
     {
         [LiteProperty("目标", LitePropertyType.CustomPopupList)]
-        [LiteCustomPopupList(typeof(LiteUnitBinder), nameof(LiteUnitBinder.GetCurrentUnitTimelinePathListForAttribute))]
+        [LiteCustomPopupList(typeof(LiteUnitBinderDataForEditor), nameof(LiteUnitBinderDataForEditor.GetCurrentUnitTimelinePathList))]
         public string StateName;
 
         [LiteProperty("条件列表", LitePropertyType.OptionalTypeList)]
