@@ -37,6 +37,7 @@ namespace LiteQuark.Editor
             
             var fullPath = PathUtils.ConcatPath(rootPath, name); 
             var asset = ScriptableObject.CreateInstance<T>();
+            asset.name = name;
             AssetDatabase.CreateAsset(asset, fullPath);
             AssetDatabase.SaveAssetIfDirty(asset);
             return asset;
