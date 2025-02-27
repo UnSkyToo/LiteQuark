@@ -5,14 +5,14 @@ using UnityEngine.Timeline;
 
 namespace LiteBattle.Editor
 {
-    public sealed class LiteTimelineCtrlView : LiteViewBase
+    public sealed class LiteTimelineCtrlView : LiteBaseView
     {
         private string CurrentTimelineName_ = string.Empty;
         private int MaxFrame_ = 0;
         private int FrameIndex_ = 0;
         
-        public LiteTimelineCtrlView(LiteStateEditor stateEditor)
-            : base(stateEditor)
+        public LiteTimelineCtrlView(LiteNexusEditor nexusEditor)
+            : base(nexusEditor)
         {
             ResetContext();
         }
@@ -188,7 +188,7 @@ namespace LiteBattle.Editor
             if (GUILayout.Button("Reload"))
             {
                 LiteTimelineHelper.SaveTimelineChanges();
-                LiteStateDatabase.Instance.Reload();
+                LiteNexusDataManager.Instance.Reload();
             }
         }
     }

@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
         private const string TagKey = "lite_context_tag";
         
         private readonly LiteContext Outer_ = null;
-        private readonly Dictionary<string, LiteContextDataBase> DataList_ = new Dictionary<string, LiteContextDataBase>();
+        private readonly Dictionary<string, LiteContextBaseData> DataList_ = new Dictionary<string, LiteContextBaseData>();
 
         public LiteContext(LiteContext outer)
         {
@@ -82,11 +82,11 @@ namespace LiteBattle.Runtime
             }
         }
 
-        private abstract class LiteContextDataBase
+        private abstract class LiteContextBaseData
         {
             private int LifeCycle_;
 
-            protected LiteContextDataBase(int lifeCycle)
+            protected LiteContextBaseData(int lifeCycle)
             {
                 LifeCycle_ = lifeCycle;
             }
@@ -102,7 +102,7 @@ namespace LiteBattle.Runtime
             }
         }
 
-        private class LiteContextData<T> : LiteContextDataBase
+        private class LiteContextData<T> : LiteContextBaseData
         {
             public T Value { get; }
 

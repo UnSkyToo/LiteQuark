@@ -12,10 +12,10 @@ namespace LiteBattle.Editor
 {
     public class LiteEditorBinder : Singleton<LiteEditorBinder>
     {
-        public bool IsReady => IsBindAgent() && IsBindTimeline();
+        public bool IsReady => IsBindUnit() && IsBindTimeline();
         
-        private LiteAgentConfig CurrentAgent_ = null;
-        private GameObject AgentGo_ = null;
+        private LiteUnitConfig CurrentUnit_ = null;
+        private GameObject UnitGo_ = null;
 
         private PlayableDirector TimelineDirector_;
         private TimelineAsset CurrentTimeline_ = null;
@@ -33,102 +33,102 @@ namespace LiteBattle.Editor
 
         public void Shutdown()
         {
-            UnBindAgent();
+            UnBindUnit();
             UnBindTimeline();
             UnBindAttackRange();
             Selection.activeObject = null;
         }
 
-        public bool IsBindAgent()
+        public bool IsBindUnit()
         {
-            return CurrentAgent_ != null;
+            return CurrentUnit_ != null;
         }
 
-        public LiteAgentConfig GetAgent()
+        public LiteUnitConfig GetUnit()
         {
-            return CurrentAgent_;
+            return CurrentUnit_;
         }
         
         public string GetCurrentStateGroup()
         {
-            if (!IsBindAgent())
+            if (!IsBindUnit())
             {
                 return string.Empty;
             }
 
-            return CurrentAgent_.StateGroup;
+            return CurrentUnit_.StateGroup;
         }
 
         public List<string> GetAnimatorStateNameList()
         {
-            return LiteAgentBinder.Instance.GetAnimatorStateNameList();
+            return LiteUnitBinder.Instance.GetAnimatorStateNameList();
         }
 
         public AnimatorState GetAnimatorState(string stateName)
         {
-            return LiteAgentBinder.Instance.GetAnimatorState(stateName);
+            return LiteUnitBinder.Instance.GetAnimatorState(stateName);
         }
 
         public float GetAnimatorStateLength(string stateName)
         {
-            return LiteAgentBinder.Instance.GetAnimatorStateLength(stateName);
+            return LiteUnitBinder.Instance.GetAnimatorStateLength(stateName);
         }
         
-        public string GetCurrentAgentTimelineRootPath()
+        public string GetCurrentUnitTimelineRootPath()
         {
             var stateGroup = GetCurrentStateGroup();
-            return PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), stateGroup);
+            return PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
         
-        public List<string> GetCurrentAgentTimelinePathList()
+        public List<string> GetCurrentUnitTimelinePathList()
         {
             if (string.IsNullOrWhiteSpace(GetCurrentStateGroup()))
             {
                 return new List<string>();
             }
             
-            return AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentAgentTimelineRootPath());
+            return AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentUnitTimelineRootPath());
         }
         
-        public void BindAgent(LiteAgentConfig config)
+        public void BindUnit(LiteUnitConfig config)
         {
-            UnBindAgent();
-            CurrentAgent_ = config;
+            UnBindUnit();
+            CurrentUnit_ = config;
             Selection.activeObject = config;
 
             var prefabFullPath = PathUtils.GetFullPathInAssetRoot(config.PrefabPath);
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFullPath);
             if (go == null)
             {
-                LLog.Error($"can't load agent prefab : {prefabFullPath}");
+                LLog.Error($"can't load unit prefab : {prefabFullPath}");
                 return;
             }
 
-            AgentGo_ = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
-            AgentGo_.name = config.name;
-            LiteAgentBinder.Instance.Bind(config, AgentGo_);
+            UnitGo_ = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
+            UnitGo_.name = config.name;
+            LiteUnitBinder.Instance.Bind(config, UnitGo_);
         }
 
-        public void BindAgentRuntime(LiteAgent agent)
+        public void BindUnitRuntime(LiteUnit unit)
         {
-            UnBindAgent();
-            CurrentAgent_ = agent.GetAgentConfig();
+            UnBindUnit();
+            CurrentUnit_ = unit.GetUnitConfig();
         }
 
-        public void UnBindAgent()
+        public void UnBindUnit()
         {
             UnBindTimeline();
             
-            if (CurrentAgent_ != null)
+            if (CurrentUnit_ != null)
             {
-                CurrentAgent_ = null;
-                LiteAgentBinder.Instance.UnBind();
+                CurrentUnit_ = null;
+                LiteUnitBinder.Instance.UnBind();
             }
 
-            if (AgentGo_ != null)
+            if (UnitGo_ != null)
             {
-                Object.DestroyImmediate(AgentGo_);
-                AgentGo_ = null;
+                Object.DestroyImmediate(UnitGo_);
+                UnitGo_ = null;
             }
 
             Selection.activeObject = null;

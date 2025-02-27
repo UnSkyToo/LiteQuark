@@ -9,15 +9,15 @@ using UnityEngine.Timeline;
 
 namespace LiteBattle.Editor
 {
-    public class LiteRuntimeView : LiteViewBase
+    public class LiteRuntimeView : LiteBaseView
     {
-        private readonly LiteRuntimeAgentList List_;
+        private readonly LiteRuntimeUnitList List_;
         private bool IsVisible_;
         
-        public LiteRuntimeView(LiteStateEditor stateEditor)
-            : base(stateEditor)
+        public LiteRuntimeView(LiteNexusEditor nexusEditor)
+            : base(nexusEditor)
         {
-            List_ = new LiteRuntimeAgentList(stateEditor);
+            List_ = new LiteRuntimeUnitList(nexusEditor);
             IsVisible_ = false;
         }
 
@@ -38,7 +38,7 @@ namespace LiteBattle.Editor
                     IsVisible_ = true;
                     break;
                 case PlayModeStateChange.ExitingPlayMode:
-                    LiteEditorBinder.Instance.UnBindAgent();
+                    LiteEditorBinder.Instance.UnBindUnit();
                     IsVisible_ = false;
                     break;
             }
@@ -56,51 +56,51 @@ namespace LiteBattle.Editor
 
         private void UpdateTimelineState()
         {
-            var agent = List_.GetSelectItem();
-            if (agent == null)
+            var unit = List_.GetSelectItem();
+            if (unit == null)
             {
                 return;
             }
 
-            var state = agent.GetStateMachine().GetCurrentState();
+            var state = unit.GetStateMachine().GetCurrentState();
             if (state == null)
             {
                 return;
             }
             
             var currentTime = state.GetCurrentTime();
-            StateEditor.GetTimelineCtrlView().SetFrameIndex(LiteTimelineHelper.TimeToFrame(currentTime));
+            NexusEditor.GetTimelineCtrlView().SetFrameIndex(LiteTimelineHelper.TimeToFrame(currentTime));
 
             if (TimelineEditor.inspectedAsset != null && TimelineEditor.inspectedAsset.name == state.Name)
             {
                 return;
             }
 
-            var stateGroup = agent.GetAgentConfig().StateGroup;
-            var timelineFullPath = PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), $"{stateGroup}/{state.Name}.playable");
+            var stateGroup = unit.GetUnitConfig().StateGroup;
+            var timelineFullPath = PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), $"{stateGroup}/{state.Name}.playable");
             var asset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(timelineFullPath);
             LiteTimelineHelper.SetTimeline(asset);
         }
 
-        private class LiteRuntimeAgentList : LiteListView<LiteAgent>
+        private class LiteRuntimeUnitList : LiteListView<LiteUnit>
         {
-            private readonly LiteStateEditor StateEditor_;
+            private readonly LiteNexusEditor NexusEditor_;
             
-            public LiteRuntimeAgentList(LiteStateEditor stateEditor)
+            public LiteRuntimeUnitList(LiteNexusEditor nexusEditor)
             {
-                StateEditor_ = stateEditor;
+                NexusEditor_ = nexusEditor;
                 HideToolbar = true;
             }
             
-            protected override List<LiteAgent> GetList()
+            protected override List<LiteUnit> GetList()
             {
-                var entityList = LiteEntityMgr.Instance.GetEntityList();
-                var result = new List<LiteAgent>();
+                var entityList = LiteEntityManager.Instance.GetEntityList();
+                var result = new List<LiteUnit>();
                 foreach (var entity in entityList)
                 {
-                    if (entity is LiteAgent agent)
+                    if (entity is LiteUnit unit)
                     {
-                        result.Add(agent);
+                        result.Add(unit);
                     }
                 }
                 return result;
@@ -125,16 +125,16 @@ namespace LiteBattle.Editor
             {
             }
 
-            protected override bool DrawItem(int index, bool selected, LiteAgent obj)
+            protected override bool DrawItem(int index, bool selected, LiteUnit obj)
             {
-                var config = obj.GetAgentConfig();
+                var config = obj.GetUnitConfig();
 
                 if (GUILayout.Button($"{config.name}({obj.UniqueID})", selected ? LiteEditorStyle.ButtonSelect : LiteEditorStyle.ButtonNormal, GUILayout.ExpandWidth(true)))
                 {
                     selected = !selected;
                     
-                    LiteEditorBinder.Instance.BindAgentRuntime(obj);
-                    StateEditor_.GetTimelineView().Rebind();
+                    LiteEditorBinder.Instance.BindUnitRuntime(obj);
+                    NexusEditor_.GetTimelineView().Rebind();
                 }
                 
                 return selected;

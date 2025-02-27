@@ -41,14 +41,9 @@ namespace LiteBattle.Runtime
             : base()
         {
             Modules_ = new Dictionary<string, LiteEntityModuleBase>();
-            Context_ = new LiteContext(LiteBattleEngine.Instance.GlobalContext);
+            Context_ = new LiteContext(LiteNexusEngine.Instance.GlobalContext);
 
             Camp = LiteEntityCamp.Light;
-            
-            SetTag(LiteTag.CanMove, true);
-            SetTag(LiteTag.CanJump, true);
-            SetTag(LiteTag.Hit, false);
-
             IsAlive = true;
         }
 

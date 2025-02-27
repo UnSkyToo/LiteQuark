@@ -11,18 +11,18 @@ namespace LiteQuark.Demo
         
         public bool Startup()
         {
-            LiteBattleEngine.Instance.Startup("player");
+            LiteNexusEngine.Instance.Startup();
             return true;
         }
 
         public void Shutdown()
         {
-            LiteBattleEngine.Instance.Shutdown();
+            LiteNexusEngine.Instance.Shutdown();
         }
         
         public void Tick(float deltaTime)
         {
-            LiteBattleEngine.Instance.Tick(deltaTime);
+            LiteNexusEngine.Instance.Tick(deltaTime);
         }
     }
 }

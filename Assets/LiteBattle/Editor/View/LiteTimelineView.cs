@@ -7,14 +7,14 @@ using UnityEngine.Timeline;
 
 namespace LiteBattle.Editor
 {
-    public sealed class LiteTimelineView : LiteViewBase
+    public sealed class LiteTimelineView : LiteBaseView
     {
         private readonly LiteTimelineAssetList List_;
 
-        public LiteTimelineView(LiteStateEditor stateEditor)
-            : base(stateEditor)
+        public LiteTimelineView(LiteNexusEditor nexusEditor)
+            : base(nexusEditor)
         {
-            List_ = new LiteTimelineAssetList(stateEditor);
+            List_ = new LiteTimelineAssetList(nexusEditor);
         }
 
         public override void Dispose()
@@ -23,7 +23,7 @@ namespace LiteBattle.Editor
 
         public override bool IsVisible()
         {
-            return LiteEditorBinder.Instance.IsBindAgent();
+            return LiteEditorBinder.Instance.IsBindUnit();
         }
 
         public override void Draw()
@@ -42,23 +42,23 @@ namespace LiteBattle.Editor
 
         private class LiteTimelineAssetList : LiteListView<string>
         {
-            private readonly LiteStateEditor StateEditor_;
+            private readonly LiteNexusEditor NexusEditor_;
             
-            public LiteTimelineAssetList(LiteStateEditor stateEditor)
+            public LiteTimelineAssetList(LiteNexusEditor nexusEditor)
             {
-                StateEditor_ = stateEditor;
+                NexusEditor_ = nexusEditor;
                 EnableOrderControl = false;
             }
             
             protected override List<string> GetList()
             {
-                var results = LiteEditorBinder.Instance.GetCurrentAgentTimelinePathList();
+                var results = LiteEditorBinder.Instance.GetCurrentUnitTimelinePathList();
                 return results;
             }
 
             protected override bool CreateItem()
             {
-                AssetUtils.CreateAsset<TimelineAsset>(LiteEditorBinder.Instance.GetCurrentAgentTimelineRootPath(), $"{AssetUtils.RandomAssetName("timeline_")}.playable");
+                AssetUtils.CreateAsset<TimelineAsset>(LiteEditorBinder.Instance.GetCurrentUnitTimelineRootPath(), $"{AssetUtils.RandomAssetName("timeline_")}.playable");
                 return true;
             }
 

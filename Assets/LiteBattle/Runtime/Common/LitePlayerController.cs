@@ -12,49 +12,48 @@ namespace LiteBattle.Runtime
     
     public class LitePlayerController : IDisposable
     {
-        public LiteAgent Agent => Agent_;
+        public LiteUnit Unit { get; private set; }
         
-        private readonly LiteAgent Agent_;
         private Vector2 CurrentMoveDir_ = Vector2.zero;
 
-        public LitePlayerController(LiteAgent agent)
+        public LitePlayerController(LiteUnit unit)
         {
-            Agent_ = agent;
+            Unit = unit;
             
-            LiteInputMgr.Instance.EnableKeyboard = true;
-            // LiteInputMgr.Instance.EnableTouch = true;
+            LiteInputManager.Instance.EnableKeyboard = true;
+            // LiteInputManager.Instance.EnableTouch = true;
 
-            LiteInputMgr.Instance.JoystickMoveStart += OnJoystickMoveStartHandler;
-            LiteInputMgr.Instance.JoystickMove += OnJoystickMoveHandler;
-            LiteInputMgr.Instance.JoystickMoveEnd += OnJoystickMoveEndHandler;
-            LiteInputMgr.Instance.Click += OnClickHandler;
-            LiteInputMgr.Instance.KeyDown += OnKeyDownHandler;
-            LiteInputMgr.Instance.KeyUp += OnKeyUpHandler;
-            LiteInputMgr.Instance.LongPressStart += OnLongPressStartHandler;
-            LiteInputMgr.Instance.LongPressEnd += OnLongPressEndHandler;
+            LiteInputManager.Instance.JoystickMoveStart += OnJoystickMoveStartHandler;
+            LiteInputManager.Instance.JoystickMove += OnJoystickMoveHandler;
+            LiteInputManager.Instance.JoystickMoveEnd += OnJoystickMoveEndHandler;
+            LiteInputManager.Instance.Click += OnClickHandler;
+            LiteInputManager.Instance.KeyDown += OnKeyDownHandler;
+            LiteInputManager.Instance.KeyUp += OnKeyUpHandler;
+            LiteInputManager.Instance.LongPressStart += OnLongPressStartHandler;
+            LiteInputManager.Instance.LongPressEnd += OnLongPressEndHandler;
         }
 
         public void Dispose()
         {
-            LiteInputMgr.Instance.EnableKeyboard = false;
-            // LiteInputMgr.Instance.EnableTouch = false;
+            LiteInputManager.Instance.EnableKeyboard = false;
+            // LiteInputManager.Instance.EnableTouch = false;
 
-            LiteInputMgr.Instance.JoystickMoveStart -= OnJoystickMoveStartHandler;
-            LiteInputMgr.Instance.JoystickMove -= OnJoystickMoveHandler;
-            LiteInputMgr.Instance.JoystickMoveEnd -= OnJoystickMoveEndHandler;
-            LiteInputMgr.Instance.Click -= OnClickHandler;
-            LiteInputMgr.Instance.KeyDown -= OnKeyDownHandler;
-            LiteInputMgr.Instance.KeyUp -= OnKeyUpHandler;
-            LiteInputMgr.Instance.LongPressStart -= OnLongPressStartHandler;
-            LiteInputMgr.Instance.LongPressEnd -= OnLongPressEndHandler;
+            LiteInputManager.Instance.JoystickMoveStart -= OnJoystickMoveStartHandler;
+            LiteInputManager.Instance.JoystickMove -= OnJoystickMoveHandler;
+            LiteInputManager.Instance.JoystickMoveEnd -= OnJoystickMoveEndHandler;
+            LiteInputManager.Instance.Click -= OnClickHandler;
+            LiteInputManager.Instance.KeyDown -= OnKeyDownHandler;
+            LiteInputManager.Instance.KeyUp -= OnKeyUpHandler;
+            LiteInputManager.Instance.LongPressStart -= OnLongPressStartHandler;
+            LiteInputManager.Instance.LongPressEnd -= OnLongPressEndHandler;
         }
 
         private void OnJoystickMoveStartHandler(Vector2 dir)
         {
             dir = dir.normalized;
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
+                Unit.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
                 CurrentMoveDir_ = dir;
             }
         }
@@ -67,59 +66,59 @@ namespace LiteBattle.Runtime
                 return;
             }
 
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
+                Unit.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
                 CurrentMoveDir_ = dir;
             }
         }
 
         private void OnJoystickMoveEndHandler(Vector2 dir)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.GetModule<LiteEntityMovementModule>().StopMove();
+                Unit.GetModule<LiteEntityMovementModule>().StopMove();
                 CurrentMoveDir_ = Vector2.zero;
             }
         }
         
         private void OnClickHandler(LitePlayerInputKey inputKey)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.SetContext(LiteInputKeyType.Click.ToContextKey(), inputKey.ToString(), 1);
+                Unit.SetContext(LiteInputKeyType.Click.ToContextKey(), inputKey.ToString(), 1);
             }
         }
         
         private void OnKeyDownHandler(LitePlayerInputKey inputKey)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.SetContext(LiteInputKeyType.Press.ToContextKey(), inputKey.ToString());
+                Unit.SetContext(LiteInputKeyType.Press.ToContextKey(), inputKey.ToString());
             }
         }
 
         private void OnKeyUpHandler(LitePlayerInputKey inputKey)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.SetContext(LiteInputKeyType.Press.ToContextKey(), LiteConst.ContextValue.None);
+                Unit.SetContext(LiteInputKeyType.Press.ToContextKey(), LiteConst.ContextValue.None);
             }
         }
 
         private void OnLongPressStartHandler(LitePlayerInputKey inputKey)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.SetContext(LiteInputKeyType.LongPress.ToContextKey(), inputKey.ToString());
+                Unit.SetContext(LiteInputKeyType.LongPress.ToContextKey(), inputKey.ToString());
             }
         }
 
         private void OnLongPressEndHandler(LitePlayerInputKey inputKey)
         {
-            if (Agent_ != null)
+            if (Unit != null)
             {
-                Agent_.SetContext(LiteInputKeyType.LongPress.ToContextKey(), LiteConst.ContextValue.None);
+                Unit.SetContext(LiteInputKeyType.LongPress.ToContextKey(), LiteConst.ContextValue.None);
             }
         }
     }
