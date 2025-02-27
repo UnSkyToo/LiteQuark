@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27cafaba1d46438d89ae54c1d66ddd86, type: 3}
   m_Name: player_test
   m_EditorClassIdentifier: 
-  PrefabPath: RPGTiny/Prefab/MaleCharacter.prefab
+  PrefabPath: demo/RPGTiny/Prefab/FemaleCharacter.prefab
   StateGroup: player_test
   EntryState: idle

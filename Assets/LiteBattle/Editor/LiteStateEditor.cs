@@ -183,11 +183,6 @@ namespace LiteBattle.Editor
             }
 
             var jsonPath = PathUtils.ConcatPath(LiteStateConfig.Instance.DataPath, "Database.json");
-            if (File.Exists(jsonPath))
-            {
-                File.Delete(jsonPath);
-                AssetDatabase.Refresh();
-            }
             File.WriteAllText(jsonPath, json);
             AssetDatabase.Refresh();
         }

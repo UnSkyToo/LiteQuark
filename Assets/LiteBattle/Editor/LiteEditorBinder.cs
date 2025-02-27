@@ -96,11 +96,11 @@ namespace LiteBattle.Editor
             CurrentAgent_ = config;
             Selection.activeObject = config;
 
-            var goPath = LiteStateUtils.GetFullPath(config.PrefabPath);
-            var go = AssetDatabase.LoadAssetAtPath<GameObject>(goPath);
+            var prefabFullPath = PathUtils.GetFullPathInAssetRoot(config.PrefabPath);
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFullPath);
             if (go == null)
             {
-                LLog.Error($"can't load agent prefab : {goPath}");
+                LLog.Error($"can't load agent prefab : {prefabFullPath}");
                 return;
             }
 
@@ -119,8 +119,11 @@ namespace LiteBattle.Editor
         {
             UnBindTimeline();
             
-            CurrentAgent_ = null;
-            LiteAgentBinder.Instance.UnBind();
+            if (CurrentAgent_ != null)
+            {
+                CurrentAgent_ = null;
+                LiteAgentBinder.Instance.UnBind();
+            }
 
             if (AgentGo_ != null)
             {
@@ -155,8 +158,12 @@ namespace LiteBattle.Editor
 
         public void UnBindTimeline()
         {
-            CurrentTimeline_ = null;
-            LiteTimelineHelper.ClearTimeline();
+            if (CurrentTimeline_ != null)
+            {
+                CurrentTimeline_ = null;
+                LiteTimelineHelper.ClearTimeline();
+            }
+
             if (TimelineDirector_ != null)
             {
                 TimelineDirector_.playableAsset = null;
