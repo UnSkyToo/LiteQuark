@@ -12,5 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c47032272c74419c8a8fe011dbe2e92c, type: 3}
   m_Name: LiteStateConfig
   m_EditorClassIdentifier: 
-  RootPath: Assets/StandaloneAssets/demo
-  DataPath: Assets/StandaloneAssets/demo/StateData
+  DatabasePath: Assets/StandaloneAssets/demo/StateDatabase

@@ -14,11 +14,11 @@ namespace LiteBattle.Editor
         private readonly List<ILiteEditorView> ViewList_ = new List<ILiteEditorView>();
         private LiteStateSceneView SceneView_;
         
-        [MenuItem("Lite/State/Editor Window")]
+        [MenuItem("Lite/State Engine/Editor Window")]
         private static void ShowEditor()
         {
             var win = GetWindow<LiteStateEditor>();
-            win.titleContent = new GUIContent("State Editor");
+            win.titleContent = new GUIContent("State Engine");
             win.Show();
         }
 
@@ -110,7 +110,7 @@ namespace LiteBattle.Editor
             LiteEditorPreviewer.Instance.Shutdown();
             LiteEditorBinder.Instance.Shutdown();
             
-            SaveGroupData();
+            SaveDatabase();
         }
 
         public T GetView<T>() where T : ILiteEditorView
@@ -141,10 +141,10 @@ namespace LiteBattle.Editor
             return !EditorApplication.isPlaying;
         }
 
-        private void SaveGroupData()
+        private void SaveDatabase()
         {
-            var groupData = new List<LiteGroupData>();
-            var agentFullPathList = AssetUtils.GetAssetPathList("LiteAgentConfig", LiteStateUtils.GetAgentRootPath());
+            var database = new List<LiteGroupData>();
+            var agentFullPathList = AssetUtils.GetAssetPathList("LiteAgentConfig", LiteStateConfig.Instance.GetAgentDatabasePath());
             foreach (var agentFullPath in agentFullPathList)
             {
                 var agentConfig = AssetDatabase.LoadAssetAtPath<LiteAgentConfig>(agentFullPath);
@@ -160,7 +160,7 @@ namespace LiteBattle.Editor
                     continue;
                 }
 
-                var timelineRootPath = PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), agentConfig.StateGroup);
+                var timelineRootPath = PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), agentConfig.StateGroup);
                 var timelineFullPathList = AssetUtils.GetAssetPathList("TimelineAsset", timelineRootPath);
                 var timelineList = new List<string>(timelineFullPathList.Count);
                 
@@ -171,18 +171,18 @@ namespace LiteBattle.Editor
                 }
 
                 var agentPath = PathUtils.GetRelativeAssetRootPath(agentFullPath);
-                groupData.Add(new LiteGroupData(agentConfig.StateGroup, agentPath, timelineList));
+                database.Add(new LiteGroupData(agentConfig.StateGroup, agentPath, timelineList));
             }
             
             // save to json
-            var json = LitJson.JsonMapper.ToJson(groupData);
+            var json = LitJson.JsonMapper.ToJson(database);
             if (string.IsNullOrWhiteSpace(json) || json == "{}")
             {
-                Debug.LogError("SaveGroupData json is empty");
+                Debug.LogError("Database json is empty");
                 return;
             }
 
-            var jsonPath = PathUtils.ConcatPath(LiteStateConfig.Instance.DataPath, "Database.json");
+            var jsonPath = LiteStateConfig.Instance.GetDatabaseJsonPath();
             File.WriteAllText(jsonPath, json);
             AssetDatabase.Refresh();
         }

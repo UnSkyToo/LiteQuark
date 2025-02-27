@@ -58,13 +58,13 @@ namespace LiteBattle.Editor
             
             protected override List<string> GetList()
             {
-                var results = AssetUtils.GetAssetPathList("LiteAgentConfig", LiteStateUtils.GetAgentRootPath());
+                var results = AssetUtils.GetAssetPathList("LiteAgentConfig", LiteStateConfig.Instance.GetAgentDatabasePath());
                 return results;
             }
 
             protected override bool CreateItem()
             {
-                AssetUtils.CreateAsset<LiteAgentConfig>(LiteStateUtils.GetAgentRootPath(), $"{AssetUtils.RandomAssetName("agent_")}.asset");
+                AssetUtils.CreateAsset<LiteAgentConfig>(LiteStateConfig.Instance.GetAgentDatabasePath(), $"{AssetUtils.RandomAssetName("agent_")}.asset");
                 return true;
             }
 

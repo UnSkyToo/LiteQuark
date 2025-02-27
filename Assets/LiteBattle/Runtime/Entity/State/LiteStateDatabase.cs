@@ -26,8 +26,7 @@ namespace LiteBattle.Runtime
 
         private void Load()
         {
-            // TODO : get path from config
-            var jsonPath = "demo/StateData/Database.json";
+            var jsonPath = PathUtils.GetRelativeAssetRootPath(LiteStateConfig.Instance.GetDatabaseJsonPath());
             var json = LiteRuntime.Asset.LoadAssetSync<TextAsset>(jsonPath).text;
             var groupDataList = LitJson.JsonMapper.ToObject<List<LiteGroupData>>(json);
             foreach (var groupData in groupDataList)

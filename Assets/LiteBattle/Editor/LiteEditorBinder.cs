@@ -77,7 +77,7 @@ namespace LiteBattle.Editor
         public string GetCurrentAgentTimelineRootPath()
         {
             var stateGroup = GetCurrentStateGroup();
-            return PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), stateGroup);
+            return PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
         
         public List<string> GetCurrentAgentTimelinePathList()

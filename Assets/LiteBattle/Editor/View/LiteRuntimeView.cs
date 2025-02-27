@@ -77,7 +77,7 @@ namespace LiteBattle.Editor
             }
 
             var stateGroup = agent.GetAgentConfig().StateGroup;
-            var timelineFullPath = PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), $"{stateGroup}/{state.Name}.playable");
+            var timelineFullPath = PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), $"{stateGroup}/{state.Name}.playable");
             var asset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(timelineFullPath);
             LiteTimelineHelper.SetTimeline(asset);
         }

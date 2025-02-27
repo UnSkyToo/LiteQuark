@@ -90,8 +90,7 @@ namespace LiteBattle.Runtime
         public string GetCurrentAgentTimelineRootPath()
         {
             var stateGroup = GetCurrentStateGroup();
-            // TODO : use config path
-            return PathUtils.ConcatPath("Assets/StandaloneAssets/demo/StateData/Timeline", stateGroup);
+            return PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
         
         public static List<string> GetCurrentAgentTimelinePathListForAttribute()

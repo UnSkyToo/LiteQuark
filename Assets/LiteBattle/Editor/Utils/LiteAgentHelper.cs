@@ -13,7 +13,7 @@ namespace LiteBattle.Editor
             var asset = AssetDatabase.LoadAssetAtPath<LiteAgentConfig>(fullPath);
             if (asset != null && !string.IsNullOrWhiteSpace(asset.StateGroup))
             {
-                var statePath = PathUtils.ConcatPath(LiteStateUtils.GetTimelineRootPath(), asset.StateGroup);
+                var statePath = PathUtils.ConcatPath(LiteStateConfig.Instance.GetTimelineDatabasePath(), asset.StateGroup);
                 if (Directory.Exists(statePath))
                 {
                     // Directory.Delete(statePath, true);
