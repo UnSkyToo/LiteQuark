@@ -56,6 +56,11 @@ namespace LiteQuark.Runtime
 
         protected virtual GameObject OnCreate()
         {
+            if (Template_ == null)
+            {
+                return null;
+            }
+            
             var go = Object.Instantiate(Template_, Parent_);
             return go;
         }
@@ -92,6 +97,12 @@ namespace LiteQuark.Runtime
 
         public virtual void GenerateAsync(int count, System.Action<IBasePool> callback)
         {
+            if (Template_ == null)
+            {
+                callback?.Invoke(this);
+                return;
+            }
+            
             LiteRuntime.Task.InstantiateGoTask(Template_, Parent_, count, (list) =>
             {
                 foreach (var go in list)
@@ -114,12 +125,20 @@ namespace LiteQuark.Runtime
         public virtual GameObject Alloc(Transform parent)
         {
             var go = Pool_.Get();
-            go.transform.SetParent(parent, false);
+            if (go != null)
+            {
+                go.transform.SetParent(parent, false);
+            }
             return go;
         }
 
         public virtual void Recycle(GameObject value)
         {
+            if (value == null)
+            {
+                return;
+            }
+            
             Pool_.Release(value);
         }
     }

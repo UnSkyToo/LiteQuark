@@ -21,7 +21,10 @@ namespace LiteQuark.Runtime
         public override GameObject Alloc(Transform parent)
         {
             var go = base.Alloc(parent);
-            go.SetActive(true);
+            if (go != null)
+            {
+                go.SetActive(true);
+            }
             return go;
         }
     }

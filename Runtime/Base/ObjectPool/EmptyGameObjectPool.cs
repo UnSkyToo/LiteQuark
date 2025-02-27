@@ -103,6 +103,11 @@ namespace LiteQuark.Runtime
 
         public virtual void Recycle(GameObject value)
         {
+            if (value == null)
+            {
+                return;
+            }
+            
             Pool_.Release(value);
         }
     }
