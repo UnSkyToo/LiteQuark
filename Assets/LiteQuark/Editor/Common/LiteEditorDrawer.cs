@@ -7,6 +7,14 @@ namespace LiteQuark.Editor
 {
     internal static class LiteEditorDrawer
     {
+        public static void LabelError(Rect rect, string label)
+        {
+            using (new ColorScope(Color.red))
+            {
+                EditorGUI.LabelField(rect, new GUIContent(label, EditorGUIUtility.FindTexture("console.warnicon.sml")));
+            }
+        }
+        
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
