@@ -86,18 +86,9 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
-                BundleRequest_ = UnityEngine.AssetBundle.LoadFromFileAsync(fullPath);
-                BundleRequest_.completed += OnBundleRequestCompleted;
+                var bundleUri = PathUtils.GetFullPathInRuntime(BundlePath_);
+                LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
-        }
-        
-        private void OnBundleRequestCompleted(UnityEngine.AsyncOperation op)
-        {
-            op.completed -= OnBundleRequestCompleted;
-
-            var bundle = (op as UnityEngine.AssetBundleCreateRequest)?.assetBundle;
-            HandleBundleLoadCompleted(bundle);
         }
 
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
