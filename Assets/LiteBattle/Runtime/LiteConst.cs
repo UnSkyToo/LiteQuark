@@ -4,11 +4,6 @@ namespace LiteBattle.Runtime
 {
     public static class LiteConst
     {
-        /// <summary>
-        /// 开启快速热重启后，修改可以直接生效，不用点击Reload按钮
-        /// </summary>
-        public const bool QuickReload = true;
-        
         public static class ContextKey
         {
             public const string PlayerMoveState = "Player_Move_State";

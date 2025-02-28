@@ -21,6 +21,7 @@ namespace LiteBattle.Runtime
             var targets = LiteCollisionManager.Instance.CheckCollide(state.Unit, Range, state.Unit.Camp.Reverse());
             foreach (var target in targets)
             {
+                target.SetTag(LiteTag.Hit, true, 1);
                 target.GetModule<LiteEntityHandleModule>()?.HandleBeAttack(state.Unit);
             }
         }

@@ -19,7 +19,18 @@ namespace LiteBattle.Runtime
             Kind = kind;
             Start = start;
             Duration = duration;
-            Event = LiteConst.QuickReload ? evt : evt.Clone();
+#if UNITY_EDITOR
+            if (LiteNexusConfig.Instance.QuickReload)
+            {
+                Event = LiteNexusConfig.Instance.QuickReload ? evt : evt.Clone();
+            }
+            else
+            {
+                Event = evt.Clone();
+            }
+#else
+            Event = evt.Clone();
+#endif
         }
 
         public bool InRange(float time)

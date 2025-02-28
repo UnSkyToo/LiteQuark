@@ -53,6 +53,10 @@ namespace LiteBattle.Runtime
                 CurrentState_ = new LiteState(stateConfig);
                 CurrentState_?.Enter(this);
             }
+            else
+            {
+                CurrentState_ = null;
+            }
         }
     }
 }

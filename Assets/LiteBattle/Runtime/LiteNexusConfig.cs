@@ -12,6 +12,12 @@ namespace LiteBattle.Runtime
         private const string ConfigPath = "Assets/StandaloneAssets";
         private const string ConfigName = "LiteNexusConfig.asset";
 
+        /// <summary>
+        /// 开启快速热重启后，修改可以直接生效，不用点击Reload按钮
+        /// </summary>
+        [SerializeField]
+        public bool QuickReload = false;
+        
         [SerializeField]
         public string DatabasePath = "Assets/StandaloneAssets/NexusDatabase";
         

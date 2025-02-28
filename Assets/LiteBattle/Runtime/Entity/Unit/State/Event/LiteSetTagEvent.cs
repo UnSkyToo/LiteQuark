@@ -44,6 +44,7 @@ namespace LiteBattle.Runtime
             var evt = new LiteSetTagEvent();
             evt.Tag = Tag;
             evt.Value = Value;
+            evt.Revert = Revert;
             return evt;
         }
     }

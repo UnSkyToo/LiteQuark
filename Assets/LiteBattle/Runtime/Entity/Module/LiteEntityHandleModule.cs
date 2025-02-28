@@ -1,4 +1,5 @@
 ﻿using System;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {
@@ -19,8 +20,6 @@ namespace LiteBattle.Runtime
 
         public void HandleBeAttack(LiteEntity attacker)
         {
-            Entity.SetTag(LiteTag.Hit, true, 1);
-
             var damageValue = CalculateDamage(attacker, Entity);
             if (damageValue <= 0)
             {
@@ -28,6 +27,13 @@ namespace LiteBattle.Runtime
             }
 
             Entity.GetModule<LiteEntityDataModule>().AddDelta(LiteEntityDataType.CurHp, -damageValue);
+            LLog.Info($"{attacker.DebugName} 攻击 {Entity.DebugName}，造成 {damageValue} 点伤害");
+
+            if (Entity.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.CurHp) <= 0)
+            {
+                Entity.SetContext("player_state_dead", "dead");
+                LLog.Info($"{Entity.DebugName} 死亡");
+            }
         }
 
         private double CalculateDamage(LiteEntity attacker, LiteEntity target)
