@@ -32,9 +32,14 @@
             OnTick(deltaTime);
         }
 
-        public void Stop()
+        public void Complete()
         {
             State = TaskState.Completed;
+        }
+
+        public void Abort()
+        {
+            State = TaskState.Aborted;
         }
 
         protected abstract void OnExecute();

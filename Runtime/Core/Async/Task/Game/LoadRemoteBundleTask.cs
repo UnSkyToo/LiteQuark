@@ -4,7 +4,7 @@ using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public class LoadRemoteBundleTask : BaseTask
+    public sealed class LoadRemoteBundleTask : BaseTask
     {
         private readonly Uri BundleUri_;
         private Action<AssetBundle> Callback_;
@@ -37,14 +37,14 @@ namespace LiteQuark.Runtime
             {
                 LLog.Error($"Failed to download bundle : {BundleUri_}");
                 Callback_?.Invoke(null);
+                Abort();
             }
             else
             {
                 var bundle = DownloadHandlerAssetBundle.GetContent(Request_);
                 Callback_?.Invoke(bundle);
+                Complete();
             }
-            
-            Stop();
         }
     }
 }

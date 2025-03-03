@@ -5,5 +5,6 @@ namespace LiteQuark.Runtime
         Waiting,
         InProgress,
         Completed,
+        Aborted,
     }
 }

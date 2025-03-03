@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace LiteQuark.Runtime
 {
-    public class AsyncResultTask : BaseTask
+    public sealed class AsyncResultTask : BaseTask
     {
         private readonly IAsyncResult AsyncResult_;
         private Action Callback_;
@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    Stop();
+                    Complete();
                 }
             }
 

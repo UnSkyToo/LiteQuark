@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public class InstantiateGameObjectTask : BaseTask
+    public sealed class InstantiateGameObjectTask : BaseTask
     {
         private readonly GameObject Template_;
         private readonly Transform Parent_;
@@ -52,13 +52,13 @@ namespace LiteQuark.Runtime
                 }
                 
                 Callback_?.Invoke(result);
+                Complete();
             }
             else
             {
                 Callback_?.Invoke(Array.Empty<GameObject>());
+                Abort();
             }
-            
-            Stop();
         }
     }
 }
