@@ -1,8 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public interface IManager
+    public interface IManager : IStartup, IShutdown
     {
-        bool Startup();
-        void Shutdown();
     }
 }
