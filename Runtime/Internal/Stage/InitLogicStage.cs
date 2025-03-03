@@ -1,23 +1,31 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed class InitLogicStage : BaseStage
+    internal sealed class InitLogicStage : IStage
     {
+        private StageCode CurrentCode_ = StageCode.Waiting;
+        
         public InitLogicStage()
         {
         }
         
-        public override void Enter()
+        public void Enter()
         {
-            LogicCenter.Instance.InitializeLogic();
+            CurrentCode_ = StageCode.Waiting;
+            LogicCenter.Instance.InitializeLogic(OnCallback);
         }
 
-        public override void Leave()
+        public void Leave()
         {
         }
 
-        public override StageCode Tick(float deltaTime)
+        public StageCode Tick(float deltaTime)
         {
-            return StageCode.Completed;
+            return CurrentCode_;
+        }
+
+        private void OnCallback(bool result)
+        {
+            CurrentCode_ = result ? StageCode.Completed : StageCode.Error;
         }
     }
 }

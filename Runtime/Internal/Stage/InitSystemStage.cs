@@ -1,23 +1,31 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed class InitSystemStage : BaseStage
+    internal sealed class InitSystemStage : IStage
     {
+        private StageCode CurrentCode_ = StageCode.Waiting;
+        
         public InitSystemStage()
         {
         }
         
-        public override void Enter()
+        public void Enter()
         {
-            SystemCenter.Instance.InitializeSystem();
+            CurrentCode_ = StageCode.Waiting;
+            SystemCenter.Instance.InitializeSystem(OnCallback);
         }
 
-        public override void Leave()
+        public void Leave()
         {
         }
 
-        public override StageCode Tick(float deltaTime)
+        public StageCode Tick(float deltaTime)
         {
-            return StageCode.Completed;
+            return CurrentCode_;
+        }
+
+        private void OnCallback(bool result)
+        {
+            CurrentCode_ = result ? StageCode.Completed : StageCode.Error;
         }
     }
 }

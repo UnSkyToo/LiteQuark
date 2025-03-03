@@ -29,23 +29,32 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal void InitializeSystem()
+        internal void InitializeSystem(System.Action<bool> callback)
         {
             SystemList_.Clear();
             SystemTypeMap_.Clear();
 
             var registerSystemList = new List<System.Type>(RegisterSystemMap_.Keys);
             registerSystemList.Sort((x, y) => RegisterSystemMap_[y].CompareTo(RegisterSystemMap_[x]));
-            
-            foreach (var type in registerSystemList)
+
+            new AsyncInitializer<ISystem>(registerSystemList, (system, isError) =>
             {
-                LLog.Info($"Initialize {type.AssemblyQualifiedName}");
-                if (System.Activator.CreateInstance(type) is ISystem sys)
+                if (isError)
                 {
-                    SystemList_.Add(sys);
-                    SystemTypeMap_.Add(type, sys);
+                    callback?.Invoke(false);
+                    return;
                 }
-            }
+
+                if (system != null)
+                {
+                    SystemList_.Add(system);
+                    SystemTypeMap_.Add(system.GetType(), system);
+                }
+                else
+                {
+                    callback?.Invoke(true);
+                }
+            }).StartInitialize();
         }
         
         internal void UnInitializeSystem()

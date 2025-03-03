@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public interface ISystem : IDispose
+    public interface ISystem : IInitializeAsync, IDispose
     {
     }
 }

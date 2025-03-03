@@ -9,6 +9,11 @@ namespace LiteQuark.Runtime
         public GroupSystem()
         {
         }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

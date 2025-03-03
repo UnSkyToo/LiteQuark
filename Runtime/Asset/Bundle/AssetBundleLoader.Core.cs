@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public bool Initialize()
+        public void Initialize(Action<bool> callback)
         {
             var bundlePackUri = string.Empty;
             
@@ -37,17 +37,21 @@ namespace LiteQuark.Runtime
                 bundlePackUri = PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName);
             }
 
-            PackInfo_ = BundlePackInfo.LoadBundlePack(bundlePackUri);
-            if (PackInfo_ == null)
+            BundlePackInfo.LoadBundlePack(bundlePackUri, (info) =>
             {
-                return false;
-            }
-            
-            BundleCacheMap_.Clear();
-            AssetIDToPathMap_.Clear();
-            UnloadBundleList_.Clear();
-            
-            return true;
+                PackInfo_ = info;
+                if (PackInfo_ == null)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+
+                BundleCacheMap_.Clear();
+                AssetIDToPathMap_.Clear();
+                UnloadBundleList_.Clear();
+
+                callback?.Invoke(true);
+            });
         }
 
         public void Dispose()

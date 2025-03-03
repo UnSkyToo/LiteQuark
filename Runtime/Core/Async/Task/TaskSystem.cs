@@ -21,6 +21,11 @@ namespace LiteQuark.Runtime
             MainThreadSynchronizationContext_ = SynchronizationContext.Current;
         }
 
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
+
         public void Dispose()
         {
             MonoBehaviourInstance?.StopAllCoroutines();

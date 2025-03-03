@@ -12,6 +12,11 @@ namespace LiteQuark.Runtime
         public TimerSystem()
         {
         }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

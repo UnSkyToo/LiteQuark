@@ -13,6 +13,11 @@ namespace LiteQuark.Runtime
             Root_ = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
             PoolCache_.Clear();
         }
+        
+        public void Initialize(System.Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

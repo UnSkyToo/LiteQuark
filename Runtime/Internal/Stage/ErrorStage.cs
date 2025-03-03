@@ -1,21 +1,21 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed class ErrorStage : BaseStage
+    internal sealed class ErrorStage : IStage
     {
         public ErrorStage()
         {
         }
 
-        public override void Enter()
+        public void Enter()
         {
             LLog.Error("Enter <ErrorStage>, please check log.");
         }
 
-        public override void Leave()
+        public void Leave()
         {
         }
 
-        public override StageCode Tick(float deltaTime)
+        public StageCode Tick(float deltaTime)
         {
             return StageCode.Running;
         }

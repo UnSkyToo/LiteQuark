@@ -22,8 +22,12 @@ namespace LiteQuark.Runtime
         
         public void Dispose()
         {
-            CurrentStage_?.Leave();
-            CurrentStage_ = null;
+            if (CurrentStage_ != null)
+            {
+                LLog.Info($"StageCenter: Leave {CurrentStage_.GetType().Name}");
+                CurrentStage_?.Leave();
+                CurrentStage_ = null;
+            }
         }
         
         public void Tick(float deltaTime)
@@ -61,10 +65,20 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentStage_?.Leave();
+            if (CurrentStage_ != null)
+            {
+                LLog.Info($"StageCenter: Leave {CurrentStage_.GetType().Name}");
+                CurrentStage_.Leave();
+            }
+            
             CurrentStage_ = StageList_[index];
-            CurrentStage_?.Enter();
             Index_ = index;
+            
+            if (CurrentStage_ != null)
+            {
+                LLog.Info($"StageCenter: Enter {CurrentStage_.GetType().Name}");
+                CurrentStage_.Enter();
+            }
         }
     }
 }

@@ -32,6 +32,11 @@ namespace LiteQuark.Runtime
                 UnityEngine.Debug.unityLogger.logEnabled = false;
             }
         }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

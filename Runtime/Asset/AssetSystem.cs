@@ -26,8 +26,11 @@ namespace LiteQuark.Runtime
                 default:
                     throw new ArgumentException($"error {nameof(AssetLoaderMode)} : {mode}");
             }
-            
-            Loader_.Initialize();
+        }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            Loader_.Initialize(callback);
         }
 
         public void Dispose()
