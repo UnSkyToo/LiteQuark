@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public class LoadLocalBundleTask : BaseTask
+    public sealed class LoadLocalBundleTask : BaseTask
     {
         private readonly string BundleUri_;
         private Action<AssetBundle> Callback_;
@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
             
             var bundle = (op as AssetBundleCreateRequest)?.assetBundle;
             Callback_?.Invoke(bundle);
-            Stop();
+            Complete();
         }
     }
 }

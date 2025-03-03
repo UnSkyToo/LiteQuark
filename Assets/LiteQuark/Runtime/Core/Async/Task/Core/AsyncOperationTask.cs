@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public class AsyncOperationTask : BaseTask
+    public sealed class AsyncOperationTask : BaseTask
     {
         private readonly AsyncOperation AsyncOperation_;
         private Action Callback_;
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    Stop();
+                    Complete();
                 }
             }
 

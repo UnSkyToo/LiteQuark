@@ -3,26 +3,21 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public interface IPipelineSubTask : IDispose
-    {
-        bool IsEnd { get; }
-        
-        void Execute();
-    }
-    
     public sealed class PipelineTask : BaseTask
     {
         public event Action<int, int> Progress;
-        public event Action Completed;
+        public event Action<bool> Completed;
         
-        private readonly List<IPipelineSubTask> SubTaskList_ = null;
-        private IPipelineSubTask CurrentSubTask_ = null;
+        private readonly List<ITask> SubTaskList_ = null;
+        private readonly Action<bool> Callback_ = null;
+        private ITask CurrentSubTask_ = null;
         private int Index_ = 0;
         
-        public PipelineTask(IPipelineSubTask[] subTasks)
+        public PipelineTask(ITask[] subTasks, Action<bool> callback)
             : base()
         {
-            SubTaskList_ = new List<IPipelineSubTask>(subTasks);
+            SubTaskList_ = new List<ITask>(subTasks);
+            Callback_ = callback;
             State = TaskState.Waiting;
             Index_ = 0;
         }
@@ -47,13 +42,17 @@ namespace LiteQuark.Runtime
         {
             if (CurrentSubTask_ == null)
             {
-                State = TaskState.Completed;
+                Complete();
                 return;
             }
             
-            if (CurrentSubTask_.IsEnd)
+            if (CurrentSubTask_.State == TaskState.Completed)
             {
                 NextTask();
+            }
+            else if (CurrentSubTask_.State == TaskState.Aborted)
+            {
+                MarkResult(false);
             }
         }
 
@@ -64,8 +63,7 @@ namespace LiteQuark.Runtime
             if (Index_ >= SubTaskList_.Count)
             {
                 CurrentSubTask_ = null;
-                State = TaskState.Completed;
-                Completed?.Invoke();
+                MarkResult(true);
                 return;
             }
             
@@ -73,7 +71,22 @@ namespace LiteQuark.Runtime
             CurrentSubTask_?.Execute();
         }
 
-        public void AddSubTask(IPipelineSubTask task)
+        private void MarkResult(bool isCompleted)
+        {
+            if (isCompleted)
+            {
+                Complete();
+            }
+            else
+            {
+                Abort();
+            }
+            
+            Callback_?.Invoke(isCompleted);
+            Completed?.Invoke(isCompleted);
+        }
+
+        public void AddSubTask(ITask task)
         {
             SubTaskList_.Add(task);
         }

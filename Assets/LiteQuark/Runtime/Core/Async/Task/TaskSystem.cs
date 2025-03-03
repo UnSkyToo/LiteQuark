@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
                     task.Tick(dt);
                 }
 
-                if (task.State == TaskState.Completed)
+                if (task.State is TaskState.Completed or TaskState.Aborted)
                 {
                     task.Dispose();
                     list.Remove(task);
@@ -91,9 +91,16 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public PipelineTask AddTask(IPipelineSubTask[] subTasks)
+        public WaitCallbackTask AddTask(Action<Action<bool>> func)
         {
-            var task = new PipelineTask(subTasks);
+            var task = new WaitCallbackTask(func);
+            TaskList_.Add(task);
+            return task;
+        }
+
+        public PipelineTask AddPipelineTask(ITask[] subTasks, Action<bool> callback)
+        {
+            var task = new PipelineTask(subTasks, callback);
             TaskList_.Add(task);
             return task;
         }

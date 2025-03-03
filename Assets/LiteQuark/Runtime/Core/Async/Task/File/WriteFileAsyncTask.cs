@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             catch
             {
                 callback?.Invoke(false);
-                Stop();
+                Abort();
                 throw;
             }
         }
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
                 if (!task.IsCompleted)
                 {
                     Callback_?.Invoke(false);
-                    Stop();
+                    Abort();
                     break;
                 }
 
@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
                     await Stream_.FlushAsync().ConfigureAwait(false);
                     
                     Callback_?.Invoke(true);
-                    Stop();
+                    Complete();
                     break;
                 }
             }

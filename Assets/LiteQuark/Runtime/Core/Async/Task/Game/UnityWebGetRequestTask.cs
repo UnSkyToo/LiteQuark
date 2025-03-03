@@ -4,7 +4,7 @@ using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public class UnityWebGetRequestTask : BaseTask
+    public sealed class UnityWebGetRequestTask : BaseTask
     {
         private readonly Uri Uri_;
         private Action<DownloadHandler> Callback_;
@@ -37,13 +37,13 @@ namespace LiteQuark.Runtime
             {
                 LLog.Error($"get request uri : {Uri_}\n{Request_.error}");
                 Callback_?.Invoke(null);
+                Abort();
             }
             else
             {
                 Callback_?.Invoke(Request_.downloadHandler);
+                Complete();
             }
-
-            Stop();
         }
     }
 }

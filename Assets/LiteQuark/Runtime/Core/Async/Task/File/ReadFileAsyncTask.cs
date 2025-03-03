@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             catch
             {
                 callback?.Invoke(null);
-                Stop();
+                Abort();
                 throw;
             }
         }
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
                 if (!task.IsCompleted)
                 {
                     Callback_?.Invoke(null);
-                    Stop();
+                    Abort();
                     break;
                 }
 
@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
                 else
                 {
                     Callback_?.Invoke(Data_.ToArray());
-                    Stop();
+                    Complete();
                     break;
                 }
             }
