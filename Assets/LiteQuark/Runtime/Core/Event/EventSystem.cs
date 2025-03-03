@@ -78,6 +78,11 @@ namespace LiteQuark.Runtime
             EventList_.Clear();
             GlobalTag_ = "Global".GetHashCode();
         }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

@@ -1,4 +1,5 @@
-﻿using LiteBattle.Runtime;
+﻿using System;
+using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 
 namespace LiteQuark.Demo
@@ -9,13 +10,13 @@ namespace LiteQuark.Demo
         {
         }
         
-        public bool Startup()
+        public void Initialize(Action<bool> callback)
         {
             LiteNexusEngine.Instance.Startup();
-            return true;
+            callback?.Invoke(true);
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             LiteNexusEngine.Instance.Shutdown();
         }

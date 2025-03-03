@@ -2,13 +2,13 @@
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class BootStage : BaseStage
+    internal sealed class BootStage : IStage
     {
         public BootStage()
         {
         }
         
-        public override void Enter()
+        public void Enter()
         {
             Application.targetFrameRate = LiteRuntime.Setting.Common.TargetFrameRate;
             Input.multiTouchEnabled = LiteRuntime.Setting.Common.MultiTouch;
@@ -16,11 +16,11 @@ namespace LiteQuark.Runtime
             Random.InitState((int) System.DateTime.Now.Ticks);
         }
 
-        public override void Leave()
+        public void Leave()
         {
         }
 
-        public override StageCode Tick(float deltaTime)
+        public StageCode Tick(float deltaTime)
         {
             return StageCode.Completed;
         }

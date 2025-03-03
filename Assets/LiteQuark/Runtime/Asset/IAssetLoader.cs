@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     public interface IAssetLoader : ITick, IDispose
     {
-        bool Initialize();
+        void Initialize(Action<bool> callback);
 
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
         

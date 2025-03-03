@@ -10,9 +10,9 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public bool Initialize()
+        public void Initialize(Action<bool> callback)
         {
-            return true;
+            callback?.Invoke(true);
         }
 
         public void Dispose()

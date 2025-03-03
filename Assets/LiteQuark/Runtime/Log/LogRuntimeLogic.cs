@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace LiteQuark.Runtime
 {
@@ -7,7 +9,7 @@ namespace LiteQuark.Runtime
     {
         private GameObject Go_;
         
-        public bool Startup()
+        public void Initialize(Action<bool> callback)
         {
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
@@ -30,10 +32,10 @@ namespace LiteQuark.Runtime
 #endif
             }
             
-            return true;
+            callback?.Invoke(true);
         }
 
-        public void Shutdown()
+        public void Dispose()
         {
             Object.DestroyImmediate(Go_);
         }

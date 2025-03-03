@@ -23,6 +23,11 @@ namespace LiteQuark.Runtime
             MuteSound_ = false;
             MuteMusic_ = false;
         }
+        
+        public void Initialize(System.Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

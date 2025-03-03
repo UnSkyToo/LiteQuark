@@ -5,7 +5,6 @@ namespace LiteQuark.Runtime
     internal sealed class LogicCenter : Singleton<LogicCenter>, ISubstance
     {
         private readonly List<ILogic> LogicList_ = new List<ILogic>();
-        private readonly List<ILogic> LogicAddList_ = new List<ILogic>();
         
         private LogicCenter()
         {
@@ -18,18 +17,17 @@ namespace LiteQuark.Runtime
         
         public void Tick(float deltaTime)
         {
-            ProcessLogicAdd();
-            
             foreach (var logic in LogicList_)
             {
                 logic.Tick(deltaTime);
             }
         }
         
-        internal void InitializeLogic()
+        internal void InitializeLogic(System.Action<bool> callback)
         {
             LogicList_.Clear();
-            
+
+            var initTypeList = new List<System.Type>();
             foreach (var logicEntry in LiteRuntime.Setting.LogicList)
             {
                 if (logicEntry.Disabled)
@@ -44,57 +42,37 @@ namespace LiteQuark.Runtime
                 {
                     throw new System.Exception($"can't not find logic class type : {logicEntry.AssemblyQualifiedName}");
                 }
-
-                if (System.Activator.CreateInstance(logicType) is not ILogic logic)
-                {
-                    throw new System.Exception($"incorrect logic class type : {logicEntry.AssemblyQualifiedName}");
-                }
-
-                if (!logic.Startup())
-                {
-                    throw new System.Exception($"{logicEntry.AssemblyQualifiedName} startup failed");
-                }
-
-                LogicList_.Add(logic);
+                
+                initTypeList.Add(logicType);
             }
+            
+            new AsyncInitializer<ILogic>(initTypeList, (logic, isError) =>
+            {
+                if (isError)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+
+                if (logic != null)
+                {
+                    LogicList_.Add(logic);
+                }
+                else
+                {
+                    callback?.Invoke(true);
+                }
+            }).StartInitialize();
         }
 
         internal void UnInitializeLogic()
         {
-            ProcessLogicAdd();
-            
             foreach (var logic in LogicList_)
             {
-                logic.Shutdown();
+                logic.Dispose();
             }
+            
             LogicList_.Clear();
-        }
-        
-        public void AddLogic(ILogic logic)
-        {
-            LogicAddList_.Add(logic);
-        }
-
-        private void ProcessLogicAdd()
-        {
-            if (LogicAddList_.Count > 0)
-            {
-                foreach (var logic in LogicAddList_)
-                {
-                    if (logic == null)
-                    {
-                        continue;
-                    }
-                    
-                    if (!logic.Startup())
-                    {
-                        throw new System.Exception($"{logic.GetType().Name} startup failed");
-                    }
-                    
-                    LogicList_.Add(logic);
-                }
-                LogicAddList_.Clear();
-            }
         }
     }
 }

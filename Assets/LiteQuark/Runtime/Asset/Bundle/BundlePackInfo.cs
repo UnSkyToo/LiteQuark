@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace LiteQuark.Runtime
 {
@@ -78,31 +79,31 @@ namespace LiteQuark.Runtime
             return packInfo;
         }
         
-        public static BundlePackInfo LoadBundlePack(string bundleUri)
+        public static void LoadBundlePack(string bundleUri, Action<BundlePackInfo> callback)
         {
             try
             {
-                var request = UnityEngine.Networking.UnityWebRequest.Get(new Uri(bundleUri));
-                request.SendWebRequest();
-                while (!request.isDone)
+                LiteRuntime.Task.UnityWebGetRequestTask(bundleUri, (downloadHandler) =>
                 {
-                }
+                    if (downloadHandler.isDone)
+                    {
+                        var info = FromJson(downloadHandler.text);
 
-                if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-                {
-                    LLog.Error($"load bundle package error\n{request.error}");
-                    return null;
-                }
+                        if (info is not { IsValid: true })
+                        {
+                            LLog.Error($"bundle package parse error\n{downloadHandler.error}");
+                            callback?.Invoke(null);
+                            return;
+                        }
 
-                var info = FromJson(request.downloadHandler.text);
-
-                if (info is not { IsValid: true })
-                {
-                    return null;
-                }
-
-                info.Initialize();
-                return info;
+                        info.Initialize();
+                        callback?.Invoke(info);
+                    }
+                    else
+                    {
+                        LLog.Error($"load bundle package error\n{downloadHandler.error}");
+                    }
+                });
             }
             catch (Exception)
             {

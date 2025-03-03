@@ -8,6 +8,11 @@
         {
             ActionList_.Clear();
         }
+        
+        public void Initialize(System.Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

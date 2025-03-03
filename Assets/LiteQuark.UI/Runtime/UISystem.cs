@@ -43,6 +43,11 @@ namespace LiteQuark.Runtime
                 CanvasTransform_.Add(depthMode, go.transform);
             }
         }
+        
+        public void Initialize(Action<bool> callback)
+        {
+            callback?.Invoke(true);
+        }
 
         public void Dispose()
         {

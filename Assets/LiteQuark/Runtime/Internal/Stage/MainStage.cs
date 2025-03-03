@@ -1,22 +1,22 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed class MainStage : BaseStage
+    internal sealed class MainStage : IStage
     {
         public MainStage()
         {
         }
         
-        public override void Enter()
+        public void Enter()
         {
         }
 
-        public override void Leave()
+        public void Leave()
         {
             LogicCenter.Instance.Dispose();
             SystemCenter.Instance.Dispose();
         }
 
-        public override StageCode Tick(float deltaTime)
+        public StageCode Tick(float deltaTime)
         {
             SystemCenter.Instance.Tick(deltaTime);
             LogicCenter.Instance.Tick(deltaTime);
