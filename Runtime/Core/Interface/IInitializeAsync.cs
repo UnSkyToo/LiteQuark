@@ -1,9 +1,9 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public interface IInitializeAsync
     {
-        void Initialize(Action<bool> callback);
+        Task<bool> Initialize();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -10,23 +11,22 @@ namespace LiteQuark.Runtime
         
         private readonly Dictionary<ulong, AudioObject> AudioCache_ = new Dictionary<ulong, AudioObject>();
         private readonly List<AudioObject> RemoveList_ = new List<AudioObject>();
-        private readonly EmptyGameObjectPool Pool_ = null;
+        private EmptyGameObjectPool Pool_ = null;
         private Transform Root_ = null;
         
         public AudioSystem()
         {
-            Root_ = UnityUtils.CreateHoldGameObject("Audio").transform;
-            Pool_ = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
-            
             AudioCache_.Clear();
             RemoveList_.Clear();
             MuteSound_ = false;
             MuteMusic_ = false;
         }
         
-        public void Initialize(System.Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            callback?.Invoke(true);
+            Root_ = UnityUtils.CreateHoldGameObject("Audio").transform;
+            Pool_ = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
+            return Task.FromResult(true);
         }
 
         public void Dispose()

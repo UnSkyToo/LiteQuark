@@ -1,4 +1,6 @@
-﻿namespace LiteQuark.Runtime
+﻿using System.Threading.Tasks;
+
+namespace LiteQuark.Runtime
 {
     public sealed class ActionSystem : ISystem, ITick
     {
@@ -9,9 +11,9 @@
             ActionList_.Clear();
         }
         
-        public void Initialize(System.Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            callback?.Invoke(true);
+            return Task.FromResult(true);
         }
 
         public void Dispose()
