@@ -1,7 +1,6 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
 
 namespace LiteQuark.Runtime
 {
@@ -9,7 +8,7 @@ namespace LiteQuark.Runtime
     {
         private GameObject Go_;
         
-        public void Initialize(Action<bool> callback)
+        public Task<bool> Initialize()
         {
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
@@ -31,8 +30,8 @@ namespace LiteQuark.Runtime
                 scaler.matchWidthOrHeight = 0;
 #endif
             }
-            
-            callback?.Invoke(true);
+
+            return Task.FromResult(true);
         }
 
         public void Dispose()

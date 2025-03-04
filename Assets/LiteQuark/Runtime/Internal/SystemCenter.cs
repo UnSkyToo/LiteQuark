@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -29,7 +30,7 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal void InitializeSystem(System.Action<bool> callback)
+        internal async Task<bool> InitializeSystem()
         {
             SystemList_.Clear();
             SystemTypeMap_.Clear();
@@ -37,24 +38,29 @@ namespace LiteQuark.Runtime
             var registerSystemList = new List<System.Type>(RegisterSystemMap_.Keys);
             registerSystemList.Sort((x, y) => RegisterSystemMap_[y].CompareTo(RegisterSystemMap_[x]));
 
-            new AsyncInitializer<ISystem>(registerSystemList, (system, isError) =>
+            foreach (var type in registerSystemList)
             {
-                if (isError)
-                {
-                    callback?.Invoke(false);
-                    return;
-                }
+                LLog.Info($"Initialize {type.AssemblyQualifiedName}");
 
-                if (system != null)
+                if (System.Activator.CreateInstance(type) is not ISystem system)
+                {
+                    throw new System.Exception($"incorrect {typeof(ISystem)} type : {type.AssemblyQualifiedName}");
+                }
+                
+                var result = await system.Initialize();
+                if (result)
                 {
                     SystemList_.Add(system);
                     SystemTypeMap_.Add(system.GetType(), system);
                 }
                 else
                 {
-                    callback?.Invoke(true);
+                    LLog.Error($"Initialize {type.AssemblyQualifiedName} failed");
+                    return false;
                 }
-            }).StartInitialize();
+            }
+
+            return true;
         }
         
         internal void UnInitializeSystem()
@@ -95,7 +101,7 @@ namespace LiteQuark.Runtime
         }
 
         /// <summary>
-        /// Register LiteQuark runtime module
+        /// Register LiteQuark runtime system
         /// </summary>
         /// <param name="priority">Sort by priority value from high to low, can't greater than 90000</param>
         public static void RegisterSystem<T>(int priority) where T : ISystem

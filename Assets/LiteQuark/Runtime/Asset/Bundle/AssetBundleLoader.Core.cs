@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -17,7 +18,7 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public void Initialize(Action<bool> callback)
+        public Task<bool> Initialize()
         {
             var bundlePackUri = string.Empty;
             
@@ -37,12 +38,13 @@ namespace LiteQuark.Runtime
                 bundlePackUri = PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName);
             }
 
+            var tcs = new TaskCompletionSource<bool>();
             BundlePackInfo.LoadBundlePack(bundlePackUri, (info) =>
             {
                 PackInfo_ = info;
                 if (PackInfo_ == null)
                 {
-                    callback?.Invoke(false);
+                    tcs.SetResult(false);
                     return;
                 }
 
@@ -50,8 +52,9 @@ namespace LiteQuark.Runtime
                 AssetIDToPathMap_.Clear();
                 UnloadBundleList_.Clear();
 
-                callback?.Invoke(true);
+                tcs.SetResult(true);
             });
+            return tcs.Task;
         }
 
         public void Dispose()

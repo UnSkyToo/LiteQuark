@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public interface IAssetLoader : ITick, IDispose
     {
-        void Initialize(Action<bool> callback);
+        Task<bool> Initialize();
 
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
         

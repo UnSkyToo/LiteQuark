@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -21,9 +22,9 @@ namespace LiteQuark.Runtime
             MainThreadSynchronizationContext_ = SynchronizationContext.Current;
         }
 
-        public void Initialize(Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            callback?.Invoke(true);
+            return Task.FromResult(true);
         }
 
         public void Dispose()

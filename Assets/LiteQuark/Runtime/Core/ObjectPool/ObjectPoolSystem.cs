@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -10,13 +11,13 @@ namespace LiteQuark.Runtime
 
         public ObjectPoolSystem()
         {
-            Root_ = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
             PoolCache_.Clear();
         }
         
-        public void Initialize(System.Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            callback?.Invoke(true);
+            Root_ = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
+            return Task.FromResult(true);
         }
 
         public void Dispose()

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -28,9 +29,9 @@ namespace LiteQuark.Runtime
             }
         }
         
-        public void Initialize(Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            Loader_.Initialize(callback);
+            return Loader_.Initialize();
         }
 
         public void Dispose()

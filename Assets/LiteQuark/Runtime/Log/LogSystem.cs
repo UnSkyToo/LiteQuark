@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -11,10 +12,14 @@ namespace LiteQuark.Runtime
 
         public LogSystem()
         {
+        }
+
+        public Task<bool> Initialize()
+        {
             Repository_ = new DefaultLoggerRepository();
             LogCache_ = new Dictionary<string, ILog>();
             CommonLogger_ = GetLogger("Default");
-            
+
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
             if (logEnable)
@@ -31,11 +36,8 @@ namespace LiteQuark.Runtime
                 UnityEngine.Debug.LogWarning("DebugMode is false, disable all log!");
                 UnityEngine.Debug.unityLogger.logEnabled = false;
             }
-        }
-        
-        public void Initialize(Action<bool> callback)
-        {
-            callback?.Invoke(true);
+
+            return Task.FromResult(true);
         }
 
         public void Dispose()

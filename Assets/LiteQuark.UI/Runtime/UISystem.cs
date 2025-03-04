@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -44,9 +45,9 @@ namespace LiteQuark.Runtime
             }
         }
         
-        public void Initialize(Action<bool> callback)
+        public Task<bool> Initialize()
         {
-            callback?.Invoke(true);
+            return Task.FromResult(true);
         }
 
         public void Dispose()

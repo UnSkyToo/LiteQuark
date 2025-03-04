@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -23,11 +24,10 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal void InitializeLogic(System.Action<bool> callback)
+        internal async Task<bool> InitializeLogic()
         {
             LogicList_.Clear();
-
-            var initTypeList = new List<System.Type>();
+            
             foreach (var logicEntry in LiteRuntime.Setting.LogicList)
             {
                 if (logicEntry.Disabled)
@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
                     continue;
                 }
                 
-                LLog.Info($"initialize {logicEntry.AssemblyQualifiedName} system");
+                LLog.Info($"initialize {logicEntry.AssemblyQualifiedName} logic");
 
                 var logicType = System.Type.GetType(logicEntry.AssemblyQualifiedName);
                 if (logicType == null)
@@ -43,26 +43,24 @@ namespace LiteQuark.Runtime
                     throw new System.Exception($"can't not find logic class type : {logicEntry.AssemblyQualifiedName}");
                 }
                 
-                initTypeList.Add(logicType);
-            }
-            
-            new AsyncInitializer<ILogic>(initTypeList, (logic, isError) =>
-            {
-                if (isError)
+                if (System.Activator.CreateInstance(logicType) is not ILogic logic)
                 {
-                    callback?.Invoke(false);
-                    return;
+                    throw new System.Exception($"incorrect {typeof(ILogic)} type : {logicType.AssemblyQualifiedName}");
                 }
-
-                if (logic != null)
+                
+                var result = await logic.Initialize();
+                if (result)
                 {
                     LogicList_.Add(logic);
                 }
                 else
                 {
-                    callback?.Invoke(true);
+                    LLog.Error($"Initialize {logicType.AssemblyQualifiedName} failed");
+                    return false;
                 }
-            }).StartInitialize();
+            }
+            
+            return true;
         }
 
         internal void UnInitializeLogic()

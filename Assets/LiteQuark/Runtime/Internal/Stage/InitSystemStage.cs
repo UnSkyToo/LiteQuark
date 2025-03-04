@@ -8,10 +8,11 @@
         {
         }
         
-        public void Enter()
+        public async void Enter()
         {
             CurrentCode_ = StageCode.Waiting;
-            SystemCenter.Instance.InitializeSystem(OnCallback);
+            var result = await SystemCenter.Instance.InitializeSystem();
+            CurrentCode_ = result ? StageCode.Completed : StageCode.Error;
         }
 
         public void Leave()
@@ -21,11 +22,6 @@
         public StageCode Tick(float deltaTime)
         {
             return CurrentCode_;
-        }
-
-        private void OnCallback(bool result)
-        {
-            CurrentCode_ = result ? StageCode.Completed : StageCode.Error;
         }
     }
 }
