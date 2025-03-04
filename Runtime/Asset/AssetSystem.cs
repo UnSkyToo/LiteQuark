@@ -63,10 +63,30 @@ namespace LiteQuark.Runtime
             Loader_?.PreloadAsset<T>(formatPath, callback);
         }
 
+        public Task<bool> PreloadAsset<T>(string assetPath) where T : UnityEngine.Object
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            PreloadAsset<T>(assetPath, (result) =>
+            {
+                tcs.SetResult(result);
+            });
+            return tcs.Task;
+        }
+
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
             Loader_?.LoadAssetAsync<T>(formatPath, callback);
+        }
+        
+        public Task<T> LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
+        {
+            var tcs = new TaskCompletionSource<T>();
+            LoadAssetAsync<T>(assetPath, (asset) =>
+            {
+                tcs.SetResult(asset);
+            });
+            return tcs.Task;
         }
 
         public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
@@ -79,6 +99,16 @@ namespace LiteQuark.Runtime
         {
             var formatPath = FormatPath(assetPath);
             Loader_?.InstantiateAsync(formatPath, parent, callback);
+        }
+        
+        public Task<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent)
+        {
+            var tcs = new TaskCompletionSource<UnityEngine.GameObject>();
+            InstantiateAsync(assetPath, parent, (gameObject) =>
+            {
+                tcs.SetResult(gameObject);
+            });
+            return tcs.Task;
         }
 
         public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
