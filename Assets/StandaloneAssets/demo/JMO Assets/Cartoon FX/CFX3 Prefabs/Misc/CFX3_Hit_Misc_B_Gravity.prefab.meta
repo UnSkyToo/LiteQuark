@@ -5,5 +5,8 @@ labels:
 - Toon
 - Particles
 - Hit
-NativeFormatImporter:
+PrefabImporter:
+  externalObjects: {}
   userData: 
+  assetBundleName: 
+  assetBundleVariant: 

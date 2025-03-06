@@ -5,5 +5,8 @@ labels:
 - Toon
 - Particles
 - Snow
-NativeFormatImporter:
+PrefabImporter:
+  externalObjects: {}
   userData: 
+  assetBundleName: 
+  assetBundleVariant: 

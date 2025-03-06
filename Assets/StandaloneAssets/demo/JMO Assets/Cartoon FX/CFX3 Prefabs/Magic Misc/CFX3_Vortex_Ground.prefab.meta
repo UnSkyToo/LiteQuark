@@ -6,5 +6,8 @@ labels:
 - Particles
 - Magic
 - Ground
-NativeFormatImporter:
+PrefabImporter:
+  externalObjects: {}
   userData: 
+  assetBundleName: 
+  assetBundleVariant: 
