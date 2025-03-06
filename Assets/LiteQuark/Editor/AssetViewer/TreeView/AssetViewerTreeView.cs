@@ -15,6 +15,8 @@ namespace LiteQuark.Editor
 
         public bool CombineMode { get; set; } = true;
 
+        public bool IsLoaded { get; private set; } = false;
+
         private const string BundleType = "bundle";
 
         private readonly Dictionary<int, AssetViewerTreeItem> ItemCacheMap_ = new Dictionary<int, AssetViewerTreeItem>();
@@ -73,6 +75,8 @@ namespace LiteQuark.Editor
             AssetViewerUtils.SortTreeItemList(items, SizeSortedAscendingType_);
             
             SetupParentsAndChildrenFromDepths(root, items);
+            
+            IsLoaded = true;
             return root;
         }
 
