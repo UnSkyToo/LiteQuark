@@ -7,12 +7,27 @@ namespace LiteQuark.Runtime
 {
     internal sealed class AssetDatabaseLoader : IAssetLoader
     {
+        private bool SimulateAsyncDelayInEditor_;
+        private float AsyncDelayMinTime_;
+        private float AsyncDelayMaxTime_;
+        
         public AssetDatabaseLoader()
         {
         }
 
         public Task<bool> Initialize()
         {
+            if (LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor)
+            {
+                SimulateAsyncDelayInEditor_ = true;
+                AsyncDelayMinTime_ = MathF.Max(0f, LiteRuntime.Setting.Asset.AsyncDelayMinTime);
+                AsyncDelayMaxTime_ = MathF.Min(10f, LiteRuntime.Setting.Asset.AsyncDelayMaxTime);
+            }
+            else
+            {
+                SimulateAsyncDelayInEditor_ = false;
+            }
+            
             return Task.FromResult(true);
         }
 
@@ -24,14 +39,29 @@ namespace LiteQuark.Runtime
         {
         }
 
+        private void SimulateAsync<T>(Action<T> callback, T value)
+        {
+            if (SimulateAsyncDelayInEditor_)
+            {
+                LiteRuntime.Timer.AddTimer(UnityEngine.Random.Range(AsyncDelayMinTime_, AsyncDelayMaxTime_), () =>
+                {
+                    callback?.Invoke(value);
+                });
+            }
+            else
+            {
+                callback?.Invoke(value);
+            }
+        }
+
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
-            callback?.Invoke(true);
+            SimulateAsync(callback, true);
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
-            callback?.Invoke(LoadAssetSync<T>(assetPath));
+            SimulateAsync(callback, LoadAssetSync<T>(assetPath));
         }
 
         public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object

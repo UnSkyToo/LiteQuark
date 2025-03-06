@@ -44,10 +44,14 @@ namespace LiteQuark.Runtime
             [SerializeField] public int TargetFrameRate = 60;
             [SerializeField] public bool MultiTouch = false;
 
-            [SerializeField] public bool AutoRestartInBackground = false;
-            [ConditionalHide(nameof(AutoRestartInBackground), true), SerializeField] public float BackgroundLimitTime = 90.0f;
+            [Tooltip("是否允许后台固定时长自动重启")] [SerializeField]
+            public bool AutoRestartInBackground = false;
 
-            [SerializeField] public bool ThrowException = false;
+            [Tooltip("开启后台重启后，设定重启时间，单位（秒)")] [ConditionalHide(nameof(AutoRestartInBackground), true), SerializeField]
+            public float BackgroundLimitTime = 90.0f;
+
+            [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")] [SerializeField]
+            public bool ThrowException = false;
 
             public CommonSetting()
             {
@@ -57,12 +61,32 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class AssetSetting
         {
-            [SerializeField] public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
-            [SerializeField] public bool EnableRetain = true;
-            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float AssetRetainTime = 120; // 2 min
-            [ConditionalHide(nameof(EnableRetain), true), SerializeField] public float BundleRetainTime = 300f; // 5 min
-            [SerializeField] public bool EnableRemoteBundle = false;
-            [ConditionalHide(nameof(EnableRemoteBundle), true), SerializeField] public string BundleRemoteUri = "https://localhost:8000/";
+            [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
+            public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
+
+            [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [SerializeField]
+            public bool EnableRetain = true;
+
+            [Tooltip("开启缓存后，设定资源保留时间，单位（秒）")] [ConditionalHide(nameof(EnableRetain), true), SerializeField]
+            public float AssetRetainTime = 120; // 2 min
+
+            [Tooltip("开启缓存后，设定Bundle保留时间，单位（秒）")] [ConditionalHide(nameof(EnableRetain), true), SerializeField]
+            public float BundleRetainTime = 300f; // 5 min
+
+            [Tooltip("编辑器模式下模拟异步加载的延迟")] [SerializeField]
+            public bool SimulateAsyncDelayInEditor = true;
+
+            [Tooltip("模拟异步加载的延迟时间范围，单位（秒)")] [ConditionalHide(nameof(SimulateAsyncDelayInEditor), true), SerializeField] [Range(0.01f, 10f)]
+            public float AsyncDelayMinTime = 0.01f;
+
+            [Tooltip("模拟异步加载的延迟时间范围，单位（秒）")] [ConditionalHide(nameof(SimulateAsyncDelayInEditor), true), SerializeField] [Range(0.01f, 10f)]
+            public float AsyncDelayMaxTime = 0.1f;
+
+            [Tooltip("是否开启远程资源模式")] [SerializeField]
+            public bool EnableRemoteBundle = false;
+
+            [Tooltip("远程资源根目录，根据版本和平台动态分目录\n例如:https://localhost:8000/android/1.0.0/bundle_pack.bytes")] [ConditionalHide(nameof(EnableRemoteBundle), true), SerializeField]
+            public string BundleRemoteUri = "https://localhost:8000/";
             
             public AssetSetting()
             {
