@@ -504,6 +504,9 @@ MonoBehaviour:
       EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300
+      SimulateAsyncDelayInEditor: 1
+      AsyncDelayMinTime: 0.05
+      AsyncDelayMaxTime: 0.1
       EnableRemoteBundle: 0
       BundleRemoteUri: https://localhost:8000/
     Action:

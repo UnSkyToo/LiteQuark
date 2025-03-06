@@ -1,6 +1,4 @@
-﻿#if UNITY_EDITOR
-using System.Collections.Generic;
-using LiteQuark.Editor;
+﻿using System.Collections.Generic;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
@@ -22,18 +20,20 @@ namespace LiteBattle.Runtime
         
         public static List<string> GetCurrentUnitTimelinePathList()
         {
+            var stateNameList = new List<string>();
+            
             if (string.IsNullOrWhiteSpace(CurrentStateGroup_))
             {
-                return new List<string>();
+                return stateNameList;
             }
-
-            var timelinePathList = AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentUnitTimelineRootPath());
-            var stateNameList = new List<string>();
-
+            
+#if UNITY_EDITOR
+            var timelinePathList = LiteQuark.Editor.AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentUnitTimelineRootPath());
             foreach (var timelinePath in timelinePathList)
             {
                 stateNameList.Add(PathUtils.GetFileNameWithoutExt(timelinePath));
             }
+#endif
 
             return stateNameList;
         }
@@ -49,4 +49,3 @@ namespace LiteBattle.Runtime
         }
     }
 }
-#endif
