@@ -37,12 +37,14 @@ namespace LiteQuark.Runtime
         public void Shutdown()
         {
             OnEnterBackground();
-
+            
             if (StageCenter_ != null)
             {
                 StageCenter_.Dispose();
                 StageCenter_ = null;
             }
+            
+            SystemCenter.Instance.Dispose();
 
             PlayerPrefs.Save();
             Resources.UnloadUnusedAssets();
@@ -69,6 +71,7 @@ namespace LiteQuark.Runtime
             var time = deltaTime;
 #endif
             
+            SystemCenter.Instance.Tick(deltaTime);
             StageCenter_.Tick(time);
         }
 
