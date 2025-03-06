@@ -13,7 +13,7 @@ namespace LiteQuark.Editor
     {
         public event Action<AssetViewerTreeItem> OnItemSelectionChanged;
 
-        public bool CombineMode { get; set; } = false;
+        public bool CombineMode { get; set; } = true;
 
         private const string BundleType = "bundle";
 
@@ -25,7 +25,7 @@ namespace LiteQuark.Editor
             : base(state, CreateHeader())
         {
             multiColumnHeader.sortingChanged += OnHeaderSortingChanged;
-            Reload();
+            EditorApplication.delayCall += Reload;
         }
 
         private static MultiColumnHeader CreateHeader()
