@@ -10,10 +10,12 @@ namespace LiteQuark.Editor
     {
         private const string DefaultBundlePath = "default.ab";
         private readonly Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
+        private int BundleID_ = 1;
         
         public BundlePackInfo GenerateBundlePackInfo(BuildTarget target)
         {
             BundleInfoCache_.Clear();
+            BundleID_ = 1;
             CollectBundleInfo(LiteConst.AssetRootPath);
             return new BundlePackInfo(target.ToString(), BundleInfoCache_.Values.ToArray());
         }
@@ -28,7 +30,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                cache = new BundleInfo(bundlePath, assetList, dependencyList);
+                cache = new BundleInfo(BundleID_++, bundlePath, assetList, dependencyList);
                 BundleInfoCache_.Add(bundlePath, cache);
             }
         }
@@ -158,7 +160,7 @@ namespace LiteQuark.Editor
                 return false;
             }
             
-            if (filePath.Contains("#"))
+            if (filePath.Contains("#") || filePath.Contains("~"))
             {
                 return false;
             }
