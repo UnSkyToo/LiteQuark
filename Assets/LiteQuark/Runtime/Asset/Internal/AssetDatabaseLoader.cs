@@ -106,9 +106,10 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadUnusedAssets()
+        public void UnloadUnusedAssets(int maxDepth)
         {
             UnityEngine.Resources.UnloadUnusedAssets();
+            GC.Collect();
         }
     }
 }

@@ -52,6 +52,11 @@ namespace LiteQuark.Runtime
             System.GC.WaitForPendingFinalizers();
         }
 
+        internal void ErrorStage()
+        {
+            StageCenter_?.ErrorStage();
+        }
+
         public void Tick(float deltaTime)
         {
             if (RestartWhenNextFrame_)

@@ -38,10 +38,15 @@ namespace LiteBattle.Runtime
                 var group = LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
                 StateConfigMap_.Add(unitConfig.StateGroup, group);
             }
+            LiteRuntime.Asset.UnloadAsset(jsonPath);
         }
 
         private void Unload()
         {
+            foreach (var chunk in UnitConfigMap_)
+            {
+                LiteRuntime.Asset.UnloadAsset(chunk.Value);
+            }
             UnitConfigMap_.Clear();
             StateConfigMap_.Clear();
         }
@@ -71,6 +76,8 @@ namespace LiteBattle.Runtime
                     // LiteLog.Info($"load state : {timelineAsset.name}");
                     group.Add(timelineAsset.name, state);
                 }
+                
+                LiteRuntime.Asset.UnloadAsset(timelineAsset);
             }
 
             return group;
