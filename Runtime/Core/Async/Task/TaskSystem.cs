@@ -7,19 +7,15 @@ namespace LiteQuark.Runtime
 {
     public sealed class TaskSystem : ISystem, ITick
     {
-        public UnityEngine.MonoBehaviour MonoBehaviourInstance { get; private set; }
-        
-        private readonly ListEx<ITask> TaskList_ = new ListEx<ITask>();
-        private readonly object MainThreadLock_ = new object();
-        // private readonly ListEx<MainThreadTask> MainThreadTaskList_ = new ListEx<MainThreadTask>();
+        private readonly UnityEngine.MonoBehaviour MonoBehaviourInstance_ = null;
         private readonly SynchronizationContext MainThreadSynchronizationContext_ = null;
+        private readonly ListEx<ITask> TaskList_ = new ListEx<ITask>();
 
         public TaskSystem()
         {
-            MonoBehaviourInstance = LiteRuntime.Instance.Launcher;
-            TaskList_.Clear();
-            // MainThreadTaskList_.Clear();
+            MonoBehaviourInstance_ = LiteRuntime.Instance.Launcher;
             MainThreadSynchronizationContext_ = SynchronizationContext.Current;
+            TaskList_.Clear();
         }
 
         public Task<bool> Initialize()
@@ -29,15 +25,10 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            MonoBehaviourInstance?.StopAllCoroutines();
+            MonoBehaviourInstance_?.StopAllCoroutines();
             
             TaskList_.Foreach((task) => task.Dispose());
             TaskList_.Clear();
-
-            // lock (MainThreadLock_)
-            // {
-            //     MainThreadTaskList_.Clear();
-            // }
         }
 
         public void Tick(float deltaTime)
@@ -60,15 +51,16 @@ namespace LiteQuark.Runtime
                     list.Remove(task);
                 }
             }, TaskList_, deltaTime);
-            
-            // lock (MainThreadLock_)
-            // {
-            //     if (MainThreadTaskList_.Count > 0)
-            //     {
-            //         MainThreadTaskList_.Foreach((task) => { task?.Execute(); });
-            //         MainThreadTaskList_.Clear();
-            //     }
-            // }
+        }
+
+        public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
+        {
+            return MonoBehaviourInstance_?.StartCoroutine(routine);
+        }
+
+        public void StopCoroutine(IEnumerator routine)
+        {
+            MonoBehaviourInstance_?.StopCoroutine(routine);
         }
 
         public void AddTask(ITask task)
@@ -165,14 +157,6 @@ namespace LiteQuark.Runtime
         //     var task = new ReadFileAsyncTask(filePath, callback);
         //     TaskList_.Add(task);
         //     return task;
-        // }
-
-        // public void AddMainThreadTask(Action<object> taskFunc, object param)
-        // {
-        //     lock (MainThreadLock_)
-        //     {
-        //         MainThreadTaskList_.Add(new MainThreadTask(taskFunc, param));
-        //     }
         // }
         
         public void PostMainThreadTask(SendOrPostCallback callback, object state)
