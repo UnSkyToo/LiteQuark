@@ -12,7 +12,7 @@ namespace LiteQuark.Editor
         private AssetViewerTreeItem SelectItem_ = null;
         private Vector2 DetailScrollPos_ = Vector2.zero;
 
-        private bool CombineMode_ = false;
+        private bool CombineMode_ = true;
         
         [MenuItem("Lite/Asset Viewer")]
         private static void ShowWin()
@@ -46,6 +46,22 @@ namespace LiteQuark.Editor
 
         private void OnGUI()
         {
+            if (!AssetTreeView_.IsLoaded)
+            {
+                var centerRect = new Rect(0, 0, position.width, position.height);
+                EditorGUI.DrawRect(centerRect, new Color(0, 0, 0, 0.5f));
+                
+                var style = new GUIStyle(EditorStyles.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 24,
+                    normal = { textColor = Color.white }
+                };
+                
+                GUI.Label(centerRect, "Loading...", style);
+                return;
+            }
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUI.BeginChangeCheck();
@@ -54,6 +70,11 @@ namespace LiteQuark.Editor
                 {
                     AssetTreeView_.CombineMode = CombineMode_;
                     AssetTreeView_.Reload();
+                }
+
+                using (new ColorScope(Color.red))
+                {
+                    EditorGUILayout.LabelField("Exclude folders whose names contain '~' or '#', as well as assets within the Packages directory.");
                 }
             }
             
@@ -75,6 +96,7 @@ namespace LiteQuark.Editor
                     y += EditorGUIUtility.singleLineHeight;
                 }
             }
+
             GUI.EndScrollView();
         }
     }
