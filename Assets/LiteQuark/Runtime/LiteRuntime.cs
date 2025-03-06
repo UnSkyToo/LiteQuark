@@ -141,14 +141,5 @@ namespace LiteQuark.Runtime
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
-        
-        /// <summary>
-        /// Register LiteQuark runtime module
-        /// </summary>
-        /// <param name="priority">Sort by priority value from high to low, can't greater than 90000</param>
-        public static void RegisterSystem<T>(int priority) where T : ISystem
-        {
-            SystemCenter.RegisterSystem<T>(priority);
-        }
     }
 }

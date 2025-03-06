@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     internal sealed class SystemCenter : Singleton<SystemCenter>, ISubstance
     {
-        private static readonly Dictionary<System.Type, int> RegisterSystemMap_ = new Dictionary<System.Type, int>();
         private readonly List<ISystem> SystemList_ = new List<ISystem>();
         private readonly Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
         
@@ -34,18 +32,40 @@ namespace LiteQuark.Runtime
         {
             SystemList_.Clear();
             SystemTypeMap_.Clear();
+            
+            var systemList = new List<string>(LiteConst.InternalSystem.Keys);
+            systemList.Sort((x, y) => LiteConst.InternalSystem[y].CompareTo(LiteConst.InternalSystem[x]));
 
-            var registerSystemList = new List<System.Type>(RegisterSystemMap_.Keys);
-            registerSystemList.Sort((x, y) => RegisterSystemMap_[y].CompareTo(RegisterSystemMap_[x]));
-
-            foreach (var type in registerSystemList)
+            foreach (var systemEntry in LiteRuntime.Setting.SystemList)
             {
-                LLog.Info($"Initialize {type.AssemblyQualifiedName}");
-
-                if (System.Activator.CreateInstance(type) is not ISystem system)
+                if (systemEntry.Disabled)
                 {
-                    throw new System.Exception($"incorrect {typeof(ISystem)} type : {type.AssemblyQualifiedName}");
+                    continue;
                 }
+
+                var assemblyQualifiedName = systemEntry.AssemblyQualifiedName;
+                if (string.IsNullOrWhiteSpace(assemblyQualifiedName) || systemList.Contains(assemblyQualifiedName))
+                {
+                    continue;
+                }
+                
+                systemList.Add(assemblyQualifiedName);
+            }
+
+            foreach (var assemblyQualifiedName in systemList)
+            {
+                var systemType = System.Type.GetType(assemblyQualifiedName);
+                if (systemType == null)
+                {
+                    throw new System.Exception($"can't not find system class type : {assemblyQualifiedName}");
+                }
+                
+                if (System.Activator.CreateInstance(systemType) is not ISystem system)
+                {
+                    throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
+                }
+                
+                LLog.Info($"Initialize {assemblyQualifiedName}");
                 
                 var result = await system.Initialize();
                 if (result)
@@ -55,7 +75,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    LLog.Error($"Initialize {type.AssemblyQualifiedName} failed");
+                    LLog.Error($"Initialize {assemblyQualifiedName} failed");
                     return false;
                 }
             }
@@ -82,37 +102,6 @@ namespace LiteQuark.Runtime
             }
 
             return default;
-        }
-        
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-        private static void RegisterSystem()
-        {
-            RegisterSystemMap_.Clear();
-            
-            RegisterSystem<LogSystem>(99900);
-            RegisterSystem<EventSystem>(99800);
-            RegisterSystem<TaskSystem>(99700);
-            RegisterSystem<TimerSystem>(99600);
-            RegisterSystem<GroupSystem>(99500);
-            RegisterSystem<AssetSystem>(99400);
-            RegisterSystem<ObjectPoolSystem>(99300);
-            RegisterSystem<AudioSystem>(99200);
-            RegisterSystem<ActionSystem>(99100);
-        }
-
-        /// <summary>
-        /// Register LiteQuark runtime system
-        /// </summary>
-        /// <param name="priority">Sort by priority value from high to low, can't greater than 90000</param>
-        public static void RegisterSystem<T>(int priority) where T : ISystem
-        {
-            var type = typeof(T);
-            if (RegisterSystemMap_.ContainsKey(type))
-            {
-                return;
-            }
-            
-            RegisterSystemMap_.Add(type, priority);
         }
     }
 }

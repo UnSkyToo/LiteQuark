@@ -489,15 +489,19 @@ MonoBehaviour:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Demo.DemoLogic, Assembly-CSharp, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
+    SystemList:
+    - Disabled: 1
+      AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.UI.Runtime, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
     Common:
       TargetFrameRate: 60
       MultiTouch: 0
       AutoRestartInBackground: 0
       BackgroundLimitTime: 90
-      ThrowException: 1
+      ThrowException: 0
     Asset:
       AssetMode: 0
-      EnableRetain: 0
+      EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300
       EnableRemoteBundle: 0

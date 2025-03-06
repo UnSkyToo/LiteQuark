@@ -10,6 +10,8 @@ namespace LiteQuark.Runtime
     {
         [Header("逻辑列表")]
         [SerializeField] public List<LiteLogicEntryData> LogicList;
+        [Header("额外模块")]
+        [SerializeField] public List<LiteSystemEntryData> SystemList;
         [Header("基础设置")]
         [SerializeField] public CommonSetting Common;
         [Header("资源设置")]
@@ -28,6 +30,7 @@ namespace LiteQuark.Runtime
         public LiteSetting()
         {
             LogicList = new List<LiteLogicEntryData>();
+            SystemList = new List<LiteSystemEntryData>();
 
             Common = new CommonSetting();
             Asset = new AssetSetting();
@@ -99,7 +102,7 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class DebugSetting
         {
-            [SerializeField] public bool DebugMode;
+            [SerializeField] public bool DebugMode = true;
             [SerializeField, Range(0f, 5f)] public float TimeScale = 1.0f;
             
             public DebugSetting()
