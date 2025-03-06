@@ -48,9 +48,14 @@ namespace LiteQuark.Runtime
                     NextStage();
                     break;
                 case StageCode.Error:
-                    GotoStage(StageList_.Count - 1);
+                    ErrorStage();
                     break;
             }
+        }
+
+        internal void ErrorStage()
+        {
+            GotoStage(StageList_.Count - 1);
         }
 
         private void NextStage()

@@ -57,6 +57,10 @@ namespace LiteQuark.Runtime
             {
                 LiteRuntime.Instance.Shutdown();
             }
+            else if (Input.GetKeyDown(KeyCode.F11))
+            {
+                LiteRuntime.Instance.ErrorStage();
+            }
             else if (Input.GetKeyDown(KeyCode.F12))
             {
                 OnApplicationPause(!LiteRuntime.Instance.IsPause);

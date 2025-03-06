@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Loader_?.UnloadUnusedAssets();
+            Loader_?.UnloadUnusedAssets(20);
             
             Loader_?.Dispose();
             Loader_ = null;
@@ -128,9 +128,13 @@ namespace LiteQuark.Runtime
             Loader_?.UnloadAsset(asset);
         }
 
-        public void UnloadUnusedAssets()
+        /// <summary>
+        /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用
+        /// </summary>
+        /// <param name="maxDepth">循环释放嵌套引用的最大层数。例如：A->B->C，如果为2，则只释放到B这一层</param>
+        public void UnloadUnusedAssets(int maxDepth = 5)
         {
-            Loader_?.UnloadUnusedAssets();
+            Loader_?.UnloadUnusedAssets(maxDepth);
         }
         
 #if UNITY_EDITOR

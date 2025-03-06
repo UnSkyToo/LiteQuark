@@ -156,28 +156,37 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadUnusedAssets()
+        public void UnloadUnusedAssets(int maxDepth)
         {
-            var unloadList = new List<string>();
-            
-            foreach (var chunk in BundleCacheMap_)
+            var depth = maxDepth;
+            while (depth > 0)
             {
-                chunk.Value.UnloadUnusedAssets();
-                
-                if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.Stage == AssetCacheStage.Unloading)
-                {
-                    unloadList.Add(chunk.Key);
-                }
-            }
+                depth--;
+                var unloadList = new List<string>();
 
-            if (unloadList.Count > 0)
-            {
-                foreach (var bundlePath in unloadList)
+                foreach (var chunk in BundleCacheMap_)
                 {
-                    UnloadBundleCache(bundlePath);
+                    chunk.Value.UnloadUnusedAssets();
+
+                    if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.Stage == AssetCacheStage.Unloading)
+                    {
+                        unloadList.Add(chunk.Key);
+                    }
                 }
 
-                unloadList.Clear();
+                if (unloadList.Count > 0)
+                {
+                    foreach (var bundlePath in unloadList)
+                    {
+                        UnloadBundleCache(bundlePath);
+                    }
+
+                    unloadList.Clear();
+                }
+                else
+                {
+                    break;
+                }
             }
 
             UnityEngine.Resources.UnloadUnusedAssets();
