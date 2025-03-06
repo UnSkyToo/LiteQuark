@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LiteQuark.Runtime
+namespace LiteQuark.Runtime.UI
 {
     public abstract class BaseUI : BaseObject
     {

@@ -760,7 +760,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: LITE_QUARK_ENABLE_UI
+    Android: 
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

@@ -1,4 +1,4 @@
-﻿namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime.UI
 {
     public enum UIDepthMode : short
     {

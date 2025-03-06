@@ -2,7 +2,7 @@
     "name": "com.lite.litequark.ui",
     "version": "0.1.0-preview",
     "displayName": "LiteQuark.UI",
-    "description": "LiteQuark ui framework",
+    "description": "LiteQuark ui system",
     "unity": "2022.1",
     "unityRelease": "0f1",
     "category": "Lite",

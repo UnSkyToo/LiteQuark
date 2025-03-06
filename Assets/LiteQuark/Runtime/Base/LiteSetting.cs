@@ -22,10 +22,8 @@ namespace LiteQuark.Runtime
         [SerializeField] public LogSetting Log;
         [Header("调试设置")]
         [SerializeField] public DebugSetting Debug;
-#if LITE_QUARK_ENABLE_UI
         [Header("界面设置")]
         [SerializeField] public UISetting UI;
-#endif
 
         public LiteSetting()
         {
@@ -37,9 +35,7 @@ namespace LiteQuark.Runtime
             Action = new ActionSetting();
             Log = new LogSetting();
             Debug = new DebugSetting();
-#if LITE_QUARK_ENABLE_UI
             UI = new UISetting();
-#endif
         }
 
         [Serializable]
@@ -110,7 +106,6 @@ namespace LiteQuark.Runtime
             }
         }
         
-#if LITE_QUARK_ENABLE_UI
         [Serializable]
         public class UISetting
         {
@@ -124,6 +119,5 @@ namespace LiteQuark.Runtime
             {
             }
         }
-#endif
     }
 }

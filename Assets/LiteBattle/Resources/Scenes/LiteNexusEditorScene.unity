@@ -491,8 +491,8 @@ MonoBehaviour:
         Culture=neutral, PublicKeyToken=null
     SystemList:
     - Disabled: 1
-      AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.UI.Runtime, Version=0.0.0.0,
-        Culture=neutral, PublicKeyToken=null
+      AssemblyQualifiedName: LiteQuark.Runtime.UI.UISystem, LiteQuark.Runtime.UI,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Common:
       TargetFrameRate: 60
       MultiTouch: 0
