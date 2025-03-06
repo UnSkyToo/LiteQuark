@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace LiteQuark.Runtime
 {
@@ -42,6 +41,55 @@ namespace LiteQuark.Runtime
                 }
             }
         }
+
+        private void SimplifyPath()
+        {
+            var bundleIDMap = new Dictionary<string, string>();
+            foreach (var bundle in BundleList)
+            {
+                bundleIDMap.Add(bundle.BundlePath, bundle.BundleID.ToString());
+            }
+            
+            foreach (var bundle in BundleList)
+            {
+                var bundlePath = $"{bundle.BundlePath.Replace(".ab", string.Empty)}/";
+                for (var index = 0; index < bundle.AssetList.Length; index++)
+                {
+                    bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
+                }
+
+                for (var index = 0; index < bundle.DependencyList.Length; index++)
+                {
+                    bundle.DependencyList[index] = bundleIDMap[bundle.DependencyList[index]];
+                }
+            }
+        }
+
+        private void RestorePath()
+        {
+            var bundleIDMap = new Dictionary<string, string>();
+            foreach (var bundle in BundleList)
+            {
+                bundleIDMap.Add(bundle.BundleID.ToString(), bundle.BundlePath);
+            }
+            
+            foreach (var bundle in BundleList)
+            {
+                var bundlePath = $"{bundle.BundlePath.Replace(".ab", string.Empty)}/";
+                for (var index = 0; index < bundle.AssetList.Length; index++)
+                {
+                    if (!bundle.AssetList[index].Contains('/'))
+                    {
+                        bundle.AssetList[index] = $"{bundlePath}{bundle.AssetList[index]}";
+                    }
+                }
+
+                for (var index = 0; index < bundle.DependencyList.Length; index++)
+                {
+                    bundle.DependencyList[index] = bundleIDMap[bundle.DependencyList[index]];
+                }
+            }
+        }
         
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
         {
@@ -67,6 +115,7 @@ namespace LiteQuark.Runtime
 
         public string ToJson()
         {
+            SimplifyPath();
             // var jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(this);
             var jsonText = LitJson.JsonMapper.ToJson(this);
             return jsonText;
@@ -76,6 +125,7 @@ namespace LiteQuark.Runtime
         {
             // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<BundlePackInfo>(jsonText);
             var packInfo = LitJson.JsonMapper.ToObject<BundlePackInfo>(jsonText);
+            packInfo.RestorePath();
             return packInfo;
         }
         
