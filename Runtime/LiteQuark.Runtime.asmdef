@@ -1,6 +1,6 @@
 {
     "name": "LiteQuark.Runtime",
-    "rootNamespace": "",
+    "rootNamespace": "LiteQuark.Runtime",
     "references": [
         "GUID:ca316b8de102bcd4ba4aa8abe91a0652"
     ],
