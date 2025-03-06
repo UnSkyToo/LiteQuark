@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -17,6 +19,16 @@ namespace LiteQuark.Runtime
         public static T GetOrAddComponent<T>(this Transform go) where T : Component
         {
             return UnityUtils.GetOrAddComponent<T>(go);
+        }
+        
+        public static TaskAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation asyncOperation)
+        {
+            var tcs = new TaskCompletionSource<AsyncOperation>();
+            asyncOperation.completed += operation =>
+            {
+                tcs.SetResult(operation);
+            };
+            return tcs.Task.GetAwaiter();
         }
     }
     
