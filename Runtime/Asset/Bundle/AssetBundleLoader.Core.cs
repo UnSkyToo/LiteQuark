@@ -106,6 +106,12 @@ namespace LiteQuark.Runtime
             BundleCacheMap_.Add(bundlePath, cache);
             return cache;
         }
+
+        public void PreloadBundle(string bundlePath, Action<bool> callback)
+        {
+            var cache = GetOrCreateBundleCache(bundlePath);
+            cache.LoadBundleCompleteAsync(callback);
+        }
         
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
@@ -153,6 +159,21 @@ namespace LiteQuark.Runtime
                 {
                     UnityEngine.Object.DestroyImmediate(asset);
                 }
+            }
+        }
+
+        public void UnloadSceneAsync(string scenePath, Action callback)
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(scenePath);
+            if (info == null)
+            {
+                return;
+            }
+
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
+            {
+                cache.UnloadSceneAsync(sceneName, callback);
             }
         }
 

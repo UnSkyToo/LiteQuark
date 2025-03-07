@@ -2,6 +2,8 @@
 using System;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -54,6 +56,11 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public void PreloadBundle(string bundlePath, Action<bool> callback)
+        {
+            SimulateAsync(callback, true);
+        }
+
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             SimulateAsync(callback, true);
@@ -90,6 +97,22 @@ namespace LiteQuark.Runtime
             var instance = UnityEngine.Object.Instantiate(asset, parent);
             return instance;
         }
+        
+        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback)
+        {
+            SimulateAsync(callback, LoadSceneSync(scenePath, sceneName, parameters));
+        }
+        
+        public bool LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
+        {
+            var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
+            if (SceneManager.GetSceneByPath(fullPath).isLoaded)
+            {
+                return false;
+            }
+            
+            return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters).isLoaded;
+        }
 
         public void UnloadAsset(string assetPath)
         {
@@ -104,6 +127,22 @@ namespace LiteQuark.Runtime
                     UnityEngine.Object.DestroyImmediate(asset);
                 }
             }
+        }
+
+        public void UnloadSceneAsync(string scenePath, Action callback)
+        {
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            var op = SceneManager.UnloadSceneAsync(sceneName);
+            if (op == null)
+            {
+                callback?.Invoke();
+                return;
+            }
+            
+            op.completed += (result) =>
+            {
+                callback?.Invoke();
+            };
         }
 
         public void UnloadUnusedAssets(int maxDepth)

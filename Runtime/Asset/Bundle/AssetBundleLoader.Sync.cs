@@ -30,5 +30,24 @@
             UpdateAssetIDToPathMap(instance, assetPath);
             return instance;
         }
+
+        public bool LoadSceneSync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(scenePath);
+            if (info == null)
+            {
+                return false;
+            }
+
+            var cache = GetOrCreateBundleCache(info.BundlePath);
+
+            var isLoaded = cache.LoadBundleCompleteSync();
+            if (!isLoaded)
+            {
+                return false;
+            }
+            
+            return cache.LoadSceneSync(sceneName, parameters);
+        }
     }
 }

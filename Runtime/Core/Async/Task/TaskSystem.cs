@@ -109,13 +109,6 @@ namespace LiteQuark.Runtime
             TaskList_.Add(task);
             return task;
         }
-
-        public AsyncOperationTask LoadSceneTask(string scenePath, UnityEngine.SceneManagement.LoadSceneMode mode, Action callback)
-        {
-            var task = new AsyncOperationTask(UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(scenePath, mode), callback);
-            TaskList_.Add(task);
-            return task;
-        }
         
         public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, Action<UnityEngine.Networking.DownloadHandler> callback)
         {

@@ -39,5 +39,30 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(instance);
             });
         }
+
+        public void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        {
+            var info = PackInfo_.GetBundleInfoFromAssetPath(scenePath);
+            if (info == null)
+            {
+                callback?.Invoke(false);
+                return;
+            }
+
+            var cache = GetOrCreateBundleCache(info.BundlePath);
+            cache.LoadBundleCompleteAsync((isLoaded) =>
+            {
+                if (!isLoaded)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+                
+                cache.LoadSceneAsync(sceneName, parameters, (result) =>
+                {
+                    callback?.Invoke(result);
+                });
+            });
+        }
     }
 }
