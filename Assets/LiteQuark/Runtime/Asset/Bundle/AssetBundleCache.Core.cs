@@ -195,6 +195,13 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public void UnloadSceneAsync(string sceneName, Action callback)
+        {
+            DecRef();
+            var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(sceneName);
+            LiteRuntime.Task.AddTask(op, callback);
+        }
+        
         public void UnloadUnusedAssets()
         {
             var unloadList = new List<string>();

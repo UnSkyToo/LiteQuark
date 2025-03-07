@@ -112,5 +112,15 @@
             
             return asset;
         }
+
+        public bool LoadSceneSync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName, parameters);
+            if (scene.isLoaded)
+            {
+                IncRef();
+            }
+            return scene.isLoaded;
+        }
     }
 }

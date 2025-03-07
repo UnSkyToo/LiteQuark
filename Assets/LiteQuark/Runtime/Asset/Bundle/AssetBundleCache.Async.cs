@@ -129,5 +129,24 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(asset);
             });
         }
+
+        public void LoadSceneAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        {
+            var op = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, parameters);
+            if (op == null)
+            {
+                callback?.Invoke(false);
+                return;
+            }
+            
+            op.completed += (result) =>
+            {
+                if (result.isDone)
+                {
+                    IncRef();
+                }
+                callback?.Invoke(result.isDone);
+            };
+        }
     }
 }

@@ -57,6 +57,22 @@ namespace LiteQuark.Runtime
             return path.TrimStart('/').ToLower();
         }
 
+        public void PreloadBundle(string bundlePath, Action<bool> callback)
+        {
+            var formatPath = FormatPath(bundlePath);
+            Loader_?.PreloadBundle(formatPath, callback);
+        }
+
+        public Task<bool> PreloadBundle(string bundlePath)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            PreloadBundle(bundlePath, (result) =>
+            {
+                tcs.SetResult(result);
+            });
+            return tcs.Task;
+        }
+
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
@@ -116,6 +132,30 @@ namespace LiteQuark.Runtime
             var formatPath = FormatPath(assetPath);
             return Loader_?.InstantiateSync(formatPath, parent);
         }
+        
+        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        {
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            var formatPath = FormatPath(scenePath);
+            Loader_?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
+        }
+        
+        public Task<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            LoadSceneAsync(scenePath, parameters, (result) =>
+            {
+                tcs.SetResult(result);
+            });
+            return tcs.Task;
+        }
+        
+        public bool LoadSceneSync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        {
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            var formatPath = FormatPath(scenePath);
+            return Loader_?.LoadSceneSync(formatPath, sceneName, parameters) ?? false;
+        }
 
         public void UnloadAsset(string assetPath)
         {
@@ -126,6 +166,12 @@ namespace LiteQuark.Runtime
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
             Loader_?.UnloadAsset(asset);
+        }
+        
+        public void UnloadSceneAsync(string scenePath, Action callback)
+        {
+            var formatPath = FormatPath(scenePath);
+            Loader_?.UnloadSceneAsync(formatPath, callback);
         }
 
         /// <summary>
