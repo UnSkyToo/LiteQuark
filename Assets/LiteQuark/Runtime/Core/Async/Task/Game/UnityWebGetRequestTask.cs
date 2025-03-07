@@ -7,13 +7,17 @@ namespace LiteQuark.Runtime
     public sealed class UnityWebGetRequestTask : BaseTask
     {
         private readonly Uri Uri_;
+        private readonly int Timeout_;
+        private readonly bool ForceNoCache_;
         private Action<DownloadHandler> Callback_;
         private UnityWebRequest Request_;
         
-        public UnityWebGetRequestTask(string uri, Action<DownloadHandler> callback)
+        public UnityWebGetRequestTask(string uri, int timeout, bool forceNoCache, Action<DownloadHandler> callback)
             : base()
         {
             Uri_ = new Uri(uri);
+            Timeout_ = timeout;
+            ForceNoCache_ = forceNoCache;
             Callback_ = callback;
         }
 
@@ -25,6 +29,12 @@ namespace LiteQuark.Runtime
         protected override void OnExecute()
         {
             Request_ = UnityWebRequest.Get(Uri_);
+            if (ForceNoCache_)
+            {
+                Request_.SetRequestHeader("Cache-Control", "no-cache");
+            }
+
+            Request_.timeout = Timeout_;
             var asyncOperation = Request_.SendWebRequest();
             asyncOperation.completed += OnBundleRequestCompleted;
         }

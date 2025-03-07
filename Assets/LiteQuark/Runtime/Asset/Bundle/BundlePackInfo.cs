@@ -133,7 +133,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                LiteRuntime.Task.UnityWebGetRequestTask(bundleUri, (downloadHandler) =>
+                LiteRuntime.Task.UnityWebGetRequestTask(bundleUri, 0, true, (downloadHandler) =>
                 {
                     if (downloadHandler.isDone)
                     {
