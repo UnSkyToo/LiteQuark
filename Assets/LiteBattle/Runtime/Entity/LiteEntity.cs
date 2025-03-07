@@ -35,12 +35,12 @@ namespace LiteBattle.Runtime
         private string PrefabPath_;
 
         private readonly LiteContext Context_;
-        private readonly Dictionary<string, LiteEntityModuleBase> Modules_;
+        private readonly Dictionary<Type, LiteEntityModuleBase> Modules_;
 
         protected LiteEntity()
             : base()
         {
-            Modules_ = new Dictionary<string, LiteEntityModuleBase>();
+            Modules_ = new Dictionary<Type, LiteEntityModuleBase>();
             Context_ = new LiteContext(LiteNexusEngine.Instance.GlobalContext);
 
             Camp = LiteEntityCamp.Light;
@@ -71,9 +71,9 @@ namespace LiteBattle.Runtime
             Context_.Tick();
         }
 
-        private string GetModuleKey<T>() where T : LiteEntityModuleBase
+        private Type GetModuleKey<T>() where T : LiteEntityModuleBase
         {
-            return typeof(T).Name;
+            return typeof(T);
         }
 
         public T GetModule<T>() where T : LiteEntityModuleBase
