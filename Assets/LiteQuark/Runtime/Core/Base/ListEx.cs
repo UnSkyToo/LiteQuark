@@ -29,9 +29,9 @@ namespace LiteQuark.Runtime
 
         public void Add(T item)
         {
-            if (RemoveList_.Contains(item))
+            if (RemoveList_.Remove(item))
             {
-                RemoveList_.Remove(item);
+                Dirty_ = true;
                 return;
             }
             
@@ -41,9 +41,9 @@ namespace LiteQuark.Runtime
 
         public void Remove(T item)
         {
-            if (AddList_.Contains(item))
+            if (AddList_.Remove(item))
             {
-                AddList_.Remove(item);
+                Dirty_ = true;
                 return;
             }
             
@@ -56,6 +56,7 @@ namespace LiteQuark.Runtime
             RemoveList_.Clear();
             // AddList_.Clear();
             Values_.Clear();
+            Dirty_ = false;
         }
 
         public bool Contains(T item)
@@ -197,27 +198,31 @@ namespace LiteQuark.Runtime
 
         public void Flush()
         {
-            if (Dirty_ && InEach_ == 0)
+            if (!Dirty_ || InEach_ > 0)
             {
-                foreach (var item in AddList_)
-                {
-                    Values_.Add(item);
-                }
-                AddList_.Clear();
-                
-                foreach (var item in RemoveList_)
-                {
-                    Values_.Remove(item);
-                }
-                RemoveList_.Clear();
-                
-                Dirty_ = false;
+                return;
             }
+            
+            foreach (var item in RemoveList_)
+            {
+                Values_.Remove(item);
+            }
+            RemoveList_.Clear();
+            
+            foreach (var item in AddList_)
+            {
+                Values_.Add(item);
+            }
+            AddList_.Clear();
+            
+            Dirty_ = false;
         }
 
         // GC Alloc 40B
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
+            Flush();
+            
             for (var index = 0; index < Values_.Count; ++index)
             {
                 yield return Values_[index];
@@ -227,6 +232,8 @@ namespace LiteQuark.Runtime
         // GC Alloc 40B
         IEnumerator IEnumerable.GetEnumerator()
         {
+            Flush();
+            
             for (var index = 0; index < Values_.Count; ++index)
             {
                 yield return Values_[index];
