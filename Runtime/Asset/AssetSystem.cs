@@ -173,6 +173,16 @@ namespace LiteQuark.Runtime
             var formatPath = FormatPath(scenePath);
             Loader_?.UnloadSceneAsync(formatPath, callback);
         }
+        
+        public Task UnloadSceneAsync(string scenePath)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            UnloadSceneAsync(scenePath, () =>
+            {
+                tcs.SetResult(true);
+            });
+            return tcs.Task;
+        }
 
         /// <summary>
         /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用
