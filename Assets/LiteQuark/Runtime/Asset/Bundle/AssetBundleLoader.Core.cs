@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public Task<bool> Initialize()
+        public async Task<bool> Initialize()
         {
             var bundlePackUri = string.Empty;
             
@@ -38,23 +38,16 @@ namespace LiteQuark.Runtime
                 bundlePackUri = PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName);
             }
 
-            var tcs = new TaskCompletionSource<bool>();
-            BundlePackInfo.LoadBundlePack(bundlePackUri, (info) =>
+            PackInfo_ = await BundlePackInfo.LoadBundlePackAsync(bundlePackUri);
+            if (PackInfo_ == null)
             {
-                PackInfo_ = info;
-                if (PackInfo_ == null)
-                {
-                    tcs.SetResult(false);
-                    return;
-                }
+                return false;
+            }
 
-                BundleCacheMap_.Clear();
-                AssetIDToPathMap_.Clear();
-                UnloadBundleList_.Clear();
-
-                tcs.SetResult(true);
-            });
-            return tcs.Task;
+            BundleCacheMap_.Clear();
+            AssetIDToPathMap_.Clear();
+            UnloadBundleList_.Clear();
+            return true;
         }
 
         public void Dispose()

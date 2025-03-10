@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -129,7 +130,7 @@ namespace LiteQuark.Runtime
             return packInfo;
         }
         
-        public static void LoadBundlePack(string bundleUri, Action<BundlePackInfo> callback)
+        public static void LoadBundlePackAsync(string bundleUri, Action<BundlePackInfo> callback)
         {
             try
             {
@@ -151,9 +152,27 @@ namespace LiteQuark.Runtime
                     }
                     else
                     {
-                        LLog.Error($"load bundle package error\n{downloadHandler.error}");
+                        LLog.Error($"download bundle package error\n{downloadHandler.error}");
+                        callback?.Invoke(null);
                     }
                 });
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public static Task<BundlePackInfo> LoadBundlePackAsync(string bundleUri)
+        {
+            try
+            {
+                var tcs = new TaskCompletionSource<BundlePackInfo>();
+                LoadBundlePackAsync(bundleUri, (info) =>
+                {
+                    tcs.SetResult(info);
+                });
+                return tcs.Task;
             }
             catch (Exception)
             {
