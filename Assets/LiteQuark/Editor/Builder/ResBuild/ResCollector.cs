@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
             BundleInfoCache_.Clear();
             BundleID_ = 1;
             CollectBundleInfo(LiteConst.AssetRootPath);
-            return new BundlePackInfo(target.ToString(), BundleInfoCache_.Values.ToArray());
+            return new BundlePackInfo(UnityEngine.Application.version, target.ToString(), BundleInfoCache_.Values.ToArray());
         }
 
         private void AddToBundleInfoCache(string bundlePath, string[] assetList, string[] dependencyList)
