@@ -113,25 +113,34 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                audio.Load(Pool_, parent, clip, isLoop, volume, delay, false);
-
-                switch (type)
+                audio.Load(Pool_, parent, clip, isLoop, volume, delay, false, (isLoaded) =>
                 {
-                    case AudioType.Sound:
-                        if (MuteSound_)
-                        {
-                            audio.Mute(MuteSound_);
-                        }
-                        break;
-                    case AudioType.Music:
-                        if (MuteMusic_)
-                        {
-                            audio.Mute(MuteMusic_);
-                        }
-                        break;
-                }
+                    if (!isLoaded)
+                    {
+                        RemoveList_.Add(audio);
+                        return;
+                    }
+                    
+                    switch (type)
+                    {
+                        case AudioType.Sound:
+                            if (MuteSound_)
+                            {
+                                audio.Mute(MuteSound_);
+                            }
 
-                audio.Play();
+                            break;
+                        case AudioType.Music:
+                            if (MuteMusic_)
+                            {
+                                audio.Mute(MuteMusic_);
+                            }
+
+                            break;
+                    }
+
+                    audio.Play();
+                });
             });
 
             return audio.UniqueID;

@@ -20,17 +20,18 @@ namespace LiteQuark.Runtime
             base.OnRelease(go);
         }
 
-        public override GameObject Alloc(Transform parent)
+        public override void Alloc(Transform parent, System.Action<GameObject> callback)
         {
-            var go = base.Alloc(parent);
-
-            var particles = go.GetComponentsInChildren<ParticleSystem>();
-            foreach (var particle in particles)
+            base.Alloc(parent, (go) =>
             {
-                particle.Play();
-            }
-            
-            return go;
+                var particles = go.GetComponentsInChildren<ParticleSystem>();
+                foreach (var particle in particles)
+                {
+                    particle.Play();
+                }
+
+                callback?.Invoke(go);
+            });
         }
     }
 }

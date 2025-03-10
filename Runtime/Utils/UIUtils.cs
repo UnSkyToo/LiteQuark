@@ -214,8 +214,12 @@ namespace LiteQuark.Runtime
             }
             else
             {
+#if LITE_QUARK_ASSET_ENABLE_SYNC
                 var sprite = LiteRuntime.Asset.LoadAssetSync<Sprite>(resPath);
                 ReplaceSprite(parent, path, sprite);
+#else
+                ReplaceSprite(parent, path, resPath, true);
+#endif
             }
         }
 

@@ -1,4 +1,5 @@
-﻿namespace LiteQuark.Runtime
+﻿#if LITE_QUARK_ASSET_ENABLE_SYNC
+namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleLoader : IAssetLoader
     {
@@ -51,3 +52,4 @@
         }
     }
 }
+#endif

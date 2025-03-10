@@ -5,27 +5,25 @@ namespace LiteQuark.Runtime
 {
     public abstract class BaseGameObjectPool : IGameObjectPool
     {
-        public string Key => Path_;
-        public string Name => PathUtils.GetFileName(Path_);
+        public string Key { get; private set; }
+        public virtual string Name => Key;
         public int CountAll => Pool_?.CountAll ?? 0;
         public int CountActive => Pool_?.CountActive ?? 0;
         public int CountInactive => Pool_?.CountInactive ?? 0;
-        
-        private static readonly Vector3 InvalidPosition = new Vector3(-9999, -9999, -9999);
 
-        protected string Path_;
         protected Transform Parent_;
         protected GameObject Template_;
         protected ObjectPool<GameObject> Pool_;
+        protected event System.Action LoadTemplateCallback_;
         
         protected BaseGameObjectPool()
         {
         }
 
-        public void Initialize(string key, params object[] args)
+        public virtual void Initialize(string key, params object[] args)
         {
-            Path_ = key;
-            Parent_ = new GameObject(Path_).transform;
+            Key = key;
+            Parent_ = new GameObject(Name).transform;
             Parent_.hideFlags = HideFlags.NotEditable;
             var root = args.Length > 0 && args[0] is Transform ? (Transform)args[0] : null;
             if (root != null)
@@ -33,19 +31,13 @@ namespace LiteQuark.Runtime
                 Parent_.SetParent(root, false);
             }
             Parent_.localPosition = Vector3.zero;
-            Template_ = LiteRuntime.Asset.LoadAssetSync<GameObject>(Path_);
+            
             Pool_ = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
         }
         
         public virtual void Dispose()
         {
             Pool_.Dispose();
-
-            if (Template_ != null)
-            {
-                LiteRuntime.Asset.UnloadAsset(Template_);
-                Template_ = null;
-            }
 
             if (Parent_ != null)
             {
@@ -67,12 +59,14 @@ namespace LiteQuark.Runtime
 
         protected virtual void OnGet(GameObject go)
         {
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
         }
 
         protected virtual void OnRelease(GameObject go)
         {
             go.transform.SetParent(Parent_, false);
-            go.transform.localPosition = InvalidPosition;
         }
 
         protected virtual void OnDestroy(GameObject go)
@@ -80,56 +74,48 @@ namespace LiteQuark.Runtime
             Object.DestroyImmediate(go);
         }
 
-        public virtual void Generate(int count)
+        public void Generate(int count, System.Action<IBasePool> callback)
         {
-            var go = new GameObject[count];
-            
-            for (var i = 0; i < count; ++i)
+            RunWhenLoadTemplated(() =>
             {
-                go[i] = Alloc(Parent_);
-            }
-
-            for (var i = 0; i < count; ++i)
-            {
-                Recycle(go[i]);
-            }
-        }
-
-        public virtual void GenerateAsync(int count, System.Action<IBasePool> callback)
-        {
-            if (Template_ == null)
-            {
-                callback?.Invoke(this);
-                return;
-            }
-            
-            LiteRuntime.Task.InstantiateGoTask(Template_, Parent_, count, (list) =>
-            {
-                foreach (var go in list)
+                if (Template_ == null)
                 {
-                    if (go != null)
-                    {
-                        Recycle(go);
-                    }
+                    callback?.Invoke(this);
+                    return;
                 }
 
-                callback?.Invoke(this);
+                LiteRuntime.Task.InstantiateGoTask(Template_, Parent_, count, (list) =>
+                {
+                    foreach (var go in list)
+                    {
+                        if (go != null)
+                        {
+                            Recycle(go);
+                        }
+                    }
+
+                    callback?.Invoke(this);
+                });
             });
         }
 
-        public virtual GameObject Alloc()
+        public virtual void Alloc(System.Action<GameObject> calllback)
         {
-            return Alloc(null);
+            Alloc(null, calllback);
         }
 
-        public virtual GameObject Alloc(Transform parent)
+        public virtual void Alloc(Transform parent, System.Action<GameObject> callback)
         {
-            var go = Pool_.Get();
-            if (go != null)
+            RunWhenLoadTemplated(() =>
             {
-                go.transform.SetParent(parent, false);
-            }
-            return go;
+                var go = Pool_.Get();
+                if (go != null)
+                {
+                    go.transform.SetParent(parent, false);
+                }
+
+                callback?.Invoke(go);
+            });
         }
 
         public virtual void Recycle(GameObject value)
@@ -140,6 +126,24 @@ namespace LiteQuark.Runtime
             }
             
             Pool_.Release(value);
+        }
+
+        protected void RunWhenLoadTemplated(System.Action callback)
+        {
+            if (Template_ != null)
+            {
+                callback?.Invoke();
+            }
+            else
+            {
+                LoadTemplateCallback_ += callback;
+            }
+        }
+
+        protected void OnLoadTemplate(GameObject template)
+        {
+            Template_ = template;
+            LoadTemplateCallback_?.Invoke();
         }
     }
 }

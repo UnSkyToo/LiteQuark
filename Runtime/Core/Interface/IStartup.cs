@@ -1,7 +1,9 @@
-﻿namespace LiteQuark.Runtime
+﻿using System.Threading.Tasks;
+
+namespace LiteQuark.Runtime
 {
     public interface IStartup
     {
-        bool Startup();
+        Task<bool> Startup();
     }
 }
