@@ -7,9 +7,10 @@ namespace LiteQuark.Runtime
     [Serializable]
     public sealed class BundlePackInfo
     {
-        public string Platform { get; set; }
-        public bool IsValid { get; set; }
-        public BundleInfo[] BundleList { get; set; }
+        public string Version { get; private set; }
+        public string Platform { get; private set; }
+        public bool IsValid { get; private set; }
+        public BundleInfo[] BundleList { get; private set; }
 
         private Dictionary<string, BundleInfo> BundlePathToBundleCache_ = new ();
         private Dictionary<string, BundleInfo> AssetPathToBundleCache_ = new ();
@@ -19,8 +20,9 @@ namespace LiteQuark.Runtime
             IsValid = false;
         }
 
-        public BundlePackInfo(string platform, BundleInfo[] bundleList)
+        public BundlePackInfo(string version, string platform, BundleInfo[] bundleList)
         {
+            Version = version;
             Platform = platform;
             BundleList = bundleList;
             
@@ -136,7 +138,7 @@ namespace LiteQuark.Runtime
             {
                 LiteRuntime.Task.UnityWebGetRequestTask(bundleUri, 0, true, (downloadHandler) =>
                 {
-                    if (downloadHandler.isDone)
+                    if (downloadHandler?.isDone ?? false)
                     {
                         var info = FromJson(downloadHandler.text);
 
@@ -152,7 +154,7 @@ namespace LiteQuark.Runtime
                     }
                     else
                     {
-                        LLog.Error($"download bundle package error\n{downloadHandler.error}");
+                        LLog.Error($"download bundle package error : {bundleUri}\n{downloadHandler?.error}");
                         callback?.Invoke(null);
                     }
                 });
