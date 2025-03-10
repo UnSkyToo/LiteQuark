@@ -21,28 +21,33 @@ namespace LiteQuark.Runtime
             IsLoaded = false;
         }
 
-        public void Load(EmptyGameObjectPool pool, Transform parent, AudioClip clip, bool isLoop, float volume, float delay, bool isMute)
+        public void Load(EmptyGameObjectPool pool, Transform parent, AudioClip clip, bool isLoop, float volume, float delay, bool isMute, System.Action<bool> callback)
         {
             if (IsLoaded)
             {
                 return;
             }
-            
-            Carrier = pool.Alloc(parent);
-            if (Carrier == null)
-            {
-                return;
-            }
 
-            Source = Carrier.GetOrAddComponent<AudioSource>();
-            Source.clip = clip;
-            Source.volume = volume;
-            Source.loop = isLoop;
-            Source.pitch = 1.0f;
-            Source.mute = isMute;
-            Carrier.name = DebugName;
-            Delay = delay;
-            IsLoaded = true;
+            pool.Alloc(parent, (go) =>
+            {
+                Carrier = go;
+                if (Carrier == null)
+                {
+                    callback?.Invoke(false);
+                    return;
+                }
+
+                Source = Carrier.GetOrAddComponent<AudioSource>();
+                Source.clip = clip;
+                Source.volume = volume;
+                Source.loop = isLoop;
+                Source.pitch = 1.0f;
+                Source.mute = isMute;
+                Carrier.name = DebugName;
+                Delay = delay;
+                IsLoaded = true;
+                callback?.Invoke(true);
+            });
         }
 
         public void Unload(EmptyGameObjectPool pool)

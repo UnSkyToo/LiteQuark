@@ -54,7 +54,7 @@ namespace LiteBattle.Editor
         {
             UnBindUnit();
             CurrentUnit_ = unit.GetUnitConfig();
-            UnitGo_ = unit.GetGo();
+            UnitGo_ = unit.GetInternalGo();
             IsRuntime_ = true;
             GenerateAnimatorData(UnitGo_);
             

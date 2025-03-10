@@ -7,9 +7,29 @@ namespace LiteQuark.Runtime
     /// </summary>
     public class ActiveGameObjectPool : BaseGameObjectPool
     {
+        public override string Name => PathUtils.GetFileName(Key);
+
         public ActiveGameObjectPool()
             : base()
         {
+        }
+
+        public override void Initialize(string key, params object[] args)
+        {
+            base.Initialize(key, args);
+
+            LiteRuntime.Asset.LoadAssetAsync<GameObject>(Key, OnLoadTemplate);
+        }
+
+        public override void Dispose()
+        {
+            if (Template_ != null)
+            {
+                LiteRuntime.Asset.UnloadAsset(Template_);
+                Template_ = null;
+            }
+            
+            base.Dispose();
         }
 
         protected override void OnRelease(GameObject go)
@@ -18,14 +38,17 @@ namespace LiteQuark.Runtime
             go.transform.SetParent(Parent_, false);
         }
 
-        public override GameObject Alloc(Transform parent)
+        public override void Alloc(Transform parent, System.Action<GameObject> callback)
         {
-            var go = base.Alloc(parent);
-            if (go != null)
+            base.Alloc(parent, (go) =>
             {
-                go.SetActive(true);
-            }
-            return go;
+                if (go != null)
+                {
+                    go.SetActive(true);
+                }
+
+                callback?.Invoke(go);
+            });
         }
     }
 }

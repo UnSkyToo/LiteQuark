@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
@@ -13,13 +14,13 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public bool Startup()
+        public Task<bool> Startup()
         {
             EntityList_.Clear();
             AddList_.Clear();
             RemoveList_.Clear();
             
-            return true;
+            return Task.FromResult(true);
         }
 
         public void Shutdown()
@@ -95,17 +96,21 @@ namespace LiteBattle.Runtime
             return null;
         }
 
-        public LiteUnit AddUnit(string unitID)
+        public void AddUnit(string unitID, System.Action<LiteUnit> callback)
         {
             var config = LiteNexusDataManager.Instance.GetUnitConfig(unitID);
             if (config == null)
             {
-                return null;
+                callback?.Invoke(null);
+                return;
             }
 
             var unit = new LiteUnit(config);
             AddList_.Add(unit);
-            return unit;
+            unit.Initialize(() =>
+            {
+                callback?.Invoke(unit);
+            });
         }
     }
 }

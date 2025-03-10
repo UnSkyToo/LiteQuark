@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using LiteQuark.Runtime;
 using UnityEngine;
@@ -32,15 +31,16 @@ namespace LiteBattle.Runtime
         }
         
         private GameObject Go_;
+        private GameObject InternalGo_;
         private string PrefabPath_;
 
         private readonly LiteContext Context_;
-        private readonly Dictionary<Type, LiteEntityModuleBase> Modules_;
+        private readonly Dictionary<System.Type, LiteEntityModuleBase> Modules_;
 
         protected LiteEntity()
             : base()
         {
-            Modules_ = new Dictionary<Type, LiteEntityModuleBase>();
+            Modules_ = new Dictionary<System.Type, LiteEntityModuleBase>();
             Context_ = new LiteContext(LiteNexusEngine.Instance.GlobalContext);
 
             Camp = LiteEntityCamp.Light;
@@ -56,6 +56,12 @@ namespace LiteBattle.Runtime
             Modules_.Clear();
             
             RecyclePrefab();
+
+            if (Go_ != null)
+            {
+                Object.DestroyImmediate(Go_);
+                Go_ = null;
+            }
         }
 
         public virtual void Tick(float deltaTime)
@@ -71,7 +77,7 @@ namespace LiteBattle.Runtime
             Context_.Tick();
         }
 
-        private Type GetModuleKey<T>() where T : LiteEntityModuleBase
+        private System.Type GetModuleKey<T>() where T : LiteEntityModuleBase
         {
             return typeof(T);
         }
@@ -98,7 +104,7 @@ namespace LiteBattle.Runtime
             try
             {
                 var key = GetModuleKey<T>();
-                module = Activator.CreateInstance(typeof(T), this) as T;
+                module = System.Activator.CreateInstance(typeof(T), this) as T;
                 Modules_.Add(key, module);
             }
             catch
@@ -135,39 +141,54 @@ namespace LiteBattle.Runtime
             return Context_.GetTag(tag);
         }
 
-        public GameObject GetGo()
+        public GameObject GetInternalGo()
         {
-            return Go_;
+            return InternalGo_;
         }
 
-        public void LoadPrefab(string prefabPath)
+        public T GetComponent<T>()
         {
-            LoadPrefab(prefabPath, Vector3.zero, Vector3.one, Quaternion.identity);
+            return InternalGo_.GetComponent<T>();
         }
 
-        public void LoadPrefab(string prefabPath, Vector3 position, Vector3 scale, Quaternion rotation)
+        public int GetInstanceID()
         {
+            return InternalGo_.GetInstanceID();
+        }
+
+        protected void LoadPrefab(string prefabPath, System.Action callback)
+        {
+            if (Go_ == null)
+            {
+                Go_ = new GameObject($"Entity{UniqueID}");
+            }
+            
             RecyclePrefab();
             PrefabPath_ = prefabPath;
             
-            Go_ = LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc();
-            Go_.transform.localPosition = position;
-            Go_.transform.localScale = scale;
-            Go_.transform.localRotation = rotation;
-
-            ColliderBinder = Go_.GetOrAddComponent<LiteColliderBinder>();
-            if (ColliderBinder != null)
+            LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(Go_.transform, (go) =>
             {
-                ColliderBinder.EntityUniqueID = UniqueID;
-            }
+                InternalGo_ = go;
+                InternalGo_.transform.localPosition = Vector3.zero;
+                InternalGo_.transform.localScale = Vector3.one;
+                InternalGo_.transform.localRotation = Quaternion.identity;
+
+                ColliderBinder = InternalGo_.GetOrAddComponent<LiteColliderBinder>();
+                if (ColliderBinder != null)
+                {
+                    ColliderBinder.EntityUniqueID = UniqueID;
+                }
+                
+                callback?.Invoke();
+            });
         }
 
         private void RecyclePrefab()
         {
-            if (Go_ != null)
+            if (InternalGo_ != null)
             {
-                LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Recycle(Go_);
-                Go_ = null;
+                LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Recycle(InternalGo_);
+                InternalGo_ = null;
             }
 
             PrefabPath_ = string.Empty;

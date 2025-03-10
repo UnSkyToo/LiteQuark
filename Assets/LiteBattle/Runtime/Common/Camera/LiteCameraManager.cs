@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -12,9 +13,9 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public bool Startup()
+        public Task<bool> Startup()
         {
-            return true;
+            return Task.FromResult(true);
         }
 
         public void Shutdown()

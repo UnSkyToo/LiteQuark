@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -14,10 +15,9 @@ namespace LiteBattle.Runtime
         {
         }
         
-        public bool Startup()
+        public Task<bool> Startup()
         {
-            Load();
-            return true;
+            return Load();
         }
 
         public void Shutdown()
@@ -25,20 +25,22 @@ namespace LiteBattle.Runtime
             Unload();
         }
 
-        private void Load()
+        private async Task<bool> Load()
         {
             var jsonPath = PathUtils.GetRelativeAssetRootPath(LiteNexusConfig.Instance.GetDatabaseJsonPath());
-            var json = LiteRuntime.Asset.LoadAssetSync<TextAsset>(jsonPath).text;
+            var text = await LiteRuntime.Asset.LoadAssetAsync<TextAsset>(jsonPath);
+            var json = text.text;
             var database = LitJson.JsonMapper.ToObject<LiteNexusDatabase>(json);
             foreach (var unitConfigPath in database.UnitList)
             {
-                var unitConfig = LiteRuntime.Asset.LoadAssetSync<LiteUnitConfig>(unitConfigPath);
+                var unitConfig = await LiteRuntime.Asset.LoadAssetAsync<LiteUnitConfig>(unitConfigPath);
                 UnitConfigMap_.Add(unitConfig.StateGroup, unitConfig);
                 
-                var group = LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
+                var group = await LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
                 StateConfigMap_.Add(unitConfig.StateGroup, group);
             }
             LiteRuntime.Asset.UnloadAsset(jsonPath);
+            return true;
         }
 
         private void Unload()
@@ -51,19 +53,19 @@ namespace LiteBattle.Runtime
             StateConfigMap_.Clear();
         }
 
-        public void Reload()
+        public async void Reload()
         {
             Unload();
-            Load();
+            await Load();
         }
 
-        private Dictionary<string, LiteStateConfig> LoadStateGroup(List<string> stateList)
+        private async Task<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList)
         {
             var group = new Dictionary<string, LiteStateConfig>();
             
             foreach (var filePath in stateList)
             {
-                var timelineAsset = LiteRuntime.Asset.LoadAssetSync<TimelineAsset>(filePath);
+                var timelineAsset = await LiteRuntime.Asset.LoadAssetAsync<TimelineAsset>(filePath);
                 if (timelineAsset == null)
                 {
                     LLog.Error($"can't load timeline asset : {filePath}");

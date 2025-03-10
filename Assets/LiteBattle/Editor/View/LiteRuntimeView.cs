@@ -62,7 +62,7 @@ namespace LiteBattle.Editor
                 return;
             }
 
-            var state = unit.GetStateMachine().GetCurrentState();
+            var state = unit.GetStateMachine()?.GetCurrentState();
             if (state == null)
             {
                 return;

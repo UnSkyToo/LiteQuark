@@ -21,7 +21,7 @@ namespace LiteBattle.Runtime
             var count = CheckOverlap(owner, range);
             for (var i = 0; i < count; ++i)
             {
-                if (CollideResult_[i].gameObject.GetInstanceID() == owner.GetGo().GetInstanceID())
+                if (CollideResult_[i].gameObject.GetInstanceID() == owner.GetInstanceID())
                 {
                     continue;
                 }

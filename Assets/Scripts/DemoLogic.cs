@@ -12,7 +12,7 @@ namespace LiteQuark.Demo
         
         public Task<bool> Initialize()
         {
-            LiteNexusEngine.Instance.Startup();
+            return LiteNexusEngine.Instance.Startup();
             return Task.FromResult(true);
         }
 

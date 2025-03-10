@@ -10,7 +10,7 @@ namespace LiteBattle.Runtime
         public LiteEntityBehaveModule(LiteEntity entity)
             : base(entity)
         {
-            Animator_ = Entity.GetGo().GetComponent<Animator>();
+            Animator_ = Entity.GetComponent<Animator>();
         }
 
         public override void Dispose()

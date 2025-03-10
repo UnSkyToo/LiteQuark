@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -14,32 +15,35 @@ namespace LiteBattle.Runtime
             GlobalContext = new LiteContext(null);
         }
 
-        public bool Startup()
+        public async Task<bool> Startup()
         {
-            LiteNexusDataManager.Instance.Startup();
-            LiteInputManager.Instance.Startup();
-            LiteEntityManager.Instance.Startup();
-            LiteCameraManager.Instance.Startup();
+            await LiteNexusDataManager.Instance.Startup();
+            await LiteInputManager.Instance.Startup();
+            await LiteEntityManager.Instance.Startup();
+            await LiteCameraManager.Instance.Startup();
 
-            var unit = LiteEntityManager.Instance.AddUnit("player");
-            LiteCameraManager.Instance.Bind(UnityEngine.Camera.main, unit);
-            unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 100);
-            unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 100);
-            unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Atk, 10);
-            unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Def, 5);
-            unit.Camp = LiteEntityCamp.Light;
-            unit.Tag = "Player";
+            LiteEntityManager.Instance.AddUnit("player", (unit) =>
+            {
+                LiteCameraManager.Instance.Bind(UnityEngine.Camera.main, unit);
+                unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 100);
+                unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 100);
+                unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Atk, 10);
+                unit.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Def, 5);
+                unit.Camp = LiteEntityCamp.Light;
+                unit.Tag = "Player";
+                PlayerController_ = new LitePlayerController(unit);
+            });
 
-            PlayerController_ = new LitePlayerController(unit);
-
-            var monster = LiteEntityManager.Instance.AddUnit("player_test");
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 10);
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 10);
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Atk, 10);
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Def, 5);
-            monster.Position = new Vector3(3, 0, 3);
-            monster.Camp = LiteEntityCamp.Dark;
-            monster.Tag = "Monster Test";
+            LiteEntityManager.Instance.AddUnit("player_test", (monster) =>
+            {
+                monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 10);
+                monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 10);
+                monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Atk, 10);
+                monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Def, 5);
+                monster.Position = new Vector3(3, 0, 3);
+                monster.Camp = LiteEntityCamp.Dark;
+                monster.Tag = "Monster Test";
+            });
             
             return true;
         }

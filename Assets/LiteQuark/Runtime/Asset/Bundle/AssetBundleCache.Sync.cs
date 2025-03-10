@@ -1,4 +1,5 @@
-﻿namespace LiteQuark.Runtime
+﻿#if LITE_QUARK_ASSET_ENABLE_SYNC
+namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
@@ -124,3 +125,4 @@
         }
     }
 }
+#endif
