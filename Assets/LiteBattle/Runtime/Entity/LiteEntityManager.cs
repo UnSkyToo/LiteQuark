@@ -96,21 +96,18 @@ namespace LiteBattle.Runtime
             return null;
         }
 
-        public void AddUnit(string unitID, System.Action<LiteUnit> callback)
+        public LiteUnit AddUnit(string unitID)
         {
             var config = LiteNexusDataManager.Instance.GetUnitConfig(unitID);
             if (config == null)
             {
-                callback?.Invoke(null);
-                return;
+                return null;
             }
 
             var unit = new LiteUnit(config);
             AddList_.Add(unit);
-            unit.Initialize(() =>
-            {
-                callback?.Invoke(unit);
-            });
+            unit.Initialize();
+            return unit;
         }
     }
 }

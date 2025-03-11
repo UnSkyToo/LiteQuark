@@ -21,15 +21,10 @@ namespace LiteBattle.Runtime
             var count = CheckOverlap(owner, range);
             for (var i = 0; i < count; ++i)
             {
-                if (CollideResult_[i].gameObject.GetInstanceID() == owner.GetInstanceID())
-                {
-                    continue;
-                }
-                
                 var collider = CollideResult_[i].GetComponent<LiteColliderBinder>();
-                if (collider != null)
+                if (collider != null && collider.UniqueID != owner.UniqueID)
                 {
-                    var entity = LiteEntityManager.Instance.GetEntity(collider.EntityUniqueID);
+                    var entity = LiteEntityManager.Instance.GetEntity(collider.UniqueID);
                     if (entity != null && CheckCamp(entity, camp))
                     {
                         results.Add(entity);

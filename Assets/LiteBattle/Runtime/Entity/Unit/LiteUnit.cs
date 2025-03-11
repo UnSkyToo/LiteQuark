@@ -13,23 +13,21 @@ namespace LiteBattle.Runtime
             Config_ = config;
         }
 
-        public void Initialize(System.Action callback)
+        public override void Initialize()
         {
+            base.Initialize();
+            
             SetTag(LiteTag.CanMove, true);
             SetTag(LiteTag.CanJump, true);
             SetTag(LiteTag.Hit, false);
             
-            LoadPrefab(Config_.PrefabPath, () =>
-            {
-                StateMachine_ = new LiteStateMachine(this, Config_.StateGroup);
-                StateMachine_.SetNextState(Config_.EntryState);
-                AttachModule<LiteEntityMovementModule>();
-                AttachModule<LiteEntityBehaveModule>();
-                AttachModule<LiteEntityDataModule>();
-                AttachModule<LiteEntityHandleModule>();
-                
-                callback?.Invoke();
-            });
+            StateMachine_ = new LiteStateMachine(this, Config_.StateGroup);
+            StateMachine_.SetNextState(Config_.EntryState);
+            AttachModule<LiteEntityMovementModule>();
+            AttachModule<LiteEntityDataModule>();
+            AttachModule<LiteEntityHandleModule>();
+            var behaveModule = AttachModule<LiteEntityBehaveModule>();
+            behaveModule.LoadPrefab(Config_.PrefabPath);
         }
 
         public override void Tick(float deltaTime)

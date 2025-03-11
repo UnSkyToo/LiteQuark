@@ -10,30 +10,12 @@ namespace LiteBattle.Runtime
         
         public bool IsAlive { get; protected set; }
         public LiteEntityCamp Camp { get; set; }
-        public LiteColliderBinder ColliderBinder { get; protected set; }
+
+        public Vector3 Position { get; set; } = Vector3.zero;
+        public Vector3 Scale { get; set; } = Vector3.one;
+        public Quaternion Rotation { get; set; } = Quaternion.identity;
+        public int AnimationNameHash { get; private set; } = 0;
         
-        public Vector3 Position
-        {
-            get => Go_.transform.localPosition;
-            set => Go_.transform.localPosition = value;
-        }
-
-        public Vector3 Scale
-        {
-            get => Go_.transform.localScale;
-            set => Go_.transform.localScale = value;
-        }
-
-        public Quaternion Rotation
-        {
-            get => Go_.transform.localRotation;
-            set => Go_.transform.localRotation = value;
-        }
-        
-        private GameObject Go_;
-        private GameObject InternalGo_;
-        private string PrefabPath_;
-
         private readonly LiteContext Context_;
         private readonly Dictionary<System.Type, LiteEntityModuleBase> Modules_;
 
@@ -47,6 +29,10 @@ namespace LiteBattle.Runtime
             IsAlive = true;
         }
 
+        public virtual void Initialize()
+        {
+        }
+
         public virtual void Dispose()
         {
             foreach (var module in Modules_)
@@ -54,14 +40,6 @@ namespace LiteBattle.Runtime
                 module.Value.Dispose();
             }
             Modules_.Clear();
-            
-            RecyclePrefab();
-
-            if (Go_ != null)
-            {
-                Object.DestroyImmediate(Go_);
-                Go_ = null;
-            }
         }
 
         public virtual void Tick(float deltaTime)
@@ -140,58 +118,10 @@ namespace LiteBattle.Runtime
         {
             return Context_.GetTag(tag);
         }
-
-        public GameObject GetInternalGo()
+        
+        public void PlayAnimation(string animationName)
         {
-            return InternalGo_;
-        }
-
-        public T GetComponent<T>()
-        {
-            return InternalGo_.GetComponent<T>();
-        }
-
-        public int GetInstanceID()
-        {
-            return InternalGo_.GetInstanceID();
-        }
-
-        protected void LoadPrefab(string prefabPath, System.Action callback)
-        {
-            if (Go_ == null)
-            {
-                Go_ = new GameObject($"Entity{UniqueID}");
-            }
-            
-            RecyclePrefab();
-            PrefabPath_ = prefabPath;
-            
-            LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(Go_.transform, (go) =>
-            {
-                InternalGo_ = go;
-                InternalGo_.transform.localPosition = Vector3.zero;
-                InternalGo_.transform.localScale = Vector3.one;
-                InternalGo_.transform.localRotation = Quaternion.identity;
-
-                ColliderBinder = InternalGo_.GetOrAddComponent<LiteColliderBinder>();
-                if (ColliderBinder != null)
-                {
-                    ColliderBinder.EntityUniqueID = UniqueID;
-                }
-                
-                callback?.Invoke();
-            });
-        }
-
-        private void RecyclePrefab()
-        {
-            if (InternalGo_ != null)
-            {
-                LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Recycle(InternalGo_);
-                InternalGo_ = null;
-            }
-
-            PrefabPath_ = string.Empty;
+            AnimationNameHash = Animator.StringToHash(animationName);
         }
     }
 }

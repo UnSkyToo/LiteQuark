@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
         
         public void Enter(LiteState state)
         {
-            state.Unit.GetModule<LiteEntityBehaveModule>().PlayAnimation(AnimationName);
+            state.Unit.PlayAnimation(AnimationName);
         }
 
         public LiteEventSignal Tick(LiteState state, float deltaTime)

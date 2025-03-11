@@ -11,7 +11,7 @@ namespace LiteBattle.Runtime
     
     public class LiteColliderBinder : MonoBehaviour
     {   
-        public ulong EntityUniqueID { get; set; }
+        public ulong UniqueID { get; set; }
         public LiteColliderType ColliderType { get; set; }
 
         private void Awake()
