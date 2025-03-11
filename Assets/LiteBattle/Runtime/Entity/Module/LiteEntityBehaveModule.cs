@@ -57,7 +57,7 @@ namespace LiteBattle.Runtime
             }
 
             AnimationNameHash_ = Entity.AnimationNameHash;
-            Animator_.CrossFade(AnimationNameHash_, 0, 0);
+            Animator_.CrossFade(AnimationNameHash_, 0.1f, 0);
         }
 
         private void UpdateHUD()

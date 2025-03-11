@@ -53,7 +53,7 @@ namespace LiteBattle.Runtime
             dir = dir.normalized;
             if (Unit != null)
             {
-                Unit.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
+                Unit.GetModule<LiteEntityMovementModule>()?.MoveToDir(new Vector3(dir.x, 0, dir.y));
                 CurrentMoveDir_ = dir;
             }
         }
@@ -68,7 +68,7 @@ namespace LiteBattle.Runtime
 
             if (Unit != null)
             {
-                Unit.GetModule<LiteEntityMovementModule>().MoveToDir(new Vector3(dir.x, 0, dir.y));
+                Unit.GetModule<LiteEntityMovementModule>()?.MoveToDir(new Vector3(dir.x, 0, dir.y));
                 CurrentMoveDir_ = dir;
             }
         }
@@ -77,7 +77,7 @@ namespace LiteBattle.Runtime
         {
             if (Unit != null)
             {
-                Unit.GetModule<LiteEntityMovementModule>().StopMove();
+                Unit.GetModule<LiteEntityMovementModule>()?.StopMove();
                 CurrentMoveDir_ = Vector2.zero;
             }
         }
