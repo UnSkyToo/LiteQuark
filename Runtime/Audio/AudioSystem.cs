@@ -104,46 +104,38 @@ namespace LiteQuark.Runtime
             var audio = new AudioObject(type, path);
             AudioCache_.Add(audio.UniqueID, audio);
 
-            LiteRuntime.Asset.LoadAssetAsync<AudioClip>(path, (clip) =>
+            audio.Load(Pool_, parent, path, isLoop, volume, delay, (isLoaded) =>
             {
-                if (clip == null)
+                if (!isLoaded)
                 {
-                    LLog.Warning($"can't play audio : {path}");
                     RemoveList_.Add(audio);
                     return;
                 }
-
-                audio.Load(Pool_, parent, clip, isLoop, volume, delay, false, (isLoaded) =>
-                {
-                    if (!isLoaded)
-                    {
-                        RemoveList_.Add(audio);
-                        return;
-                    }
-                    
-                    switch (type)
-                    {
-                        case AudioType.Sound:
-                            if (MuteSound_)
-                            {
-                                audio.Mute(MuteSound_);
-                            }
-
-                            break;
-                        case AudioType.Music:
-                            if (MuteMusic_)
-                            {
-                                audio.Mute(MuteMusic_);
-                            }
-
-                            break;
-                    }
-
-                    audio.Play();
-                });
+                
+                SetupAudioOnLoad(audio);
+                audio.Play();
             });
-
+            
             return audio.UniqueID;
+        }
+
+        private void SetupAudioOnLoad(AudioObject audio)
+        {
+            switch (audio.Type)
+            {
+                case AudioType.Sound:
+                    if (MuteSound_)
+                    {
+                        audio.Mute(MuteSound_);
+                    }
+                    break;
+                case AudioType.Music:
+                    if (MuteMusic_)
+                    {
+                        audio.Mute(MuteMusic_);
+                    }
+                    break;
+            }
         }
 
         public ulong PlaySound(string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
