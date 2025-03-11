@@ -73,6 +73,14 @@ namespace LiteQuark.Runtime
         {
             return new Vector3(Mathf.Round(vec.x), Mathf.Round(vec.y), Mathf.Round(vec.z));
         }
+        
+        public static Vector3 Round(this Vector3 vec3, int digits)
+        {
+            return new Vector3(
+                (float) Math.Round(vec3.x, digits),
+                (float) Math.Round(vec3.y, digits),
+                (float) Math.Round(vec3.z, digits));
+        }
 
         public static Vector3[] VectorListAdd(Vector3[] list, Vector3 value)
         {
