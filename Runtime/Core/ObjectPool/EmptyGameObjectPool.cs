@@ -15,6 +15,7 @@ namespace LiteQuark.Runtime
             base.Initialize(key, args);
             
             OnLoadTemplate(new GameObject("PoolTemplate"));
+            Template_.transform.SetParent(Parent_, false);
         }
         
         public override void Dispose()

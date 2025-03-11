@@ -147,7 +147,8 @@ namespace LiteQuark.Runtime
         public static GroupSystem Group => Get<GroupSystem>();
         public static AssetSystem Asset => Get<AssetSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
-        public static ActionSystem Action => Get<ActionSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
+        public static EffectSystem Effect => Get<EffectSystem>();
+        public static ActionSystem Action => Get<ActionSystem>();
     }
 }

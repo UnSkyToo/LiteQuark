@@ -20,7 +20,8 @@ namespace LiteQuark.Runtime
             { typeof(AssetSystem).AssemblyQualifiedName, 99400 },
             { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99300 },
             { typeof(AudioSystem).AssemblyQualifiedName, 99200 },
-            { typeof(ActionSystem).AssemblyQualifiedName, 99100 },
+            { typeof(EffectSystem).AssemblyQualifiedName, 99100 },
+            { typeof(ActionSystem).AssemblyQualifiedName, 99000 },
         };
     }
 }
