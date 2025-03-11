@@ -109,7 +109,7 @@ namespace LiteQuark.Runtime
             RunWhenLoadTemplated(() =>
             {
                 var go = Pool_.Get();
-                if (go != null)
+                if (go != null && parent != null)
                 {
                     go.transform.SetParent(parent, false);
                 }
