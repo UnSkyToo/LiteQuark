@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             IsLoaded = false;
         }
 
-        public void Load(EmptyGameObjectPool pool, Transform parent, AudioClip clip, bool isLoop, float volume, float delay, bool isMute, System.Action<bool> callback)
+        public void Load(EmptyGameObjectPool pool, Transform parent, string clipPath, bool isLoop, float volume, float delay, System.Action<bool> callback)
         {
             if (IsLoaded)
             {
@@ -37,16 +37,25 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                Source = Carrier.GetOrAddComponent<AudioSource>();
-                Source.clip = clip;
-                Source.volume = volume;
-                Source.loop = isLoop;
-                Source.pitch = 1.0f;
-                Source.mute = isMute;
-                Carrier.name = DebugName;
-                Delay = delay;
-                IsLoaded = true;
-                callback?.Invoke(true);
+                LiteRuntime.Asset.LoadAssetAsync<AudioClip>(clipPath, (clip) =>
+                {
+                    if (clip == null)
+                    {
+                        LLog.Warning($"can't play audio : {clipPath}");
+                        callback?.Invoke(false);
+                        return;
+                    }
+                    
+                    Source = Carrier.GetOrAddComponent<AudioSource>();
+                    Source.clip = clip;
+                    Source.volume = volume;
+                    Source.loop = isLoop;
+                    Source.pitch = 1.0f;
+                    Carrier.name = DebugName;
+                    Delay = delay;
+                    IsLoaded = true;
+                    callback?.Invoke(true);
+                });
             });
         }
 
@@ -56,10 +65,13 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
-            LiteRuntime.Asset.UnloadAsset(Source.clip);
-            Source = null;
-            
+
+            if (Source != null && Source.clip != null)
+            {
+                LiteRuntime.Asset.UnloadAsset(Source.clip);
+                Source = null;
+            }
+
             if (Carrier != null)
             {
                 pool.Recycle(Carrier);
