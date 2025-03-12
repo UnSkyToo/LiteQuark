@@ -133,6 +133,7 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class UISetting
         {
+            [SerializeField] public Camera UICamera;
             [SerializeField] public CanvasScaler.ScaleMode ScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             [SerializeField] public CanvasScaler.ScreenMatchMode MatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             [SerializeField] [Range(0, 1)] public float MatchValue = 0f;

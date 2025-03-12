@@ -76,13 +76,13 @@ namespace LiteQuark.Runtime
             return null;
         }
 
-        public static Vector2 ScreenPointToCanvasPoint(RectTransform parent, Vector2 screenPoint, Camera camera = null)
+        public static Vector2 ScreenPointToCanvasPoint(RectTransform parent, Vector2 screenPoint, Camera uiCamera)
         {
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, camera, out var localPoint);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, uiCamera, out var localPoint);
             return localPoint;
         }
 
-        public static Vector2 ScreenPointToCanvasPoint(Transform parent, Vector2 screenPoint)
+        public static Vector2 ScreenPointToCanvasPoint(Transform parent, Vector2 screenPoint, Camera uiCamera)
         {
             var rt = parent.GetComponent<RectTransform>();
             if (rt == null)
@@ -90,16 +90,16 @@ namespace LiteQuark.Runtime
                 return Vector2.zero;
             }
 
-            return ScreenPointToCanvasPoint(rt, screenPoint);
+            return ScreenPointToCanvasPoint(rt, screenPoint, uiCamera);
         }
 
-        public static Vector2 CanvasPointToScreenPoint(RectTransform parent, Vector2 canvasPoint)
+        public static Vector2 CanvasPointToScreenPoint(RectTransform parent, Vector2 canvasPoint, Camera worldCamera)
         {
             var worldPoint = CanvasPointToWorldPoint(parent, canvasPoint);
-            return WorldPointToScreenPoint(worldPoint);
+            return WorldPointToScreenPoint(worldPoint, worldCamera);
         }
 
-        public static Vector2 CanvasPointToScreenPoint(Transform parent, Vector2 canvasPoint)
+        public static Vector2 CanvasPointToScreenPoint(Transform parent, Vector2 canvasPoint, Camera worldCamera)
         {
             var rt = parent.GetComponent<RectTransform>();
             if (rt == null)
@@ -107,22 +107,22 @@ namespace LiteQuark.Runtime
                 return Vector2.zero;
             }
 
-            return CanvasPointToScreenPoint(rt, canvasPoint);
+            return CanvasPointToScreenPoint(rt, canvasPoint, worldCamera);
         }
 
-        public static Vector2 WorldPointToScreenPoint(Vector3 worldPoint, Camera camera = null)
+        public static Vector2 WorldPointToScreenPoint(Vector3 worldPoint, Camera worldCamera)
         {
-            return RectTransformUtility.WorldToScreenPoint(camera, worldPoint);
+            return RectTransformUtility.WorldToScreenPoint(worldCamera, worldPoint);
         }
 
-        public static Vector2 WorldPointToCanvasPoint(RectTransform parent, Vector3 worldPoint, Camera camera = null)
+        public static Vector2 WorldPointToCanvasPoint(Vector3 worldPoint, Camera worldCamera, RectTransform parent, Camera uiCamera)
         {
-            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint, camera));
+            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint, worldCamera), uiCamera);
         }
 
-        public static Vector2 WorldPointToCanvasPoint(Transform parent, Vector3 worldPoint)
+        public static Vector2 WorldPointToCanvasPoint(Vector3 worldPoint, Camera worldCamera, Transform parent, Camera uiCamera)
         {
-            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint));
+            return ScreenPointToCanvasPoint(parent, WorldPointToScreenPoint(worldPoint, worldCamera), uiCamera);
         }
 
         public static Vector3 CanvasPointToWorldPoint(RectTransform parent, Vector2 canvasPoint)

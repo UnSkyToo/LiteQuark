@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime.UI
         private const int UIStepOrder = 100;
 
         public RectTransform CanvasRoot => CanvasRoot_;
+        public Camera UICamera => LiteRuntime.Setting.UI.UICamera ?? Camera.main;
 
         private RectTransform CanvasRoot_;
         private readonly Dictionary<UIDepthMode, Transform> CanvasTransform_ = new Dictionary<UIDepthMode, Transform>();
@@ -170,15 +171,19 @@ namespace LiteQuark.Runtime.UI
         {
             var parent = GetUIParent(ui.DepthMode);
             
-            var rectTransform = instance.GetOrAddComponent<RectTransform>();
-            rectTransform.anchorMin = Vector2.zero;
-            rectTransform.anchorMax = Vector2.one;
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = Vector2.zero;
+            var rectTransform = instance.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                rectTransform = instance.AddComponent<RectTransform>();
+                rectTransform.anchorMin = Vector2.zero;
+                rectTransform.anchorMax = Vector2.one;
+                rectTransform.anchoredPosition = Vector2.zero;
+                rectTransform.sizeDelta = Vector2.zero;
+            }
 
             var canvas = instance.GetOrAddComponent<Canvas>();
             canvas.overrideSorting = true;
-            canvas.sortingOrder = (int)ui.DepthMode + (parent.childCount - 1) * UIStepOrder;
+            canvas.sortingOrder = (int)ui.DepthMode + (parent.childCount - 1) * (ui.DepthMode == UIDepthMode.Scene ? 0 : UIStepOrder);
 
             var raycaster = instance.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
@@ -209,7 +214,7 @@ namespace LiteQuark.Runtime.UI
             
             var canvas = go.GetOrAddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = Camera.main;
+            canvas.worldCamera = UICamera;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
             scaler.uiScaleMode = LiteRuntime.Setting.UI.ScaleMode;

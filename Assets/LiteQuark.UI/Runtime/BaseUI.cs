@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime.UI
         public abstract string PrefabPath { get; }
         public abstract UIDepthMode DepthMode { get; }
         public abstract bool IsMutex { get; }
+        public abstract bool AutoAdapt { get; }
         
         public UISystem System { get; set; }
         public UIState State { get; set; }
@@ -68,6 +69,11 @@ namespace LiteQuark.Runtime.UI
 
         private void AdaptAnchorsValue()
         {
+            if (!AutoAdapt)
+            {
+                return;
+            }
+            
             var maxWidth = Display.main.systemWidth;
             var maxHeight = Display.main.systemHeight;
             var safeArea = Screen.safeArea;
@@ -98,10 +104,20 @@ namespace LiteQuark.Runtime.UI
         {
             return UIUtils.FindComponent(Go, path, type);
         }
-
+        
+        public Component FindComponent(Type type)
+        {
+            return Go.GetComponent(type);
+        }
+        
         public T FindComponent<T>(string path) where T : Component
         {
             return UIUtils.FindComponent<T>(Go, path);
+        }
+        
+        public T FindComponent<T>() where T : Component
+        {
+            return Go.GetComponent<T>();
         }
 
         public void SetActive(string path, bool value)

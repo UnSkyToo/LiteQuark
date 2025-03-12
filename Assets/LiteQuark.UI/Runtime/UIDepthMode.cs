@@ -2,8 +2,9 @@
 {
     public enum UIDepthMode : short
     {
-        Bottom = 0,
-        Normal = 5000,
-        Top = 10000,
+        Scene = 0,
+        Bottom = 5000,
+        Normal = 10000,
+        Top = 15000,
     }
 }
