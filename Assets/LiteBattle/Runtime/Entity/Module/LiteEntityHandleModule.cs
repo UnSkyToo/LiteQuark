@@ -1,5 +1,6 @@
 ﻿using System;
 using LiteQuark.Runtime;
+using LiteQuark.Runtime.UI;
 
 namespace LiteBattle.Runtime
 {
@@ -34,6 +35,8 @@ namespace LiteBattle.Runtime
                 Entity.SetContext("player_state_dead", "dead");
                 LLog.Info($"{Entity.DebugName} 死亡");
             }
+
+            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(Entity, $"-{damageValue}");
         }
 
         private double CalculateDamage(LiteEntity attacker, LiteEntity target)

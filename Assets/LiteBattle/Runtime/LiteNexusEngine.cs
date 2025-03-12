@@ -33,8 +33,8 @@ namespace LiteBattle.Runtime
             PlayerController_ = new LitePlayerController(unit);
 
             var monster = LiteEntityManager.Instance.AddUnit("player_test");
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 10);
-            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 10);
+            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.MaxHp, 100);
+            monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.CurHp, 100);
             monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Atk, 10);
             monster.GetModule<LiteEntityDataModule>().AddChange(LiteEntityDataType.Def, 5);
             monster.Position = new Vector3(3, 0, 3);

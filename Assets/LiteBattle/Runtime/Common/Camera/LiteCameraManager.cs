@@ -6,6 +6,8 @@ namespace LiteBattle.Runtime
 {
     public sealed class LiteCameraManager : Singleton<LiteCameraManager>, IManager
     {
+        public Camera MainCamera => Camera_;
+        
         private Camera Camera_;
         private LiteUnit Unit_;
         

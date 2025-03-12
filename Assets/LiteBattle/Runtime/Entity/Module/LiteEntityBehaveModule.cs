@@ -1,5 +1,5 @@
-using System;
 using LiteQuark.Runtime;
+using LiteQuark.Runtime.UI;
 using UnityEngine;
 
 namespace LiteBattle.Runtime
@@ -13,6 +13,7 @@ namespace LiteBattle.Runtime
         private int AnimationNameHash_;
         private LiteColliderBinder ColliderBinder_;
         private string PrefabPath_;
+        private UINameplateHUD HUD_;
         
         public LiteEntityBehaveModule(LiteEntity entity)
             : base(entity)
@@ -23,6 +24,12 @@ namespace LiteBattle.Runtime
 
         public override void Dispose()
         {
+            if (HUD_ != null)
+            {
+                LiteRuntime.Get<UISystem>().CloseUI(HUD_);
+                HUD_ = null;
+            }
+
             RecyclePrefab();
         }
 
@@ -34,7 +41,6 @@ namespace LiteBattle.Runtime
             }
             UpdateTransform();
             UpdateAnimator();
-            // UpdateHUD();
         }
 
         public GameObject GetInternalGo()
@@ -59,13 +65,6 @@ namespace LiteBattle.Runtime
             AnimationNameHash_ = Entity.AnimationNameHash;
             Animator_.CrossFade(AnimationNameHash_, 0.1f, 0);
         }
-
-        private void UpdateHUD()
-        {
-            var curHp = Entity.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.CurHp);
-            var maxHp = Math.Max(1, Entity.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.MaxHp));
-            // var hpPercent = Math.Clamp(0d, 1d, curHp / maxHp);
-        }
         
         public void LoadPrefab(string prefabPath)
         {
@@ -88,6 +87,8 @@ namespace LiteBattle.Runtime
                 {
                     ColliderBinder_.UniqueID = Entity.UniqueID;
                 }
+
+                HUD_ = LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(Entity);
 
                 IsLoad_ = true;
             });
