@@ -15,8 +15,6 @@ namespace LiteQuark.Runtime
         private readonly List<Action<bool>> BundleLoaderCallbackList_ = new ();
         private readonly Dictionary<string, AssetInfoCache> AssetCacheMap_ = new();
         private readonly List<string> UnloadAssetList_ = new();
-
-        private UnityEngine.AssetBundleCreateRequest BundleRequest_;
         
         public bool IsUsed => RefCount_ > 0;
         private int RefCount_;
@@ -29,7 +27,6 @@ namespace LiteQuark.Runtime
 
             BundlePath_ = bundlePath;
             Loader_ = loader;
-            BundleRequest_ = null;
             RefCount_ = 0;
             RetainTime_ = 0;
         }
@@ -46,8 +43,6 @@ namespace LiteQuark.Runtime
                 Bundle.Unload(true);
                 Bundle = null;
             }
-
-            BundleRequest_ = null;
         }
         
         public void Unload(bool forceMode)
@@ -177,7 +172,6 @@ namespace LiteQuark.Runtime
             if (bundle != null)
             {
                 Bundle = bundle;
-                BundleRequest_ = null;
                 Stage = AssetCacheStage.Loaded;
             }
             else
