@@ -225,7 +225,7 @@ namespace LiteQuark.Editor
 
         public string GetRootOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}");
+            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{AppConfig.Version}");
         }
 
         public string GetIOSWorkspaceName()
