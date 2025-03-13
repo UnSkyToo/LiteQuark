@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public class Fsm : IFsm
     {
         protected readonly Dictionary<int, IFsmState> StateMap_ = new Dictionary<int, IFsmState>();
-        protected IFsmState CurrentState_ = default;
+        protected IFsmState CurrentState_ = null;
 
         public Fsm()
         {
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
 
         public void ChangeToNullState()
         {
-            if (CurrentState_ != default)
+            if (CurrentState_ != null)
             {
                 CurrentState_.Leave();
                 CurrentState_ = null;
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
 
         public bool ChangeToState(int id, params object[] args)
         {
-            if (CurrentState_ != default)
+            if (CurrentState_ != null)
             {
                 if (!CurrentState_.GotoCheck(id))
                 {
@@ -66,7 +66,7 @@ namespace LiteQuark.Runtime
 
         public bool IsState(int id)
         {
-            if (CurrentState_ == default)
+            if (CurrentState_ == null)
             {
                 return false;
             }
