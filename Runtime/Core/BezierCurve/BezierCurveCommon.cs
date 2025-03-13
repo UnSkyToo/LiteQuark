@@ -46,10 +46,7 @@ namespace LiteQuark.Runtime
             var index = 0;
             for (var offset = 0; offset < count - 1; ++offset)
             {
-                Controller_[index].x = (points[offset + 1].x - points[offset].x) * time + points[offset].x;
-                Controller_[index].y = (points[offset + 1].y - points[offset].y) * time + points[offset].y;
-                Controller_[index].z = (points[offset + 1].z - points[offset].z) * time + points[offset].z;
-                index++;
+                Controller_[index++] = Vector3.Lerp(points[offset], points[offset + 1], time);
             }
 
             return index;

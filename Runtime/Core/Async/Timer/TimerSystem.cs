@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     public sealed class TimerSystem : ISystem, ITick
     {
         public const int RepeatCountForever = -1;
-        
+
+        private readonly float FrameInterval_ = 0.01f;
         private readonly ListEx<ITimer> TimerList_ = new ListEx<ITimer>();
 
         public TimerSystem()
         {
+            FrameInterval_ = MathF.Max(0.01f, 1.0f / LiteRuntime.Setting.Common.TargetFrameRate);
         }
         
         public Task<bool> Initialize()
@@ -44,19 +45,19 @@ namespace LiteQuark.Runtime
 
         public ulong AddTimer(float interval, Action onTick, float totalTime)
         {
-            interval = Mathf.Max(interval, 0.0001f);
+            interval = MathF.Max(interval, 0.0001f);
             return AddTimer(interval, onTick, (int)(totalTime / interval));
         }
 
         public ulong AddTimer(float interval, Action onTick, Action onComplete, float totalTime)
         {
-            interval = Mathf.Max(interval, 0.0001f);
+            interval = MathF.Max(interval, 0.0001f);
             return AddTimer(interval, onTick, onComplete, (int)(totalTime / interval));
         }
 
         public ulong AddTimerWithFrame(int frameCount, Action onTick, int repeatCount = 1)
         {
-            return AddTimer(frameCount * (1.0f / Application.targetFrameRate), onTick, repeatCount);
+            return AddTimer(frameCount * FrameInterval_, onTick, repeatCount);
         }
 
         public ulong NextFrame(Action onTick)
