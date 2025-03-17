@@ -31,10 +31,21 @@ namespace LiteBattle.Editor
                     if (stateLength > 0)
                     {
                         clip.duration = stateLength;
-                        LiteTimelineHelper.SetVisibleTimeRange(new Vector2(0, (float) clip.duration * 1.5f));
+                        LiteTimelineHelper.SetVisibleTimeRange(new Vector2(0, (float)clip.duration * 1.5f));
                     }
                     
                     clip.displayName = $"{GetCommonDisplayName(clip)} {playAnimationEvent.AnimationName}";
+                }
+                else if (stateClip.Event is LitePlayEffectEvent playEffectEvent)
+                {
+                    // var stateLength = LiteEditorBinder.Instance.GetEffectLength(playEffectEvent.EffectPath);
+                    // if (stateLength > 0)
+                    // {
+                    //     clip.duration = stateLength;
+                    //     LiteTimelineHelper.SetVisibleTimeRange(new Vector2(0, (float)clip.duration * 1.5f));
+                    // }
+                    
+                    clip.displayName = $"{GetCommonDisplayName(clip)} {System.IO.Path.GetFileNameWithoutExtension(playEffectEvent.EffectPath)}";
                 }
                 else if (stateClip.Event is LiteTransferEvent transferEvent)
                 {

@@ -5,7 +5,7 @@ namespace LiteBattle.Editor
     [LiteEventEditorPerformer(typeof(LiteAttackEvent))]
     public class LiteAttackEventEditorPerformer : ILiteEventEditorPerformer
     {
-        public void OnExecute(ILiteEvent evt)
+        public void OnExecute(ILiteEvent evt, int frame)
         {
             if (evt is LiteAttackEvent attackEvent)
             {

@@ -38,6 +38,11 @@ namespace LiteQuark.Runtime
             }, EffectList_, deltaTime);
         }
 
+        public BaseObject FindEffect(ulong id)
+        {
+            return EffectList_.ForeachReturn((effect) => effect.UniqueID == id);
+        }
+
         public ulong PlayEffect(EffectCreateInfo info)
         {
             if (string.IsNullOrWhiteSpace(info.Path))

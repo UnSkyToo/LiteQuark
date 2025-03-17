@@ -90,7 +90,7 @@ namespace LiteBattle.Editor
 
                         if (startFrame <= frameIndex && frameIndex <= endFrame)
                         {
-                            Execute(stateClip.GetInstanceID(), stateClip.Event);
+                            Execute(stateClip.GetInstanceID(), stateClip.Event, frameIndex);
                         }
                         else
                         {
@@ -107,7 +107,7 @@ namespace LiteBattle.Editor
                         var triggerFrame = LiteTimelineHelper.TimeToFrame(marker.time);
                         if (triggerFrame == frameIndex)
                         {
-                            Execute(stateMarker.GetInstanceID(), stateMarker.Event);
+                            Execute(stateMarker.GetInstanceID(), stateMarker.Event, frameIndex);
                         }
                         else
                         {
@@ -118,7 +118,7 @@ namespace LiteBattle.Editor
             }
         }
 
-        private void Execute(int instanceID, ILiteEvent evt)
+        private void Execute(int instanceID, ILiteEvent evt, int frame)
         {
             if (evt == null)
             {
@@ -139,7 +139,7 @@ namespace LiteBattle.Editor
             if (Activator.CreateInstance(performerType) is ILiteEventEditorPerformer performer)
             {
                 Performers_.Add(instanceID, performer);
-                Performers_[instanceID].OnExecute(evt);
+                Performers_[instanceID].OnExecute(evt, frame);
             }
         }
 

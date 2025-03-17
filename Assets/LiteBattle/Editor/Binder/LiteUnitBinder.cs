@@ -15,6 +15,7 @@ namespace LiteBattle.Editor
         private Animator[] Animators_;
         private readonly List<string> AnimatorStateNameList_ = new List<string>();
         private readonly Dictionary<string, AnimatorState> AnimatorStateList_ = new Dictionary<string, AnimatorState>();
+        private readonly Dictionary<string, EffectBinder> EffectList_ = new Dictionary<string, EffectBinder>();
 
         private int PreviewAnimatorStateIndex_ = -1;
         private float PreviewAnimatorStateTime_ = 0f;
@@ -103,7 +104,17 @@ namespace LiteBattle.Editor
             Animators_ = null;
             AnimatorStateNameList_.Clear();
             AnimatorStateList_.Clear();
-            
+
+            if (EffectList_.Count > 0)
+            {
+                foreach (var effect in EffectList_)
+                {
+                    effect.Value.Stop();
+                    Object.DestroyImmediate(effect.Value.gameObject);
+                }
+                EffectList_.Clear();
+            }
+
             LiteUnitBinderDataForEditor.SetCurrentStateGroup(string.Empty);
             LiteUnitBinderDataForEditor.SetAnimatorStateNameList(null);
         }
@@ -233,6 +244,74 @@ namespace LiteBattle.Editor
             {
                 clip.SampleAnimation(UnitGo_, time);
             }
+        }
+
+        private EffectBinder GetEffect(string effectPath)
+        {
+            if (string.IsNullOrWhiteSpace(effectPath))
+            {
+                return null;
+            }
+            
+            if (!EffectList_.ContainsKey(effectPath))
+            {
+                var effectFullPath = PathUtils.GetFullPathInAssetRoot(effectPath);
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(effectFullPath);
+                if (go == null)
+                {
+                    LLog.Error($"can't load effect prefab : {effectFullPath}");
+                    return null;
+                }
+                
+                var effectGo = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
+                if (effectGo == null)
+                {
+                    LLog.Error($"can't load effect prefab : {effectFullPath}");
+                    return null;
+                }
+
+                effectGo.hideFlags = HideFlags.DontSave;
+
+                var effect = effectGo.GetComponent<EffectBinder>();
+                if (effect == null)
+                {
+                    effect = effectGo.AddComponent<EffectBinder>();
+                    effect.UpdateInfo();
+                }
+                
+                EffectList_.Add(effectPath, effect);
+            }
+            
+            return EffectList_[effectPath];
+        }
+
+        public void StopEffect(string effectPath)
+        {
+            if (string.IsNullOrWhiteSpace(effectPath))
+            {
+                return;
+            }
+            
+            if (EffectList_.ContainsKey(effectPath))
+            {
+                var effect = EffectList_[effectPath];
+                effect.Stop();
+                Object.DestroyImmediate(effect.gameObject);
+                EffectList_.Remove(effectPath);
+            }
+        }
+
+        public float GetEffectLength(string effectPath)
+        {
+            var effect = GetEffect(effectPath);
+            return effect?.LifeTime ?? 0f;
+        }
+
+        public void SampleEffect(string effectPath, Vector3 effectPosition, float time)
+        {
+            var effect = GetEffect(effectPath);
+            effect.transform.localPosition = effectPosition;
+            effect?.SetTime(time);
         }
     }
 }

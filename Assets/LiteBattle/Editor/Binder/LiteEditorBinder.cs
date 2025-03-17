@@ -91,6 +91,21 @@ namespace LiteBattle.Editor
             UnitBinder_?.SampleAnimation(animatorStateName, time);
         }
 
+        public float GetEffectLength(string effectPath)
+        {
+            return UnitBinder_?.GetEffectLength(effectPath) ?? 0f;
+        }
+
+        public void SampleEffect(string effectPath, Vector3 effectPosition, float time)
+        {
+            UnitBinder_?.SampleEffect(effectPath, effectPosition, time);
+        }
+
+        public void StopEffect(string effectPath)
+        {
+            UnitBinder_?.StopEffect(effectPath);
+        }
+
         public string GetCurrentUnitTimelineRootPath()
         {
             var stateGroup = GetCurrentStateGroup();
