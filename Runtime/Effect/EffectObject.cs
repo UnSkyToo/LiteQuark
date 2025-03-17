@@ -160,6 +160,14 @@ namespace LiteQuark.Runtime
                 Binder_.SetSpeed(CurSpeed_);
             }
         }
+
+        public void SetTime(float time)
+        {
+            if (IsValid)
+            {
+                Binder_.SetTime(time);
+            }
+        }
         
         public void Play(float speed)
         {

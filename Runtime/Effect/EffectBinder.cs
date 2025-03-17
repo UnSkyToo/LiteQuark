@@ -162,6 +162,31 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public void SetTime(float time)
+        {
+            if (Animators != null)
+            {
+                foreach(var animator in Animators)
+                {
+                    if (animator != null)
+                    {
+                        animator.playbackTime = time;
+                    }
+                }
+            }
+            
+            if (Particles != null)
+            {
+                foreach (var particle in Particles)
+                {
+                    if (particle != null && particle.gameObject.activeSelf)
+                    {
+                        particle.Simulate(time);
+                    }
+                }
+            }
+        }
+
         public void UpdateInfo()
         {
             Particles = GetComponentsInChildren<ParticleSystem>();
