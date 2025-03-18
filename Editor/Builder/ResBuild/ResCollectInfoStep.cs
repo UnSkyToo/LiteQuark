@@ -5,24 +5,18 @@ using UnityEditor;
 namespace LiteQuark.Editor
 {
     /// <summary>
-    /// Collect asset bundle info and apply, write pack info to json
+    /// Collect asset bundle info and apply
     /// </summary>
     internal sealed class ResCollectInfoStep : IBuildStep
     {
         public string Name => "Res Collect Info Step";
 
-        private ResCollector Collector_ = new ResCollector();
-
         public void Execute(ProjectBuilder builder)
         {
-            var bundlePack = Collector_.GenerateBundlePackInfo(builder.Target);
+            var bundlePack = builder.Collector.GetBundlePackInfo(builder);
             ApplyBundleInfo(bundlePack);
-            
-            var jsonText = bundlePack.ToJson();
-            PathUtils.CreateDirectory(builder.GetResOutputPath());
-            System.IO.File.WriteAllText(PathUtils.ConcatPath(builder.GetResOutputPath(), LiteConst.BundlePackFileName), jsonText);
         }
-        
+
         private void ApplyBundleInfo(BundlePackInfo packInfo)
         {
             foreach (var buildInfo in packInfo.BundleList)
@@ -30,6 +24,7 @@ namespace LiteQuark.Editor
                 if (buildInfo.DependencyList.Contains(buildInfo.BundlePath))
                 {
                     LEditorLog.Error($"loop reference : {buildInfo.BundlePath}");
+                    continue;
                 }
                 
                 foreach (var assetPath in buildInfo.AssetList)

@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     [Serializable]
     public sealed class BundlePackInfo
     {
+        public bool IsValid { get; private set; }
         public string Version { get; private set; }
         public string Platform { get; private set; }
-        public bool IsValid { get; private set; }
+        public bool HashMode { get; private set; }
         public BundleInfo[] BundleList { get; private set; }
 
         private Dictionary<string, BundleInfo> BundlePathToBundleCache_ = new ();
@@ -20,10 +22,11 @@ namespace LiteQuark.Runtime
             IsValid = false;
         }
 
-        public BundlePackInfo(string version, string platform, BundleInfo[] bundleList)
+        public BundlePackInfo(string version, string platform, bool hashMode, BundleInfo[] bundleList)
         {
             Version = version;
             Platform = platform;
+            HashMode = hashMode;
             BundleList = bundleList;
             
             IsValid = true;
@@ -45,6 +48,20 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public void ApplyHash(AssetBundleManifest manifest)
+        {
+            if (manifest == null)
+            {
+                return;
+            }
+            
+            foreach (var bundle in BundleList)
+            {
+                bundle.Hash = manifest.GetAssetBundleHash(bundle.BundlePath).ToString();
+                bundle.Hash = bundle.Hash.Replace(" ", string.Empty).ToLower();
+            }
+        }
+
         private void SimplifyPath()
         {
             var bundleIDMap = new Dictionary<string, string>();
@@ -55,7 +72,7 @@ namespace LiteQuark.Runtime
             
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(".ab", string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundlePackFileExt, string.Empty)}/";
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
@@ -78,7 +95,7 @@ namespace LiteQuark.Runtime
             
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(".ab", string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundlePackFileExt, string.Empty)}/";
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     if (!bundle.AssetList[index].Contains('/'))

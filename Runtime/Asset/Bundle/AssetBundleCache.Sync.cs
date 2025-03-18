@@ -9,14 +9,8 @@ namespace LiteQuark.Runtime
             {
                 return true;
             }
-            
-            var info = Loader_.GetPackInfo().GetBundleInfoFromBundlePath(BundlePath_);
-            if (info == null)
-            {
-                return false;
-            }
 
-            var isLoaded = LoadBundleDependenciesSync(info);
+            var isLoaded = LoadBundleDependenciesSync();
             if (!isLoaded)
             {
                 return false;
@@ -25,9 +19,9 @@ namespace LiteQuark.Runtime
             return LoadBundleSync();
         }
 
-        private bool LoadBundleDependenciesSync(BundleInfo info)
+        private bool LoadBundleDependenciesSync()
         {
-            var dependencies = info.DependencyList;
+            var dependencies = BundleInfo_.DependencyList;
             if (dependencies == null || dependencies.Length == 0)
             {
                 return true;
@@ -61,7 +55,7 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            var fullPath = PathUtils.GetFullPathInRuntime(BundlePath_);
+            var fullPath = PathUtils.GetFullPathInRuntime(GetBundlePath());
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
             if (bundle != null)
@@ -72,7 +66,7 @@ namespace LiteQuark.Runtime
             else
             {
                 Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load bundle failed : {BundlePath_}");
+                LLog.Error($"load bundle failed : {BundleInfo_.BundlePath}");
                 return false;
             }
         }
@@ -92,9 +86,9 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            if (BundleRequest_ != null)
+            if (LoadBundleTask_ != null)
             {
-                var bundle = BundleRequest_.assetBundle;
+                var bundle = LoadBundleTask_.WaitCompleted();
                 return bundle != null;
             }
 

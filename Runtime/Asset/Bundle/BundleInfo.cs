@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     {
         public int BundleID { get; set; }
         public string BundlePath { get; set; }
+        public string Hash { get; set; }
         public string[] AssetList { get; set; }
         public string[] DependencyList { get; set; }
 
@@ -14,21 +15,28 @@ namespace LiteQuark.Runtime
         {
             BundleID = -1;
             BundlePath = string.Empty;
+            Hash = string.Empty;
             AssetList = Array.Empty<string>();
             DependencyList = Array.Empty<string>();
         }
 
-        public BundleInfo(int bundleID, string bundlePath, string[] assetList, string[] dependencyList)
+        public BundleInfo(int bundleID, string bundlePath, string hash, string[] assetList, string[] dependencyList)
         {
             BundleID = bundleID;
             BundlePath = bundlePath.ToLower();
+            Hash = hash;
             AssetList = assetList;
             DependencyList = dependencyList;
         }
 
+        public string GetBundlePathWithHash()
+        {
+            return BundlePath.Replace(LiteConst.BundlePackFileExt, $"_{Hash}{LiteConst.BundlePackFileExt}");
+        }
+
         public override string ToString()
         {
-            return $"{BundleID}:{BundlePath}";
+            return $"{BundleID}:{BundlePath}-{Hash}";
         }
     }
 }

@@ -133,6 +133,23 @@ namespace LiteQuark.Runtime
             return File.Exists(path);
         }
 
+        public static bool RenameFile(string oldPath, string newPath)
+        {
+            if (!File.Exists(oldPath))
+            {
+                return false;
+            }
+
+            var newPathDir = Path.GetDirectoryName(newPath);
+            if (!Directory.Exists(newPathDir))
+            {
+                CreateDirectory(newPathDir);
+            }
+
+            File.Move(oldPath, newPath);
+            return true;
+        }
+
         public static void DeleteFile(string path)
         {
             if (!File.Exists(path))

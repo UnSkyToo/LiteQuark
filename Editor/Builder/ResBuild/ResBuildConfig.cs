@@ -15,6 +15,11 @@ namespace LiteQuark.Editor
         public BuildAssetBundleOptions Options { get; set; } = BuildAssetBundleOptions.ChunkBasedCompression;
 
         /// <summary>
+        /// Enable hash mode for bundle
+        /// </summary>
+        public bool HashMode { get; set; } = false;
+        
+        /// <summary>
         /// Clean mode will delete last build file
         /// </summary>
         public bool CleanBuildMode { get; set; } = true;

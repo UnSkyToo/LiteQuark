@@ -11,15 +11,8 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(true);
                 return;
             }
-            
-            var info = Loader_.GetPackInfo().GetBundleInfoFromBundlePath(BundlePath_);
-            if (info == null)
-            {
-                callback?.Invoke(false);
-                return;
-            }
 
-            LoadBundleDependenciesAsync(info, (isLoaded) =>
+            LoadBundleDependenciesAsync((isLoaded) =>
             {
                 if (!isLoaded)
                 {
@@ -31,9 +24,9 @@ namespace LiteQuark.Runtime
             });
         }
         
-        private void LoadBundleDependenciesAsync(BundleInfo info, Action<bool> callback)
+        private void LoadBundleDependenciesAsync(Action<bool> callback)
         {
-            var dependencies = info.DependencyList;
+            var dependencies = BundleInfo_.DependencyList;
             if (dependencies == null || dependencies.Length == 0)
             {
                 callback?.Invoke(true);
@@ -81,18 +74,20 @@ namespace LiteQuark.Runtime
             
             if (Loader_.IsEnableRemoteBundle())
             {
-                var bundleUri = PathUtils.ConcatPath(Loader_.GetRemoteBundleUri(), BundlePath_);
-                LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
+                var bundleUri = PathUtils.ConcatPath(Loader_.GetRemoteBundleUri(), GetBundlePath());
+                LoadBundleTask_ = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
             else
             {
-                var bundleUri = PathUtils.GetFullPathInRuntime(BundlePath_);
-                LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
+                var bundleUri = PathUtils.GetFullPathInRuntime(GetBundlePath());
+                LoadBundleTask_ = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
         }
 
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
         {
+            LoadBundleTask_ = null;
+            
             if (bundle != null)
             {
                 OnBundleLoaded(bundle);
@@ -105,7 +100,7 @@ namespace LiteQuark.Runtime
             else
             {
                 Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load bundle failed : {BundlePath_}");
+                LLog.Error($"load bundle failed : {GetBundlePath()}");
                 
                 foreach (var loader in BundleLoaderCallbackList_)
                 {

@@ -4,29 +4,29 @@ using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadRemoteBundleTask : BaseTask
+    public sealed class LoadRemoteBundleTask : LoadBundleBaseTask
     {
         private readonly Uri BundleUri_;
-        private Action<AssetBundle> Callback_;
         private UnityWebRequest Request_;
+        private UnityWebRequestAsyncOperation AsyncOperation_;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
-            : base()
+            : base(callback)
         {
             BundleUri_ = new Uri(bundleUri);
             Callback_ = callback;
         }
 
-        public override void Dispose()
+        public override AssetBundle WaitCompleted()
         {
-            Callback_ = null;
+            return null;
         }
 
         protected override void OnExecute()
         {
             Request_ = UnityWebRequestAssetBundle.GetAssetBundle(BundleUri_);
-            var asyncOperation = Request_.SendWebRequest();
-            asyncOperation.completed += OnBundleRequestCompleted;
+            var op = Request_.SendWebRequest();
+            op.completed += OnBundleRequestCompleted;
         }
         
         private void OnBundleRequestCompleted(AsyncOperation op)
