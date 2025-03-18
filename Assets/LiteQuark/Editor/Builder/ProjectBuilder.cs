@@ -14,7 +14,8 @@ namespace LiteQuark.Editor
         public BuildTarget Target => BuildConfig.Target;
         public ResBuildConfig ResConfig => BuildConfig.ResConfig;
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
-
+        public ResCollector Collector { get; private set; }
+        
         private IBuildCallback[] BuildCallbacks_ = Array.Empty<IBuildCallback>();
 
         public ProjectBuilder()
@@ -24,6 +25,7 @@ namespace LiteQuark.Editor
         public ProjectBuildReport Build(ProjectBuildConfig buildConfig)
         {
             BuildConfig = buildConfig;
+            Collector = new ResCollector();
             BuildCallbacks_ = ProjectBuilderUtils.CreateBuildCallbackInstance();
             
             var stepList = GenerateBuildStep(buildConfig);
@@ -58,12 +60,17 @@ namespace LiteQuark.Editor
             if (config.CleanBuildMode)
             {
                 steps.Add(new ResCleanFileStep());
+                steps.Add(new ResCleanInfoStep());
             }
             
-            steps.Add(new ResCleanInfoStep());
             steps.Add(new ResCollectInfoStep());
             steps.Add(new ResBuildFileStep());
-            steps.Add(new ResCleanInfoStep());
+            steps.Add(new ResGeneratePackInfoStep());
+
+            if (config.CleanBuildMode)
+            {
+                steps.Add(new ResCleanInfoStep());
+            }
 
             if (config.CopyToStreamingAssets)
             {

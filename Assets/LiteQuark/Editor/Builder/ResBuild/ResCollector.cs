@@ -3,21 +3,40 @@ using System.Collections.Generic;
 using System.Linq;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEngine;
 
 namespace LiteQuark.Editor
 {
     internal class ResCollector
     {
-        private const string DefaultBundlePath = "default.ab";
-        private readonly Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
-        private int BundleID_ = 1;
+        public AssetBundleManifest Manifest { get; set; }
         
-        public BundlePackInfo GenerateBundlePackInfo(BuildTarget target)
+        private readonly string DefaultBundlePath = $"default{LiteConst.BundlePackFileExt}";
+        private readonly Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
+        private BundlePackInfo BundlePackInfo_ = null;
+        private int BundleID_ = 1;
+
+        public BundlePackInfo GetBundlePackInfo(ProjectBuilder builder)
         {
-            BundleInfoCache_.Clear();
-            BundleID_ = 1;
-            CollectBundleInfo(LiteConst.AssetRootPath);
-            return new BundlePackInfo(UnityEngine.Application.version, target.ToString(), BundleInfoCache_.Values.ToArray());
+            return GetBundlePackInfo(builder.AppConfig.Version, builder.Target, builder.ResConfig.HashMode);
+        }
+        
+        public BundlePackInfo GetBundlePackInfo(string version, BuildTarget target, bool hashMode)
+        {
+            if (BundlePackInfo_ == null)
+            {
+                BundleInfoCache_.Clear();
+                BundleID_ = 1;
+                CollectBundleInfo(LiteConst.AssetRootPath);
+                BundlePackInfo_ = new BundlePackInfo(version, target.ToString(), hashMode, BundleInfoCache_.Values.ToArray());
+            }
+            return BundlePackInfo_;
+        }
+
+        public void CleanBundlePackInfo()
+        {
+            BundlePackInfo_ = null;
+            Manifest = null;
         }
 
         private void AddToBundleInfoCache(string bundlePath, string[] assetList, string[] dependencyList)
@@ -30,7 +49,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                cache = new BundleInfo(BundleID_++, bundlePath, assetList, dependencyList);
+                cache = new BundleInfo(BundleID_++, bundlePath, string.Empty, assetList, dependencyList);
                 BundleInfoCache_.Add(bundlePath, cache);
             }
         }
@@ -128,7 +147,7 @@ namespace LiteQuark.Editor
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
             bundlePath = bundlePath.ToLower();
 
-            return $"{bundlePath}.ab";
+            return $"{bundlePath}{LiteConst.BundlePackFileExt}";
         }
         
         private bool AssetFilter(string filePath)

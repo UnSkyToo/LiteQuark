@@ -94,8 +94,14 @@ namespace LiteQuark.Runtime
             {
                 return cache;
             }
+            
+            var bundleInfo = GetPackInfo().GetBundleInfoFromBundlePath(bundlePath);
+            if (bundleInfo == null)
+            {
+                return null;
+            }
 
-            cache = new AssetBundleCache(this, bundlePath);
+            cache = new AssetBundleCache(this, bundleInfo, GetPackInfo().HashMode);
             BundleCacheMap_.Add(bundlePath, cache);
             return cache;
         }

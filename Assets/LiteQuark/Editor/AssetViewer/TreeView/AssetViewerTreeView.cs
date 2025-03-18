@@ -69,7 +69,7 @@ namespace LiteQuark.Editor
             IDGenerator_ = 1;
             
             var collector = new ResCollector();
-            var packInfo = collector.GenerateBundlePackInfo(EditorUserBuildSettings.activeBuildTarget);
+            var packInfo = collector.GetBundlePackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false);
             
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
             AssetViewerUtils.SortTreeItemList(items, SizeSortedAscendingType_);
@@ -280,7 +280,7 @@ namespace LiteQuark.Editor
                 {
                     if (item.Type == BundleType)
                     {
-                        var folderPath = item.Path.Replace(".ab", string.Empty);
+                        var folderPath = item.Path.Replace(LiteConst.BundlePackFileExt, string.Empty);
                         LiteEditorUtils.Ping(folderPath);
                     }
                     else

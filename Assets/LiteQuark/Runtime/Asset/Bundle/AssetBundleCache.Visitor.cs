@@ -4,7 +4,7 @@
     {
         internal BundleVisitorInfo GetVisitorInfo()
         {
-            var info = new BundleVisitorInfo(BundlePath_, RefCount_, Stage.ToString(), RetainTime_);
+            var info = new BundleVisitorInfo(BundleInfo_.BundlePath, RefCount_, Stage.ToString(), RetainTime_);
 
             foreach (var chunk in AssetCacheMap_)
             {

@@ -3,22 +3,22 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadLocalBundleTask : BaseTask
+    public sealed class LoadLocalBundleTask : LoadBundleBaseTask
     {
         private readonly string BundleUri_;
-        private Action<AssetBundle> Callback_;
         private AssetBundleCreateRequest BundleRequest_;
         
         public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
-            : base()
+            : base(callback)
         {
             BundleUri_ = bundleUri;
             Callback_ = callback;
         }
-
-        public override void Dispose()
+        
+        public override AssetBundle WaitCompleted()
         {
-            Callback_ = null;
+            var bundle = BundleRequest_.assetBundle;
+            return bundle;
         }
 
         protected override void OnExecute()
