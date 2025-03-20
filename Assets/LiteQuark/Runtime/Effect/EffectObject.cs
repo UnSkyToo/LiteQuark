@@ -137,6 +137,11 @@ namespace LiteQuark.Runtime
                 {
                     UnityUtils.AddSortingOrder(Go_, Info_.Order);
                 }
+
+                if (!string.IsNullOrWhiteSpace(Info_.LayerName))
+                {
+                    UnityUtils.ChangeSortingLayerName(Go_, Info_.LayerName);
+                }
                 
                 Play(Info_.Speed);
             }

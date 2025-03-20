@@ -123,5 +123,10 @@ namespace LiteBattle.Runtime
         {
             AnimationNameHash = Animator.StringToHash(animationName);
         }
+
+        public void PlayEffect(string hangPoint, EffectCreateInfo effectInfo)
+        {
+            GetModule<LiteEntityBehaveModule>()?.PlayEffect(hangPoint, effectInfo);
+        }
     }
 }

@@ -10,6 +10,9 @@ namespace LiteBattle.Runtime
     {
         [LiteProperty("特效文件", LitePropertyType.GameObject)]
         public string EffectPath;
+
+        [LiteProperty("挂载节点", LitePropertyType.String)]
+        public string HangPoint;
         
         [LiteProperty("挂载位置", LitePropertyType.Vector3)]
         public Vector3 EffectPosition;
@@ -18,7 +21,7 @@ namespace LiteBattle.Runtime
 
         public void Enter(LiteState state)
         {
-            
+            state.Unit.PlayEffect(HangPoint, new EffectCreateInfo(null, EffectPath, EffectSpace.Local, EffectPosition, 1f, Quaternion.identity));
         }
 
         public LiteEventSignal Tick(LiteState state, float deltaTime)
@@ -34,6 +37,7 @@ namespace LiteBattle.Runtime
         {
             var evt = new LitePlayEffectEvent();
             evt.EffectPath = EffectPath;
+            evt.HangPoint = HangPoint;
             evt.EffectPosition = EffectPosition;
             return evt;
         }

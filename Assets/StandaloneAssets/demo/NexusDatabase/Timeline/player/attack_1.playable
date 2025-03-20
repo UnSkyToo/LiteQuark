@@ -252,7 +252,7 @@ MonoBehaviour:
     m_PreExtrapolationMode: 0
     m_PostExtrapolationTime: 0
     m_PreExtrapolationTime: 0
-    m_DisplayName: 10:16 CFX_Hit_C White
+    m_DisplayName: 10:16 CFX_Hit_A Red+RandomText
   m_Markers:
     m_Objects: []
 --- !u!114 &-5924693614694326946
@@ -275,7 +275,9 @@ MonoBehaviour:
     - rid: 534798451797393419
       type: {class: LitePlayEffectEvent, ns: LiteBattle.Runtime, asm: Assembly-CSharp}
       data:
-        EffectPath: demo/JMO Assets/Cartoon FX/CFX Prefabs/Hits/CFX_Hit_C White.prefab
+        EffectPath: demo/JMO Assets/Cartoon FX/CFX Prefabs/Hits/CFX_Hit_A Red+RandomText.prefab
+        HangPoint: 
+        EffectPosition: {x: 0, y: 1, z: 0}
 --- !u!114 &-5546605269736228831
 MonoBehaviour:
   m_ObjectHideFlags: 1

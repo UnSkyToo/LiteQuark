@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using LiteQuark.Runtime;
 using LiteQuark.Runtime.UI;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace LiteBattle.Runtime
         private LiteColliderBinder ColliderBinder_;
         private string PrefabPath_;
         private UINameplateHUD HUD_;
+        private Queue<(string, EffectCreateInfo)> CacheEffect_ = new();
+        private List<ulong> EffectList_ = new();
         
         public LiteEntityBehaveModule(LiteEntity entity)
             : base(entity)
@@ -30,6 +33,12 @@ namespace LiteBattle.Runtime
                 HUD_ = null;
             }
 
+            foreach (var effectID in EffectList_)
+            {
+                LiteRuntime.Effect.StopEffect(effectID);
+            }
+            EffectList_.Clear();
+
             RecyclePrefab();
         }
 
@@ -39,6 +48,7 @@ namespace LiteBattle.Runtime
             {
                 return;
             }
+            
             UpdateTransform();
             UpdateAnimator();
         }
@@ -64,6 +74,44 @@ namespace LiteBattle.Runtime
 
             AnimationNameHash_ = Entity.AnimationNameHash;
             Animator_.CrossFade(AnimationNameHash_, 0.1f, 0);
+        }
+
+        private void PlayCacheEffect()
+        {
+            while (CacheEffect_.Count > 0)
+            {
+                var (hangPoint, createInfo) = CacheEffect_.Dequeue();
+                InternalPlayEffect(hangPoint, createInfo);
+            }
+        }
+
+        public void PlayEffect(string hangPoint, EffectCreateInfo createInfo)
+        {
+            if (!IsLoad_)
+            {
+                CacheEffect_.Enqueue((hangPoint, createInfo));
+            }
+            else
+            {
+                InternalPlayEffect(hangPoint, createInfo);
+            }
+        }
+
+        private void InternalPlayEffect(string hangPoint, EffectCreateInfo createInfo)
+        {
+            var parent = string.IsNullOrWhiteSpace(hangPoint) ? TS_ : TS_.Find(hangPoint);
+            if (parent == null)
+            {
+                Debug.LogError($"{hangPoint} is not exist!");
+                return;
+            }
+
+            createInfo.SetParent(parent);
+            var effectID = LiteRuntime.Effect.PlayEffect(createInfo);
+            if (createInfo.IsLoop)
+            {
+                EffectList_.Add(effectID);
+            }
         }
         
         public void LoadPrefab(string prefabPath)
@@ -91,6 +139,7 @@ namespace LiteBattle.Runtime
                 HUD_ = LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(Entity);
 
                 IsLoad_ = true;
+                PlayCacheEffect();
             });
         }
 

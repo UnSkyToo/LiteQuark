@@ -115,6 +115,36 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public static void ChangeSortingLayerName(GameObject parent, string layerName)
+        {
+            var renderers = parent.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                renderer.sortingLayerName = layerName;
+            }
+            
+            var canvases = parent.GetComponentsInChildren<Canvas>();
+            foreach (var canvas in canvases)
+            {
+                canvas.sortingLayerName = layerName;
+            }
+        }
+        
+        public static void ChangeSortingLayerID(GameObject parent, int layerID)
+        {
+            var renderers = parent.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                renderer.sortingLayerID = layerID;
+            }
+            
+            var canvases = parent.GetComponentsInChildren<Canvas>();
+            foreach (var canvas in canvases)
+            {
+                canvas.sortingLayerID = layerID;
+            }
+        }
+
         public static void ChangeSortingOrder(GameObject parent, int order)
         {
             var renderers = parent.GetComponentsInChildren<Renderer>();
