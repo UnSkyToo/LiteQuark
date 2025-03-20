@@ -34,16 +34,7 @@ namespace LiteBattle.Editor
             UnBindUnit();
             CurrentUnit_ = config;
             Selection.activeObject = config;
-
-            var prefabFullPath = PathUtils.GetFullPathInAssetRoot(config.PrefabPath);
-            var go = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFullPath);
-            if (go == null)
-            {
-                LLog.Error($"can't load unit prefab : {prefabFullPath}");
-                return;
-            }
-
-            UnitGo_ = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
+            UnitGo_ = InstantiateGo(config.PrefabPath);
             UnitGo_.name = config.name;
             GenerateAnimatorData(UnitGo_);
             
@@ -255,23 +246,7 @@ namespace LiteBattle.Editor
             
             if (!EffectList_.ContainsKey(effectPath))
             {
-                var effectFullPath = PathUtils.GetFullPathInAssetRoot(effectPath);
-                var go = AssetDatabase.LoadAssetAtPath<GameObject>(effectFullPath);
-                if (go == null)
-                {
-                    LLog.Error($"can't load effect prefab : {effectFullPath}");
-                    return null;
-                }
-                
-                var effectGo = Object.Instantiate(go, Vector3.zero, Quaternion.identity);
-                if (effectGo == null)
-                {
-                    LLog.Error($"can't load effect prefab : {effectFullPath}");
-                    return null;
-                }
-
-                effectGo.hideFlags = HideFlags.DontSave;
-
+                var effectGo = InstantiateGo(effectPath);
                 var effect = effectGo.GetComponent<EffectBinder>();
                 if (effect == null)
                 {
@@ -312,6 +287,27 @@ namespace LiteBattle.Editor
             var effect = GetEffect(effectPath);
             effect.transform.localPosition = effectPosition;
             effect?.SetTime(time);
+        }
+
+        private GameObject InstantiateGo(string path)
+        {
+            var fullPath = PathUtils.GetFullPathInAssetRoot(path);
+            var origin = AssetDatabase.LoadAssetAtPath<GameObject>(fullPath);
+            if (origin == null)
+            {
+                LLog.Error($"can't load prefab : {fullPath}");
+                return null;
+            }
+                
+            var inst = Object.Instantiate(origin, Vector3.zero, Quaternion.identity);
+            if (inst == null)
+            {
+                LLog.Error($"can't instantiate prefab : {fullPath}");
+                return null;
+            }
+
+            inst.hideFlags = HideFlags.DontSave;
+            return inst;
         }
     }
 }
