@@ -74,12 +74,12 @@ namespace LiteQuark.Runtime
             
             if (Loader_.IsEnableRemoteBundle())
             {
-                var bundleUri = PathUtils.ConcatPath(Loader_.GetRemoteBundleUri(), GetBundlePath());
+                var bundleUri = Loader_.GetBundleUri(BundleInfo_);
                 LoadBundleTask_ = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
             else
             {
-                var bundleUri = PathUtils.GetFullPathInRuntime(GetBundlePath());
+                var bundleUri = Loader_.GetBundleUri(BundleInfo_);
                 LoadBundleTask_ = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
         }
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
             else
             {
                 Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load bundle failed : {GetBundlePath()}");
+                LLog.Error($"load bundle failed : {BundleInfo_.BundlePath}");
                 
                 foreach (var loader in BundleLoaderCallbackList_)
                 {

@@ -64,7 +64,7 @@ namespace LiteQuark.Runtime
             
             if (RefCount_ > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
             {
-                LLog.Warning($"unload bundle leak : {GetBundlePath()}({RefCount_})");
+                LLog.Warning($"unload bundle leak : {BundleInfo_.BundlePath}({RefCount_})");
             }
             
             foreach (var cache in DependencyCacheList_)
@@ -127,7 +127,7 @@ namespace LiteQuark.Runtime
 
             if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
-                LLog.Error($"bundle IncRef error, {GetBundlePath()} : {Stage}");
+                LLog.Error($"bundle IncRef error, {BundleInfo_.BundlePath} : {Stage}");
             }
             
             RefCount_++;
@@ -137,7 +137,7 @@ namespace LiteQuark.Runtime
         {
             if (Stage != AssetCacheStage.Loaded)
             {
-                LLog.Error($"bundle DecRef error, {GetBundlePath()} : {Stage}");
+                LLog.Error($"bundle DecRef error, {BundleInfo_.BundlePath} : {Stage}");
             }
             
             RefCount_--;
@@ -155,11 +155,6 @@ namespace LiteQuark.Runtime
                     RetainTime_ = 0f;
                 }
             }
-        }
-
-        private string GetBundlePath()
-        {
-            return HashMode_ ? BundleInfo_.GetBundlePathWithHash() : BundleInfo_.BundlePath;
         }
 
         private AssetInfoCache GetOrCreateAssetCache(string assetPath)
