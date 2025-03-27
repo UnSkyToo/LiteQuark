@@ -36,6 +36,7 @@ namespace LiteQuark.Runtime
                 }
                 else */if (AsyncOperation_ is { isDone: false })
                 {
+                    Progress = AsyncOperation_.progress;
                     yield return AsyncOperation_;
                 }
                 else

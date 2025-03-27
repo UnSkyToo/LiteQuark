@@ -5,13 +5,11 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadLocalBundleTask : LoadBundleBaseTask
     {
-        private readonly string BundleUri_;
         private AssetBundleCreateRequest BundleRequest_;
         
         public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
-            : base(callback)
+            : base(bundleUri, callback)
         {
-            BundleUri_ = bundleUri;
             Callback_ = callback;
         }
         
@@ -25,6 +23,11 @@ namespace LiteQuark.Runtime
         {
             BundleRequest_ = AssetBundle.LoadFromFileAsync(BundleUri_);
             BundleRequest_.completed += OnBundleRequestCompleted;
+        }
+        
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = BundleRequest_?.progress ?? 0f;
         }
 
         private void OnBundleRequestCompleted(AsyncOperation op)

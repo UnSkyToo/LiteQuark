@@ -6,29 +6,31 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadRemoteBundleTask : LoadBundleBaseTask
     {
-        private readonly Uri BundleUri_;
         private UnityWebRequest Request_;
-        private UnityWebRequestAsyncOperation AsyncOperation_;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
-            : base(callback)
+            : base(bundleUri, callback)
         {
-            BundleUri_ = new Uri(bundleUri);
             Callback_ = callback;
         }
 
         public override AssetBundle WaitCompleted()
         {
-            return null;
+            throw new Exception($"{nameof(LoadRemoteBundleTask)} can't wait completed.");
         }
 
         protected override void OnExecute()
         {
-            Request_ = UnityWebRequestAssetBundle.GetAssetBundle(BundleUri_);
+            Request_ = UnityWebRequestAssetBundle.GetAssetBundle(new Uri(BundleUri_));
             var op = Request_.SendWebRequest();
             op.completed += OnBundleRequestCompleted;
         }
-        
+
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = Request_?.downloadProgress ?? 0f;
+        }
+
         private void OnBundleRequestCompleted(AsyncOperation op)
         {
             op.completed -= OnBundleRequestCompleted;

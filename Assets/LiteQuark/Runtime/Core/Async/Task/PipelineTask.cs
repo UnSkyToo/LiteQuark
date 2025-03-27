@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     public sealed class PipelineTask : BaseTask
     {
-        public event Action<int, int> Progress;
+        public event Action<int, int> OnProgress;
         public event Action<bool> Completed;
         
         private readonly List<ITask> SubTaskList_ = null;
@@ -58,7 +58,8 @@ namespace LiteQuark.Runtime
 
         private void NextTask()
         {
-            Progress?.Invoke(Index_, SubTaskList_.Count);
+            Progress = (float)Index_ / (float)SubTaskList_.Count;
+            OnProgress?.Invoke(Index_, SubTaskList_.Count);
 
             if (Index_ >= SubTaskList_.Count)
             {
