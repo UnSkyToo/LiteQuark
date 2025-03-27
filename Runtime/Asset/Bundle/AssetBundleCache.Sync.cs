@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            var fullPath = PathUtils.GetFullPathInRuntime(GetBundlePath());
+            var fullPath = Loader_.GetBundleUri(BundleInfo_);
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
             if (bundle != null)
