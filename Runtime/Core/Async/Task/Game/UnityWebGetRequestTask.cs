@@ -38,7 +38,12 @@ namespace LiteQuark.Runtime
             var asyncOperation = Request_.SendWebRequest();
             asyncOperation.completed += OnBundleRequestCompleted;
         }
-        
+
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = Request_?.downloadProgress ?? 0f;
+        }
+
         private void OnBundleRequestCompleted(AsyncOperation op)
         {
             op.completed -= OnBundleRequestCompleted;

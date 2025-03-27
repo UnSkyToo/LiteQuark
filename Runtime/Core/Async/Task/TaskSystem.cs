@@ -35,17 +35,9 @@ namespace LiteQuark.Runtime
         {
             TaskList_.Foreach((task, list, dt) =>
             {
-                if (task.State == TaskState.Waiting)
-                {
-                    task.Execute();
-                }
+                task.Tick(dt);
 
-                if (task.State == TaskState.InProgress)
-                {
-                    task.Tick(dt);
-                }
-
-                if (task.State is TaskState.Completed or TaskState.Aborted)
+                if (task.IsDone)
                 {
                     task.Dispose();
                     list.Remove(task);
