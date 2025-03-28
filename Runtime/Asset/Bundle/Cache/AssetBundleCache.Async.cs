@@ -11,8 +11,12 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(true);
                 return;
             }
+            
+            var dependencies = BundleInfo_.DependencyList ?? Array.Empty<string>();
+            var needLoadCount = dependencies.Length + 1;
+            var loadCompletedCount = 0;
 
-            LoadBundleDependenciesAsync((isLoaded) =>
+            void OnLoadOne(bool isLoaded)
             {
                 if (!isLoaded)
                 {
@@ -20,38 +24,25 @@ namespace LiteQuark.Runtime
                     return;
                 }
                 
-                LoadBundleAsync(callback);
-            });
-        }
-        
-        private void LoadBundleDependenciesAsync(Action<bool> callback)
-        {
-            var dependencies = BundleInfo_.DependencyList;
-            if (dependencies == null || dependencies.Length == 0)
-            {
-                callback?.Invoke(true);
-                return;
+                loadCompletedCount++;
+                if (loadCompletedCount >= needLoadCount)
+                {
+                    callback?.Invoke(true);
+                }
             }
-
-            var loadCompletedCount = 0;
+            
+            LoadBundleAsync(OnLoadOne);
+            
             foreach (var dependency in dependencies)
             {
-                var dependencyCache = Loader_.GetOrCreateBundleCache(dependency);
+                var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
                 dependencyCache.LoadBundleCompleteAsync((isLoaded) =>
                 {
-                    if (!isLoaded)
+                    if (isLoaded)
                     {
-                        callback?.Invoke(false);
-                        return;
+                        AddDependencyCache(dependencyCache);
                     }
-
-                    AddDependencyCache(dependencyCache);
-                    loadCompletedCount++;
-
-                    if (loadCompletedCount >= dependencies.Length)
-                    {
-                        callback?.Invoke(true);
-                    }
+                    OnLoadOne(isLoaded);
                 });
             }
         }
@@ -72,14 +63,14 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loading;
             
-            if (Loader_.IsEnableRemoteBundle())
+            if (Provider_.IsEnableRemoteBundle())
             {
-                var bundleUri = Loader_.GetBundleUri(BundleInfo_);
+                var bundleUri = Provider_.GetBundleUri(BundleInfo_);
                 LoadBundleTask_ = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
             else
             {
-                var bundleUri = Loader_.GetBundleUri(BundleInfo_);
+                var bundleUri = Provider_.GetBundleUri(BundleInfo_);
                 LoadBundleTask_ = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
         }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleLoader : IAssetLoader
+    internal sealed partial class AssetBundleProvider : IAssetProvider
     {
         private BundlePackInfo PackInfo_ = null;
         
@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         private bool IsEnableRemoteBundle_ = false;
         private string BundleRemoteUri_ = string.Empty;
         
-        public AssetBundleLoader()
+        public AssetBundleProvider()
         {
         }
         
@@ -82,11 +82,6 @@ namespace LiteQuark.Runtime
                 UnloadBundleList_.Clear();
             }
         }
-
-        internal BundlePackInfo GetPackInfo()
-        {
-            return PackInfo_;
-        }
         
         internal AssetBundleCache GetOrCreateBundleCache(string bundlePath)
         {
@@ -95,13 +90,13 @@ namespace LiteQuark.Runtime
                 return cache;
             }
             
-            var bundleInfo = GetPackInfo().GetBundleInfoFromBundlePath(bundlePath);
+            var bundleInfo = PackInfo_.GetBundleInfoFromBundlePath(bundlePath);
             if (bundleInfo == null)
             {
                 return null;
             }
 
-            cache = new AssetBundleCache(this, bundleInfo, GetPackInfo().HashMode);
+            cache = new AssetBundleCache(this, bundleInfo);
             BundleCacheMap_.Add(bundlePath, cache);
             return cache;
         }

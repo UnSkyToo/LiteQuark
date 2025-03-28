@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleLoader : IAssetLoader
+    internal sealed partial class AssetBundleProvider : IAssetProvider
     {
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {

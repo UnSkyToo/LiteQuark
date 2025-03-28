@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal partial class AssetBundleLoader : IAssetLoader
+    internal partial class AssetBundleProvider : IAssetProvider
     {
         internal VisitorInfo GetVisitorInfo()
         {

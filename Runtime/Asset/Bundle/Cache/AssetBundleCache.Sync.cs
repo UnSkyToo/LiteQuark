@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
 
             foreach (var dependency in dependencies)
             {
-                var dependencyCache = Loader_.GetOrCreateBundleCache(dependency);
+                var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
                 var isLoaded = dependencyCache.LoadBundleCompleteSync();
                 if (!isLoaded)
                 {
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            var fullPath = Loader_.GetBundleUri(BundleInfo_);
+            var fullPath = Provider_.GetBundleUri(BundleInfo_);
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
             if (bundle != null)

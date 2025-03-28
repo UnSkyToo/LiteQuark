@@ -10,8 +10,7 @@ namespace LiteQuark.Runtime
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
 
         private readonly BundleInfo BundleInfo_;
-        private readonly bool HashMode_;
-        private readonly AssetBundleLoader Loader_;
+        private readonly AssetBundleProvider Provider_;
         private readonly List<AssetBundleCache> DependencyCacheList_ = new();
         private readonly List<Action<bool>> BundleLoaderCallbackList_ = new ();
         private readonly Dictionary<string, AssetInfoCache> AssetCacheMap_ = new();
@@ -22,14 +21,13 @@ namespace LiteQuark.Runtime
         private float RetainTime_;
         private LoadBundleBaseTask LoadBundleTask_;
 
-        public AssetBundleCache(AssetBundleLoader loader, BundleInfo bundleInfo, bool hashMode)
+        public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
             Stage = AssetCacheStage.Created;
             Bundle = null;
 
             BundleInfo_ = bundleInfo;
-            HashMode_ = hashMode;
-            Loader_ = loader;
+            Provider_ = provider;
             RefCount_ = 0;
             RetainTime_ = 0;
         }

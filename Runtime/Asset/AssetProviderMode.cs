@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public enum AssetLoaderMode : byte
+    public enum AssetProviderMode : byte
     {
         Internal = 0,
         Bundle = 1,

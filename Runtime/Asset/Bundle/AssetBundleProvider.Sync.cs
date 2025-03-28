@@ -1,7 +1,7 @@
 ﻿#if LITE_QUARK_ASSET_ENABLE_SYNC
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleLoader : IAssetLoader
+    internal sealed partial class AssetBundleProvider : IAssetProvider
     {
         public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
         {

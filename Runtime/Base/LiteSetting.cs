@@ -62,7 +62,7 @@ namespace LiteQuark.Runtime
         public class AssetSetting
         {
             [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
-            public AssetLoaderMode AssetMode = AssetLoaderMode.Internal;
+            public AssetProviderMode AssetMode = AssetProviderMode.Internal;
 
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [SerializeField]
             public bool EnableRetain = true;
