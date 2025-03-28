@@ -203,39 +203,27 @@ namespace LiteQuark.Runtime
             ReplaceSprite(parent.transform, path, sprite);
         }
 
-        public static void ReplaceSprite(Transform parent, string path, string resPath, bool async)
+        public static void ReplaceSprite(Transform parent, string path, string resPath)
         {
-            if (async)
+            LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
             {
-                LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
-                {
-                    ReplaceSprite(parent, path, sprite);
-                });
-            }
-            else
-            {
-#if LITE_QUARK_ASSET_ENABLE_SYNC
-                var sprite = LiteRuntime.Asset.LoadAssetSync<Sprite>(resPath);
                 ReplaceSprite(parent, path, sprite);
-#else
-                ReplaceSprite(parent, path, resPath, true);
-#endif
-            }
+            });
         }
 
-        public static void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
+        public static void ReplaceSprite(GameObject parent, string path, string resPath)
         {
-            ReplaceSprite(parent.transform, path, resPath, async);
+            ReplaceSprite(parent.transform, path, resPath);
         }
 
-        public static void ReplaceSprite(Transform ts, string resPath, bool async)
+        public static void ReplaceSprite(Transform ts, string resPath)
         {
-            ReplaceSprite(ts, null, resPath, async);
+            ReplaceSprite(ts, null, resPath);
         }
 
-        public static void ReplaceSprite(GameObject go, string resPath, bool async)
+        public static void ReplaceSprite(GameObject go, string resPath)
         {
-            ReplaceSprite(go.transform, null, resPath, async);
+            ReplaceSprite(go.transform, null, resPath);
         }
     }
 }
