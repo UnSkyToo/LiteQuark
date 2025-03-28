@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
             BundlePath = bundlePath.ToLower();
             Hash = hash;
             AssetList = assetList;
-            DependencyList = dependencyList;
+            DependencyList = dependencyList ?? Array.Empty<string>();
         }
 
         public string GetBundlePathWithHash()

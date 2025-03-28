@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    public interface IAssetLoader : ITick, IDispose
+    public interface IAssetProvider : ITick, IDispose
     {
         Task<bool> Initialize();
 
