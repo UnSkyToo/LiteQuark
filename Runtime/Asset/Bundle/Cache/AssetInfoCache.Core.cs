@@ -12,11 +12,11 @@ namespace LiteQuark.Runtime
         private readonly string AssetPath_;
         private readonly AssetBundleCache Cache_;
         private readonly List<Action<bool>> AssetLoaderCallbackList_ = new();
-        private UnityEngine.AssetBundleRequest AssetRequest_ = null;
         
         public bool IsUsed => RefCount_ > 0;
         private int RefCount_;
         private float RetainTime_;
+        private LoadAssetBaseTask LoadAssetTask_;
         
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
@@ -25,7 +25,6 @@ namespace LiteQuark.Runtime
             
             AssetPath_ = assetPath;
             Cache_ = cache;
-            AssetRequest_ = null;
             RefCount_ = 0;
             RetainTime_ = 0;
         }
@@ -33,9 +32,9 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             Unload();
-            
+
+            LoadAssetTask_ = null;
             AssetLoaderCallbackList_.Clear();
-            AssetRequest_ = null;
             Asset = null;
         }
 
@@ -46,7 +45,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (RefCount_ > 0)
+            if (RefCount_ > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
             {
                 LLog.Warning($"unload asset leak : {AssetPath_}({RefCount_})");
             }
@@ -105,19 +104,20 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
-        private void OnAssetLoaded(UnityEngine.Object asset)
+
+        private bool OnAssetLoaded(UnityEngine.Object asset)
         {
-            if (asset != null)
-            {
-                Asset = asset;
-                AssetRequest_ = null;
-                Stage = AssetCacheStage.Loaded;
-            }
-            else
+            Asset = asset;
+
+            if (asset == null)
             {
                 Stage = AssetCacheStage.Unloading;
+                LLog.Error($"load asset failed : {AssetPath_}");
+                return false;
             }
+
+            Stage = AssetCacheStage.Loaded;
+            return true;
         }
 
         public void UnloadAsset(string assetPath)

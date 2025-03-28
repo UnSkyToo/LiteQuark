@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(Action<T> callback) where T : UnityEngine.Object
         {
-            LoadAssetAsync<T>((bool isLoaded) =>
+            InternalLoadAssetAsync<T>((isLoaded) =>
             {
                 if (!isLoaded)
                 {
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        private void LoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
+        private void InternalLoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
         {
             if (IsLoaded)
             {
@@ -36,33 +36,19 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(AssetPath_);
-            AssetRequest_ = Cache_.Bundle.LoadAssetAsync<T>(name);
-            AssetRequest_.completed += OnAssetRequestLoadCompleted;
+
+            LoadAssetTask_ = LiteRuntime.Task.LoadAssetTask<T>(Cache_.Bundle, name, HandleAssetLoadCompleted);
         }
-        
-        private void OnAssetRequestLoadCompleted(UnityEngine.AsyncOperation op)
+
+        private void HandleAssetLoadCompleted(UnityEngine.Object asset)
         {
-            op.completed -= OnAssetRequestLoadCompleted;
+            LoadAssetTask_ = null;
+
+            var isLoaded = OnAssetLoaded(asset);
             
-            var asset = (op as UnityEngine.AssetBundleRequest)?.asset;
-            if (asset != null)
+            foreach (var loader in AssetLoaderCallbackList_)
             {
-                OnAssetLoaded(asset);
-                
-                foreach (var loader in AssetLoaderCallbackList_)
-                {
-                    loader?.Invoke(true);
-                }
-            }
-            else
-            {
-                Stage = AssetCacheStage.Unloading;
-                LLog.Error($"load asset failed : {AssetPath_}");
-                
-                foreach (var loader in AssetLoaderCallbackList_)
-                {
-                    loader?.Invoke(false);
-                }
+                loader?.Invoke(isLoaded);
             }
             
             AssetLoaderCallbackList_.Clear();

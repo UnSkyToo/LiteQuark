@@ -10,7 +10,6 @@ namespace LiteQuark.Runtime
         public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
         {
-            Callback_ = callback;
         }
         
         public override AssetBundle WaitCompleted()
