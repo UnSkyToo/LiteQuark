@@ -104,14 +104,12 @@ namespace LiteQuark.Runtime
             });
             return tcs.Task;
         }
-
-#if LITE_QUARK_ASSET_ENABLE_SYNC
-        public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
-        {
-            var formatPath = FormatPath(assetPath);
-            return Provider_?.LoadAssetSync<T>(formatPath);
-        }
-#endif
+        
+        // public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
+        // {
+        //     var formatPath = FormatPath(assetPath);
+        //     return Provider_?.LoadAssetSync<T>(formatPath);
+        // }
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
@@ -128,14 +126,12 @@ namespace LiteQuark.Runtime
             });
             return tcs.Task;
         }
-
-#if LITE_QUARK_ASSET_ENABLE_SYNC
-        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
-        {
-            var formatPath = FormatPath(assetPath);
-            return Provider_?.InstantiateSync(formatPath, parent);
-        }
-#endif
+        
+        // public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
+        // {
+        //     var formatPath = FormatPath(assetPath);
+        //     return Provider_?.InstantiateSync(formatPath, parent);
+        // }
         
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
@@ -154,14 +150,12 @@ namespace LiteQuark.Runtime
             return tcs.Task;
         }
         
-#if LITE_QUARK_ASSET_ENABLE_SYNC
-        public bool LoadSceneSync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
-        {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            var formatPath = FormatPath(scenePath);
-            return Provider_?.LoadSceneSync(formatPath, sceneName, parameters) ?? false;
-        }
-#endif
+        // public bool LoadSceneSync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        // {
+        //     var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+        //     var formatPath = FormatPath(scenePath);
+        //     return Provider_?.LoadSceneSync(formatPath, sceneName, parameters) ?? false;
+        // }
 
         public void UnloadAsset(string assetPath)
         {
