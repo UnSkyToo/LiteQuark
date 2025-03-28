@@ -36,14 +36,7 @@ namespace LiteQuark.Runtime
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
-                dependencyCache.LoadBundleCompleteAsync((isLoaded) =>
-                {
-                    if (isLoaded)
-                    {
-                        AddDependencyCache(dependencyCache);
-                    }
-                    OnLoadOne(isLoaded);
-                });
+                dependencyCache.LoadBundleCompleteAsync(OnLoadOne);
             }
         }
         
@@ -78,30 +71,17 @@ namespace LiteQuark.Runtime
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
         {
             LoadBundleTask_ = null;
-            
-            if (bundle != null)
+
+            var isLoaded = OnBundleLoaded(bundle);
+
+            foreach (var loader in BundleLoaderCallbackList_)
             {
-                OnBundleLoaded(bundle);
-                
-                foreach (var loader in BundleLoaderCallbackList_)
-                {
-                    loader?.Invoke(true);
-                }
+                loader?.Invoke(isLoaded);
             }
-            else
-            {
-                Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load bundle failed : {BundleInfo_.BundlePath}");
-                
-                foreach (var loader in BundleLoaderCallbackList_)
-                {
-                    loader?.Invoke(false);
-                }
-            }
-            
+
             BundleLoaderCallbackList_.Clear();
         }
-        
+
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var cache = GetOrCreateAssetCache(assetPath);

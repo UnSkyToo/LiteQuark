@@ -8,6 +8,5 @@
         Retained,
         Unloading,
         Unloaded,
-        Invalid,
     }
 }

@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                Stage = AssetCacheStage.Invalid;
+                Stage = AssetCacheStage.Unloading;
             }
         }
 
