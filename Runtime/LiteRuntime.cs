@@ -144,7 +144,6 @@ namespace LiteQuark.Runtime
         public static EventSystem Event => Get<EventSystem>();
         public static TaskSystem Task => Get<TaskSystem>();
         public static TimerSystem Timer => Get<TimerSystem>();
-        public static GroupSystem Group => Get<GroupSystem>();
         public static AssetSystem Asset => Get<AssetSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static AudioSystem Audio => Get<AudioSystem>();
