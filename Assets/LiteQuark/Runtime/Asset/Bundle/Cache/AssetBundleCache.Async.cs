@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        public void LoadBundleCompleteAsync(Action<bool> callback)
+        internal void LoadBundleAsync(Action<bool> callback)
         {
             if (IsLoaded)
             {
@@ -15,8 +15,8 @@ namespace LiteQuark.Runtime
             var dependencies = BundleInfo_.DependencyList ?? Array.Empty<string>();
             var needLoadCount = dependencies.Length + 1;
             var loadCompletedCount = 0;
-
-            void OnLoadOne(bool isLoaded)
+            
+            void OnLoadCallback(bool isLoaded)
             {
                 if (!isLoaded)
                 {
@@ -31,16 +31,16 @@ namespace LiteQuark.Runtime
                 }
             }
             
-            LoadBundleAsync(OnLoadOne);
-            
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
-                dependencyCache.LoadBundleCompleteAsync(OnLoadOne);
+                dependencyCache.LoadBundleAsync(OnLoadCallback);
             }
+            
+            InternalLoadBundleAsync(OnLoadCallback);
         }
         
-        private void LoadBundleAsync(Action<bool> callback)
+        private void InternalLoadBundleAsync(Action<bool> callback)
         {
             if (IsLoaded)
             {

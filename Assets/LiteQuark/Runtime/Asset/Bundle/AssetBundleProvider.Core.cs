@@ -104,7 +104,7 @@ namespace LiteQuark.Runtime
         public void PreloadBundle(string bundlePath, Action<bool> callback)
         {
             var cache = GetOrCreateBundleCache(bundlePath);
-            cache.LoadBundleCompleteAsync(callback);
+            cache.LoadBundleAsync(callback);
         }
         
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object

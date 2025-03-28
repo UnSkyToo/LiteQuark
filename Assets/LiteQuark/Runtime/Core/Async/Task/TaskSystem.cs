@@ -122,6 +122,13 @@ namespace LiteQuark.Runtime
             TaskList_.Add(task);
             return task;
         }
+
+        public LoadAssetBaseTask LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string name, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
+        {
+            var task = new LoadAssetTask<T>(bundle, name, callback);
+            TaskList_.Add(task);
+            return task;
+        }
         
         // public IEnumerator WaitTask(IEnumerator taskFunc, Action callback = null)
         // {

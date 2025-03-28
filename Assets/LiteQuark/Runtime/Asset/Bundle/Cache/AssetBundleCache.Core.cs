@@ -34,6 +34,8 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             Unload();
+            
+            LoadBundleTask_ = null;
             BundleLoaderCallbackList_.Clear();
             UnloadAssetList_.Clear();
 

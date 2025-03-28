@@ -11,7 +11,6 @@ namespace LiteQuark.Runtime
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
         {
-            Callback_ = callback;
         }
 
         public override AssetBundle WaitCompleted()
