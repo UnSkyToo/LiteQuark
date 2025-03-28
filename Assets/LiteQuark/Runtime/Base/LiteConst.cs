@@ -17,12 +17,11 @@ namespace LiteQuark.Runtime
             { typeof(EventSystem).AssemblyQualifiedName, 99800 },
             { typeof(TaskSystem).AssemblyQualifiedName, 99700 },
             { typeof(TimerSystem).AssemblyQualifiedName, 99600 },
-            { typeof(GroupSystem).AssemblyQualifiedName, 99500 },
-            { typeof(AssetSystem).AssemblyQualifiedName, 99400 },
-            { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99300 },
-            { typeof(AudioSystem).AssemblyQualifiedName, 99200 },
-            { typeof(EffectSystem).AssemblyQualifiedName, 99100 },
-            { typeof(ActionSystem).AssemblyQualifiedName, 99000 },
+            { typeof(AssetSystem).AssemblyQualifiedName, 99500 },
+            { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99400 },
+            { typeof(AudioSystem).AssemblyQualifiedName, 99300 },
+            { typeof(EffectSystem).AssemblyQualifiedName, 99200 },
+            { typeof(ActionSystem).AssemblyQualifiedName, 99100 },
         };
     }
 }
