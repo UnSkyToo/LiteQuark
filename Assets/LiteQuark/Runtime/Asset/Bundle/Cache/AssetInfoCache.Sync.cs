@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                Stage = AssetCacheStage.Invalid;
+                Stage = AssetCacheStage.Unloading;
                 LLog.Error($"load asset failed : {AssetPath_}");
             }
             

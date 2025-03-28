@@ -35,8 +35,6 @@ namespace LiteQuark.Runtime
                 {
                     return false;
                 }
-
-                AddDependencyCache(dependencyCache);
             }
 
             return true;
@@ -58,17 +56,7 @@ namespace LiteQuark.Runtime
             var fullPath = Provider_.GetBundleUri(BundleInfo_);
             var bundle = UnityEngine.AssetBundle.LoadFromFile(fullPath);
 
-            if (bundle != null)
-            {
-                OnBundleLoaded(bundle);
-                return true;
-            }
-            else
-            {
-                Stage = AssetCacheStage.Invalid;
-                LLog.Error($"load bundle failed : {BundleInfo_.BundlePath}");
-                return false;
-            }
+            return OnBundleLoaded(bundle);
         }
         
         private bool ForceLoadBundleComplete()
@@ -78,9 +66,10 @@ namespace LiteQuark.Runtime
                 return true;
             }
 
-            foreach (var bundle in DependencyCacheList_)
+            foreach (var dependency in BundleInfo_.DependencyList)
             {
-                if (!bundle.ForceLoadBundleComplete())
+                var cache = Provider_.GetOrCreateBundleCache(dependency);
+                if (!cache.ForceLoadBundleComplete())
                 {
                     return false;
                 }

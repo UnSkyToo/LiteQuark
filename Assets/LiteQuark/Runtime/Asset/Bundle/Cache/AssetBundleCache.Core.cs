@@ -11,7 +11,6 @@ namespace LiteQuark.Runtime
 
         private readonly BundleInfo BundleInfo_;
         private readonly AssetBundleProvider Provider_;
-        private readonly List<AssetBundleCache> DependencyCacheList_ = new();
         private readonly List<Action<bool>> BundleLoaderCallbackList_ = new ();
         private readonly Dictionary<string, AssetInfoCache> AssetCacheMap_ = new();
         private readonly List<string> UnloadAssetList_ = new();
@@ -34,8 +33,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Unload(true);
-            DependencyCacheList_.Clear();
+            Unload();
             BundleLoaderCallbackList_.Clear();
             UnloadAssetList_.Clear();
 
@@ -46,7 +44,7 @@ namespace LiteQuark.Runtime
             }
         }
         
-        public void Unload(bool forceMode)
+        public void Unload()
         {
             if (Stage == AssetCacheStage.Unloaded)
             {
@@ -65,10 +63,10 @@ namespace LiteQuark.Runtime
                 LLog.Warning($"unload bundle leak : {BundleInfo_.BundlePath}({RefCount_})");
             }
             
-            foreach (var cache in DependencyCacheList_)
+            foreach (var dependency in BundleInfo_.DependencyList)
             {
-                // force mode unload, ignore ref mode unload
-                if (forceMode && cache.Stage == AssetCacheStage.Unloaded)
+                var cache = Provider_.GetOrCreateBundleCache(dependency);
+                if (cache.Stage == AssetCacheStage.Unloaded)
                 {
                     continue;
                 }
@@ -108,12 +106,6 @@ namespace LiteQuark.Runtime
                 }
                 UnloadAssetList_.Clear();
             }
-        }
-        
-        private void AddDependencyCache(AssetBundleCache cache)
-        {
-            cache.IncRef();
-            DependencyCacheList_.Add(cache);
         }
 
         private void IncRef()
@@ -168,17 +160,29 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
-        private void OnBundleLoaded(UnityEngine.AssetBundle bundle)
+        private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
         {
-            if (bundle != null)
+            Bundle = bundle;
+
+            foreach (var dependency in BundleInfo_.DependencyList)
             {
-                Bundle = bundle;
-                Stage = AssetCacheStage.Loaded;
+                var cache = Provider_.GetOrCreateBundleCache(dependency);
+                if (cache.Stage == AssetCacheStage.Unloaded)
+                {
+                    continue;
+                }
+                cache.IncRef();
             }
-            else
+            
+            if (bundle == null)
             {
-                Stage = AssetCacheStage.Invalid;
+                Stage = AssetCacheStage.Unloading;
+                LLog.Error($"load bundle failed : {BundleInfo_.BundlePath}");
+                return false;
             }
+            
+            Stage = AssetCacheStage.Loaded;
+            return true;
         }
 
         public void UnloadAsset(string assetPath)
