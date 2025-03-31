@@ -12,42 +12,6 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            var dependencies = BundleInfo_.DependencyList ?? Array.Empty<string>();
-            var needLoadCount = dependencies.Length + 1;
-            var loadCompletedCount = 0;
-            
-            void OnLoadCallback(bool isLoaded)
-            {
-                if (!isLoaded)
-                {
-                    callback?.Invoke(false);
-                    return;
-                }
-                
-                loadCompletedCount++;
-                if (loadCompletedCount >= needLoadCount)
-                {
-                    callback?.Invoke(true);
-                }
-            }
-            
-            foreach (var dependency in dependencies)
-            {
-                var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
-                dependencyCache.LoadBundleAsync(OnLoadCallback);
-            }
-            
-            InternalLoadBundleAsync(OnLoadCallback);
-        }
-        
-        private void InternalLoadBundleAsync(Action<bool> callback)
-        {
-            if (IsLoaded)
-            {
-                callback?.Invoke(true);
-                return;
-            }
-
             BundleLoaderCallbackList_.Add(callback);
             if (Stage == AssetCacheStage.Loading)
             {
@@ -66,6 +30,8 @@ namespace LiteQuark.Runtime
                 var bundleUri = Provider_.GetBundleUri(BundleInfo_);
                 LoadBundleTask_ = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
+
+            LoadDependencyBundleAsync(LoadBundleTask_);
         }
 
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
@@ -80,6 +46,18 @@ namespace LiteQuark.Runtime
             }
 
             BundleLoaderCallbackList_.Clear();
+        }
+
+        private void LoadDependencyBundleAsync(LoadBundleBaseTask mainTask)
+        {
+            var dependencies = BundleInfo_.DependencyList ?? Array.Empty<string>();
+            
+            foreach (var dependency in dependencies)
+            {
+                var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
+                dependencyCache.LoadBundleAsync(null);
+                mainTask.AddChildTask(dependencyCache.LoadBundleTask_);
+            }
         }
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
