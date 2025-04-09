@@ -69,27 +69,28 @@ namespace LiteQuark.Runtime.UI
             }
         }
 
-        public T OpenUI<T>(params object[] paramList) where T : BaseUI
+        public void OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
         {
-            var ui = Activator.CreateInstance<T>();
-            if (ui.IsMutex)
+            if (config.IsMutex)
             {
                 var existUI = FindUI<T>();
                 if (existUI != null)
                 {
-                    return existUI;
+                    return;
                 }
             }
 
+            var ui = Activator.CreateInstance<T>();
+            ui.Config = config;
             ui.System = this;
             ui.State = UIState.Opening;
-            var parent = GetUIParent(ui.DepthMode);
-            LiteRuntime.Asset.InstantiateAsync(ui.PrefabPath, parent, (instance) =>
+            var parent = GetUIParent(config.DepthMode);
+            LiteRuntime.Asset.InstantiateAsync(config.PrefabPath, parent, (instance) =>
             {
                 if (instance == null)
                 {
                     ui.State = UIState.Error;
-                    LLog.Error($"ui prefab load error : {ui.PrefabPath}");
+                    LLog.Error($"ui prefab load error : {config.PrefabPath}");
                     return;
                 }
                 
@@ -99,8 +100,6 @@ namespace LiteQuark.Runtime.UI
                 ui.State = UIState.Opened;
                 OpenList_.Add(ui);
             });
-
-            return ui;
         }
 
         private void HandleOpenList()
@@ -169,7 +168,7 @@ namespace LiteQuark.Runtime.UI
 
         private void SetupUI(BaseUI ui, GameObject instance)
         {
-            var parent = GetUIParent(ui.DepthMode);
+            var parent = GetUIParent(ui.Config.DepthMode);
             
             var rectTransform = instance.GetComponent<RectTransform>();
             if (rectTransform == null)
@@ -183,7 +182,7 @@ namespace LiteQuark.Runtime.UI
 
             var canvas = instance.GetOrAddComponent<Canvas>();
             canvas.overrideSorting = true;
-            canvas.sortingOrder = (int)ui.DepthMode + (parent.childCount - 1) * (ui.DepthMode == UIDepthMode.Scene ? 0 : UIStepOrder);
+            canvas.sortingOrder = (int)ui.Config.DepthMode + (parent.childCount - 1) * (ui.Config.DepthMode == UIDepthMode.Scene ? 0 : UIStepOrder);
 
             var raycaster = instance.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");

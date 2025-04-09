@@ -6,13 +6,9 @@ namespace LiteQuark.Runtime.UI
 {
     public abstract class BaseUI : BaseObject
     {
-        public override string DebugName => $"UI<{DepthMode},{State}> - {PrefabPath}";
+        public override string DebugName => $"UI<{Config.DepthMode},{State}> - {Config.PrefabPath}";
 
-        public abstract string PrefabPath { get; }
-        public abstract UIDepthMode DepthMode { get; }
-        public abstract bool IsMutex { get; }
-        public abstract bool AutoAdapt { get; }
-        
+        public UIConfig Config { get; set; }
         public UISystem System { get; set; }
         public UIState State { get; set; }
         
@@ -69,7 +65,7 @@ namespace LiteQuark.Runtime.UI
 
         private void AdaptAnchorsValue()
         {
-            if (!AutoAdapt)
+            if (!Config.AutoAdapt)
             {
                 return;
             }
