@@ -222,6 +222,9 @@ namespace LiteQuark.Runtime.UI
             scaler.matchWidthOrHeight = LiteRuntime.Setting.UI.MatchValue;
             scaler.referencePixelsPerUnit = 100;
             
+            UICamera.orthographic = true;
+            UICamera.orthographicSize = Screen.height / (2f * scaler.referencePixelsPerUnit);
+            
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;
 
