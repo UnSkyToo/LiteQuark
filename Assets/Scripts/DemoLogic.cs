@@ -19,6 +19,7 @@ namespace LiteQuark.Demo
         public void Dispose()
         {
             LiteNexusEngine.Instance.Shutdown();
+            LiteRuntime.ObjectPool.RemoveUnusedPools();
         }
         
         public void Tick(float deltaTime)

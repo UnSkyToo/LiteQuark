@@ -35,6 +35,24 @@ namespace LiteQuark.Runtime
             }
         }
 
+        public void RemoveUnusedPools()
+        {
+            var removeList = new List<IBasePool>();
+            foreach (var pool in PoolCache_)
+            {
+                if (pool.Value.CountActive > 0)
+                {
+                    continue;
+                }
+                removeList.Add(pool.Value);
+            }
+            foreach (var pool in removeList)
+            {
+                pool.Dispose();
+                PoolCache_.Remove(pool.Key);
+            }
+        }
+
         public Transform GetPoolRoot()
         {
             return Root_;

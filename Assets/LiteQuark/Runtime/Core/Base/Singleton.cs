@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
             }
             catch (MissingMethodException ex)
             {
-                throw new Exception($"(单例模式下，构造函数不能为public)\n{ex.Message}");
+                throw new Exception($"(单例模式下，未找到构造函数或者构造函数为public)\n{ex.Message}");
             }
         }
     }
