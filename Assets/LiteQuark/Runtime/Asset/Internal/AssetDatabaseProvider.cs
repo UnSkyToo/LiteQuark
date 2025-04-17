@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                callback?.Invoke(value);
+                LiteRuntime.Timer.NextFrame(() => { callback?.Invoke(value); });
             }
         }
 
