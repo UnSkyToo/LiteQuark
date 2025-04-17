@@ -130,42 +130,26 @@ namespace LiteQuark.Runtime.UI
             });
         }
         
-        // public void ReplaceSprite(string path, string resPath, bool async)
-        // {
-        //     if (async)
-        //     {
-        //         LoadSprite(resPath, (sprite) =>
-        //         {
-        //             UIUtils.ReplaceSprite(Go, path, sprite);
-        //         });
-        //     }
-        //     else
-        //     {
-        //         var sprite = LoadSprite(resPath);
-        //         UIUtils.ReplaceSprite(Go, path, sprite);
-        //     }
-        // }
-        //
-        // public void ReplaceSprite(Transform parent, string path, string resPath, bool async)
-        // {
-        //     if (async)
-        //     {
-        //         LoadSprite(resPath, (sprite) =>
-        //         {
-        //             UIUtils.ReplaceSprite(parent, path, sprite);
-        //         });
-        //     }
-        //     else
-        //     {
-        //         var sprite = LoadSprite(resPath);
-        //         UIUtils.ReplaceSprite(parent, path, sprite);
-        //     }
-        // }
-        //
-        // public void ReplaceSprite(GameObject parent, string path, string resPath, bool async)
-        // {
-        //     ReplaceSprite(parent.transform, path, resPath, async);
-        // }
+        public void ReplaceSprite(string path, string resPath)
+        {
+            LoadSprite(resPath, (sprite) =>
+            {
+                UIUtils.ReplaceSprite(Go, path, sprite);
+            });
+        }
+        
+        public void ReplaceSprite(Transform parent, string path, string resPath)
+        {
+            LoadSprite(resPath, (sprite) =>
+            {
+                UIUtils.ReplaceSprite(parent, path, sprite);
+            });
+        }
+        
+        public void ReplaceSprite(GameObject parent, string path, string resPath)
+        {
+            ReplaceSprite(parent.transform, path, resPath);
+        }
 
         private void UnloadSprites()
         {
