@@ -123,7 +123,7 @@ namespace LiteQuark.Runtime
         public class DebugSetting
         {
             [SerializeField] public bool DebugMode = true;
-            [SerializeField, Range(0f, 5f)] public float TimeScale = 1.0f;
+            [SerializeField, Range(0f, 10f)] public float TimeScale = 1.0f;
             
             public DebugSetting()
             {
