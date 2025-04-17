@@ -16,10 +16,12 @@ namespace LiteQuark.Runtime
         protected bool IsPaused_;
         protected int RepeatCount_;
         protected float Time_;
+        protected float DelayTime_;
         
-        protected BaseTimer(float interval, int repeatCount, Action onTick, Action onComplete)
+        protected BaseTimer(float interval, float delayTime, int repeatCount, Action onTick, Action onComplete)
         {
             Interval_ = interval;
+            DelayTime_ = delayTime;
             RepeatCount_ = repeatCount;
             OnTick_ = onTick;
             OnComplete_ = onComplete;
@@ -32,6 +34,12 @@ namespace LiteQuark.Runtime
         {
             if (IsPaused_ || IsEnd)
             {
+                return;
+            }
+
+            if (DelayTime_ > 0)
+            {
+                DelayTime_ -= deltaTime;
                 return;
             }
 

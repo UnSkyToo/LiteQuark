@@ -4,8 +4,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class NormalTimer : BaseTimer
     {
-        public NormalTimer(float interval, int repeatCount, Action onTick, Action onComplete)
-            : base(interval, repeatCount, onTick, onComplete)
+        public NormalTimer(float interval, float delayTime, int repeatCount, Action onTick, Action onComplete)
+            : base(interval, delayTime, repeatCount, onTick, onComplete)
         {
         }
     }
