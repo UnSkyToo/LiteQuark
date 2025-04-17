@@ -69,17 +69,18 @@ namespace LiteQuark.Runtime.UI
             }
         }
 
-        public void OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
+        public Task<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
         {
             if (config.IsMutex)
             {
                 var existUI = FindUI<T>();
                 if (existUI != null)
                 {
-                    return;
+                    return Task.FromResult(existUI);
                 }
             }
 
+            var tcs = new TaskCompletionSource<T>();
             var ui = Activator.CreateInstance<T>();
             ui.Config = config;
             ui.System = this;
@@ -91,15 +92,17 @@ namespace LiteQuark.Runtime.UI
                 {
                     ui.State = UIState.Error;
                     LLog.Error($"ui prefab load error : {config.PrefabPath}");
+                    tcs.SetResult(null);
                     return;
                 }
                 
                 SetupUI(ui, instance);
-                ui.Open(paramList);
-
                 ui.State = UIState.Opened;
                 OpenList_.Add(ui);
+                ui.Open(paramList);
+                tcs.SetResult(ui);
             });
+            return tcs.Task;
         }
 
         private void HandleOpenList()
