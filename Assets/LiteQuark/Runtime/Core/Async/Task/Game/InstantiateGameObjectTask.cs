@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 Callback_?.Invoke(result);
-                Complete();
+                Complete(result);
             }
             else
             {

@@ -44,6 +44,8 @@ namespace LiteQuark.Runtime
                 var bundle = DownloadHandlerAssetBundle.GetContent(Request_);
                 OnBundleLoaded(bundle);
             }
+
+            Request_ = null;
         }
     }
 }

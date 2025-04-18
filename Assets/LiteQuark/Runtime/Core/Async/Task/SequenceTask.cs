@@ -1,39 +1,32 @@
 using System;
-using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class PipelineTask : BaseTask
+    public sealed class SequenceTask : BaseTask
     {
-        public event Action<int, int> OnProgress;
-        public event Action<bool> Completed;
-        
-        private readonly List<ITask> SubTaskList_ = null;
+        private readonly ITask[] SubTasks_ = null;
         private readonly Action<bool> Callback_ = null;
         private ITask CurrentSubTask_ = null;
         private int Index_ = 0;
         
-        public PipelineTask(ITask[] subTasks, Action<bool> callback)
+        public SequenceTask(ITask[] subTasks, Action<bool> callback)
             : base()
         {
-            SubTaskList_ = new List<ITask>(subTasks);
+            SubTasks_ = subTasks ?? Array.Empty<ITask>();
             Callback_ = callback;
-            State = TaskState.Waiting;
             Index_ = 0;
         }
 
         public override void Dispose()
         {
-            foreach (var subTask in SubTaskList_)
+            foreach (var subTask in SubTasks_)
             {
                 subTask.Dispose();
             }
-            SubTaskList_.Clear();
         }
 
         protected override void OnExecute()
         {
-            State = TaskState.InProgress;
             Index_ = 0;
             NextTask();
         }
@@ -42,7 +35,7 @@ namespace LiteQuark.Runtime
         {
             if (CurrentSubTask_ == null)
             {
-                Complete();
+                Complete(true);
                 return;
             }
             
@@ -58,17 +51,16 @@ namespace LiteQuark.Runtime
 
         private void NextTask()
         {
-            Progress = (float)Index_ / (float)SubTaskList_.Count;
-            OnProgress?.Invoke(Index_, SubTaskList_.Count);
+            Progress = (float)Index_ / (float)SubTasks_.Length;
 
-            if (Index_ >= SubTaskList_.Count)
+            if (Index_ >= SubTasks_.Length)
             {
                 CurrentSubTask_ = null;
                 MarkResult(true);
                 return;
             }
             
-            CurrentSubTask_ = SubTaskList_[Index_++];
+            CurrentSubTask_ = SubTasks_[Index_++];
             CurrentSubTask_?.Execute();
         }
 
@@ -76,7 +68,7 @@ namespace LiteQuark.Runtime
         {
             if (isCompleted)
             {
-                Complete();
+                Complete(true);
             }
             else
             {
@@ -84,12 +76,6 @@ namespace LiteQuark.Runtime
             }
             
             Callback_?.Invoke(isCompleted);
-            Completed?.Invoke(isCompleted);
-        }
-
-        public void AddSubTask(ITask task)
-        {
-            SubTaskList_.Add(task);
         }
     }
 }

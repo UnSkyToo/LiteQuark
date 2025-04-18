@@ -57,7 +57,7 @@ namespace LiteQuark.Runtime
             else
             {
                 Callback_?.Invoke(Request_.downloadHandler);
-                Complete();
+                Complete(Request_.downloadedBytes);
             }
         }
     }

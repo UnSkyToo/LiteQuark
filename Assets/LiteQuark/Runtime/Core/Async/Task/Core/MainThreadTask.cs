@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
         protected override void OnExecute()
         {
             Func_?.Invoke(Param_);
-            Complete();
+            Complete(null);
         }
     }
 }
