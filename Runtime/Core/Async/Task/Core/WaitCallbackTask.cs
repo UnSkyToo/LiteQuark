@@ -21,11 +21,11 @@ namespace LiteQuark.Runtime
             Func_.Invoke(OnCallback);
         }
 
-        private void OnCallback(bool isCompelted)
+        private void OnCallback(bool isCompleted)
         {
-            if (isCompelted)
+            if (isCompleted)
             {
-                Complete();
+                Complete(true);
             }
             else
             {

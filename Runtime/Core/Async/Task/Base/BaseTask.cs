@@ -55,13 +55,13 @@
             }
         }
 
-        public void Complete()
+        public void Complete(object result)
         {
             if (!IsDone)
             {
                 Progress = 1f;
                 State = TaskState.Completed;
-                TCS_?.TrySetResult(null);
+                TCS_?.TrySetResult(result);
             }
         }
 

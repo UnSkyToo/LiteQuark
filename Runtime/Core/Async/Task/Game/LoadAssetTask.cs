@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
 
             var asset = (op as AssetBundleRequest)?.asset;
             Callback_?.Invoke(asset);
-            Complete();
+            Complete(asset);
         }
 
         public override UnityEngine.Object WaitCompleted()

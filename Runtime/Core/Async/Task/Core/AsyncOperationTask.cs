@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    Complete();
+                    Complete(null);
                 }
             }
 

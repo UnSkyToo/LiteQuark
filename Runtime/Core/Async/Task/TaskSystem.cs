@@ -88,9 +88,16 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public PipelineTask AddPipelineTask(ITask[] subTasks, Action<bool> callback)
+        public ParallelTask ParallelTask(ITask[] subTasks, Action<bool> callback)
         {
-            var task = new PipelineTask(subTasks, callback);
+            var task = new ParallelTask(subTasks, callback);
+            TaskList_.Add(task);
+            return task;
+        }
+
+        public SequenceTask SequenceTask(ITask[] subTasks, Action<bool> callback)
+        {
+            var task = new SequenceTask(subTasks, callback);
             TaskList_.Add(task);
             return task;
         }

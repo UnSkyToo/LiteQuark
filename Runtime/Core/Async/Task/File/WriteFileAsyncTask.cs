@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
                     await Stream_.FlushAsync().ConfigureAwait(false);
                     
                     Callback_?.Invoke(true);
-                    Complete();
+                    Complete(true);
                     break;
                 }
             }

@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
                 if (isChildDone)
                 {
                     Callback_?.Invoke(Bundle_);
-                    Complete();
+                    Complete(Bundle_);
                 }
             }
         }

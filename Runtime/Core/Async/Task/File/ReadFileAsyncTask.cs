@@ -67,8 +67,9 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    Callback_?.Invoke(Data_.ToArray());
-                    Complete();
+                    var data = Data_.ToArray();
+                    Callback_?.Invoke(data);
+                    Complete(data);
                     break;
                 }
             }
