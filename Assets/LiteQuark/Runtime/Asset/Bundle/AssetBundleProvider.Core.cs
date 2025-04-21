@@ -31,11 +31,11 @@ namespace LiteQuark.Runtime
                     AppUtils.GetVersion()).ToLower();
                 LLog.Info("BundleRemoteUri: " + BundleRemoteUri_);
 
-                bundlePackUri = PathUtils.ConcatPath(BundleRemoteUri_, LiteConst.BundlePackFileName);
+                bundlePackUri = PathUtils.ConcatPath(BundleRemoteUri_, AppUtils.GetVersionFileName());
             }
             else
             {
-                bundlePackUri = PathUtils.GetFullPathInRuntime(LiteConst.BundlePackFileName);
+                bundlePackUri = PathUtils.GetFullPathInRuntime(AppUtils.GetVersionFileName());
             }
 
             PackInfo_ = await BundlePackInfo.LoadBundlePackAsync(bundlePackUri);

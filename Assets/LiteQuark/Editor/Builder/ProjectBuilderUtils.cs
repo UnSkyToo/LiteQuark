@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEngine;
 
 namespace LiteQuark.Editor
 {
@@ -19,7 +20,7 @@ namespace LiteQuark.Editor
                 return true;
             }
 
-            var destPath = PathUtils.GetRuntimeRootPath();
+            var destPath = PathUtils.ConcatPath(Application.streamingAssetsPath, LiteConst.Tag);
             if (removeOriginFolder)
             {
                 PathUtils.DeleteDirectory(destPath);
