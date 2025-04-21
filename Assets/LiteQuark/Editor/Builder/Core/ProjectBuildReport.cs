@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Editor
 {
-    internal struct ProjectBuildReport
+    public struct ProjectBuildReport
     {
         public bool IsSuccess { get; set; }
         public string ErrorInfo { get; set; }

@@ -249,11 +249,8 @@ namespace LiteQuark.Runtime
             {
                 var relativePath = UnifyPath(directoryPath).Replace(sourcePath, string.Empty);
                 var destFullPath = ConcatPath(destPath, relativePath);
-
-                if (condition == null || condition.Invoke(directoryPath))
-                {
-                    CopyDirectory(directoryPath, destFullPath, condition);
-                }
+                
+                CopyDirectory(directoryPath, destFullPath, condition);
             }
         }
 

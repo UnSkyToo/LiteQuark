@@ -134,8 +134,6 @@ namespace LiteQuark.Editor
                 }
             }
             
-            PostProjectCallback();
-
             stopwatch.Stop();
             var isSuccess = string.IsNullOrEmpty(error);
             Log($"Complete build {(isSuccess ? "success" : $"failed({error})")} with {stopwatch.ElapsedMilliseconds / 1000f}s.");
@@ -146,6 +144,8 @@ namespace LiteQuark.Editor
             buildReport.OutputResPath = GetResOutputPath();
             buildReport.OutputAppPath = GetAppOutputPath();
             buildReport.EndTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            
+            PostProjectCallback(buildReport);
             
             return buildReport;
         }
@@ -165,13 +165,13 @@ namespace LiteQuark.Editor
             }
         }
         
-        private void PostProjectCallback()
+        private void PostProjectCallback(ProjectBuildReport report)
         {
             try
             {
                 foreach (var callback in BuildCallbacks_)
                 {
-                    callback?.PostProjectBuild(BuildConfig);
+                    callback?.PostProjectBuild(BuildConfig, report);
                 }
             }
             catch (Exception ex)
