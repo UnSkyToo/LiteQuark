@@ -92,34 +92,16 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.streamingAssetsPath, path);
         }
-
-        public static string GetRuntimeRootParentPath()
-        {
-// #if !LITE_DISABLE_PERSISTENT_PATH
-//             var fullPath = Application.persistentDataPath;
-//             if (Directory.Exists(fullPath))
-//             {
-//                 return fullPath;
-//             }
-// #endif
-            return Application.streamingAssetsPath;
-        }
-
-        public static string GetRuntimeRootPath()
-        {
-// #if !LITE_DISABLE_PERSISTENT_PATH
-//             var fullPath = GetPersistentDataPath(LiteConst.Tag);
-//             if (Directory.Exists(fullPath))
-//             {
-//                 return fullPath;
-//             }
-// #endif
-            return GetStreamingAssetsPath(LiteConst.Tag);
-        }
         
         public static string GetFullPathInRuntime(string path)
         {
-            return ConcatPath(GetRuntimeRootPath(), path);
+            var fullPath = ConcatPath(GetPersistentDataPath(LiteConst.Tag), path);
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+            
+            return ConcatPath(GetStreamingAssetsPath(LiteConst.Tag), path);
         }
 
         public static string GetPathFromFullPath(string fullPath)

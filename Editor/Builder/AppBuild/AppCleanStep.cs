@@ -12,8 +12,8 @@ namespace LiteQuark.Editor
 
         public void Execute(ProjectBuilder builder)
         {
-            FileUtil.DeleteFileOrDirectory(PathUtils.GetRuntimeRootPath());
-            FileUtil.DeleteFileOrDirectory(PathUtils.ConcatPath(PathUtils.GetRuntimeRootParentPath(), $"{LiteConst.Tag}.meta"));
+            FileUtil.DeleteFileOrDirectory(PathUtils.GetStreamingAssetsPath(LiteConst.Tag));
+            FileUtil.DeleteFileOrDirectory(PathUtils.ConcatPath(PathUtils.GetStreamingAssetsPath(LiteConst.Tag), $"{LiteConst.Tag}.meta"));
             AssetDatabase.Refresh();
         }
     }

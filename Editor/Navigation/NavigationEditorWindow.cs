@@ -17,6 +17,21 @@ namespace LiteQuark.Editor
             win.Show();
         }
 
+        [MenuItem("Lite/Common/Clear PersistentDataPath")]
+        private static void ClearPersistentDataPath()
+        {
+            try
+            {
+                System.IO.Directory.Delete(Application.persistentDataPath, true);
+                System.IO.Directory.CreateDirectory(Application.persistentDataPath);
+                Debug.Log("Clear PersistentDataPath success");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Clear PersistentDataPath error: {ex}");
+            }
+        }
+
         private void OnEnable()
         {
             var jsonPath = PathUtils.GetLiteQuarkRootPath(SubPath);

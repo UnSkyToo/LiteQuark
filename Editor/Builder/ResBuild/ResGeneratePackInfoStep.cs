@@ -36,7 +36,7 @@ namespace LiteQuark.Editor
 
             var jsonText = bundlePack.ToJson();
             PathUtils.CreateDirectory(builder.GetResOutputPath());
-            System.IO.File.WriteAllText(PathUtils.ConcatPath(builder.GetResOutputPath(), LiteConst.BundlePackFileName), jsonText);
+            System.IO.File.WriteAllText(PathUtils.ConcatPath(builder.GetResOutputPath(), AppUtils.GetVersionFileName()), jsonText);
         }
     }
 }
