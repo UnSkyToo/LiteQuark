@@ -7,6 +7,6 @@ namespace LiteQuark.Editor
         void PreStepBuild(ProjectBuildConfig config, System.Type stepType, string stepName);
         void PostStepBuild(ProjectBuildConfig config, System.Type stepType, string stepName);
         
-        void PostProjectBuild(ProjectBuildConfig config);
+        void PostProjectBuild(ProjectBuildConfig config, ProjectBuildReport report);
     }
 }
