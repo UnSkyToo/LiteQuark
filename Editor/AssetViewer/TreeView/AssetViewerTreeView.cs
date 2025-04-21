@@ -69,7 +69,7 @@ namespace LiteQuark.Editor
             IDGenerator_ = 1;
             
             var collector = new ResCollector();
-            var packInfo = collector.GetBundlePackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false);
+            var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false);
             
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
             AssetViewerUtils.SortTreeItemList(items, SizeSortedAscendingType_);
@@ -80,7 +80,7 @@ namespace LiteQuark.Editor
             return root;
         }
 
-        private List<TreeViewItem> BuildWithNormalMode(BundlePackInfo packInfo)
+        private List<TreeViewItem> BuildWithNormalMode(VersionPackInfo packInfo)
         {
             var items = new List<TreeViewItem>();
             ItemCacheMap_.Clear();
@@ -108,7 +108,7 @@ namespace LiteQuark.Editor
             return items;
         }
 
-        private List<TreeViewItem> BuildWithCombineMode(BundlePackInfo packInfo)
+        private List<TreeViewItem> BuildWithCombineMode(VersionPackInfo packInfo)
         {
             var items = new List<TreeViewItem>();
             ItemCacheMap_.Clear();
@@ -280,7 +280,7 @@ namespace LiteQuark.Editor
                 {
                     if (item.Type == BundleType)
                     {
-                        var folderPath = item.Path.Replace(LiteConst.BundlePackFileExt, string.Empty);
+                        var folderPath = item.Path.Replace(LiteConst.BundleFileExt, string.Empty);
                         LiteEditorUtils.Ping(folderPath);
                     }
                     else

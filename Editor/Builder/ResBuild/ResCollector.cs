@@ -11,31 +11,31 @@ namespace LiteQuark.Editor
     {
         public AssetBundleManifest Manifest { get; set; }
         
-        private readonly string DefaultBundlePath = $"default{LiteConst.BundlePackFileExt}";
+        private readonly string DefaultBundlePath = $"default{LiteConst.BundleFileExt}";
         private readonly Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
-        private BundlePackInfo BundlePackInfo_ = null;
+        private VersionPackInfo PackInfo_ = null;
         private int BundleID_ = 1;
 
-        public BundlePackInfo GetBundlePackInfo(ProjectBuilder builder)
+        public VersionPackInfo GetVersionPackInfo(ProjectBuilder builder)
         {
-            return GetBundlePackInfo(builder.AppConfig.Version, builder.Target, builder.ResConfig.HashMode);
+            return GetVersionPackInfo(builder.AppConfig.Version, builder.Target, builder.ResConfig.HashMode);
         }
         
-        public BundlePackInfo GetBundlePackInfo(string version, BuildTarget target, bool hashMode)
+        public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode)
         {
-            if (BundlePackInfo_ == null)
+            if (PackInfo_ == null)
             {
                 BundleInfoCache_.Clear();
                 BundleID_ = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
-                BundlePackInfo_ = new BundlePackInfo(version, target.ToString(), hashMode, BundleInfoCache_.Values.ToArray());
+                PackInfo_ = new VersionPackInfo(version, target.ToString(), hashMode, BundleInfoCache_.Values.ToArray());
             }
-            return BundlePackInfo_;
+            return PackInfo_;
         }
 
-        public void CleanBundlePackInfo()
+        public void CleanVersionPackInfo()
         {
-            BundlePackInfo_ = null;
+            PackInfo_ = null;
             Manifest = null;
         }
 
@@ -147,7 +147,7 @@ namespace LiteQuark.Editor
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
             bundlePath = bundlePath.ToLower();
 
-            return $"{bundlePath}{LiteConst.BundlePackFileExt}";
+            return $"{bundlePath}{LiteConst.BundleFileExt}";
         }
         
         private bool AssetFilter(string filePath)

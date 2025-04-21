@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        private BundlePackInfo PackInfo_ = null;
+        private VersionPackInfo PackInfo_ = null;
         
         private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
         private readonly Dictionary<int, AssetIDToPathData> AssetIDToPathMap_ = new();
@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
         
         public async Task<bool> Initialize()
         {
-            var bundlePackUri = string.Empty;
+            var versionPackUri = string.Empty;
             
             IsEnableRemoteBundle_ = LiteRuntime.Setting.Asset.EnableRemoteBundle;
             if (IsEnableRemoteBundle_)
@@ -31,14 +31,14 @@ namespace LiteQuark.Runtime
                     AppUtils.GetVersion()).ToLower();
                 LLog.Info("BundleRemoteUri: " + BundleRemoteUri_);
 
-                bundlePackUri = PathUtils.ConcatPath(BundleRemoteUri_, AppUtils.GetVersionFileName());
+                versionPackUri = PathUtils.ConcatPath(BundleRemoteUri_, AppUtils.GetVersionFileName());
             }
             else
             {
-                bundlePackUri = PathUtils.GetFullPathInRuntime(AppUtils.GetVersionFileName());
+                versionPackUri = PathUtils.GetFullPathInRuntime(AppUtils.GetVersionFileName());
             }
 
-            PackInfo_ = await BundlePackInfo.LoadBundlePackAsync(bundlePackUri);
+            PackInfo_ = await VersionPackInfo.LoadPackAsync(versionPackUri);
             if (PackInfo_ == null)
             {
                 return false;

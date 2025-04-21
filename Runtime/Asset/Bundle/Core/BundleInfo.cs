@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
 
         public string GetBundlePathWithHash()
         {
-            return BundlePath.Replace(LiteConst.BundlePackFileExt, $"_{Hash}{LiteConst.BundlePackFileExt}");
+            return BundlePath.Replace(LiteConst.BundleFileExt, $"_{Hash}{LiteConst.BundleFileExt}");
         }
 
         public override string ToString()
