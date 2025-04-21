@@ -6,7 +6,7 @@ using UnityEngine;
 namespace LiteQuark.Runtime
 {
     [Serializable]
-    public sealed class BundlePackInfo
+    public sealed class VersionPackInfo
     {
         public bool IsValid { get; private set; }
         public string Version { get; private set; }
@@ -17,12 +17,12 @@ namespace LiteQuark.Runtime
         private Dictionary<string, BundleInfo> BundlePathToBundleCache_ = new ();
         private Dictionary<string, BundleInfo> AssetPathToBundleCache_ = new ();
 
-        public BundlePackInfo()
+        public VersionPackInfo()
         {
             IsValid = false;
         }
 
-        public BundlePackInfo(string version, string platform, bool hashMode, BundleInfo[] bundleList)
+        public VersionPackInfo(string version, string platform, bool hashMode, BundleInfo[] bundleList)
         {
             Version = version;
             Platform = platform;
@@ -72,7 +72,7 @@ namespace LiteQuark.Runtime
             
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundlePackFileExt, string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundleFileExt, string.Empty)}/";
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
@@ -95,7 +95,7 @@ namespace LiteQuark.Runtime
             
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundlePackFileExt, string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundleFileExt, string.Empty)}/";
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     if (!bundle.AssetList[index].Contains('/'))
@@ -141,15 +141,15 @@ namespace LiteQuark.Runtime
             return jsonText;
         }
 
-        private static BundlePackInfo FromJson(string jsonText)
+        private static VersionPackInfo FromJson(string jsonText)
         {
-            // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<BundlePackInfo>(jsonText);
-            var packInfo = LitJson.JsonMapper.ToObject<BundlePackInfo>(jsonText);
+            // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<VersionPackInfo>(jsonText);
+            var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
             packInfo.RestorePath();
             return packInfo;
         }
         
-        public static void LoadBundlePackAsync(string bundleUri, Action<BundlePackInfo> callback)
+        public static void LoadPackAsync(string bundleUri, Action<VersionPackInfo> callback)
         {
             try
             {
@@ -182,12 +182,12 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public static Task<BundlePackInfo> LoadBundlePackAsync(string bundleUri)
+        public static Task<VersionPackInfo> LoadPackAsync(string bundleUri)
         {
             try
             {
-                var tcs = new TaskCompletionSource<BundlePackInfo>();
-                LoadBundlePackAsync(bundleUri, (info) =>
+                var tcs = new TaskCompletionSource<VersionPackInfo>();
+                LoadPackAsync(bundleUri, (info) =>
                 {
                     tcs.SetResult(info);
                 });

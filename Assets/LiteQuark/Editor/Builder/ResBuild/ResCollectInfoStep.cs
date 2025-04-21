@@ -13,11 +13,11 @@ namespace LiteQuark.Editor
 
         public void Execute(ProjectBuilder builder)
         {
-            var bundlePack = builder.Collector.GetBundlePackInfo(builder);
-            ApplyBundleInfo(bundlePack);
+            var versionPack = builder.Collector.GetVersionPackInfo(builder);
+            ApplyVersionPack(versionPack);
         }
 
-        private void ApplyBundleInfo(BundlePackInfo packInfo)
+        private void ApplyVersionPack(VersionPackInfo packInfo)
         {
             foreach (var buildInfo in packInfo.BundleList)
             {

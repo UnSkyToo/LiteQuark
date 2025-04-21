@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
         /// <summary>
         /// Enable hash mode for bundle
         /// </summary>
-        public bool HashMode { get; set; } = false;
+        public bool HashMode { get; set; } = true;
         
         /// <summary>
         /// Clean mode will delete last build file
