@@ -34,7 +34,7 @@ namespace LiteQuark.Editor
         private void BuildAndroid(ProjectBuilder builder)
         {
             var time = DateTime.Now;
-            var apkName = $"{builder.AppConfig.ProduceName.Replace(' ', '_')}_Android_{(builder.AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}_{builder.AppConfig.Version}_{builder.AppConfig.BuildCode}_{time.Month:00}{time.Day:00}_{time.Hour:00}{time.Minute:00}.{(builder.AppConfig.IsAAB ? "aab" : "apk")}";
+            var apkName = $"{builder.AppConfig.ProduceName.Replace(' ', '_')}_Android_{(builder.AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}_{builder.Version}_{builder.AppConfig.BuildCode}_{time.Month:00}{time.Day:00}_{time.Hour:00}{time.Minute:00}.{(builder.AppConfig.IsAAB ? "aab" : "apk")}";
             
             var buildSetting = new BuildPlayerOptions();
             buildSetting.target = BuildTarget.Android;

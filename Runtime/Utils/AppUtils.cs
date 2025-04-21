@@ -17,6 +17,19 @@ namespace LiteQuark.Runtime
         {
             return Application.version;
         }
+
+        public static string GetNextVersion(string version)
+        {
+            try
+            {
+                var chunk = version.Split('.');
+                return $"{chunk[0]}.{chunk[1]}.{int.Parse(chunk[2]) + 1}";
+            }
+            catch
+            {
+                return version;
+            }
+        }
         
         public static string GetMainVersion()
         {

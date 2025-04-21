@@ -22,8 +22,6 @@ namespace LiteQuark.Editor
         public string Identifier { get; set; } = "com.lite.game";
         public string ProduceName { get; set; } = "game";
 
-        public string Version { get; set; } = "1.0.0";
-
         public int BuildCode { get; set; } = 1;
 
         /// <summary>
