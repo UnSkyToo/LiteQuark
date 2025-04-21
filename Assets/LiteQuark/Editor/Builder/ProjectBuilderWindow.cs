@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using LiteQuark.Runtime;
+using UnityEditor;
 using UnityEngine;
 
 namespace LiteQuark.Editor
@@ -10,6 +11,7 @@ namespace LiteQuark.Editor
         private AppBuildConfig AppCfg => AppCfg_;
         
         private BuildTarget Target_;
+        private string Version_;
         private ResBuildConfig ResCfg_;
         private AppBuildConfig AppCfg_;
         
@@ -26,12 +28,12 @@ namespace LiteQuark.Editor
         private void OnEnable()
         {
             Target_ = EditorUserBuildSettings.activeBuildTarget;
+            Version_ = PlayerSettings.bundleVersion;
             ResCfg_ = new ResBuildConfig();
             AppCfg_ = new AppBuildConfig()
             {
                 Identifier = PlayerSettings.applicationIdentifier,
                 ProduceName = PlayerSettings.productName,
-                Version = PlayerSettings.bundleVersion,
             };
             
 #if UNITY_ANDROID
@@ -63,6 +65,14 @@ namespace LiteQuark.Editor
             
             GUILayout.BeginArea(new Rect(5, 410, 640, position.height - 410));
             Target_ = (BuildTarget) EditorGUILayout.EnumPopup("Target", Target_);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                Version_ = EditorGUILayout.TextField(new GUIContent("Version", "Version"), Version_);
+                if (GUILayout.Button("+", GUILayout.Width(30)))
+                {
+                    Version_ = AppUtils.GetNextVersion(Version_);
+                }
+            }
 
             if (GUILayout.Button("Build"))
             {
@@ -81,7 +91,7 @@ namespace LiteQuark.Editor
                 return;
             }
 
-            var buildCfg = new ProjectBuildConfig(Target_, ResCfg_, AppCfg_);
+            var buildCfg = new ProjectBuildConfig(Target_, Version_, ResCfg_, AppCfg_);
             var buildReport = new ProjectBuilder().Build(buildCfg);
             
             var resultMsg = buildReport.IsSuccess ? "Build Success" : "Build Failed";

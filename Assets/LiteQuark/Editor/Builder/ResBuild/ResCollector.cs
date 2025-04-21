@@ -18,7 +18,7 @@ namespace LiteQuark.Editor
 
         public VersionPackInfo GetVersionPackInfo(ProjectBuilder builder)
         {
-            return GetVersionPackInfo(builder.AppConfig.Version, builder.Target, builder.ResConfig.HashMode);
+            return GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode);
         }
         
         public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode)

@@ -12,6 +12,7 @@ namespace LiteQuark.Editor
         public ProjectBuildConfig BuildConfig { get; private set; }
         
         public BuildTarget Target => BuildConfig.Target;
+        public string Version => BuildConfig.Version;
         public ResBuildConfig ResConfig => BuildConfig.ResConfig;
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
         public ResCollector Collector { get; private set; }
@@ -106,6 +107,8 @@ namespace LiteQuark.Editor
             string error = null;
             var buildReport = new ProjectBuildReport();
             buildReport.StartTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            
+            PlayerSettings.bundleVersion = Version;
             
             PreProjectCallback();
 
@@ -232,7 +235,7 @@ namespace LiteQuark.Editor
 
         public string GetRootOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{AppConfig.Version}");
+            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{Version}");
         }
 
         public string GetIOSWorkspaceName()

@@ -24,6 +24,8 @@ namespace LiteQuark.Editor
                 return false;
             }
 
+            var version = argumentData.GetAppVersion();
+
             var resCfg = new ResBuildConfig
             {
                 Enable = argumentData.GetEnableResBuild(),
@@ -38,7 +40,6 @@ namespace LiteQuark.Editor
                 CleanBuildMode = true,
                 Identifier = PlayerSettings.applicationIdentifier,
                 ProduceName = PlayerSettings.productName,
-                Version = argumentData.GetAppVersion(),
                 BuildCode = argumentData.GetAppCode(),
                 Backend = ScriptingImplementation.IL2CPP,
                 Architecture = argumentData.GetArm64() ? AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64 : AndroidArchitecture.ARMv7,
@@ -49,7 +50,7 @@ namespace LiteQuark.Editor
                 IsDevelopmentBuild = argumentData.GetDebugBuild(),
             };
 
-            var buildCfg = new ProjectBuildConfig(target, resCfg, appCfg);
+            var buildCfg = new ProjectBuildConfig(target, version, resCfg, appCfg);
             var result = new ProjectBuilder().Build(buildCfg);
             return result.IsSuccess;
         }
