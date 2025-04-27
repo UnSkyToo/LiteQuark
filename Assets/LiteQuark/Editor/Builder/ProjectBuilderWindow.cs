@@ -74,7 +74,7 @@ namespace LiteQuark.Editor
             
             var viewCount = StepViewList_.Count;
             var viewWidth = Mathf.Max(300, (position.width - (viewCount + 1) * space) / viewCount);
-            var viewHeight = Mathf.Max(300, (position.height - space * 2) * 0.85f);
+            var viewHeight = Mathf.Max(300, (position.height - space * 2) * 0.8f);
             var viewRect = new Rect(space, space, viewWidth, viewHeight);
             
             foreach (var view in StepViewList_)
@@ -99,6 +99,11 @@ namespace LiteQuark.Editor
             {
                 EditorApplication.delayCall += BuildProject;
                 // BuildProject();
+            }
+
+            using (new ColorScope(Color.yellow))
+            {
+                EditorGUILayout.LabelField($"Customize the build pipeline using {nameof(IBuildCallback)},{nameof(ICustomBuildView)}.");
             }
             
             GUILayout.EndArea();
