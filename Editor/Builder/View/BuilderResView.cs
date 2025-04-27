@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
 
         private readonly ResBuildConfig Config_;
         
-        public BuilderResView(ProjectBuilderWindow window, string title, Rect rect, ResBuildConfig config)
-            : base(window, title, rect)
+        public BuilderResView(ProjectBuilderWindow window, string title, ResBuildConfig config)
+            : base(window, title)
         {
             Config_ = config;
         }

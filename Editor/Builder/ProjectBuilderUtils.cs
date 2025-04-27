@@ -53,5 +53,23 @@ namespace LiteQuark.Editor
                 return Array.Empty<IBuildCallback>();
             }
         }
+
+        internal static ICustomBuildView CreateCustomBuildView()
+        {
+            try
+            {
+                if (TypeCache.GetTypesDerivedFrom<ICustomBuildView>().Count > 0)
+                {
+                    return Activator.CreateInstance(TypeCache.GetTypesDerivedFrom<ICustomBuildView>()[0]) as ICustomBuildView;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LEditorLog.Error(ex.Message);
+                return null;
+            }
+        }
     }
 }
