@@ -9,18 +9,16 @@ namespace LiteQuark.Editor
         public abstract bool Enabled { get; protected set; }
 
         private readonly string Title_;
-        private readonly Rect Rect_;
 
-        protected BuilderStepView(ProjectBuilderWindow window, string title, Rect rect)
+        protected BuilderStepView(ProjectBuilderWindow window, string title)
         {
             Window = window;
             Title_ = title;
-            Rect_ = rect;
         }
 
-        public void Draw()
+        public void Draw(Rect rect)
         {
-            using (new GUILayout.AreaScope(Rect_, string.Empty, "GroupBox"))
+            using (new GUILayout.AreaScope(rect, string.Empty, "GroupBox"))
             {
                 using (new EditorGUILayout.VerticalScope())
                 {
@@ -31,7 +29,7 @@ namespace LiteQuark.Editor
 
                     var preColor = Handles.color;
                     Handles.color = Color.gray;
-                    Handles.DrawLine(new Vector3(2, 34, 0), new Vector3(Rect_.width - 4, 34, 0));
+                    Handles.DrawLine(new Vector3(2, 34, 0), new Vector3(rect.width - 4, 34, 0));
                     Handles.color = preColor;
                     
                     GUILayout.Space(8);

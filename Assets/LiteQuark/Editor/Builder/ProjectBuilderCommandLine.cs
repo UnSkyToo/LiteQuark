@@ -50,7 +50,13 @@ namespace LiteQuark.Editor
                 IsDevelopmentBuild = argumentData.GetDebugBuild(),
             };
 
-            var buildCfg = new ProjectBuildConfig(target, version, resCfg, appCfg);
+            var customCfg = new CustomBuildConfig
+            {
+                Enable = argumentData.GetEnableCustomBuild(),
+                Data = argumentData.GetArgumentPack(),
+            };
+
+            var buildCfg = new ProjectBuildConfig(target, version, resCfg, appCfg, customCfg);
             var result = new ProjectBuilder().Build(buildCfg);
             return result.IsSuccess;
         }
@@ -85,6 +91,16 @@ namespace LiteQuark.Editor
 
             public ArgumentData()
             {
+            }
+
+            public Dictionary<string, object> GetArgumentPack()
+            {
+                var result = new Dictionary<string, object>();
+                foreach (var (key, value) in Map_)
+                {
+                    result.Add(key, value);
+                }
+                return result;
             }
 
             public void AddArgument(string key, string value)
@@ -183,6 +199,11 @@ namespace LiteQuark.Editor
             public bool GetEnableAppBuild()
             {
                 return GetBoolValue("enableApp", false);
+            }
+
+            public bool GetEnableCustomBuild()
+            {
+                return GetBoolValue("enableCustom", false);
             }
 
             public string GetAppVersion()

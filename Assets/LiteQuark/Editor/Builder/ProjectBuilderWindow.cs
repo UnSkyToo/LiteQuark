@@ -1,4 +1,5 @@
-﻿using LiteQuark.Runtime;
+﻿using System.Collections.Generic;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,20 +9,24 @@ namespace LiteQuark.Editor
     {
         public BuildTarget Target => Target_;
         public ResBuildConfig ResCfg => ResCfg_;
-        private AppBuildConfig AppCfg => AppCfg_;
+        public AppBuildConfig AppCfg => AppCfg_;
+        public CustomBuildConfig CustomCfg => CustomCfg_;
         
         private BuildTarget Target_;
         private string Version_;
         private ResBuildConfig ResCfg_;
         private AppBuildConfig AppCfg_;
+        private CustomBuildConfig CustomCfg_;
         
-        private BuilderStepView[] StepViewList_;
+        private List<BuilderStepView> StepViewList_;
+        private ICustomBuildView CustomView_;
 
         [MenuItem("Lite/Builder &B")]
         private static void ShowWin()
         {
             var win = GetWindow<ProjectBuilderWindow>();
             win.titleContent = new GUIContent("Project Builder");
+            win.minSize = new Vector2(615, 500);
             win.Show();
         }
 
@@ -44,12 +49,19 @@ namespace LiteQuark.Editor
                 AppCfg_.BuildCode = buildCode;
             }
 #endif
+            CustomCfg_ = new CustomBuildConfig();
 
-            StepViewList_ = new BuilderStepView[]
+            StepViewList_ = new List<BuilderStepView>
             {
-                new BuilderResView(this, "Res - Compile Resource Step", new Rect(5, 5, 300, 400), ResCfg_),
-                new BuilderAppView(this, "App - Build Application Step", new Rect(350, 5, 300, 400), AppCfg_),
+                new BuilderResView(this, "Res - Compile Resource Step", ResCfg_),
+                new BuilderAppView(this, "App - Build Application Step", AppCfg_),
             };
+            
+            var customView = ProjectBuilderUtils.CreateCustomBuildView();
+            if (customView != null)
+            {
+                StepViewList_.Add(new BuilderCustomView(this, "Custom - Misc Config", CustomCfg_, customView));
+            }
         }
 
         private void OnDisable()
@@ -58,12 +70,21 @@ namespace LiteQuark.Editor
         
         private void OnGUI()
         {
+            const int space = 5;
+            
+            var viewCount = StepViewList_.Count;
+            var viewWidth = Mathf.Max(300, (position.width - (viewCount + 1) * space) / viewCount);
+            var viewHeight = Mathf.Max(300, (position.height - space * 2) * 0.85f);
+            var viewRect = new Rect(space, space, viewWidth, viewHeight);
+            
             foreach (var view in StepViewList_)
             {
-                view.Draw();
+                view.Draw(viewRect);
+                viewRect.x += (viewWidth + space);
             }
-            
-            GUILayout.BeginArea(new Rect(5, 410, 640, position.height - 410));
+
+            var commonRect = new Rect(space, viewRect.yMax + space, position.width - space * 2, position.height - viewRect.yMax - space * 2);
+            GUILayout.BeginArea(commonRect);
             Target_ = (BuildTarget) EditorGUILayout.EnumPopup("Target", Target_);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -91,7 +112,7 @@ namespace LiteQuark.Editor
                 return;
             }
 
-            var buildCfg = new ProjectBuildConfig(Target_, Version_, ResCfg_, AppCfg_);
+            var buildCfg = new ProjectBuildConfig(Target_, Version_, ResCfg_, AppCfg_, CustomCfg_);
             var buildReport = new ProjectBuilder().Build(buildCfg);
             
             var resultMsg = buildReport.IsSuccess ? "Build Success" : "Build Failed";

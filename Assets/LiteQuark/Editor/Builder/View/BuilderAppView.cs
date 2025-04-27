@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
         
         private readonly AppBuildConfig Config_;
         
-        public BuilderAppView(ProjectBuilderWindow window, string title, Rect rect, AppBuildConfig config)
-            : base(window, title, rect)
+        public BuilderAppView(ProjectBuilderWindow window, string title, AppBuildConfig config)
+            : base(window, title)
         {
             Config_ = config;
         }
