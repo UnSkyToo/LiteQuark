@@ -116,6 +116,7 @@ namespace LiteQuark.Editor
             {
                 var sw = new Stopwatch();
                 sw.Start();
+                Log($"<{step.Name}> start.");
                 try
                 {
                     PreStepCallback(step.GetType(), step.Name);
@@ -130,7 +131,7 @@ namespace LiteQuark.Editor
                 }
 
                 sw.Stop();
-                Log($"{step.Name} {(string.IsNullOrEmpty(error) ? "success" : "failed")} with {sw.ElapsedMilliseconds / 1000f}s.");
+                Log($"<{step.Name}> over. status: {(string.IsNullOrEmpty(error) ? "success" : "failed")} with {sw.ElapsedMilliseconds / 1000f}s.");
                 if (!string.IsNullOrEmpty(error))
                 {
                     break;
@@ -215,12 +216,12 @@ namespace LiteQuark.Editor
 
         public void Log(string msg)
         {
-            LEditorLog.Info(msg);
+            LEditorLog.Info($"[{LiteConst.Tag}] {msg}");
         }
 
         public void LogError(string msg)
         {
-            LEditorLog.Error(msg);
+            LEditorLog.Error($"[{LiteConst.Tag}] {msg}");
         }
         
         public string GetResOutputPath()
