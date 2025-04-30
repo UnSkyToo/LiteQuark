@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace LiteQuark.Runtime
 {
     internal sealed class StageCenter : ISubstance
     {
+        private readonly Stopwatch Watch_ = new Stopwatch();
         private readonly List<IStage> StageList_ = new List<IStage>();
         private int Index_ = 0;
         private IStage CurrentStage_ = null;
@@ -74,6 +76,9 @@ namespace LiteQuark.Runtime
             {
                 LLog.Info($"StageCenter: Leave {CurrentStage_.GetType().Name}");
                 CurrentStage_.Leave();
+                Watch_.Stop();
+                var totalSec = Watch_.Elapsed.TotalSeconds;
+                LLog.Info($"StageCenter: {CurrentStage_.GetType().Name} duration {totalSec}s");
             }
             
             CurrentStage_ = StageList_[index];
@@ -82,6 +87,7 @@ namespace LiteQuark.Runtime
             if (CurrentStage_ != null)
             {
                 LLog.Info($"StageCenter: Enter {CurrentStage_.GetType().Name}");
+                Watch_.Restart();
                 CurrentStage_.Enter();
             }
         }
