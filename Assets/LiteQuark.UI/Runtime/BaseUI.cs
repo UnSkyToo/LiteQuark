@@ -163,7 +163,7 @@ namespace LiteQuark.Runtime.UI
         /// <summary>
         /// 注册事件，UI会在关闭后自动反注册
         /// </summary>
-        protected void RegisterEvent<T>(Action<T> callback) where T : BaseEvent
+        protected void RegisterEvent<T>(Action<T> callback) where T : IEventData
         {
             LiteRuntime.Event.Register(EventTag_, callback);
         }
@@ -171,7 +171,7 @@ namespace LiteQuark.Runtime.UI
         /// <summary>
         /// 手动反注册事件
         /// </summary>
-        protected void UnRegisterEvent<T>(Action<T> callback) where T : BaseEvent
+        protected void UnRegisterEvent<T>(Action<T> callback) where T : IEventData
         {
             LiteRuntime.Event.UnRegister(EventTag_, callback);
         }

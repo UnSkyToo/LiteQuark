@@ -1,18 +1,10 @@
 ﻿namespace LiteQuark.Runtime
 {
-    public sealed class EnterForegroundEvent : BaseEvent
+    public sealed class EnterForegroundEvent : IEventData
     {
-        public EnterForegroundEvent()
-            : base()
-        {
-        }
     }
 
-    public sealed class EnterBackgroundEvent : BaseEvent
+    public sealed class EnterBackgroundEvent : IEventData
     {
-        public EnterBackgroundEvent()
-            : base()
-        {
-        }
     }
 }
