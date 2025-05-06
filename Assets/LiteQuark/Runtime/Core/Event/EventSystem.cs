@@ -21,6 +21,11 @@ namespace LiteQuark.Runtime
         {
             GlobalEvent_.Dispose();
         }
+
+        public EventModule CreateIndependentModule(string name)
+        {
+            return new EventModule(name);
+        }
         
         public void Send<T>(T msg) where T : IEventData
         {
