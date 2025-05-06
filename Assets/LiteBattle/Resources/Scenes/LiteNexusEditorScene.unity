@@ -323,7 +323,7 @@ PlayableDirector:
   m_GameObject: {fileID: 234528428}
   m_Enabled: 1
   serializedVersion: 3
-  m_PlayableAsset: {fileID: 11400000, guid: c65466c7c0f0e4f5885e2508a59c66af, type: 2}
+  m_PlayableAsset: {fileID: 0}
   m_InitialState: 0
   m_WrapMode: 2
   m_DirectorUpdateMode: 1
@@ -450,6 +450,7 @@ GameObject:
   m_Component:
   - component: {fileID: 321517260}
   - component: {fileID: 321517261}
+  - component: {fileID: 321517262}
   m_Layer: 0
   m_Name: Launcher
   m_TagString: Untagged
@@ -491,7 +492,13 @@ MonoBehaviour:
         Culture=neutral, PublicKeyToken=null
     SystemList:
     - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.UI.UISystem, LiteQuark.Runtime.UI,
+      AssemblyQualifiedName: LiteQuark.Runtime.Addons.AudioSystem, LiteQuark.Runtime.Addons,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Runtime.Addons.EffectSystem, LiteQuark.Runtime.Addons,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Runtime.Addons.UISystem, LiteQuark.Runtime.Addons,
         Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Common:
       TargetFrameRate: 60
@@ -501,13 +508,13 @@ MonoBehaviour:
       ThrowException: 0
     Asset:
       AssetMode: 0
-      EnableRetain: 1
+      EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300
       SimulateAsyncDelayInEditor: 1
       AsyncDelayMinTime: 0.05
       AsyncDelayMaxTime: 0.1
-      EnableRemoteBundle: 0
+      EnableRemoteBundle: 1
       BundleRemoteUri: http://127.0.0.1:8000/
     Action:
       SafetyMode: 0
@@ -529,6 +536,18 @@ MonoBehaviour:
       MatchValue: 1
       ResolutionWidth: 1080
       ResolutionHeight: 1920
+--- !u!114 &321517262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 321517259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 831e433173704008b340a93d39821306, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &697437523
 GameObject:
   m_ObjectHideFlags: 0

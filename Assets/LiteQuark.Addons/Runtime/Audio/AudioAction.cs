@@ -20,7 +20,7 @@
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Audio.PlaySound(Path_, IsLoop_, Limit_, Volume_);
+            LiteRuntime.Get<AudioSystem>().PlaySound(Path_, IsLoop_, Limit_, Volume_);
         }
     }
 
@@ -38,7 +38,7 @@
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Audio.MuteAllSound(IsMute_);
+            LiteRuntime.Get<AudioSystem>().MuteAllSound(IsMute_);
         }
     }
     
@@ -62,7 +62,7 @@
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Audio.PlayMusic(Path_, IsLoop_, Volume_, IsOnly_);
+            LiteRuntime.Get<AudioSystem>().PlayMusic(Path_, IsLoop_, Volume_, IsOnly_);
         }
     }
     
@@ -80,11 +80,11 @@
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Audio.MuteAllMusic(IsMute_);
+            LiteRuntime.Get<AudioSystem>().MuteAllMusic(IsMute_);
         }
     }
 
-    public static partial class ActionBuilderExtend
+    public static class ActionBuilderAudioExtend
     {
         public static ActionBuilder PlaySound(this ActionBuilder builder, string path, bool isLoop = false, int limit = 0, float volume = 1.0f)
         {

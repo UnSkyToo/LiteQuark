@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-namespace LiteQuark.Runtime.UI
+namespace LiteQuark.Runtime
 {
     internal static class UIBinder
     {

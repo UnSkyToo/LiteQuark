@@ -146,8 +146,6 @@ namespace LiteQuark.Runtime
         public static TimerSystem Timer => Get<TimerSystem>();
         public static AssetSystem Asset => Get<AssetSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
-        public static AudioSystem Audio => Get<AudioSystem>();
-        public static EffectSystem Effect => Get<EffectSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
     }
 }

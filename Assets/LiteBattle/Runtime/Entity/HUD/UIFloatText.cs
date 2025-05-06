@@ -1,5 +1,4 @@
 ﻿using LiteQuark.Runtime;
-using LiteQuark.Runtime.UI;
 using TMPro;
 using UnityEngine;
 
@@ -7,11 +6,6 @@ namespace LiteBattle.Runtime
 {
     public class UIFloatText : BaseUI
     {
-        public override string PrefabPath => "demo/Prefabs/FloatText.prefab";
-        public override UIDepthMode DepthMode => UIDepthMode.Scene;
-        public override bool IsMutex => false;
-        public override bool AutoAdapt => false;
-        
         private LiteEntity Entity_;
         private ulong ActionID_;
 

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace LiteQuark.Runtime.UI
+namespace LiteQuark.Runtime
 {
     public sealed class UISystem : ISystem, ITick
     {

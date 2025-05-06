@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LiteQuark.Runtime;
-using LiteQuark.Runtime.UI;
 using UnityEngine;
 
 namespace LiteBattle.Runtime
@@ -35,7 +34,7 @@ namespace LiteBattle.Runtime
 
             foreach (var effectID in EffectList_)
             {
-                LiteRuntime.Effect.StopEffect(effectID);
+                LiteRuntime.Get<EffectSystem>().StopEffect(effectID);
             }
             EffectList_.Clear();
 
@@ -107,7 +106,7 @@ namespace LiteBattle.Runtime
             }
 
             createInfo.SetParent(parent);
-            var effectID = LiteRuntime.Effect.PlayEffect(createInfo);
+            var effectID = LiteRuntime.Get<EffectSystem>().PlayEffect(createInfo);
             if (createInfo.IsLoop)
             {
                 EffectList_.Add(effectID);
@@ -136,7 +135,10 @@ namespace LiteBattle.Runtime
                     ColliderBinder_.UniqueID = Entity.UniqueID;
                 }
 
-                HUD_ = LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(Entity);
+                LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity).ContinueWith(r =>
+                {
+                    HUD_ = r.Result;
+                });
 
                 IsLoad_ = true;
                 PlayCacheEffect();

@@ -1,6 +1,5 @@
 ﻿using System;
 using LiteQuark.Runtime;
-using LiteQuark.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,11 +7,6 @@ namespace LiteBattle.Runtime
 {
     public class UINameplateHUD : BaseUI
     {
-        public override string PrefabPath => "demo/Prefabs/Nameplate.prefab";
-        public override UIDepthMode DepthMode => UIDepthMode.Scene;
-        public override bool IsMutex => false;
-        public override bool AutoAdapt => false;
-
         private LiteEntity Entity_;
 
         protected override void OnOpen(params object[] paramList)
