@@ -141,7 +141,7 @@ namespace LiteQuark.Runtime
             return jsonText;
         }
 
-        private static VersionPackInfo FromJson(string jsonText)
+        public static VersionPackInfo FromJson(string jsonText)
         {
             // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<VersionPackInfo>(jsonText);
             var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
