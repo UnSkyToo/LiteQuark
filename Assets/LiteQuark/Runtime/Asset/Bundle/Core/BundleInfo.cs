@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
         /// 建议通过 VersionPackInfo.GetBundlePath，避免直接获取BundlePath
         /// </summary>
         /// <returns></returns>
-        public string GetBundlePathWithHash()
+        internal string GetBundlePathWithHash()
         {
             return BundlePath.Replace(LiteConst.BundleFileExt, $"_{Hash}{LiteConst.BundleFileExt}");
         }
