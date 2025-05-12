@@ -20,11 +20,10 @@ namespace LiteQuark.Runtime
             DependencyList = Array.Empty<string>();
         }
 
-        public BundleInfo(int bundleID, string bundlePath, string hash, string[] assetList, string[] dependencyList)
+        public BundleInfo(int bundleID, string bundlePath, string[] assetList, string[] dependencyList)
         {
             BundleID = bundleID;
             BundlePath = bundlePath.ToLower();
-            Hash = hash;
             AssetList = assetList;
             DependencyList = dependencyList ?? Array.Empty<string>();
         }
@@ -36,7 +35,7 @@ namespace LiteQuark.Runtime
 
         public override string ToString()
         {
-            return $"{BundleID}:{BundlePath}-{Hash}";
+            return $"{BundleID}:{BundlePath}_{Hash}";
         }
     }
 }

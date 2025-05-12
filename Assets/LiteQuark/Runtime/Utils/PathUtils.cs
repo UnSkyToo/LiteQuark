@@ -84,6 +84,14 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.persistentDataPath, path);
         }
+        
+        /// <summary>
+        /// Get the full path in persistent tag root.
+        /// </summary>
+        public static string GetPersistentDataPath(string tag, string path)
+        {
+            return ConcatPath(Application.persistentDataPath, tag, path);
+        }
 
         /// <summary>
         /// Get the full path in streaming assets.
@@ -93,15 +101,23 @@ namespace LiteQuark.Runtime
             return ConcatPath(Application.streamingAssetsPath, path);
         }
         
+        /// <summary>
+        /// Get the full path in streaming assets tag root.
+        /// </summary>
+        public static string GetStreamingAssetsPath(string tag, string path)
+        {
+            return ConcatPath(Application.streamingAssetsPath, tag, path);
+        }
+        
         public static string GetFullPathInRuntime(string path)
         {
-            var fullPath = ConcatPath(GetPersistentDataPath(LiteConst.Tag), path);
+            var fullPath = GetPersistentDataPath(LiteConst.Tag, path);
             if (File.Exists(fullPath))
             {
                 return fullPath;
             }
             
-            return ConcatPath(GetStreamingAssetsPath(LiteConst.Tag), path);
+            return GetStreamingAssetsPath(LiteConst.Tag, path);
         }
 
         public static string GetPathFromFullPath(string fullPath)

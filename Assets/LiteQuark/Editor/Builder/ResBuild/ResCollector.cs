@@ -49,7 +49,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                cache = new BundleInfo(BundleID_++, bundlePath, string.Empty, assetList, dependencyList);
+                cache = new BundleInfo(BundleID_++, bundlePath, assetList, dependencyList);
                 BundleInfoCache_.Add(bundlePath, cache);
             }
         }
