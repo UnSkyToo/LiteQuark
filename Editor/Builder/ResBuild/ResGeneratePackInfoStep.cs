@@ -29,7 +29,7 @@ namespace LiteQuark.Editor
                 foreach (var bundle in versionPack.BundleList)
                 {
                     var oldPath = PathUtils.ConcatPath(rootPath, bundle.BundlePath);
-                    var newPath = PathUtils.ConcatPath(rootPath, bundle.GetBundlePathWithHash());
+                    var newPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundlePath(bundle));
                     PathUtils.RenameFile(oldPath, newPath);
                 }
             }
