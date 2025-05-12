@@ -253,9 +253,9 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal string GetBundleUri(BundleInfo info)
+        internal string GetBundleUri(BundleInfo bundle)
         {
-            var bundleName = PackInfo_.HashMode ? info.GetBundlePathWithHash() : info.BundlePath;
+            var bundleName = PackInfo_.GetBundlePath(bundle);
             if (IsEnableRemoteBundle_)
             {
                 return PathUtils.ConcatPath(BundleRemoteUri_, bundleName);

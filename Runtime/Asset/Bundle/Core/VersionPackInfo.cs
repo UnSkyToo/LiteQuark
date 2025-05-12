@@ -133,6 +133,11 @@ namespace LiteQuark.Runtime
             return null;
         }
 
+        public string GetBundlePath(BundleInfo bundle)
+        {
+            return HashMode ? bundle.GetBundlePathWithHash() : bundle.BundlePath;
+        }
+
         public string ToJson()
         {
             SimplifyPath();
