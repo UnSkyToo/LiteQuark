@@ -13,9 +13,26 @@ namespace LiteQuark.Runtime
         {
         }
 
+        public override void Dispose()
+        {
+            if (Request_ != null)
+            {
+                Request_.Dispose();
+                Request_ = null;
+            }
+            
+            base.Dispose();
+        }
+
         public override AssetBundle WaitCompleted()
         {
             throw new Exception($"{nameof(LoadRemoteBundleTask)} can't wait completed.");
+        }
+
+        public override void Cancel()
+        {
+            Request_?.Abort();
+            base.Cancel();
         }
 
         protected override float GetDownloadPercent()
@@ -44,7 +61,8 @@ namespace LiteQuark.Runtime
                 var bundle = DownloadHandlerAssetBundle.GetContent(Request_);
                 OnBundleLoaded(bundle);
             }
-
+            
+            Request_?.Dispose();
             Request_ = null;
         }
     }

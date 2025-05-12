@@ -35,7 +35,15 @@ namespace LiteQuark.Runtime
         {
             TaskList_.Foreach((task, list, dt) =>
             {
-                task.Tick(dt);
+                try
+                {
+                    task.Tick(dt);
+                }
+                catch (Exception ex)
+                {
+                    LLog.Error($"Task {task.GetType().Name} failed: {ex}");
+                    task.Cancel();
+                }
 
                 if (task.IsDone)
                 {
