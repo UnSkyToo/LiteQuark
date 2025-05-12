@@ -64,6 +64,9 @@ namespace LiteQuark.Runtime
             [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
             public AssetProviderMode AssetMode = AssetProviderMode.Internal;
 
+            [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [SerializeField]
+            public bool EditorForceStreamingAssets = true;
+
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [SerializeField]
             public bool EnableRetain = true;
 

@@ -36,6 +36,13 @@ namespace LiteQuark.Runtime
             else
             {
                 versionPackUri = PathUtils.GetFullPathInRuntime(AppUtils.GetVersionFileName());
+                
+#if UNITY_EDITOR
+                if (LiteRuntime.Setting.Asset.EditorForceStreamingAssets)
+                {
+                    versionPackUri = PathUtils.GetStreamingAssetsPath(LiteConst.Tag, AppUtils.GetVersionFileName());
+                }
+#endif
             }
 
             PackInfo_ = await VersionPackInfo.LoadPackAsync(versionPackUri);
