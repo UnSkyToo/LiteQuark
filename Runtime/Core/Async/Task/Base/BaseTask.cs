@@ -74,6 +74,11 @@
             }
         }
 
+        public virtual void Cancel()
+        {
+            Abort();
+        }
+
         protected abstract void OnExecute();
 
         protected virtual void OnTick(float deltaTime)

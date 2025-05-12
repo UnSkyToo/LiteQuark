@@ -10,5 +10,6 @@ namespace LiteQuark.Runtime
         public System.Threading.Tasks.Task Task { get; }
         
         public void Execute();
+        public void Cancel();
     }
 }
