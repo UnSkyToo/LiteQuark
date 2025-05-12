@@ -28,6 +28,10 @@ namespace LiteQuark.Runtime
             DependencyList = dependencyList ?? Array.Empty<string>();
         }
 
+        /// <summary>
+        /// 建议通过 VersionPackInfo.GetBundlePath，避免直接获取BundlePath
+        /// </summary>
+        /// <returns></returns>
         public string GetBundlePathWithHash()
         {
             return BundlePath.Replace(LiteConst.BundleFileExt, $"_{Hash}{LiteConst.BundleFileExt}");
