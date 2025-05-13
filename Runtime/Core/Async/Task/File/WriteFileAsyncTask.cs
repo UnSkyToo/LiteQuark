@@ -7,19 +7,19 @@ namespace LiteQuark.Runtime
     {
         private const int BufferSize = 4096;
 
-        private readonly FileStream Stream_;
-        private readonly byte[] Data_;
-        private readonly Action<bool> Callback_;
-        private int Offset_;
+        private readonly FileStream _stream;
+        private readonly byte[] _data;
+        private readonly Action<bool> _callback;
+        private int _offset;
 
         public WriteFileAsyncTask(string filePath, byte[] data, Action<bool> callback)
         {
             try
             {
-                Stream_ = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, BufferSize, true);
-                Data_ = data;
-                Callback_ = callback;
-                Offset_ = 0;
+                _stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, BufferSize, true);
+                _data = data;
+                _callback = callback;
+                _offset = 0;
             }
             catch
             {
@@ -31,8 +31,8 @@ namespace LiteQuark.Runtime
         
         public override void Dispose()
         {
-            Stream_.Close();
-            Stream_.Dispose();
+            _stream.Close();
+            _stream.Dispose();
         }
 
         protected override void OnExecute()
@@ -42,25 +42,25 @@ namespace LiteQuark.Runtime
 
         private async void ExecuteInternal()
         {
-            while (Stream_.CanWrite)
+            while (_stream.CanWrite)
             {
-                var writeCount = Offset_ + BufferSize < Data_.Length ? BufferSize : Data_.Length - Offset_;
-                var task = Stream_.WriteAsync(Data_, Offset_, writeCount);
+                var writeCount = _offset + BufferSize < _data.Length ? BufferSize : _data.Length - _offset;
+                var task = _stream.WriteAsync(_data, _offset, writeCount);
                 await task.ConfigureAwait(false);
 
                 if (!task.IsCompleted)
                 {
-                    Callback_?.Invoke(false);
+                    _callback?.Invoke(false);
                     Abort();
                     break;
                 }
 
-                Offset_ += writeCount;
-                if (Offset_ >= Data_.Length)
+                _offset += writeCount;
+                if (_offset >= _data.Length)
                 {
-                    await Stream_.FlushAsync().ConfigureAwait(false);
+                    await _stream.FlushAsync().ConfigureAwait(false);
                     
-                    Callback_?.Invoke(true);
+                    _callback?.Invoke(true);
                     Complete(true);
                     break;
                 }

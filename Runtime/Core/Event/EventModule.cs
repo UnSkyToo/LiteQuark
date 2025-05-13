@@ -15,11 +15,11 @@ namespace LiteQuark.Runtime
 
         private class EventListener<T> : EventListener where T : IEventData
         {
-            private readonly Dictionary<int, Action<T>> CallbackList_ = new();
+            private readonly Dictionary<int, Action<T>> _callbackList = new();
 
             public void Trigger(T msg)
             {
-                foreach (var chunk in CallbackList_)
+                foreach (var chunk in _callbackList)
                 {
                     chunk.Value?.Invoke(msg);
                 }
@@ -27,19 +27,19 @@ namespace LiteQuark.Runtime
 
             public void Register(int tag, Action<T> callback)
             {
-                if (!CallbackList_.TryAdd(tag, callback))
+                if (!_callbackList.TryAdd(tag, callback))
                 {
-                    CallbackList_[tag] += callback;
+                    _callbackList[tag] += callback;
                 }
             }
 
             public void UnRegister(int tag, Action<T> callback)
             {
-                if (CallbackList_.ContainsKey(tag))
+                if (_callbackList.ContainsKey(tag))
                 {
-                    CallbackList_[tag] -= callback;
+                    _callbackList[tag] -= callback;
 
-                    if (CallbackList_[tag] == null)
+                    if (_callbackList[tag] == null)
                     {
                         UnRegisterAll(tag);
                     }
@@ -48,13 +48,13 @@ namespace LiteQuark.Runtime
 
             public override void UnRegisterAll(int tag)
             {
-                CallbackList_.Remove(tag);
+                _callbackList.Remove(tag);
             }
 
 #if UNITY_EDITOR
             public override void Check()
             {
-                foreach (var chunk in CallbackList_)
+                foreach (var chunk in _callbackList)
                 {
                     if (chunk.Value != null)
                     {
@@ -71,25 +71,25 @@ namespace LiteQuark.Runtime
 
         public string Name { get; }
 
-        private readonly int GlobalTag_;
-        private readonly Dictionary<string, EventListener> EventMap_ = new();
+        private readonly int _globalTag;
+        private readonly Dictionary<string, EventListener> _eventMap = new();
 
         public EventModule(string name)
         {
             Name = name;
-            GlobalTag_ = $"{name}_Global".GetHashCode();
-            EventMap_.Clear();
+            _globalTag = $"{name}_Global".GetHashCode();
+            _eventMap.Clear();
         }
 
         public void Dispose()
         {
 #if UNITY_EDITOR
-            foreach (var chunk in EventMap_)
+            foreach (var chunk in _eventMap)
             {
                 chunk.Value.Check();
             }
 #endif
-            EventMap_.Clear();
+            _eventMap.Clear();
         }
 
         private static string GetEventName<T>() where T : IEventData
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
         public void Send<T>(T msg) where T : IEventData
         {
             var eventName = GetEventName<T>();
-            if (EventMap_.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(eventName, out var value))
             {
                 if (value is EventListener<T> listener)
                 {
@@ -117,7 +117,7 @@ namespace LiteQuark.Runtime
 
         public void Register<T>(Action<T> callback) where T : IEventData
         {
-            Register(GlobalTag_, callback);
+            Register(_globalTag, callback);
         }
 
         public void Register<T>(int tag, Action<T> callback) where T : IEventData
@@ -125,14 +125,14 @@ namespace LiteQuark.Runtime
             var eventName = GetEventName<T>();
             EventListener<T> listener = null;
 
-            if (EventMap_.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(eventName, out var value))
             {
                 listener = value as EventListener<T>;
             }
             else
             {
                 listener = new EventListener<T>();
-                EventMap_.Add(eventName, listener);
+                _eventMap.Add(eventName, listener);
             }
 
             listener?.Register(tag, callback);
@@ -140,14 +140,14 @@ namespace LiteQuark.Runtime
 
         public void UnRegister<T>(Action<T> callback) where T : IEventData
         {
-            UnRegister(GlobalTag_, callback);
+            UnRegister(_globalTag, callback);
         }
 
         public void UnRegister<T>(int tag, Action<T> callback) where T : IEventData
         {
             var eventName = GetEventName<T>();
 
-            if (EventMap_.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(eventName, out var value))
             {
                 if (value is EventListener<T> listener)
                 {
@@ -158,7 +158,7 @@ namespace LiteQuark.Runtime
 
         public void UnRegisterAll(int tag)
         {
-            foreach (var chunk in EventMap_)
+            foreach (var chunk in _eventMap)
             {
                 chunk.Value.UnRegisterAll(tag);
             }

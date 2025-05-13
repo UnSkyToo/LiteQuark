@@ -28,30 +28,30 @@ namespace LiteQuark.Runtime
             }
             
             IncRef();
-            AssetLoaderCallbackList_.Add(callback);
+            _assetLoaderCallbackList.Add(callback);
             if (Stage == AssetCacheStage.Loading)
             {
                 return;
             }
 
             Stage = AssetCacheStage.Loading;
-            var name = PathUtils.GetFileName(AssetPath_);
+            var name = PathUtils.GetFileName(_assetPath);
 
-            LoadAssetTask_ = LiteRuntime.Task.LoadAssetTask<T>(Cache_.Bundle, name, HandleAssetLoadCompleted);
+            _loadAssetTask = LiteRuntime.Task.LoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
         }
 
         private void HandleAssetLoadCompleted(UnityEngine.Object asset)
         {
-            LoadAssetTask_ = null;
+            _loadAssetTask = null;
 
             var isLoaded = OnAssetLoaded(asset);
             
-            foreach (var loader in AssetLoaderCallbackList_)
+            foreach (var loader in _assetLoaderCallbackList)
             {
                 loader?.Invoke(isLoaded);
             }
             
-            AssetLoaderCallbackList_.Clear();
+            _assetLoaderCallbackList.Clear();
         }
     }
 }

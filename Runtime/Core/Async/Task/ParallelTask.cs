@@ -4,19 +4,19 @@ namespace LiteQuark.Runtime
 {
     public sealed class ParallelTask : BaseTask
     {
-        private readonly ITask[] SubTasks_;
-        private readonly Action<bool> Callback_;
+        private readonly ITask[] _subTasks;
+        private readonly Action<bool> _callback;
         
         public ParallelTask(ITask[] subTasks, Action<bool> callback)
             : base()
         {
-            SubTasks_ = subTasks ?? Array.Empty<ITask>();
-            Callback_ = callback;
+            _subTasks = subTasks ?? Array.Empty<ITask>();
+            _callback = callback;
         }
         
         public override void Dispose()
         {
-            foreach (var subTask in SubTasks_)
+            foreach (var subTask in _subTasks)
             {
                 subTask.Dispose();
             }
@@ -32,13 +32,13 @@ namespace LiteQuark.Runtime
             {
                 var isAllCompleted = IsAllCompleted();
                 Complete(isAllCompleted);
-                Callback_?.Invoke(isAllCompleted);
+                _callback?.Invoke(isAllCompleted);
             }
         }
 
         private bool CheckTaskState()
         {
-            foreach (var task in SubTasks_)
+            foreach (var task in _subTasks)
             {
                 if (!task.IsDone)
                 {
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
 
         private bool IsAllCompleted()
         {
-            foreach (var task in SubTasks_)
+            foreach (var task in _subTasks)
             {
                 if (task.State == TaskState.Aborted)
                 {

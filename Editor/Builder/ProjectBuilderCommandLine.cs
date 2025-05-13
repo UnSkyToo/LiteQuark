@@ -87,7 +87,7 @@ namespace LiteQuark.Editor
 
         private class ArgumentData
         {
-            private readonly Dictionary<string, string> Map_ = new Dictionary<string, string>();
+            private readonly Dictionary<string, string> _map = new Dictionary<string, string>();
 
             public ArgumentData()
             {
@@ -96,7 +96,7 @@ namespace LiteQuark.Editor
             public Dictionary<string, object> GetArgumentPack()
             {
                 var result = new Dictionary<string, object>();
-                foreach (var (key, value) in Map_)
+                foreach (var (key, value) in _map)
                 {
                     result.Add(key, value);
                 }
@@ -105,22 +105,22 @@ namespace LiteQuark.Editor
 
             public void AddArgument(string key, string value)
             {
-                if (!Map_.TryAdd(key, value))
+                if (!_map.TryAdd(key, value))
                 {
-                    Map_.Add(key, value);
+                    _map.Add(key, value);
                 }
             }
 
             private bool HasArgument(string key)
             {
-                return Map_.ContainsKey(key);
+                return _map.ContainsKey(key);
             }
 
             private string GetArgument(string key)
             {
                 if (HasArgument(key))
                 {
-                    return Map_[key];
+                    return _map[key];
                 }
                 
                 return string.Empty;

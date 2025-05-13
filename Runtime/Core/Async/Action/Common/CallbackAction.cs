@@ -4,17 +4,17 @@
     {
         public override string DebugName => "<Callback>";
 
-        private readonly System.Action Callback_ = null;
+        private readonly System.Action _callback = null;
         
         public CallbackAction(System.Action callback)
         {
-            Callback_ = callback;
+            _callback = callback;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke();
+            _callback?.Invoke();
         }
     }
     
@@ -40,19 +40,19 @@
     {
         public override string DebugName => "<Callback1>()";
 
-        private readonly System.Action<T> Callback_ = null;
-        private readonly T Param_ = default;
+        private readonly System.Action<T> _callback = null;
+        private readonly T _param = default;
         
         public CallbackAction(System.Action<T> callback, T param)
         {
-            Callback_ = callback;
-            Param_ = param;
+            _callback = callback;
+            _param = param;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param_);
+            _callback?.Invoke(_param);
         }
     }
     
@@ -60,19 +60,19 @@
     {
         public override string DebugName => "<Callback1>()";
 
-        private readonly System.Func<T, TR> Callback_ = null;
-        private readonly T Param_ = default;
+        private readonly System.Func<T, TR> _callback = null;
+        private readonly T _param = default;
         
         public CallbackFuncAction(System.Func<T, TR> callback, T param)
         {
-            Callback_ = callback;
-            Param_ = param;
+            _callback = callback;
+            _param = param;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param_);
+            _callback?.Invoke(_param);
         }
     }
     
@@ -80,21 +80,21 @@
     {
         public override string DebugName => "<Callback2>()";
 
-        private readonly System.Action<T1, T2> Callback_ = null;
-        private readonly T1 Param1_ = default;
-        private readonly T2 Param2_ = default;
+        private readonly System.Action<T1, T2> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
         
         public CallbackAction(System.Action<T1, T2> callback, T1 param1, T2 param2)
         {
-            Callback_ = callback;
-            Param1_ = param1;
-            Param2_ = param2;
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param1_, Param2_);
+            _callback?.Invoke(_param1, _param2);
         }
     }
     
@@ -102,21 +102,21 @@
     {
         public override string DebugName => "<Callback2>()";
 
-        private readonly System.Func<T1, T2, TR> Callback_ = null;
-        private readonly T1 Param1_ = default;
-        private readonly T2 Param2_ = default;
+        private readonly System.Func<T1, T2, TR> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
         
         public CallbackFuncAction(System.Func<T1, T2, TR> callback, T1 param1, T2 param2)
         {
-            Callback_ = callback;
-            Param1_ = param1;
-            Param2_ = param2;
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param1_, Param2_);
+            _callback?.Invoke(_param1, _param2);
         }
     }
     
@@ -124,23 +124,23 @@
     {
         public override string DebugName => "<Callback3>()";
 
-        private readonly System.Action<T1, T2, T3> Callback_ = null;
-        private readonly T1 Param1_ = default;
-        private readonly T2 Param2_ = default;
-        private readonly T3 Param3_ = default;
+        private readonly System.Action<T1, T2, T3> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
+        private readonly T3 _param3 = default;
         
         public CallbackAction(System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
         {
-            Callback_ = callback;
-            Param1_ = param1;
-            Param2_ = param2;
-            Param3_ = param3;
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
+            _param3 = param3;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param1_, Param2_, Param3_);
+            _callback?.Invoke(_param1, _param2, _param3);
         }
     }
     
@@ -148,23 +148,23 @@
     {
         public override string DebugName => "<Callback3>()";
 
-        private readonly System.Func<T1, T2, T3, TR> Callback_ = null;
-        private readonly T1 Param1_ = default;
-        private readonly T2 Param2_ = default;
-        private readonly T3 Param3_ = default;
+        private readonly System.Func<T1, T2, T3, TR> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
+        private readonly T3 _param3 = default;
         
         public CallbackFuncAction(System.Func<T1, T2, T3, TR> callback, T1 param1, T2 param2, T3 param3)
         {
-            Callback_ = callback;
-            Param1_ = param1;
-            Param2_ = param2;
-            Param3_ = param3;
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
+            _param3 = param3;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            Callback_?.Invoke(Param1_, Param2_, Param3_);
+            _callback?.Invoke(_param1, _param2, _param3);
         }
     }
 

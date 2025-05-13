@@ -5,9 +5,9 @@ namespace LiteQuark.Runtime
 {
     internal sealed class SystemCenter : Singleton<SystemCenter>, ISubstance
     {
-        private readonly List<ISystem> AddList_ = new List<ISystem>();
-        private readonly List<ISystem> SystemList_ = new List<ISystem>();
-        private readonly Dictionary<System.Type, ISystem> SystemTypeMap_ = new Dictionary<System.Type, ISystem>();
+        private readonly List<ISystem> _addList = new List<ISystem>();
+        private readonly List<ISystem> _systemList = new List<ISystem>();
+        private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new Dictionary<System.Type, ISystem>();
         
         private SystemCenter()
         {
@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
         {
             ProcessAddList();
             
-            foreach (var system in SystemList_)
+            foreach (var system in _systemList)
             {
                 if (system is ITick tickSys)
                 {
@@ -33,22 +33,22 @@ namespace LiteQuark.Runtime
 
         private void ProcessAddList()
         {
-            if (AddList_.Count > 0)
+            if (_addList.Count > 0)
             {
-                foreach (var system in AddList_)
+                foreach (var system in _addList)
                 {
-                    SystemList_.Add(system);
+                    _systemList.Add(system);
                 }
 
-                AddList_.Clear();
+                _addList.Clear();
             }
         }
 
         internal async Task<bool> InitializeSystem()
         {
-            AddList_.Clear();
-            SystemList_.Clear();
-            SystemTypeMap_.Clear();
+            _addList.Clear();
+            _systemList.Clear();
+            _systemTypeMap.Clear();
 
             var systemList = GetAllSystemList();
             
@@ -70,8 +70,8 @@ namespace LiteQuark.Runtime
                 var result = await system.Initialize();
                 if (result)
                 {
-                    AddList_.Add(system);
-                    SystemTypeMap_.Add(system.GetType(), system);
+                    _addList.Add(system);
+                    _systemTypeMap.Add(system.GetType(), system);
                 }
                 else
                 {
@@ -87,18 +87,18 @@ namespace LiteQuark.Runtime
         {
             ProcessAddList();
             
-            for (var index = SystemList_.Count - 1; index >= 0; --index)
+            for (var index = _systemList.Count - 1; index >= 0; --index)
             {
-                SystemList_[index].Dispose();
+                _systemList[index].Dispose();
             }
             
-            SystemList_.Clear();
-            SystemTypeMap_.Clear();
+            _systemList.Clear();
+            _systemTypeMap.Clear();
         }
         
         public T GetSystem<T>() where T : ISystem
         {
-            if (SystemTypeMap_.TryGetValue(typeof(T), out var system))
+            if (_systemTypeMap.TryGetValue(typeof(T), out var system))
             {
                 return (T) system;
             }

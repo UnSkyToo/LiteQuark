@@ -5,43 +5,43 @@ namespace LiteQuark.Runtime
 {
     public sealed class InstantiateGameObjectTask : BaseTask
     {
-        private readonly GameObject Template_;
-        private readonly Transform Parent_;
-        private readonly int Count_;
+        private readonly GameObject _template;
+        private readonly Transform _parent;
+        private readonly int _count;
 
-        private AsyncInstantiateOperation<GameObject> Task_;
-        private Action<GameObject[]> Callback_;
+        private AsyncInstantiateOperation<GameObject> _task;
+        private Action<GameObject[]> _callback;
 
         public InstantiateGameObjectTask(GameObject template, Transform parent, int count, Action<GameObject[]> callback)
             : base()
         {
-            Template_ = template;
-            Parent_ = parent;
-            Count_ = count;
+            _template = template;
+            _parent = parent;
+            _count = count;
             
-            Callback_ = callback;
+            _callback = callback;
         }
 
         public override void Dispose()
         {
-            if (Task_ != null)
+            if (_task != null)
             {
-                Task_.Cancel();
-                Task_.WaitForCompletion();
-                Task_ = null;
+                _task.Cancel();
+                _task.WaitForCompletion();
+                _task = null;
             }
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnExecute()
         {
-            Task_ = UnityEngine.Object.InstantiateAsync(Template_, Count_, Parent_, Vector3.zero, Quaternion.identity);
-            Task_.completed += OnInstantiateComplete;
+            _task = UnityEngine.Object.InstantiateAsync(_template, _count, _parent, Vector3.zero, Quaternion.identity);
+            _task.completed += OnInstantiateComplete;
         }
 
         private void OnInstantiateComplete(AsyncOperation operation)
         {
-            Task_ = null;
+            _task = null;
             
             if (operation.isDone && operation is AsyncInstantiateOperation { Result: not null } asyncOperation)
             {
@@ -51,12 +51,12 @@ namespace LiteQuark.Runtime
                     result[i] = asyncOperation.Result[i] as GameObject;
                 }
                 
-                Callback_?.Invoke(result);
+                _callback?.Invoke(result);
                 Complete(result);
             }
             else
             {
-                Callback_?.Invoke(Array.Empty<GameObject>());
+                _callback?.Invoke(Array.Empty<GameObject>());
                 Abort();
             }
         }

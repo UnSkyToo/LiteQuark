@@ -6,35 +6,35 @@ namespace LiteQuark.Editor
 {
     public sealed class SearchListWindow : EditorWindow
     {
-        private static Rect WindowRect_ = new Rect(0, 0, 1, 1);
+        private static Rect _windowRect = new Rect(0, 0, 1, 1);
         public static void Draw(string title, string[] list, Action<string> callback)
         {
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(title))
             {
                 GUI.FocusControl(null);
-                PopupWindow.Show(WindowRect_, new SearchListWindowContent(list, callback));
+                PopupWindow.Show(_windowRect, new SearchListWindowContent(list, callback));
             }
-            if (Event.current.type == EventType.Repaint) WindowRect_ = GUILayoutUtility.GetLastRect();
+            if (Event.current.type == EventType.Repaint) _windowRect = GUILayoutUtility.GetLastRect();
             EditorGUILayout.EndHorizontal();
         }
     }
     
     internal sealed class SearchListWindowContent : PopupWindowContent
     {
-        private readonly string[] List_;
-        private readonly Action<string> Callback_;
+        private readonly string[] _list;
+        private readonly Action<string> _callback;
         
-        private string Search_;
-        private Vector2 ScrollPos_;
+        private string _search;
+        private Vector2 _scrollPos;
 
         public SearchListWindowContent(string[] list, Action<string> callback)
         {
-            List_ = list;
-            Callback_ = callback;
+            _list = list;
+            _callback = callback;
             
-            Search_ = string.Empty;
-            ScrollPos_ = Vector2.zero;
+            _search = string.Empty;
+            _scrollPos = Vector2.zero;
         }
 
         public override Vector2 GetWindowSize()
@@ -46,18 +46,18 @@ namespace LiteQuark.Editor
         {
             GUILayout.BeginHorizontal(EditorStyles.helpBox);
             GUILayout.Space(30);
-            Search_ = EditorGUILayout.TextField("", Search_, EditorStyles.toolbarSearchField, GUILayout.MaxWidth(editorWindow.position.x / 3));
-            if (GUILayout.Button("", string.IsNullOrEmpty(Search_) ? "SearchCancelButtonEmpty" : "SearchCancelButton"))
+            _search = EditorGUILayout.TextField("", _search, EditorStyles.toolbarSearchField, GUILayout.MaxWidth(editorWindow.position.x / 3));
+            if (GUILayout.Button("", string.IsNullOrEmpty(_search) ? "SearchCancelButtonEmpty" : "SearchCancelButton"))
             {
-                Search_ = string.Empty;
+                _search = string.Empty;
                 GUI.FocusControl(null);
             }
             GUILayout.EndHorizontal();
 
-            ScrollPos_ = GUILayout.BeginScrollView(ScrollPos_);
-            foreach (var val in List_)
+            _scrollPos = GUILayout.BeginScrollView(_scrollPos);
+            foreach (var val in _list)
             {
-                if (val.ToLower().Contains(Search_.ToLower()))
+                if (val.ToLower().Contains(_search.ToLower()))
                 {
                     DrawItem(val);
                 }
@@ -69,7 +69,7 @@ namespace LiteQuark.Editor
         {
             if (EditorGUILayout.LinkButton(val))
             {
-                Callback_?.Invoke(val);
+                _callback?.Invoke(val);
                 editorWindow.Close();
             }
         }

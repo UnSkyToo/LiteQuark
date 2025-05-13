@@ -4,14 +4,14 @@ namespace LiteQuark.Runtime
 {
     public class RectTransformSetPositionAction : RectTransformBaseAction
     {
-        public override string DebugName => $"<RectTransformSetPosition>({RT_.name},{Position_})";
+        public override string DebugName => $"<RectTransformSetPosition>({RT.name},{_position})";
         
-        private readonly Vector2 Position_;
+        private readonly Vector2 _position;
 
         public RectTransformSetPositionAction(RectTransform transform, Vector2 position)
             : base(transform)
         {
-            Position_ = position;
+            _position = position;
         }
 
         public override void Execute()
@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            RT_.anchoredPosition = Position_;
+            RT.anchoredPosition = _position;
             IsEnd = true;
         }
     }

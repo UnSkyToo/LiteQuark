@@ -2,21 +2,21 @@
 {
     public abstract class CompositeAction : BaseAction
     {
-        protected readonly string Tag_;
-        protected readonly IAction[] SubActions_;
-        protected readonly int Count_;
+        protected readonly string Tag;
+        protected readonly IAction[] SubActions;
+        protected readonly int Count;
 
         protected CompositeAction(string tag, IAction[] args)
         {
-            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
-            SubActions_ = args ?? System.Array.Empty<IAction>();
-            Count_ = args?.Length ?? 0;
-            IsEnd = Count_ == 0;
+            Tag = string.IsNullOrEmpty(tag) ? "unknown" : tag;
+            SubActions = args ?? System.Array.Empty<IAction>();
+            Count = args?.Length ?? 0;
+            IsEnd = Count == 0;
         }
         
         public override void Dispose()
         {
-            foreach (var action in SubActions_)
+            foreach (var action in SubActions)
             {
                 action.Dispose();
             }
@@ -28,7 +28,7 @@
         {
             base.MarkSafety();
 
-            foreach (var action in SubActions_)
+            foreach (var action in SubActions)
             {
                 action.MarkSafety();
             }
@@ -36,7 +36,7 @@
         
         public override void Stop()
         {
-            foreach (var action in SubActions_)
+            foreach (var action in SubActions)
             {
                 action.Stop();
             }
@@ -46,7 +46,7 @@
 
         public IAction[] GetSubActions()
         {
-            return SubActions_;
+            return SubActions;
         }
     }
 }

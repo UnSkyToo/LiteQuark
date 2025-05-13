@@ -2,7 +2,7 @@
 {
     public class SequenceAction : CompositeAction
     {
-        public override string DebugName => $"<Sequence - {Tag_}>({Index_}/{Count_})";
+        public override string DebugName => $"<Sequence - {Tag}>({Index_}/{Count})";
         
         private IAction Current_;
         protected int Index_;
@@ -16,7 +16,7 @@
 
         public override void Execute()
         {
-            IsEnd = Count_ == 0;
+            IsEnd = Count == 0;
             ActiveNextAction();
         }
 
@@ -51,7 +51,7 @@
                 }
                 else
                 {
-                    Current_ = SubActions_[Index_];
+                    Current_ = SubActions[Index_];
                 }
 
                 if (Current_ != null)
@@ -72,7 +72,7 @@
         {
             Index_++;
             
-            if (Index_ >= Count_)
+            if (Index_ >= Count)
             {
                 return -1;
             }
@@ -92,7 +92,7 @@
         {
             Index_++;
 
-            if (Index_ >= Count_)
+            if (Index_ >= Count)
             {
                 return 0;
             }

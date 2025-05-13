@@ -6,19 +6,19 @@ namespace LiteQuark.Runtime
 {
     public sealed class AsyncOperationTask : BaseTask
     {
-        private readonly AsyncOperation AsyncOperation_;
-        private Action Callback_;
+        private readonly AsyncOperation _asyncOperation;
+        private Action _callback;
         
         public AsyncOperationTask(AsyncOperation asyncOperation, Action callback)
             : base()
         {
-            AsyncOperation_ = asyncOperation;
-            Callback_ = callback;
+            _asyncOperation = asyncOperation;
+            _callback = callback;
         }
         
         public override void Dispose()
         {
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnExecute()
@@ -34,10 +34,10 @@ namespace LiteQuark.Runtime
                 {
                     yield return null;
                 }
-                else */if (AsyncOperation_ is { isDone: false })
+                else */if (_asyncOperation is { isDone: false })
                 {
-                    Progress = AsyncOperation_.progress;
-                    yield return AsyncOperation_;
+                    Progress = _asyncOperation.progress;
+                    yield return _asyncOperation;
                 }
                 else
                 {
@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            Callback_?.Invoke();
+            _callback?.Invoke();
         }
     }
 }

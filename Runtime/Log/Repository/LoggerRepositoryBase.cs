@@ -4,11 +4,11 @@
     {
         public string Name { get; set; }
         
-        private LogLevel CurrentLevel_;
+        private LogLevel _currentLevel;
 
         protected LoggerRepositoryBase()
         {
-            CurrentLevel_ = LogLevel.All;
+            _currentLevel = LogLevel.All;
         }
 
         public virtual void Dispose()
@@ -24,18 +24,18 @@
 
         public virtual bool IsLevelEnable(LogLevel level)
         {
-            return (CurrentLevel_ & level) == level;
+            return (_currentLevel & level) == level;
         }
 
         public virtual void EnableLevel(LogLevel level, bool enabled)
         {
             if (enabled)
             {
-                CurrentLevel_ |= level;
+                _currentLevel |= level;
             }
             else
             {
-                CurrentLevel_ &= (~level);
+                _currentLevel &= (~level);
             }
         }
         

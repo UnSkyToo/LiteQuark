@@ -5,38 +5,38 @@ namespace LiteQuark.Runtime
 {
     public abstract class ValueFromToAction<T> : BaseAction
     {
-        public override string DebugName => $"<ValueFromTo>({EndValue_},{CurrentTime_}/{TotalTime_})";
+        public override string DebugName => $"<ValueFromTo>({_endValue},{_currentTime}/{_totalTime})";
 
-        private readonly Func<T> Getter_;
-        private readonly Action<T> Setter_;
-        private readonly T EndValue_;
-        private readonly float TotalTime_ = 0f;
-        private readonly EaseKind EaseKind_;
+        private readonly Func<T> _getter;
+        private readonly Action<T> _setter;
+        private readonly T _endValue;
+        private readonly float _totalTime = 0f;
+        private readonly EaseKind _easeKind;
         
-        private float CurrentTime_ = 0f;
-        private T StartValue_;
+        private float _currentTime = 0f;
+        private T _startValue;
         
         protected ValueFromToAction(Func<T> getter, Action<T> setter, T value, float time, EaseKind easeKind = EaseKind.Linear)
         {
-            Getter_ = getter;
-            Setter_ = setter;
-            EndValue_ = value;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            EaseKind_ = easeKind;
+            _getter = getter;
+            _setter = setter;
+            _endValue = value;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _easeKind = easeKind;
         }
 
         public override void Tick(float deltaTime)
         {
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            var value = LerpUnclamped(StartValue_, EndValue_, v);
-            Setter_.Invoke(value);
+            var value = LerpUnclamped(_startValue, _endValue, v);
+            _setter.Invoke(value);
 
             if (step >= 1)
             {
-                Setter_.Invoke(EndValue_);
+                _setter.Invoke(_endValue);
                 IsEnd = true;
             }
         }
@@ -45,14 +45,14 @@ namespace LiteQuark.Runtime
 
         public override void Execute()
         {
-            if (Getter_ == null || Setter_ == null)
+            if (_getter == null || _setter == null)
             {
                 IsEnd = true;
                 return;
             }
             
-            CurrentTime_ = 0;
-            StartValue_ = Getter_.Invoke();
+            _currentTime = 0;
+            _startValue = _getter.Invoke();
             IsEnd = false;
         }
     }

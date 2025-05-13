@@ -4,16 +4,16 @@ namespace LiteQuark.Runtime
 {
     public abstract class TransformBaseAction : BaseAction
     {
-        protected readonly Transform TS_;
+        protected readonly Transform TS;
         
         protected TransformBaseAction(Transform transform)
         {
-            TS_ = transform;
+            TS = transform;
         }
 
         public bool CheckSafety()
         {
-            if (!IsSafety || TS_ != null)
+            if (!IsSafety || TS != null)
             {
                 return true;
             }

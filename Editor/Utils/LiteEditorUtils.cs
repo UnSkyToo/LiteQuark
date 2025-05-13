@@ -184,7 +184,7 @@ namespace LiteQuark.Editor
             tag = string.IsNullOrWhiteSpace(tag) ? "LiteStandaloneGameView" : tag;
             
             var inst = EditorWindow.CreateInstance(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")) as EditorWindow;
-            inst.position = new Rect((Screen.width - 960) / 2, 150, 960, 640);
+            inst.position = new Rect((Screen.width - 960) / 2f, 150, 960, 640);
             inst.titleContent = new GUIContent(tag);
             inst.Show();
             inst.name = tag;

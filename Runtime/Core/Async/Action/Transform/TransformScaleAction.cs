@@ -4,24 +4,24 @@ namespace LiteQuark.Runtime
 {
     public class TransformScaleAction : TransformBaseAction
     {
-        public override string DebugName => $"<TransformScale>({TS_.name},{OriginScale_}->{TargetScale_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<TransformScale>({TS.name},{_originScale}->{_targetScale},{_totalTime},{_easeKind})";
         
-        private readonly Vector3 Scale_;
-        private readonly float TotalTime_;
-        private readonly bool IsRelative_;
-        private readonly EaseKind EaseKind_;
+        private readonly Vector3 _scale;
+        private readonly float _totalTime;
+        private readonly bool _isRelative;
+        private readonly EaseKind _easeKind;
         
-        private Vector3 OriginScale_;
-        private Vector3 TargetScale_;
-        private float CurrentTime_;
+        private Vector3 _originScale;
+        private Vector3 _targetScale;
+        private float _currentTime;
 
         public TransformScaleAction(Transform transform, Vector3 scale, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
             : base(transform)
         {
-            Scale_ = scale;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            IsRelative_ = isRelative;
-            EaseKind_ = easeKind;
+            _scale = scale;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _isRelative = isRelative;
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -31,9 +31,9 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ = 0;
-            OriginScale_ = TS_.localScale;
-            TargetScale_ = IsRelative_ ? OriginScale_ + Scale_ : Scale_;
+            _currentTime = 0;
+            _originScale = TS.localScale;
+            _targetScale = _isRelative ? _originScale + _scale : _scale;
             IsEnd = false;
         }
 
@@ -44,15 +44,15 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            TS_.localScale = Vector3.LerpUnclamped(OriginScale_, TargetScale_, v);
+            TS.localScale = Vector3.LerpUnclamped(_originScale, _targetScale, v);
 
             if (step >= 1)
             {
-                TS_.localScale = TargetScale_;
+                TS.localScale = _targetScale;
                 IsEnd = true;
             }
         }

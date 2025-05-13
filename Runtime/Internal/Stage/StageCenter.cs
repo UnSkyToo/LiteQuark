@@ -5,41 +5,41 @@ namespace LiteQuark.Runtime
 {
     internal sealed class StageCenter : ISubstance
     {
-        private readonly Stopwatch Watch_ = new Stopwatch();
-        private readonly List<IStage> StageList_ = new List<IStage>();
-        private int Index_ = 0;
-        private IStage CurrentStage_ = null;
+        private readonly Stopwatch _watch = new Stopwatch();
+        private readonly List<IStage> _stageList = new List<IStage>();
+        private int _index = 0;
+        private IStage _currentStage = null;
         
         public StageCenter()
         {
-            StageList_.Add(new BootStage());
-            StageList_.Add(new InitSystemStage());
-            StageList_.Add(new InitLogicStage());
-            StageList_.Add(new MainStage());
+            _stageList.Add(new BootStage());
+            _stageList.Add(new InitSystemStage());
+            _stageList.Add(new InitLogicStage());
+            _stageList.Add(new MainStage());
             
-            StageList_.Add(new ErrorStage());
+            _stageList.Add(new ErrorStage());
             
             GotoStage(0);
         }
         
         public void Dispose()
         {
-            if (CurrentStage_ != null)
+            if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Leave {CurrentStage_.GetType().Name}");
-                CurrentStage_?.Leave();
-                CurrentStage_ = null;
+                LLog.Info($"StageCenter: Leave {_currentStage.GetType().Name}");
+                _currentStage?.Leave();
+                _currentStage = null;
             }
         }
         
         public void Tick(float deltaTime)
         {
-            if (CurrentStage_ == null)
+            if (_currentStage == null)
             {
                 return;
             }
 
-            var code = CurrentStage_.Tick(deltaTime);
+            var code = _currentStage.Tick(deltaTime);
             switch (code)
             {
                 case StageCode.Waiting:
@@ -57,38 +57,38 @@ namespace LiteQuark.Runtime
 
         internal void ErrorStage()
         {
-            GotoStage(StageList_.Count - 1);
+            GotoStage(_stageList.Count - 1);
         }
 
         private void NextStage()
         {
-            GotoStage(Index_ + 1);
+            GotoStage(_index + 1);
         }
 
         private void GotoStage(int index)
         {
-            if (index < 0 || index >= StageList_.Count)
+            if (index < 0 || index >= _stageList.Count)
             {
                 return;
             }
             
-            if (CurrentStage_ != null)
+            if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Leave {CurrentStage_.GetType().Name}");
-                CurrentStage_.Leave();
-                Watch_.Stop();
-                var totalSec = Watch_.Elapsed.TotalSeconds;
-                LLog.Info($"StageCenter: {CurrentStage_.GetType().Name} duration {totalSec}s");
+                LLog.Info($"StageCenter: Leave {_currentStage.GetType().Name}");
+                _currentStage.Leave();
+                _watch.Stop();
+                var totalSec = _watch.Elapsed.TotalSeconds;
+                LLog.Info($"StageCenter: {_currentStage.GetType().Name} duration {totalSec}s");
             }
             
-            CurrentStage_ = StageList_[index];
-            Index_ = index;
+            _currentStage = _stageList[index];
+            _index = index;
             
-            if (CurrentStage_ != null)
+            if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Enter {CurrentStage_.GetType().Name}");
-                Watch_.Restart();
-                CurrentStage_.Enter();
+                LLog.Info($"StageCenter: Enter {_currentStage.GetType().Name}");
+                _watch.Restart();
+                _currentStage.Enter();
             }
         }
     }

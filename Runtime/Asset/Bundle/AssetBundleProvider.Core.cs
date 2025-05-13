@@ -6,13 +6,13 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        private VersionPackInfo PackInfo_ = null;
+        private VersionPackInfo _packInfo = null;
         
-        private readonly Dictionary<string, AssetBundleCache> BundleCacheMap_ = new();
-        private readonly Dictionary<int, AssetIDToPathData> AssetIDToPathMap_ = new();
-        private readonly List<string> UnloadBundleList_ = new();
-        private bool IsEnableRemoteBundle_ = false;
-        private string BundleRemoteUri_ = string.Empty;
+        private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
+        private readonly Dictionary<int, AssetIDToPathData> _assetIDToPathMap = new();
+        private readonly List<string> _unloadBundleList = new();
+        private bool _isEnableRemoteBundle = false;
+        private string _bundleRemoteUri = string.Empty;
         
         public AssetBundleProvider()
         {
@@ -22,16 +22,16 @@ namespace LiteQuark.Runtime
         {
             var versionPackUri = string.Empty;
             
-            IsEnableRemoteBundle_ = LiteRuntime.Setting.Asset.EnableRemoteBundle;
-            if (IsEnableRemoteBundle_)
+            _isEnableRemoteBundle = LiteRuntime.Setting.Asset.EnableRemoteBundle;
+            if (_isEnableRemoteBundle)
             {
-                BundleRemoteUri_ = PathUtils.ConcatPath(
+                _bundleRemoteUri = PathUtils.ConcatPath(
                     LiteRuntime.Setting.Asset.BundleRemoteUri,
                     AppUtils.GetCurrentPlatform(),
                     AppUtils.GetVersion()).ToLower();
-                LLog.Info("BundleRemoteUri: " + BundleRemoteUri_);
+                LLog.Info("BundleRemoteUri: " + _bundleRemoteUri);
 
-                versionPackUri = PathUtils.ConcatPath(BundleRemoteUri_, AppUtils.GetVersionFileName());
+                versionPackUri = PathUtils.ConcatPath(_bundleRemoteUri, AppUtils.GetVersionFileName());
             }
             else
             {
@@ -45,66 +45,66 @@ namespace LiteQuark.Runtime
 #endif
             }
 
-            PackInfo_ = await VersionPackInfo.LoadPackAsync(versionPackUri);
-            if (PackInfo_ == null)
+            _packInfo = await VersionPackInfo.LoadPackAsync(versionPackUri);
+            if (_packInfo == null)
             {
                 return false;
             }
 
-            BundleCacheMap_.Clear();
-            AssetIDToPathMap_.Clear();
-            UnloadBundleList_.Clear();
+            _bundleCacheMap.Clear();
+            _assetIDToPathMap.Clear();
+            _unloadBundleList.Clear();
             return true;
         }
 
         public void Dispose()
         {
-            UnloadBundleList_.Clear();
-            AssetIDToPathMap_.Clear();
-            foreach (var chunk in BundleCacheMap_)
+            _unloadBundleList.Clear();
+            _assetIDToPathMap.Clear();
+            foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Dispose();
             }
-            BundleCacheMap_.Clear();
+            _bundleCacheMap.Clear();
         }
         
         public void Tick(float deltaTime)
         {
-            foreach (var chunk in BundleCacheMap_)
+            foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
 
                 if (chunk.Value.Stage == AssetCacheStage.Unloading)
                 {
-                    UnloadBundleList_.Add(chunk.Key);
+                    _unloadBundleList.Add(chunk.Key);
                 }
             }
 
-            if (UnloadBundleList_.Count > 0)
+            if (_unloadBundleList.Count > 0)
             {
-                foreach (var bundlePath in UnloadBundleList_)
+                foreach (var bundlePath in _unloadBundleList)
                 {
                     UnloadBundleCache(bundlePath);
                 }
-                UnloadBundleList_.Clear();
+                _unloadBundleList.Clear();
             }
         }
         
         internal AssetBundleCache GetOrCreateBundleCache(string bundlePath)
         {
-            if (BundleCacheMap_.TryGetValue(bundlePath, out var cache))
+            if (_bundleCacheMap.TryGetValue(bundlePath, out var cache))
             {
                 return cache;
             }
             
-            var bundleInfo = PackInfo_.GetBundleInfoFromBundlePath(bundlePath);
+            var bundleInfo = _packInfo.GetBundleInfoFromBundlePath(bundlePath);
             if (bundleInfo == null)
             {
                 return null;
             }
 
             cache = new AssetBundleCache(this, bundleInfo);
-            BundleCacheMap_.Add(bundlePath, cache);
+            _bundleCacheMap.Add(bundlePath, cache);
             return cache;
         }
 
@@ -124,13 +124,13 @@ namespace LiteQuark.Runtime
         
         public void UnloadAsset(string assetPath)
         {
-            var info = PackInfo_.GetBundleInfoFromAssetPath(assetPath);
+            var info = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (info == null)
             {
                 return;
             }
 
-            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
+            if (_bundleCacheMap.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.UnloadAsset(assetPath);
             }
@@ -144,13 +144,13 @@ namespace LiteQuark.Runtime
             }
 
             var instanceID = asset.GetInstanceID();
-            if (AssetIDToPathMap_.TryGetValue(instanceID, out var pathCache))
+            if (_assetIDToPathMap.TryGetValue(instanceID, out var pathCache))
             {
                 UnloadAsset(pathCache.AssetPath);
                 pathCache.Count--;
                 if (pathCache.Count <= 0)
                 {
-                    AssetIDToPathMap_.Remove(instanceID);
+                    _assetIDToPathMap.Remove(instanceID);
                 }
             }
 
@@ -165,14 +165,14 @@ namespace LiteQuark.Runtime
 
         public void UnloadSceneAsync(string scenePath, Action callback)
         {
-            var info = PackInfo_.GetBundleInfoFromAssetPath(scenePath);
+            var info = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (info == null)
             {
                 return;
             }
 
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            if (BundleCacheMap_.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
+            if (_bundleCacheMap.TryGetValue(info.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.UnloadSceneAsync(sceneName, callback);
             }
@@ -186,7 +186,7 @@ namespace LiteQuark.Runtime
                 depth--;
                 var unloadList = new List<string>();
 
-                foreach (var chunk in BundleCacheMap_)
+                foreach (var chunk in _bundleCacheMap)
                 {
                     chunk.Value.UnloadUnusedAssets();
 
@@ -217,11 +217,11 @@ namespace LiteQuark.Runtime
         
         private void UnloadBundleCache(string bundlePath)
         {
-            if (BundleCacheMap_.ContainsKey(bundlePath))
+            if (_bundleCacheMap.ContainsKey(bundlePath))
             {
                 // BundleCacheMap_[bundlePath].Unload(false);
-                BundleCacheMap_[bundlePath].Dispose();
-                BundleCacheMap_.Remove(bundlePath);
+                _bundleCacheMap[bundlePath].Dispose();
+                _bundleCacheMap.Remove(bundlePath);
             }
         }
         
@@ -242,30 +242,30 @@ namespace LiteQuark.Runtime
             if (asset != null)
             {
                 var instanceID = asset.GetInstanceID();
-                if (AssetIDToPathMap_.TryGetValue(instanceID, out var data))
+                if (_assetIDToPathMap.TryGetValue(instanceID, out var data))
                 {
                     data.Count++;
                 }
                 else
                 {
-                    AssetIDToPathMap_.Add(instanceID, new AssetIDToPathData(assetPath));
+                    _assetIDToPathMap.Add(instanceID, new AssetIDToPathData(assetPath));
                 }
             }
         }
 
         internal string GetBundleUri(BundleInfo bundle)
         {
-            var bundleName = PackInfo_.GetBundlePath(bundle);
-            if (IsEnableRemoteBundle_)
+            var bundleName = _packInfo.GetBundlePath(bundle);
+            if (_isEnableRemoteBundle)
             {
-                return PathUtils.ConcatPath(BundleRemoteUri_, bundleName);
+                return PathUtils.ConcatPath(_bundleRemoteUri, bundleName);
             }
             return PathUtils.GetFullPathInRuntime(bundleName);
         }
 
         internal bool IsEnableRemoteBundle()
         {
-            return IsEnableRemoteBundle_;
+            return _isEnableRemoteBundle;
         }
     }
 }

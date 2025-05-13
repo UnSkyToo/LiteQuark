@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
 {
     public class Decoder
     {
-        private readonly List<Type> TypeList_ = new List<Type>();
+        private readonly List<Type> _typeList = new List<Type>();
         
         public Decoder()
         {
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
 
         public T Decode<T>(byte[] data)
         {
-            TypeList_.Clear();
+            _typeList.Clear();
             using (var stream = new MemoryStream(data))
             {
                 using (var reader = new BinaryReader(stream))
@@ -166,7 +166,7 @@ namespace LiteQuark.Runtime
         private Type ReadType(BinaryReader reader)
         {
             var index = reader.ReadUInt16();
-            return TypeList_[index];
+            return _typeList[index];
         }
 
         private void ReadTypeList(BinaryReader reader)
@@ -175,7 +175,7 @@ namespace LiteQuark.Runtime
             for (var i = 0; i < count; i++)
             {
                 var type = reader.ReadType();
-                TypeList_.Add(type);
+                _typeList.Add(type);
             }
         }
     }

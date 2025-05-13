@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
         public ResCollector Collector { get; private set; }
         
-        private IBuildCallback[] BuildCallbacks_ = Array.Empty<IBuildCallback>();
+        private IBuildCallback[] _buildCallbacks = Array.Empty<IBuildCallback>();
 
         public ProjectBuilder()
         {
@@ -27,7 +27,7 @@ namespace LiteQuark.Editor
         {
             BuildConfig = buildConfig;
             Collector = new ResCollector();
-            BuildCallbacks_ = ProjectBuilderUtils.CreateBuildCallbackInstance();
+            _buildCallbacks = ProjectBuilderUtils.CreateBuildCallbackInstance();
             
             var stepList = GenerateBuildStep(buildConfig);
             
@@ -158,7 +158,7 @@ namespace LiteQuark.Editor
         {
             try
             {
-                foreach (var callback in BuildCallbacks_)
+                foreach (var callback in _buildCallbacks)
                 {
                     callback?.PreProjectBuild(BuildConfig);
                 }
@@ -173,7 +173,7 @@ namespace LiteQuark.Editor
         {
             try
             {
-                foreach (var callback in BuildCallbacks_)
+                foreach (var callback in _buildCallbacks)
                 {
                     callback?.PostProjectBuild(BuildConfig, report);
                 }
@@ -188,7 +188,7 @@ namespace LiteQuark.Editor
         {
             try
             {
-                foreach (var callback in BuildCallbacks_)
+                foreach (var callback in _buildCallbacks)
                 {
                     callback?.PreStepBuild(BuildConfig, stepType, stepName);
                 }
@@ -203,7 +203,7 @@ namespace LiteQuark.Editor
         {
             try
             {
-                foreach (var callback in BuildCallbacks_)
+                foreach (var callback in _buildCallbacks)
                 {
                     callback?.PostStepBuild(BuildConfig, stepType, stepName);
                 }

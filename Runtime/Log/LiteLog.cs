@@ -4,16 +4,16 @@ namespace LiteQuark.Runtime
 {
     public static class LLog
     {
-        private static ILog Log_ = null;
+        private static ILog _log = null;
         
         private static ILog GetLog()
         {
-            if (Log_ == null)
+            if (_log == null)
             {
-                Log_ = LiteRuntime.Log?.GetLogger(LiteConst.Tag);
+                _log = LiteRuntime.Log?.GetLogger(LiteConst.Tag);
             }
 
-            return Log_;
+            return _log;
         }
         
         public static void Info(string msg)

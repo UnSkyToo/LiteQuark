@@ -5,20 +5,20 @@ namespace LiteQuark.Runtime
 {
     public abstract class LoadAssetBaseTask : BaseTask
     {
-        protected readonly AssetBundle Bundle_;
-        protected readonly string Name_;
-        protected Action<UnityEngine.Object> Callback_;
+        protected readonly AssetBundle Bundle;
+        protected readonly string Name;
+        protected Action<UnityEngine.Object> Callback;
         
         protected LoadAssetBaseTask(AssetBundle bundle, string name, Action<UnityEngine.Object> callback)
         {
-            Bundle_ = bundle;
-            Name_ = name;
-            Callback_ = callback;
+            Bundle = bundle;
+            Name = name;
+            Callback = callback;
         }
         
         public override void Dispose()
         {
-            Callback_ = null;
+            Callback = null;
         }
         
         public abstract UnityEngine.Object WaitCompleted();

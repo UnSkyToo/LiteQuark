@@ -11,9 +11,9 @@ namespace LiteQuark.Editor
         
         private const int InvalidIndex = -1;
 
-        private int SelectIndex_ = InvalidIndex;
-        private Vector2 ScrollPos_ = Vector2.zero;
-        private List<T> Data_ = new List<T>();
+        private int _selectIndex = InvalidIndex;
+        private Vector2 _scrollPos = Vector2.zero;
+        private List<T> _data = new List<T>();
 
         protected LiteListView()
         {
@@ -21,9 +21,9 @@ namespace LiteQuark.Editor
 
         public void Reset()
         {
-            SelectIndex_ = InvalidIndex;
-            ScrollPos_ = Vector2.zero;
-            Data_.Clear();
+            _selectIndex = InvalidIndex;
+            _scrollPos = Vector2.zero;
+            _data.Clear();
         }
 
         public void RefreshData()
@@ -33,9 +33,9 @@ namespace LiteQuark.Editor
 
         public T GetSelectItem()
         {
-            if (SelectIndex_ >= 0 && SelectIndex_ < Data_.Count)
+            if (_selectIndex >= 0 && _selectIndex < _data.Count)
             {
-                return Data_[SelectIndex_];
+                return _data[_selectIndex];
             }
 
             return default;
@@ -45,7 +45,7 @@ namespace LiteQuark.Editor
         {
             LiteEditorStyle.Generate();
             
-            SelectIndex_ = ClampSelectIndex(SelectIndex_);
+            _selectIndex = ClampSelectIndex(_selectIndex);
             
             DrawDataList();
             
@@ -54,28 +54,28 @@ namespace LiteQuark.Editor
 
         private void DrawDataList()
         {
-            ScrollPos_ = EditorGUILayout.BeginScrollView(ScrollPos_);
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
             
             using (new GUILayout.VerticalScope())
             {
-                for (var i = 0; i < Data_.Count; ++i)
+                for (var i = 0; i < _data.Count; ++i)
                 {
-                    var selected = SelectIndex_ == i;
+                    var selected = _selectIndex == i;
                     var oldSelected = selected;
 
                     using (new GUILayout.HorizontalScope())
                     {
-                        selected = DrawItem(i, selected, Data_[i]);
+                        selected = DrawItem(i, selected, _data[i]);
                     }
                     GUILayout.Space(2);
 
                     if (selected)
                     {
-                        SelectIndex_ = i;
+                        _selectIndex = i;
                     }
                     else if (oldSelected)
                     {
-                        SelectIndex_ = InvalidIndex;
+                        _selectIndex = InvalidIndex;
                     }
                 }
                 GUILayout.FlexibleSpace();
@@ -93,22 +93,22 @@ namespace LiteQuark.Editor
         
             using (new GUILayout.VerticalScope(LiteEditorStyle.InFooter))
             {
-                if (SelectIndex_ != -1)
+                if (_selectIndex != -1)
                 {
                     using (new GUILayout.HorizontalScope())
                     {
                         EditorGUI.BeginDisabledGroup(!EnableOrderControl);
-                        if (GUILayout.Button("上移") && SelectIndex_ - 1 >= 0)
+                        if (GUILayout.Button("上移") && _selectIndex - 1 >= 0)
                         {
                             GUI.FocusControl(null);
-                            SwapItem(SelectIndex_, SelectIndex_ - 1);
-                            SelectIndex_--;
+                            SwapItem(_selectIndex, _selectIndex - 1);
+                            _selectIndex--;
                         }
-                        if (GUILayout.Button("下移") && SelectIndex_ + 1 < Data_.Count)
+                        if (GUILayout.Button("下移") && _selectIndex + 1 < _data.Count)
                         {
                             GUI.FocusControl(null);
-                            SwapItem(SelectIndex_, SelectIndex_ + 1);
-                            SelectIndex_++;
+                            SwapItem(_selectIndex, _selectIndex + 1);
+                            _selectIndex++;
                         }
                         EditorGUI.EndDisabledGroup();
 
@@ -121,9 +121,9 @@ namespace LiteQuark.Editor
                         if (GUILayout.Button("修改"))
                         {
                             GUI.FocusControl(null);
-                            if (SelectIndex_ >= 0)
+                            if (_selectIndex >= 0)
                             {
-                                if (ChangeItem(SelectIndex_))
+                                if (ChangeItem(_selectIndex))
                                 {
                                     OnDataChanged();
                                 }
@@ -144,18 +144,18 @@ namespace LiteQuark.Editor
                         if (CreateItem())
                         {
                             OnDataChanged();
-                            SelectIndex_ = Data_.Count - 1;
+                            _selectIndex = _data.Count - 1;
                         }
                     }
                     if (GUILayout.Button("删除"))
                     {
                         GUI.FocusControl(null);
-                        if (SelectIndex_ >= 0)
+                        if (_selectIndex >= 0)
                         {
-                            if (DeleteItem(SelectIndex_))
+                            if (DeleteItem(_selectIndex))
                             {
                                 OnDataChanged();
-                                SelectIndex_ = ClampSelectIndex(SelectIndex_);
+                                _selectIndex = ClampSelectIndex(_selectIndex);
                             }
                         }
                         else
@@ -169,7 +169,7 @@ namespace LiteQuark.Editor
 
         private int ClampSelectIndex(int index)
         {
-            return Data_ == null ? InvalidIndex : Mathf.Clamp(index, -1, Data_.Count - 1);
+            return _data == null ? InvalidIndex : Mathf.Clamp(index, -1, _data.Count - 1);
         }
         
         protected virtual bool DrawItem(int index, bool selected, T obj)
@@ -185,20 +185,20 @@ namespace LiteQuark.Editor
 
         protected T GetItem(int index)
         {
-            return index >= 0 && index < Data_.Count ? Data_[index] : default;
+            return index >= 0 && index < _data.Count ? _data[index] : default;
         }
 
         protected void SetItem(int index, T value)
         {
-            if (index >= 0 && index < Data_.Count)
+            if (index >= 0 && index < _data.Count)
             {
-                Data_[index] = value;
+                _data[index] = value;
             }
         }
 
         protected void OnDataChanged()
         {
-            Data_ = GetList();
+            _data = GetList();
         }
 
         protected abstract List<T> GetList();

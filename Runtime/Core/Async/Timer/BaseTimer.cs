@@ -5,60 +5,60 @@ namespace LiteQuark.Runtime
     public abstract class BaseTimer : BaseObject, ITimer
     {
         public ulong ID => UniqueID;
-        public bool IsEnd => RepeatCount_ == 0;
+        public bool IsEnd => _repeatCount == 0;
 
-        public override string DebugName => $"Timer<{Interval_} - {RepeatCount_}>";
+        public override string DebugName => $"Timer<{_interval} - {_repeatCount}>";
 
-        protected readonly float Interval_;
-        protected readonly Action OnTick_;
-        protected readonly Action OnComplete_;
+        private readonly float _interval;
+        private readonly Action _onTick;
+        private readonly Action _onComplete;
 
-        protected bool IsPaused_;
-        protected int RepeatCount_;
-        protected float Time_;
-        protected float DelayTime_;
+        private bool _isPaused;
+        private int _repeatCount;
+        private float _time;
+        private float _delayTime;
         
         protected BaseTimer(float interval, float delayTime, int repeatCount, Action onTick, Action onComplete)
         {
-            Interval_ = interval;
-            DelayTime_ = delayTime;
-            RepeatCount_ = repeatCount;
-            OnTick_ = onTick;
-            OnComplete_ = onComplete;
+            _interval = interval;
+            _delayTime = delayTime;
+            _repeatCount = repeatCount;
+            _onTick = onTick;
+            _onComplete = onComplete;
 
-            IsPaused_ = false;
-            Time_ = 0;
+            _isPaused = false;
+            _time = 0;
         }
 
         public void Tick(float deltaTime)
         {
-            if (IsPaused_ || IsEnd)
+            if (_isPaused || IsEnd)
             {
                 return;
             }
 
-            if (DelayTime_ > 0)
+            if (_delayTime > 0)
             {
-                DelayTime_ -= deltaTime;
+                _delayTime -= deltaTime;
                 return;
             }
 
-            Time_ += deltaTime;
-            if (Time_ >= Interval_)
+            _time += deltaTime;
+            if (_time >= _interval)
             {
-                Time_ -= Interval_;
+                _time -= _interval;
                 TriggerTick();
             }
         }
         
         public void Pause()
         {
-            IsPaused_ = true;
+            _isPaused = true;
         }
 
         public void Resume()
         {
-            IsPaused_ = false;
+            _isPaused = false;
         }
 
         public void Cancel()
@@ -69,18 +69,18 @@ namespace LiteQuark.Runtime
             }
 
             Pause();
-            RepeatCount_ = 0;
+            _repeatCount = 0;
         }
 
         private void TriggerTick()
         {
-            OnTick_?.Invoke();
+            _onTick?.Invoke();
 
-            if (RepeatCount_ > 0)
+            if (_repeatCount > 0)
             {
-                RepeatCount_--;
+                _repeatCount--;
 
-                if (RepeatCount_ == 0)
+                if (_repeatCount == 0)
                 {
                     TriggerComplete();
                 }
@@ -89,7 +89,7 @@ namespace LiteQuark.Runtime
 
         private void TriggerComplete()
         {
-            OnComplete_?.Invoke();
+            _onComplete?.Invoke();
         }
     }
 }

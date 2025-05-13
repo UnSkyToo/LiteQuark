@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     public sealed class AssetSystem : ISystem, ITick
     {
-        private IAssetProvider Provider_ = null;
+        private IAssetProvider _provider = null;
 
         public AssetSystem()
         {
@@ -18,11 +18,11 @@ namespace LiteQuark.Runtime
             {
 #if UNITY_EDITOR
                 case AssetProviderMode.Internal:
-                    Provider_ = new AssetDatabaseProvider();
+                    _provider = new AssetDatabaseProvider();
                     break;
 #endif
                 case AssetProviderMode.Bundle:
-                    Provider_ = new AssetBundleProvider();
+                    _provider = new AssetBundleProvider();
                     break;
                 default:
                     throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");
@@ -31,20 +31,20 @@ namespace LiteQuark.Runtime
         
         public Task<bool> Initialize()
         {
-            return Provider_.Initialize();
+            return _provider.Initialize();
         }
 
         public void Dispose()
         {
-            Provider_?.UnloadUnusedAssets(20);
+            _provider?.UnloadUnusedAssets(20);
             
-            Provider_?.Dispose();
-            Provider_ = null;
+            _provider?.Dispose();
+            _provider = null;
         }
 
         public void Tick(float deltaTime)
         {
-            Provider_?.Tick(deltaTime);
+            _provider?.Tick(deltaTime);
         }
 
         private string FormatPath(string path)
@@ -60,7 +60,7 @@ namespace LiteQuark.Runtime
         public void PreloadBundle(string bundlePath, Action<bool> callback)
         {
             var formatPath = FormatPath(bundlePath);
-            Provider_?.PreloadBundle(formatPath, callback);
+            _provider?.PreloadBundle(formatPath, callback);
         }
 
         public Task<bool> PreloadBundle(string bundlePath)
@@ -76,7 +76,7 @@ namespace LiteQuark.Runtime
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
-            Provider_?.PreloadAsset<T>(formatPath, callback);
+            _provider?.PreloadAsset<T>(formatPath, callback);
         }
 
         public Task<bool> PreloadAsset<T>(string assetPath) where T : UnityEngine.Object
@@ -92,7 +92,7 @@ namespace LiteQuark.Runtime
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
-            Provider_?.LoadAssetAsync<T>(formatPath, callback);
+            _provider?.LoadAssetAsync<T>(formatPath, callback);
         }
         
         public Task<T> LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
@@ -114,7 +114,7 @@ namespace LiteQuark.Runtime
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
             var formatPath = FormatPath(assetPath);
-            Provider_?.InstantiateAsync(formatPath, parent, callback);
+            _provider?.InstantiateAsync(formatPath, parent, callback);
         }
         
         public Task<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent)
@@ -137,7 +137,7 @@ namespace LiteQuark.Runtime
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
-            Provider_?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
+            _provider?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
         }
         
         public Task<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
@@ -160,18 +160,18 @@ namespace LiteQuark.Runtime
         public void UnloadAsset(string assetPath)
         {
             var formatPath = FormatPath(assetPath);
-            Provider_?.UnloadAsset(formatPath);
+            _provider?.UnloadAsset(formatPath);
         }
 
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
-            Provider_?.UnloadAsset(asset);
+            _provider?.UnloadAsset(asset);
         }
         
         public void UnloadSceneAsync(string scenePath, Action callback)
         {
             var formatPath = FormatPath(scenePath);
-            Provider_?.UnloadSceneAsync(formatPath, callback);
+            _provider?.UnloadSceneAsync(formatPath, callback);
         }
         
         public Task UnloadSceneAsync(string scenePath)
@@ -190,13 +190,13 @@ namespace LiteQuark.Runtime
         /// <param name="maxDepth">循环释放嵌套引用的最大层数。例如：A->B->C，如果为2，则只释放到B这一层</param>
         public void UnloadUnusedAssets(int maxDepth = 5)
         {
-            Provider_?.UnloadUnusedAssets(maxDepth);
+            _provider?.UnloadUnusedAssets(maxDepth);
         }
         
 #if UNITY_EDITOR
         public VisitorInfo GetVisitorInfo()
         {
-            if (Provider_ is AssetBundleProvider provider)
+            if (_provider is AssetBundleProvider provider)
             {
                 return provider.GetVisitorInfo();
             }

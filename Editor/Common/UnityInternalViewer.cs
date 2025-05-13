@@ -7,10 +7,10 @@ namespace LiteQuark.Editor
 {
     internal sealed class UnityInternalViewer : EditorWindow
     {
-        private Vector2 scrollPos = Vector2.zero;
-        private string searchText = string.Empty;
-        private int index = 0;
-        private string[] tabList = new string[] { "Style", "Icon" };
+        private Vector2 _scrollPos = Vector2.zero;
+        private string _searchText = string.Empty;
+        private int _index = 0;
+        private readonly string[] _tabList = new string[] { "Style", "Icon" };
 
         [MenuItem("Lite/Common/Internal Viewer")]
         private static void ShowWin()
@@ -24,13 +24,13 @@ namespace LiteQuark.Editor
         {
             GUILayout.BeginHorizontal("HelpBox");
             GUILayout.Space(30);
-            searchText = EditorGUILayout.TextField(string.Empty, searchText, "SearchTextField", GUILayout.MaxWidth(position.x / 3));
+            _searchText = EditorGUILayout.TextField(string.Empty, _searchText, "SearchTextField", GUILayout.MaxWidth(position.x / 3));
             GUILayout.Label(string.Empty, "SearchCancelButtonEmpty");
             GUILayout.EndHorizontal();
 
-            index = GUILayout.Toolbar(index, tabList);
-            scrollPos = GUILayout.BeginScrollView(scrollPos);
-            switch (index)
+            _index = GUILayout.Toolbar(_index, _tabList);
+            _scrollPos = GUILayout.BeginScrollView(_scrollPos);
+            switch (_index)
             {
                 case 0:
                     DrawStyleList();
@@ -56,7 +56,7 @@ namespace LiteQuark.Editor
         {
             foreach (var style in GUI.skin.customStyles)
             {
-                if (style.name.ToLower().Contains(searchText.ToLower()))
+                if (style.name.ToLower().Contains(_searchText.ToLower()))
                 {
                     DrawStyleItem(style);
                 }
@@ -90,7 +90,7 @@ namespace LiteQuark.Editor
                 foreach (var icon in iconList)
                 {
                     var item = (DictionaryEntry)icon;
-                    if (item.Key.ToString().ToLower().Contains(searchText.ToLower()))
+                    if (item.Key.ToString().ToLower().Contains(_searchText.ToLower()))
                     {
                         DrawIconItem(item);
                     }

@@ -13,7 +13,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnRelease(GameObject go)
         {
-            go.transform.SetParent(Parent_, false);
+            go.transform.SetParent(Parent, false);
             go.transform.localPosition = InvalidPosition;
         }
     }

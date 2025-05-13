@@ -6,58 +6,58 @@ namespace LiteQuark.Runtime
 {
     public sealed class UnityWebGetRequestTask : BaseTask
     {
-        private readonly Uri Uri_;
-        private readonly int Timeout_;
-        private readonly bool ForceNoCache_;
-        private Action<DownloadHandler> Callback_;
-        private UnityWebRequest Request_;
+        private readonly Uri _uri;
+        private readonly int _timeout;
+        private readonly bool _forceNoCache;
+        private Action<DownloadHandler> _callback;
+        private UnityWebRequest _request;
         
         public UnityWebGetRequestTask(string uri, int timeout, bool forceNoCache, Action<DownloadHandler> callback)
             : base()
         {
-            Uri_ = new Uri(uri);
-            Timeout_ = timeout;
-            ForceNoCache_ = forceNoCache;
-            Callback_ = callback;
+            _uri = new Uri(uri);
+            _timeout = timeout;
+            _forceNoCache = forceNoCache;
+            _callback = callback;
         }
 
         public override void Dispose()
         {
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnExecute()
         {
-            Request_ = UnityWebRequest.Get(Uri_);
-            if (ForceNoCache_)
+            _request = UnityWebRequest.Get(_uri);
+            if (_forceNoCache)
             {
-                Request_.SetRequestHeader("Cache-Control", "no-cache");
+                _request.SetRequestHeader("Cache-Control", "no-cache");
             }
 
-            Request_.timeout = Timeout_;
-            var asyncOperation = Request_.SendWebRequest();
+            _request.timeout = _timeout;
+            var asyncOperation = _request.SendWebRequest();
             asyncOperation.completed += OnBundleRequestCompleted;
         }
 
         protected override void OnTick(float deltaTime)
         {
-            Progress = Request_?.downloadProgress ?? 0f;
+            Progress = _request?.downloadProgress ?? 0f;
         }
 
         private void OnBundleRequestCompleted(AsyncOperation op)
         {
             op.completed -= OnBundleRequestCompleted;
             
-            if (Request_.result != UnityWebRequest.Result.Success)
+            if (_request.result != UnityWebRequest.Result.Success)
             {
-                LLog.Error($"get request uri : {Uri_}\n{Request_.error}");
-                Callback_?.Invoke(null);
+                LLog.Error($"get request uri : {_uri}\n{_request.error}");
+                _callback?.Invoke(null);
                 Abort();
             }
             else
             {
-                Callback_?.Invoke(Request_.downloadHandler);
-                Complete(Request_.downloadedBytes);
+                _callback?.Invoke(_request.downloadHandler);
+                Complete(_request.downloadedBytes);
             }
         }
     }

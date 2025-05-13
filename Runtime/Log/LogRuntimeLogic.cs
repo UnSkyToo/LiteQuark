@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public class LogRuntimeLogic : ILogic
     {
-        private GameObject Go_;
+        private GameObject _go;
         
         public Task<bool> Initialize()
         {
@@ -15,8 +15,8 @@ namespace LiteQuark.Runtime
             
             if (logEnable && setting.ShowLogViewer)
             {
-                Go_ = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
-                var scaler = Go_.GetOrAddComponent<CanvasScaler>();
+                _go = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
+                var scaler = _go.GetOrAddComponent<CanvasScaler>();
                 scaler.referencePixelsPerUnit = 100;
                 scaler.uiScaleMode = LiteRuntime.Setting.UI.ScaleMode;
                 scaler.screenMatchMode = LiteRuntime.Setting.UI.MatchMode;
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Object.DestroyImmediate(Go_);
+            Object.DestroyImmediate(_go);
         }
         
         public void Tick(float deltaTime)

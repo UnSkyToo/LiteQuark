@@ -5,19 +5,19 @@ namespace LiteQuark.Runtime
 {
     public sealed class AsyncResultTask : BaseTask
     {
-        private readonly IAsyncResult AsyncResult_;
-        private Action Callback_;
+        private readonly IAsyncResult _asyncResult;
+        private Action _callback;
 
         public AsyncResultTask(IAsyncResult asyncResult, Action callback)
             : base()
         {
-            AsyncResult_ = asyncResult;
-            Callback_ = callback;
+            _asyncResult = asyncResult;
+            _callback = callback;
         }
 
         public override void Dispose()
         {
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnExecute()
@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
                 {
                     yield return null;
                 }
-                else */if (AsyncResult_ is { IsCompleted: false })
+                else */if (_asyncResult is { IsCompleted: false })
                 {
                     yield return null;
                 }
@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            Callback_?.Invoke();
+            _callback?.Invoke();
         }
     }
 }

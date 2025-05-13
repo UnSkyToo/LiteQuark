@@ -7,19 +7,19 @@ namespace LiteQuark.Editor
 {
     internal sealed class ProjectBuilderWindow : EditorWindow
     {
-        public BuildTarget Target => Target_;
-        public ResBuildConfig ResCfg => ResCfg_;
-        public AppBuildConfig AppCfg => AppCfg_;
-        public CustomBuildConfig CustomCfg => CustomCfg_;
+        public BuildTarget Target => _target;
+        public ResBuildConfig ResCfg => _resCfg;
+        public AppBuildConfig AppCfg => _appCfg;
+        public CustomBuildConfig CustomCfg => _customCfg;
         
-        private BuildTarget Target_;
-        private string Version_;
-        private ResBuildConfig ResCfg_;
-        private AppBuildConfig AppCfg_;
-        private CustomBuildConfig CustomCfg_;
+        private BuildTarget _target;
+        private string _version;
+        private ResBuildConfig _resCfg;
+        private AppBuildConfig _appCfg;
+        private CustomBuildConfig _customCfg;
         
-        private List<BuilderStepView> StepViewList_;
-        private ICustomBuildView CustomView_;
+        private List<BuilderStepView> _stepViewList;
+        private ICustomBuildView _customView;
 
         [MenuItem("Lite/Builder &B")]
         private static void ShowWin()
@@ -32,35 +32,35 @@ namespace LiteQuark.Editor
 
         private void OnEnable()
         {
-            Target_ = EditorUserBuildSettings.activeBuildTarget;
-            Version_ = PlayerSettings.bundleVersion;
-            ResCfg_ = new ResBuildConfig();
-            AppCfg_ = new AppBuildConfig()
+            _target = EditorUserBuildSettings.activeBuildTarget;
+            _version = PlayerSettings.bundleVersion;
+            _resCfg = new ResBuildConfig();
+            _appCfg = new AppBuildConfig()
             {
                 Identifier = PlayerSettings.applicationIdentifier,
                 ProduceName = PlayerSettings.productName,
             };
             
 #if UNITY_ANDROID
-            AppCfg_.BuildCode = PlayerSettings.Android.bundleVersionCode;
+            _appCfg.BuildCode = PlayerSettings.Android.bundleVersionCode;
 #elif UNITY_IOS
             if (int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode))
             {
                 AppCfg_.BuildCode = buildCode;
             }
 #endif
-            CustomCfg_ = new CustomBuildConfig();
+            _customCfg = new CustomBuildConfig();
 
-            StepViewList_ = new List<BuilderStepView>
+            _stepViewList = new List<BuilderStepView>
             {
-                new BuilderResView(this, "Res - Compile Resource Step", ResCfg_),
-                new BuilderAppView(this, "App - Build Application Step", AppCfg_),
+                new BuilderResView(this, "Res - Compile Resource Step", _resCfg),
+                new BuilderAppView(this, "App - Build Application Step", _appCfg),
             };
             
             var customView = ProjectBuilderUtils.CreateCustomBuildView();
             if (customView != null)
             {
-                StepViewList_.Add(new BuilderCustomView(this, "Custom - Misc Config", CustomCfg_, customView));
+                _stepViewList.Add(new BuilderCustomView(this, "Custom - Misc Config", _customCfg, customView));
             }
         }
 
@@ -72,12 +72,12 @@ namespace LiteQuark.Editor
         {
             const int space = 5;
             
-            var viewCount = StepViewList_.Count;
+            var viewCount = _stepViewList.Count;
             var viewWidth = Mathf.Max(300, (position.width - (viewCount + 1) * space) / viewCount);
             var viewHeight = Mathf.Max(300, (position.height - space * 2) * 0.8f);
             var viewRect = new Rect(space, space, viewWidth, viewHeight);
             
-            foreach (var view in StepViewList_)
+            foreach (var view in _stepViewList)
             {
                 view.Draw(viewRect);
                 viewRect.x += (viewWidth + space);
@@ -85,13 +85,13 @@ namespace LiteQuark.Editor
 
             var commonRect = new Rect(space, viewRect.yMax + space, position.width - space * 2, position.height - viewRect.yMax - space * 2);
             GUILayout.BeginArea(commonRect);
-            Target_ = (BuildTarget) EditorGUILayout.EnumPopup("Target", Target_);
+            _target = (BuildTarget) EditorGUILayout.EnumPopup("Target", _target);
             using (new EditorGUILayout.HorizontalScope())
             {
-                Version_ = EditorGUILayout.TextField(new GUIContent("Version", "Version"), Version_);
+                _version = EditorGUILayout.TextField(new GUIContent("Version", "Version"), _version);
                 if (GUILayout.Button("+", GUILayout.Width(30)))
                 {
-                    Version_ = AppUtils.GetNextVersion(Version_);
+                    _version = AppUtils.GetNextVersion(_version);
                 }
             }
 
@@ -111,13 +111,13 @@ namespace LiteQuark.Editor
 
         private void BuildProject()
         {
-            if (ResCfg_ == null || AppCfg_ == null)
+            if (_resCfg == null || _appCfg == null)
             {
                 LEditorLog.Error("error build config");
                 return;
             }
 
-            var buildCfg = new ProjectBuildConfig(Target_, Version_, ResCfg_, AppCfg_, CustomCfg_);
+            var buildCfg = new ProjectBuildConfig(_target, _version, _resCfg, _appCfg, _customCfg);
             var buildReport = new ProjectBuilder().Build(buildCfg);
             
             var resultMsg = buildReport.IsSuccess ? "Build Success" : "Build Failed";

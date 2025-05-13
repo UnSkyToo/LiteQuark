@@ -4,24 +4,24 @@ namespace LiteQuark.Runtime
 {
     public class TransformRotateAction : TransformBaseAction
     {
-        public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}Rotate>({TS_.name},{OriginRotation_}->{TargetRotation_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<Transform{(_isLocal ? "Local" : "World")}Rotate>({TS.name},{_originRotation}->{_targetRotation},{_totalTime},{_easeKind})";
 
-        private readonly Quaternion Rotation_;
-        private readonly float TotalTime_;
-        private readonly bool IsLocal_;
-        private readonly EaseKind EaseKind_;
+        private readonly Quaternion _rotation;
+        private readonly float _totalTime;
+        private readonly bool _isLocal;
+        private readonly EaseKind _easeKind;
         
-        private Quaternion OriginRotation_;
-        private Quaternion TargetRotation_;
-        private float CurrentTime_;
+        private Quaternion _originRotation;
+        private Quaternion _targetRotation;
+        private float _currentTime;
 
         public TransformRotateAction(Transform transform, Quaternion rotation, float time, bool isLocal = true, EaseKind easeKind = EaseKind.Linear)
             : base(transform)
         {
-            Rotation_ = rotation;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            IsLocal_ = isLocal;
-            EaseKind_ = easeKind;
+            _rotation = rotation;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _isLocal = isLocal;
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -31,9 +31,9 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ = 0;
-            OriginRotation_ = TS_.localRotation;
-            TargetRotation_ = Rotation_;
+            _currentTime = 0;
+            _originRotation = TS.localRotation;
+            _targetRotation = _rotation;
             IsEnd = false;
         }
 
@@ -44,61 +44,61 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            SetValue(Quaternion.LerpUnclamped(OriginRotation_, TargetRotation_, v));
+            SetValue(Quaternion.LerpUnclamped(_originRotation, _targetRotation, v));
 
             if (step >= 1)
             {
-                SetValue(TargetRotation_);
+                SetValue(_targetRotation);
                 IsEnd = true;
             }
         }
         
         private void SetValue(Quaternion value)
         {
-            if (IsLocal_)
+            if (_isLocal)
             {
-                TS_.localRotation = value;
+                TS.localRotation = value;
             }
             else
             {
-                TS_.rotation = value;
+                TS.rotation = value;
             }
         }
     }
 
     public class TransformRotateAroundAction : TransformBaseAction
     {
-        public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}RotateAround>({TS_.name},{Center_},{Axis_},{TotalAngle_},{TotalTime_})";
+        public override string DebugName => $"<Transform{(IsLocal ? "Local" : "World")}RotateAround>({TS.name},{_center},{_axis},{_totalAngle},{_totalTime})";
 
-        private readonly Vector3 Center_;
-        private readonly Vector3 Axis_;
-        private readonly float TotalAngle_;
-        private readonly float TotalTime_;
-        protected readonly bool IsLocal_;
+        private readonly Vector3 _center;
+        private readonly Vector3 _axis;
+        private readonly float _totalAngle;
+        private readonly float _totalTime;
+        protected readonly bool IsLocal;
 
-        private float AnglePerSecond_;
-        private float AccumulateAngle_;
-        private float CurrentTime_;
+        private float _anglePerSecond;
+        private float _accumulateAngle;
+        private float _currentTime;
 
         public TransformRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, float angle, float time, bool isLocal = true)
             : base(transform)
         {
-            Center_ = center;
-            Axis_ = axis;
-            TotalAngle_ = angle;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            IsLocal_ = isLocal;
+            _center = center;
+            _axis = axis;
+            _totalAngle = angle;
+            _totalTime = MathUtils.ClampMinTime(time);
+            IsLocal = isLocal;
         }
 
         public override void Execute()
         {
-            CurrentTime_ = 0;
-            AnglePerSecond_ = TotalAngle_ / TotalTime_;
-            AccumulateAngle_ = 0f;
+            _currentTime = 0;
+            _anglePerSecond = _totalAngle / _totalTime;
+            _accumulateAngle = 0f;
             IsEnd = false;
         }
 
@@ -109,20 +109,20 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
+            _currentTime += deltaTime;
             var angle = CalculateNextAngle(deltaTime);
 
-            if (IsLocal_)
+            if (IsLocal)
             {
-                var vector3 = Quaternion.AngleAxis(angle, Axis_) * (TS_.localPosition - Center_);
-                TS_.localPosition = Center_ + vector3;
+                var vector3 = Quaternion.AngleAxis(angle, _axis) * (TS.localPosition - _center);
+                TS.localPosition = _center + vector3;
             }
             else
             {
-                TS_.RotateAround(Center_, Axis_, angle);
+                TS.RotateAround(_center, _axis, angle);
             }
             
-            if (CurrentTime_ >= TotalTime_)
+            if (_currentTime >= _totalTime)
             {
                 IsEnd = true;
             }
@@ -130,21 +130,21 @@ namespace LiteQuark.Runtime
 
         private float CalculateNextAngle(float deltaTime)
         {
-            var angle = deltaTime * AnglePerSecond_;
+            var angle = deltaTime * _anglePerSecond;
             
-            if (TotalAngle_ > 0 && AccumulateAngle_ + angle > TotalAngle_)
+            if (_totalAngle > 0 && _accumulateAngle + angle > _totalAngle)
             {
-                angle = TotalAngle_ - AccumulateAngle_;
-                AccumulateAngle_ = TotalAngle_;
+                angle = _totalAngle - _accumulateAngle;
+                _accumulateAngle = _totalAngle;
             }
-            else if (TotalAngle_ < 0 && AccumulateAngle_ + angle < TotalAngle_)
+            else if (_totalAngle < 0 && _accumulateAngle + angle < _totalAngle)
             {
-                angle = TotalAngle_ - AccumulateAngle_;
-                AccumulateAngle_ = TotalAngle_;
+                angle = _totalAngle - _accumulateAngle;
+                _accumulateAngle = _totalAngle;
             }
             else
             {
-                AccumulateAngle_ += angle;
+                _accumulateAngle += angle;
             }
             
             return angle;
@@ -153,12 +153,12 @@ namespace LiteQuark.Runtime
 
     public class TransformTargetRotateAroundAction : TransformRotateAroundAction
     {
-        private readonly Vector3 TargetPosition_;
+        private readonly Vector3 _targetPosition;
         
         public TransformTargetRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, Vector3 targetPosition, float angle, float time, bool isLocal = true)
             : base(transform, center, axis, angle, time, isLocal)
         {
-            TargetPosition_ = targetPosition;
+            _targetPosition = targetPosition;
         }
 
         public override void Tick(float deltaTime)
@@ -168,19 +168,19 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (IsLocal_)
+            if (IsLocal)
             {
-                if (Vector3.Distance(TS_.localPosition, TargetPosition_) < 0.1f)
+                if (Vector3.Distance(TS.localPosition, _targetPosition) < 0.1f)
                 {
-                    TS_.localPosition = TargetPosition_;
+                    TS.localPosition = _targetPosition;
                     IsEnd = true;
                 }
             }
             else
             {
-                if (Vector3.Distance(TS_.position, TargetPosition_) < 0.1f)
+                if (Vector3.Distance(TS.position, _targetPosition) < 0.1f)
                 {
-                    TS_.position = TargetPosition_;
+                    TS.position = _targetPosition;
                     IsEnd = true;
                 }
             }

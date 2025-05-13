@@ -7,16 +7,16 @@ namespace LiteQuark.Runtime
 {
     public class FileLogAppender : TextWriterLogAppender
     {
-        private readonly string RootDirectoryPath_;
+        private readonly string _rootDirectoryPath;
         
-        private Stream Stream_;
-        private string FilePath_;
-        private bool AppendToFile_;
+        private Stream _stream;
+        private string _filePath;
+        private readonly bool _appendToFile;
         
         public FileLogAppender(string rootDirectoryPath, bool appendToFile)
         {
-            RootDirectoryPath_ = rootDirectoryPath;
-            AppendToFile_ = appendToFile;
+            _rootDirectoryPath = rootDirectoryPath;
+            _appendToFile = appendToFile;
         }
 
         protected override void OnOpen()
@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                LogErrorHandler.Error($"OpenFile({FilePath_},{AppendToFile_}) call failed.", ex);
+                LogErrorHandler.Error($"OpenFile({_filePath},{_appendToFile}) call failed.", ex);
             }
         }
 
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
         protected override void Reset()
         {
             base.Reset();
-            FilePath_ = string.Empty;
+            _filePath = string.Empty;
         }
 
         private void OpenFile()
@@ -49,9 +49,9 @@ namespace LiteQuark.Runtime
             {
                 Reset();
 
-                FilePath_ = GetLogFilePath();
-                EnsureFilePath(FilePath_);
-                CreateStream(FilePath_);
+                _filePath = GetLogFilePath();
+                EnsureFilePath(_filePath);
+                CreateStream(_filePath);
             }
         }
 
@@ -59,24 +59,24 @@ namespace LiteQuark.Runtime
         {
             lock (this)
             {
-                if (Stream_ != null)
+                if (_stream != null)
                 {
-                    Stream_.Close();
-                    Stream_.Dispose();
-                    Stream_ = null;
+                    _stream.Close();
+                    _stream.Dispose();
+                    _stream = null;
                 }
             }
         }
 
         private void CreateStream(string filePath)
         {
-            var mode = AppendToFile_ ? FileMode.Append : FileMode.Create;
-            Stream_ = new FileStream(filePath, mode, FileAccess.Write, FileShare.Read);
+            var mode = _appendToFile ? FileMode.Append : FileMode.Create;
+            _stream = new FileStream(filePath, mode, FileAccess.Write, FileShare.Read);
 
-            if (Stream_ != null)
+            if (_stream != null)
             {
-                var writer = new StreamWriter(Stream_, Encoding.Default);
-                QuiteWriter_ = new LogQuietTextWriter(writer);
+                var writer = new StreamWriter(_stream, Encoding.Default);
+                QuiteWriter = new LogQuietTextWriter(writer);
             }
         }
 
@@ -84,7 +84,7 @@ namespace LiteQuark.Runtime
         {
             var datePattern = "yyyy-MM-dd-HH-mm-ss";
             var dateStr = DateTime.Now.ToString(datePattern, DateTimeFormatInfo.InvariantInfo);
-            return Path.Combine(RootDirectoryPath_, "Logs", Name, $"Log_{dateStr}.log");
+            return Path.Combine(_rootDirectoryPath, "Logs", Name, $"Log_{dateStr}.log");
         }
 
         private void EnsureFilePath(string path)

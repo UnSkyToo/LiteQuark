@@ -4,26 +4,26 @@ namespace LiteQuark.Runtime
 {
     public class TransformMoveAction : TransformBaseAction
     {
-        public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}Move>({TS_.name},{OriginPos_}->{TargetPos_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<Transform{(_isLocal ? "Local" : "World")}Move>({TS.name},{_originPos}->{_targetPos},{_totalTime},{_easeKind})";
 
-        private readonly Vector3 Position_;
-        private readonly float TotalTime_;
-        private readonly bool IsLocal_;
-        private readonly bool IsRelative_;
-        private readonly EaseKind EaseKind_;
+        private readonly Vector3 _position;
+        private readonly float _totalTime;
+        private readonly bool _isLocal;
+        private readonly bool _isRelative;
+        private readonly EaseKind _easeKind;
         
-        private Vector3 OriginPos_;
-        private Vector3 TargetPos_;
-        private float CurrentTime_;
+        private Vector3 _originPos;
+        private Vector3 _targetPos;
+        private float _currentTime;
 
         public TransformMoveAction(Transform transform, Vector3 position, float time, bool isLocal = true, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
             : base(transform)
         {
-            Position_ = position;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            IsLocal_ = isLocal;
-            IsRelative_ = isRelative;
-            EaseKind_ = easeKind;
+            _position = position;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _isLocal = isLocal;
+            _isRelative = isRelative;
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -33,9 +33,9 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ = 0;
-            OriginPos_ = GetValue();
-            TargetPos_ = IsRelative_ ? OriginPos_ + Position_ : Position_;
+            _currentTime = 0;
+            _originPos = GetValue();
+            _targetPos = _isRelative ? _originPos + _position : _position;
             IsEnd = false;
         }
 
@@ -46,60 +46,60 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            SetValue(Vector3.LerpUnclamped(OriginPos_, TargetPos_, v));
+            SetValue(Vector3.LerpUnclamped(_originPos, _targetPos, v));
 
             if (step >= 1)
             {
-                SetValue(TargetPos_);
+                SetValue(_targetPos);
                 IsEnd = true;
             }
         }
 
         private Vector3 GetValue()
         {
-            return IsLocal_ ? TS_.localPosition : TS_.position;
+            return _isLocal ? TS.localPosition : TS.position;
         }
         
         private void SetValue(Vector3 value)
         {
-            if (IsLocal_)
+            if (_isLocal)
             {
-                TS_.localPosition = value;
+                TS.localPosition = value;
             }
             else
             {
-                TS_.position = value;
+                TS.position = value;
             }
         }
     }
     
     public class TransformMovePathAction : TransformBaseAction
     {
-        public override string DebugName => $"<Transform{(IsLocal_ ? "Local" : "World")}MovePath>({TS_.name},{StartPos_}->{TargetPos_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<Transform{(_isLocal ? "Local" : "World")}MovePath>({TS.name},{_startPos}->{_targetPos},{_totalTime},{_easeKind})";
 
-        private Vector3[] Paths_;
-        private readonly float TotalTime_;
-        private readonly float MoveSpeed_;
-        private readonly bool IsLocal_;
-        private readonly EaseKind EaseKind_;
+        private readonly Vector3[] _paths;
+        private readonly float _totalTime;
+        private readonly float _moveSpeed;
+        private readonly bool _isLocal;
+        private readonly EaseKind _easeKind;
         
-        private int PathIndex_;
-        private Vector3 StartPos_;
-        private Vector3 TargetPos_;
-        private float CurrentTime_;
-        private float MoveTime_;
+        private int _pathIndex;
+        private Vector3 _startPos;
+        private Vector3 _targetPos;
+        private float _currentTime;
+        private float _moveTime;
 
         public TransformMovePathAction(Transform transform, Vector3[] path, float time, bool isLocal = true, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
             : base(transform)
         {
-            Paths_ = isRelative ? MathUtils.VectorListAdd(path, GetValue()) : path;
-            MoveSpeed_ = MathUtils.VectorListLength(Paths_) / MathUtils.ClampMinTime(time);
-            IsLocal_ = isLocal;
-            EaseKind_ = easeKind;
+            _paths = isRelative ? MathUtils.VectorListAdd(path, GetValue()) : path;
+            _moveSpeed = MathUtils.VectorListLength(_paths) / MathUtils.ClampMinTime(time);
+            _isLocal = isLocal;
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -109,8 +109,8 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            IsEnd = Mathf.Approximately(MoveSpeed_, 0f);
-            PathIndex_ = 0;
+            IsEnd = Mathf.Approximately(_moveSpeed, 0f);
+            _pathIndex = 0;
             MoveToNextPath();
         }
 
@@ -126,16 +126,16 @@ namespace LiteQuark.Runtime
 
         private void ProcessMove(float time)
         {
-            CurrentTime_ += time;
-            var step = Mathf.Clamp01(CurrentTime_ / MoveTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += time;
+            var step = Mathf.Clamp01(_currentTime / _moveTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            SetValue(Vector3.LerpUnclamped(StartPos_, TargetPos_, v));
+            SetValue(Vector3.LerpUnclamped(_startPos, _targetPos, v));
 
             if (step >= 1)
             {
-                var remainTime = CurrentTime_ - MoveTime_;
-                SetValue(TargetPos_);
+                var remainTime = _currentTime - _moveTime;
+                SetValue(_targetPos);
                 MoveToNextPath();
 
                 if (!IsEnd && remainTime > 0)
@@ -147,34 +147,34 @@ namespace LiteQuark.Runtime
 
         private Vector3 GetValue()
         {
-            return IsLocal_ ? TS_.localPosition : TS_.position;
+            return _isLocal ? TS.localPosition : TS.position;
         }
         
         private void SetValue(Vector3 value)
         {
-            if (IsLocal_)
+            if (_isLocal)
             {
-                TS_.localPosition = value;
+                TS.localPosition = value;
             }
             else
             {
-                TS_.position = value;
+                TS.position = value;
             }
         }
         
         private void MoveToNextPath()
         {
-            if (PathIndex_ + 1 >= Paths_.Length)
+            if (_pathIndex + 1 >= _paths.Length)
             {
                 IsEnd = true;
                 return;
             }
 
-            PathIndex_++;
-            StartPos_ = Paths_[PathIndex_ - 1];
-            TargetPos_ = Paths_[PathIndex_];
-            CurrentTime_ = 0f;
-            MoveTime_ = MathUtils.ClampMinTime(Vector3.Distance(StartPos_, TargetPos_) / MoveSpeed_);
+            _pathIndex++;
+            _startPos = _paths[_pathIndex - 1];
+            _targetPos = _paths[_pathIndex];
+            _currentTime = 0f;
+            _moveTime = MathUtils.ClampMinTime(Vector3.Distance(_startPos, _targetPos) / _moveSpeed);
         }
     }
 

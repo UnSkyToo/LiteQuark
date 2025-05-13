@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            AssetRequest_ = Bundle_.LoadAssetAsync<T>(Name_);
+            AssetRequest_ = Bundle.LoadAssetAsync<T>(Name);
             AssetRequest_.completed += OnAssetRequestLoadCompleted;
         }
 
@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
             op.completed -= OnAssetRequestLoadCompleted;
 
             var asset = (op as AssetBundleRequest)?.asset;
-            Callback_?.Invoke(asset);
+            Callback?.Invoke(asset);
             Complete(asset);
         }
 

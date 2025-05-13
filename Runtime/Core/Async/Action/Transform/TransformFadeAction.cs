@@ -4,24 +4,24 @@ namespace LiteQuark.Runtime
 {
     public class TransformFadeAction : TransformBaseAction
     {
-        public override string DebugName => $"<TransformFade>({TS_.name},{BeginAlpha_}->{EndAlpha_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<TransformFade>({TS.name},{_beginAlpha}->{_endAlpha},{_totalTime},{_easeKind})";
         
-        private readonly IAlphaBox AlphaBox_;
-        private readonly float BeginAlpha_;
-        private readonly float EndAlpha_;
-        private readonly float TotalTime_;
-        private readonly EaseKind EaseKind_;
+        private readonly IAlphaBox _alphaBox;
+        private readonly float _beginAlpha;
+        private readonly float _endAlpha;
+        private readonly float _totalTime;
+        private readonly EaseKind _easeKind;
         
-        private float CurrentTime_;
+        private float _currentTime;
 
         public TransformFadeAction(Transform transform, float beginAlpha, float endAlpha, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)
             : base(transform)
         {
-            AlphaBox_ = box ?? new AlphaBox(TS_);
-            BeginAlpha_ = beginAlpha;
-            EndAlpha_ = endAlpha;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            EaseKind_ = easeKind;
+            _alphaBox = box ?? new AlphaBox(TS);
+            _beginAlpha = beginAlpha;
+            _endAlpha = endAlpha;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -31,8 +31,8 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ = 0f;
-            AlphaBox_.SetAlpha(BeginAlpha_);
+            _currentTime = 0f;
+            _alphaBox.SetAlpha(_beginAlpha);
             IsEnd = false;
         }
 
@@ -43,15 +43,15 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            AlphaBox_.SetAlpha(Mathf.Lerp(BeginAlpha_, EndAlpha_, v));
+            _alphaBox.SetAlpha(Mathf.Lerp(_beginAlpha, _endAlpha, v));
 
             if (step >= 1f)
             {
-                AlphaBox_.SetAlpha(EndAlpha_);
+                _alphaBox.SetAlpha(_endAlpha);
                 IsEnd = true;
             }
         }

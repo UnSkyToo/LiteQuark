@@ -23,10 +23,10 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            if (Template_ != null)
+            if (Template != null)
             {
-                LiteRuntime.Asset.UnloadAsset(Template_);
-                Template_ = null;
+                LiteRuntime.Asset.UnloadAsset(Template);
+                Template = null;
             }
             
             base.Dispose();
@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
         protected override void OnRelease(GameObject go)
         {
             go.SetActive(false);
-            go.transform.SetParent(Parent_, false);
+            go.transform.SetParent(Parent, false);
         }
 
         public override void Alloc(Transform parent, System.Action<GameObject> callback)

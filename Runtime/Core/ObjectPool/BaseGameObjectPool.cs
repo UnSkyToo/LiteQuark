@@ -7,14 +7,14 @@ namespace LiteQuark.Runtime
     {
         public string Key { get; private set; }
         public virtual string Name => Key;
-        public int CountAll => Pool_?.CountAll ?? 0;
-        public int CountActive => Pool_?.CountActive ?? 0;
-        public int CountInactive => Pool_?.CountInactive ?? 0;
+        public int CountAll => Pool?.CountAll ?? 0;
+        public int CountActive => Pool?.CountActive ?? 0;
+        public int CountInactive => Pool?.CountInactive ?? 0;
 
-        protected Transform Parent_;
-        protected GameObject Template_;
-        protected ObjectPool<GameObject> Pool_;
-        protected event System.Action LoadTemplateCallback_;
+        protected Transform Parent;
+        protected GameObject Template;
+        protected ObjectPool<GameObject> Pool;
+        protected event System.Action LoadTemplateCallback;
         
         protected BaseGameObjectPool()
         {
@@ -23,37 +23,37 @@ namespace LiteQuark.Runtime
         public virtual void Initialize(string key, params object[] args)
         {
             Key = key;
-            Parent_ = new GameObject(Name).transform;
-            Parent_.hideFlags = HideFlags.NotEditable;
+            Parent = new GameObject(Name).transform;
+            Parent.hideFlags = HideFlags.NotEditable;
             var root = args.Length > 0 && args[0] is Transform ? (Transform)args[0] : null;
             if (root != null)
             {
-                Parent_.SetParent(root, false);
+                Parent.SetParent(root, false);
             }
-            Parent_.localPosition = Vector3.zero;
+            Parent.localPosition = Vector3.zero;
             
-            Pool_ = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
+            Pool = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
         }
         
         public virtual void Dispose()
         {
-            Pool_.Dispose();
+            Pool.Dispose();
 
-            if (Parent_ != null)
+            if (Parent != null)
             {
-                Object.DestroyImmediate(Parent_.gameObject);
-                Parent_ = null;
+                Object.DestroyImmediate(Parent.gameObject);
+                Parent = null;
             }
         }
 
         protected virtual GameObject OnCreate()
         {
-            if (Template_ == null)
+            if (Template == null)
             {
                 return null;
             }
             
-            var go = Object.Instantiate(Template_, Parent_);
+            var go = Object.Instantiate(Template, Parent);
             return go;
         }
 
@@ -66,7 +66,7 @@ namespace LiteQuark.Runtime
 
         protected virtual void OnRelease(GameObject go)
         {
-            go.transform.SetParent(Parent_, false);
+            go.transform.SetParent(Parent, false);
         }
 
         protected virtual void OnDestroy(GameObject go)
@@ -78,13 +78,13 @@ namespace LiteQuark.Runtime
         {
             RunWhenLoadTemplated(() =>
             {
-                if (Template_ == null)
+                if (Template == null)
                 {
                     callback?.Invoke(this);
                     return;
                 }
 
-                LiteRuntime.Task.InstantiateGoTask(Template_, Parent_, count, (list) =>
+                LiteRuntime.Task.InstantiateGoTask(Template, Parent, count, (list) =>
                 {
                     foreach (var go in list)
                     {
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
         {
             RunWhenLoadTemplated(() =>
             {
-                var go = Pool_.Get();
+                var go = Pool.Get();
                 if (go != null && parent != null)
                 {
                     go.transform.SetParent(parent, false);
@@ -125,25 +125,25 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            Pool_.Release(value);
+            Pool.Release(value);
         }
 
         protected void RunWhenLoadTemplated(System.Action callback)
         {
-            if (Template_ != null)
+            if (Template != null)
             {
                 callback?.Invoke();
             }
             else
             {
-                LoadTemplateCallback_ += callback;
+                LoadTemplateCallback += callback;
             }
         }
 
         protected void OnLoadTemplate(GameObject template)
         {
-            Template_ = template;
-            LoadTemplateCallback_?.Invoke();
+            Template = template;
+            LoadTemplateCallback?.Invoke();
         }
     }
 }

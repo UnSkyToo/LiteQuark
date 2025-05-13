@@ -6,39 +6,39 @@ namespace LiteQuark.Runtime
 {
     public sealed class ObjectPoolSystem : ISystem
     {
-        private readonly Dictionary<string, IBasePool> PoolCache_ = new ();
-        private Transform Root_;
+        private readonly Dictionary<string, IBasePool> _poolCache = new ();
+        private Transform _root;
 
         public ObjectPoolSystem()
         {
-            PoolCache_.Clear();
+            _poolCache.Clear();
         }
         
         public Task<bool> Initialize()
         {
-            Root_ = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
+            _root = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
             return Task.FromResult(true);
         }
 
         public void Dispose()
         {
-            foreach (var pool in PoolCache_)
+            foreach (var pool in _poolCache)
             {
                 pool.Value.Dispose();
             }
-            PoolCache_.Clear();
+            _poolCache.Clear();
 
-            if (Root_ != null)
+            if (_root != null)
             {
-                Object.DestroyImmediate(Root_.gameObject);
-                Root_ = null;
+                Object.DestroyImmediate(_root.gameObject);
+                _root = null;
             }
         }
 
         public void RemoveUnusedPools()
         {
             var removeList = new List<IBasePool>();
-            foreach (var pool in PoolCache_)
+            foreach (var pool in _poolCache)
             {
                 if (pool.Value.CountActive > 0)
                 {
@@ -49,23 +49,23 @@ namespace LiteQuark.Runtime
             foreach (var pool in removeList)
             {
                 pool.Dispose();
-                PoolCache_.Remove(pool.Key);
+                _poolCache.Remove(pool.Key);
             }
         }
 
         public Transform GetPoolRoot()
         {
-            return Root_;
+            return _root;
         }
 
         public Dictionary<string, IBasePool> GetPoolCache()
         {
-            return PoolCache_;
+            return _poolCache;
         }
 
         public TPool GetPool<TPool>(string key, params object[] args) where TPool : class, IBasePool
         {
-            if (PoolCache_.TryGetValue(key, out var pool))
+            if (_poolCache.TryGetValue(key, out var pool))
             {
                 return pool as TPool;
             }
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
         {
             var pool = System.Activator.CreateInstance<TPool>();
             pool.Initialize(key, args);
-            PoolCache_.Add(key, pool);
+            _poolCache.Add(key, pool);
             return pool;
         }
 
@@ -88,10 +88,10 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (PoolCache_.ContainsKey(pool.Key))
+            if (_poolCache.ContainsKey(pool.Key))
             {
                 pool.Dispose();
-                PoolCache_.Remove(pool.Key);
+                _poolCache.Remove(pool.Key);
             }
         }
 
@@ -137,22 +137,22 @@ namespace LiteQuark.Runtime
 
         public EmptyGameObjectPool GetEmptyGameObjectPool(string key)
         {
-            return GetPool<EmptyGameObjectPool>(key, Root_);
+            return GetPool<EmptyGameObjectPool>(key, _root);
         }
 
         public ActiveGameObjectPool GetActiveGameObjectPool(string key)
         {
-            return GetPool<ActiveGameObjectPool>(key, Root_);
+            return GetPool<ActiveGameObjectPool>(key, _root);
         }
 
         public PositionGameObjectPool GetPositionGameObjectPool(string key)
         {
-            return GetPool<PositionGameObjectPool>(key, Root_);
+            return GetPool<PositionGameObjectPool>(key, _root);
         }
 
         public ParticlePool GetParticlePool(string path)
         {
-            return GetPool<ParticlePool>(path, Root_);
+            return GetPool<ParticlePool>(path, _root);
         }
     }
 }

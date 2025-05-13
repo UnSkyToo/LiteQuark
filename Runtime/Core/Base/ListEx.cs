@@ -6,62 +6,62 @@ namespace LiteQuark.Runtime
 {
     public class ListEx<T> : IEnumerable<T>
     {
-        private bool Dirty_;
-        private int InEach_;
+        private bool _dirty;
+        private int _inEach;
 
-        private readonly List<T> Values_;
-        private readonly List<T> AddList_;
-        private readonly List<T> RemoveList_;
+        private readonly List<T> _values;
+        private readonly List<T> _addList;
+        private readonly List<T> _removeList;
 
-        public int Count => AddList_.Count + Values_.Count - RemoveList_.Count;
+        public int Count => _addList.Count + _values.Count - _removeList.Count;
 
-        public T this[int index] => Values_[index];
+        public T this[int index] => _values[index];
 
         public ListEx()
         {
-            Dirty_ = false;
-            InEach_ = 0;
+            _dirty = false;
+            _inEach = 0;
 
-            Values_ = new List<T>();
-            AddList_ = new List<T>();
-            RemoveList_ = new List<T>();
+            _values = new List<T>();
+            _addList = new List<T>();
+            _removeList = new List<T>();
         }
 
         public void Add(T item)
         {
-            if (RemoveList_.Remove(item))
+            if (_removeList.Remove(item))
             {
-                Dirty_ = true;
+                _dirty = true;
                 return;
             }
             
-            AddList_.Add(item);
-            Dirty_ = true;
+            _addList.Add(item);
+            _dirty = true;
         }
 
         public void Remove(T item)
         {
-            if (AddList_.Remove(item))
+            if (_addList.Remove(item))
             {
-                Dirty_ = true;
+                _dirty = true;
                 return;
             }
             
-            RemoveList_.Add(item);
-            Dirty_ = true;
+            _removeList.Add(item);
+            _dirty = true;
         }
 
         public void Clear()
         {
-            RemoveList_.Clear();
+            _removeList.Clear();
             // AddList_.Clear();
-            Values_.Clear();
-            Dirty_ = false;
+            _values.Clear();
+            _dirty = false;
         }
 
         public bool Contains(T item)
         {
-            return Values_.Contains(item) || AddList_.Contains(item);
+            return _values.Contains(item) || _addList.Contains(item);
         }
 
         public void Foreach(Action<T> func)
@@ -69,15 +69,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -86,15 +86,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -103,15 +103,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -120,15 +120,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2, param3);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -140,8 +140,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item) == true)
                     {
@@ -149,7 +149,7 @@ namespace LiteQuark.Runtime
                     }
                 }
 
-                foreach (var item in AddList_)
+                foreach (var item in _addList)
                 {
                     if (func?.Invoke(item) == true)
                     {
@@ -159,7 +159,7 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
@@ -172,8 +172,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item, param) == true)
                     {
@@ -181,7 +181,7 @@ namespace LiteQuark.Runtime
                     }
                 }
                 
-                foreach (var item in AddList_)
+                foreach (var item in _addList)
                 {
                     if (func?.Invoke(item, param) == true)
                     {
@@ -191,31 +191,31 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
 
         public void Flush()
         {
-            if (!Dirty_ || InEach_ > 0)
+            if (!_dirty || _inEach > 0)
             {
                 return;
             }
             
-            foreach (var item in RemoveList_)
+            foreach (var item in _removeList)
             {
-                Values_.Remove(item);
+                _values.Remove(item);
             }
-            RemoveList_.Clear();
+            _removeList.Clear();
             
-            foreach (var item in AddList_)
+            foreach (var item in _addList)
             {
-                Values_.Add(item);
+                _values.Add(item);
             }
-            AddList_.Clear();
+            _addList.Clear();
             
-            Dirty_ = false;
+            _dirty = false;
         }
 
         // GC Alloc 40B
@@ -223,9 +223,9 @@ namespace LiteQuark.Runtime
         {
             Flush();
             
-            for (var index = 0; index < Values_.Count; ++index)
+            for (var index = 0; index < _values.Count; ++index)
             {
-                yield return Values_[index];
+                yield return _values[index];
             }
         }
 
@@ -234,9 +234,9 @@ namespace LiteQuark.Runtime
         {
             Flush();
             
-            for (var index = 0; index < Values_.Count; ++index)
+            for (var index = 0; index < _values.Count; ++index)
             {
-                yield return Values_[index];
+                yield return _values[index];
             }
         }
     }
