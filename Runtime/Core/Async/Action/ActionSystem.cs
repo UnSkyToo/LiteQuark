@@ -24,27 +24,29 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            ActionList_.Foreach((action, list, dt) =>
+            ActionList_.Foreach(OnActionTick, ActionList_, deltaTime);
+        }
+
+        private void OnActionTick(IAction action, ListEx<IAction> list, float dt)
+        {
+            try
             {
-                try
+                if (action.IsEnd)
                 {
-                    if (action.IsEnd)
-                    {
-                        action.FinalCallback?.Invoke(action);
-                        action.Dispose();
-                        list.Remove(action);
-                    }
-                    else
-                    {
-                        action.Tick(dt);
-                    }
+                    action.FinalCallback?.Invoke(action);
+                    action.Dispose();
+                    list.Remove(action);
                 }
-                catch
+                else
                 {
-                    action.Stop();
-                    throw;
+                    action.Tick(dt);
                 }
-            }, ActionList_, deltaTime);
+            }
+            catch
+            {
+                action.Stop();
+                throw;
+            }
         }
 
         public bool IsIdle()

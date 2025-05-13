@@ -27,15 +27,17 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            TimerList_.Foreach((timer, list, dt) =>
-            {
-                timer.Tick(dt);
+            TimerList_.Foreach(OnTimerTick, TimerList_, deltaTime);
+        }
 
-                if (timer.IsEnd)
-                {
-                    list.Remove(timer);
-                }
-            }, TimerList_, deltaTime);
+        private void OnTimerTick(ITimer timer, ListEx<ITimer> list, float dt)
+        {
+            timer.Tick(dt);
+
+            if (timer.IsEnd)
+            {
+                list.Remove(timer);
+            }
         }
 
         public ulong AddTimer(float interval, Action onTick, int repeatCount = 1, float delayTime = 0f)
