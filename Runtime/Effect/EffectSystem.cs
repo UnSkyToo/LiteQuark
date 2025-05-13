@@ -4,11 +4,11 @@ namespace LiteQuark.Runtime
 {
     public sealed class EffectSystem : ISystem, ITick
     {
-        private readonly ListEx<EffectObject> EffectList_ = new ListEx<EffectObject>();
+        private readonly ListEx<EffectObject> _effectList = new ListEx<EffectObject>();
         
         public EffectSystem()
         {
-            EffectList_.Clear();
+            _effectList.Clear();
         }
         
         public Task<bool> Initialize()
@@ -18,13 +18,13 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            EffectList_.Foreach((effect) => effect.Dispose());
-            EffectList_.Clear();
+            _effectList.Foreach((effect) => effect.Dispose());
+            _effectList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            EffectList_.Foreach((effect, list, dt) =>
+            _effectList.Foreach((effect, list, dt) =>
             {
                 if (effect.IsEnd)
                 {
@@ -35,12 +35,12 @@ namespace LiteQuark.Runtime
                 {
                     effect.Tick(dt);
                 }
-            }, EffectList_, deltaTime);
+            }, _effectList, deltaTime);
         }
-
+        
         public BaseObject FindEffect(ulong id)
         {
-            return EffectList_.ForeachReturn((effect) => effect.UniqueID == id);
+            return _effectList.ForeachReturn((effect) => effect.UniqueID == id);
         }
 
         public ulong PlayEffect(EffectCreateInfo info)
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             }
 
             var effect = new EffectObject(info);
-            EffectList_.Add(effect);
+            _effectList.Add(effect);
             return effect.UniqueID;
         }
         
@@ -62,7 +62,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            var effect = EffectList_.ForeachReturn((effect) => effect.UniqueID == id);
+            var effect = _effectList.ForeachReturn((effect) => effect.UniqueID == id);
             effect?.Stop();
         }
     }

@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         public Animator[] Animators;
         public TrailRenderer[] Trails;
         
-        private float[] TrailsTime_;
+        private float[] _trailsTime;
 
         public bool IsEmpty()
         {
@@ -138,15 +138,15 @@ namespace LiteQuark.Runtime
 
             if (Trails != null)
             {
-                if (TrailsTime_ == null)
+                if (_trailsTime == null)
                 {
-                    TrailsTime_ = new float[Trails.Length];
+                    _trailsTime = new float[Trails.Length];
                     for (var i = 0; i < Trails.Length; ++i)
                     {
                         var trail = Trails[i];
                         if (trail != null)
                         {
-                            TrailsTime_[i] = trail.time;
+                            _trailsTime[i] = trail.time;
                         }
                     }
                 }
@@ -156,7 +156,7 @@ namespace LiteQuark.Runtime
                     var trail = Trails[i];
                     if (trail != null)
                     {
-                        trail.time = speed < 0.0001f ? int.MaxValue : TrailsTime_[i] / speed;
+                        trail.time = speed < 0.0001f ? int.MaxValue : _trailsTime[i] / speed;
                     }
                 }
             }

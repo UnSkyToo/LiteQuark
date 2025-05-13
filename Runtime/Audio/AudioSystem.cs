@@ -6,72 +6,72 @@ namespace LiteQuark.Runtime
 {
     public sealed class AudioSystem : ISystem, ITick
     {
-        private bool MuteSound_ = false;
-        private bool MuteMusic_ = false;
+        private bool _muteSound = false;
+        private bool _muteMusic = false;
         
-        private readonly Dictionary<ulong, AudioObject> AudioCache_ = new Dictionary<ulong, AudioObject>();
-        private readonly List<AudioObject> RemoveList_ = new List<AudioObject>();
-        private EmptyGameObjectPool Pool_ = null;
-        private Transform Root_ = null;
+        private readonly Dictionary<ulong, AudioObject> _audioCache = new Dictionary<ulong, AudioObject>();
+        private readonly List<AudioObject> _removeList = new List<AudioObject>();
+        private EmptyGameObjectPool _pool = null;
+        private Transform _root = null;
         
         public AudioSystem()
         {
-            AudioCache_.Clear();
-            RemoveList_.Clear();
-            MuteSound_ = false;
-            MuteMusic_ = false;
+            _audioCache.Clear();
+            _removeList.Clear();
+            _muteSound = false;
+            _muteMusic = false;
         }
         
         public Task<bool> Initialize()
         {
-            Root_ = UnityUtils.CreateHoldGameObject("Audio").transform;
-            Pool_ = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
+            _root = UnityUtils.CreateHoldGameObject("Audio").transform;
+            _pool = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
             return Task.FromResult(true);
         }
 
         public void Dispose()
         {
-            foreach (var audio in RemoveList_)
+            foreach (var audio in _removeList)
             {
                 audio.Stop();
-                audio.Unload(Pool_);
+                audio.Unload(_pool);
             }
-            RemoveList_.Clear();
+            _removeList.Clear();
 
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 chunk.Value.Stop();
-                chunk.Value.Unload(Pool_);
+                chunk.Value.Unload(_pool);
             }
-            AudioCache_.Clear();
+            _audioCache.Clear();
             
-            LiteRuntime.ObjectPool.RemovePool(Pool_);
+            LiteRuntime.ObjectPool.RemovePool(_pool);
             
-            if (Root_ != null)
+            if (_root != null)
             {
-                Object.DestroyImmediate(Root_.gameObject);
-                Root_ = null;
+                Object.DestroyImmediate(_root.gameObject);
+                _root = null;
             }
         }
         
         public void Tick(float deltaTime)
         {
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.IsEnd())
                 {
-                    RemoveList_.Add(chunk.Value);
+                    _removeList.Add(chunk.Value);
                 }
             }
 
-            if (RemoveList_.Count > 0)
+            if (_removeList.Count > 0)
             {
-                foreach (var audio in RemoveList_)
+                foreach (var audio in _removeList)
                 {
-                    AudioCache_.Remove(audio.UniqueID);
-                    audio.Unload(Pool_);
+                    _audioCache.Remove(audio.UniqueID);
+                    audio.Unload(_pool);
                 }
-                RemoveList_.Clear();
+                _removeList.Clear();
             }
         }
 
@@ -79,7 +79,7 @@ namespace LiteQuark.Runtime
         {
             var count = 0;
             
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.Path == path)
                 {
@@ -102,13 +102,13 @@ namespace LiteQuark.Runtime
             }
             
             var audio = new AudioObject(type, path);
-            AudioCache_.Add(audio.UniqueID, audio);
+            _audioCache.Add(audio.UniqueID, audio);
 
-            audio.Load(Pool_, parent, path, isLoop, volume, delay, (isLoaded) =>
+            audio.Load(_pool, parent, path, isLoop, volume, delay, (isLoaded) =>
             {
                 if (!isLoaded)
                 {
-                    RemoveList_.Add(audio);
+                    _removeList.Add(audio);
                     return;
                 }
                 
@@ -124,15 +124,15 @@ namespace LiteQuark.Runtime
             switch (audio.Type)
             {
                 case AudioType.Sound:
-                    if (MuteSound_)
+                    if (_muteSound)
                     {
-                        audio.Mute(MuteSound_);
+                        audio.Mute(_muteSound);
                     }
                     break;
                 case AudioType.Music:
-                    if (MuteMusic_)
+                    if (_muteMusic)
                     {
-                        audio.Mute(MuteMusic_);
+                        audio.Mute(_muteMusic);
                     }
                     break;
             }
@@ -140,7 +140,7 @@ namespace LiteQuark.Runtime
 
         public ulong PlaySound(string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
         {
-            return PlayAudio(AudioType.Sound, Root_, path, isLoop, limit, volume, delay);
+            return PlayAudio(AudioType.Sound, _root, path, isLoop, limit, volume, delay);
         }
 
         public ulong PlayMusic(string path, bool isLoop = true, float volume = 1.0f, bool isOnly = true)
@@ -150,38 +150,38 @@ namespace LiteQuark.Runtime
                 StopAllMusic();
             }
 
-            return PlayAudio(AudioType.Music, Root_, path, isLoop, 0, volume);
+            return PlayAudio(AudioType.Music, _root, path, isLoop, 0, volume);
         }
 
         public void StopAudio(ulong id)
         {
-            if (AudioCache_.ContainsKey(id))
+            if (_audioCache.ContainsKey(id))
             {
-                AudioCache_[id].Stop();
-                RemoveList_.Add(AudioCache_[id]);
+                _audioCache[id].Stop();
+                _removeList.Add(_audioCache[id]);
             }
         }
 
         public void StopAllSound()
         {
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.Type == AudioType.Sound)
                 {
                     chunk.Value.Stop();
-                    RemoveList_.Add(chunk.Value);
+                    _removeList.Add(chunk.Value);
                 }
             }
         }
 
         public void StopAllMusic()
         {
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.Type == AudioType.Music)
                 {
                     chunk.Value.Stop();
-                    RemoveList_.Add(chunk.Value);
+                    _removeList.Add(chunk.Value);
                 }
             }
         }
@@ -194,9 +194,9 @@ namespace LiteQuark.Runtime
 
         public void MuteAllSound(bool isMute)
         {
-            MuteSound_ = isMute;
+            _muteSound = isMute;
 
-            foreach(var chunk in AudioCache_)
+            foreach(var chunk in _audioCache)
             {
                 if (chunk.Value.Type == AudioType.Sound)
                 {
@@ -207,9 +207,9 @@ namespace LiteQuark.Runtime
 
         public void MuteAllMusic(bool isMute)
         {
-            MuteMusic_ = isMute;
+            _muteMusic = isMute;
 
-            foreach (var chunk in AudioCache_)
+            foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.Type == AudioType.Music)
                 {

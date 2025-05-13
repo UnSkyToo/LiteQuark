@@ -6,38 +6,38 @@ namespace LiteQuark.Runtime
     {
         public override string DebugName => $"Effect<{UniqueID}>";
 
-        private readonly EffectCreateInfo Info_;
-        private EffectState State_;
-        private GameObject Go_;
-        private EffectBinder Binder_;
+        private readonly EffectCreateInfo _info;
+        private EffectState _state;
+        private GameObject _go;
+        private EffectBinder _binder;
         
-        private float CurSpeed_ = 1f;
-        private float LastSpeed_ = 1f;
-        private float LastTimeScale_ = 1f;
-        private float Time_ = 0f;
+        private float _curSpeed = 1f;
+        private float _lastSpeed = 1f;
+        private float _lastTimeScale = 1f;
+        private float _time = 0f;
 
-        public bool IsLoop => Info_.IsLoop || Binder_.IsLoop;
-        public float LifeTime => Info_.LifeTime > 0f ? Info_.LifeTime : Binder_.LifeTime;
-        public bool IsValid => State_ is > EffectState.Created and < EffectState.Finished;
-        public bool IsEnd => State_ == EffectState.Finished;
+        public bool IsLoop => _info.IsLoop || _binder.IsLoop;
+        public float LifeTime => _info.LifeTime > 0f ? _info.LifeTime : _binder.LifeTime;
+        public bool IsValid => _state is > EffectState.Created and < EffectState.Finished;
+        public bool IsEnd => _state == EffectState.Finished;
 
         public EffectObject(EffectCreateInfo info)
         {
-            Info_ = info;
-            State_ = EffectState.Created;
+            _info = info;
+            _state = EffectState.Created;
             
-            LiteRuntime.ObjectPool.GetActiveGameObjectPool(Info_.Path).Alloc(Info_.Parent, OnLoad);
+            LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Alloc(_info.Parent, OnLoad);
         }
 
         public void Dispose()
         {
-            if (Go_ != null)
+            if (_go != null)
             {
-                LiteRuntime.ObjectPool.GetActiveGameObjectPool(Info_.Path).Recycle(Go_);
-                Go_ = null;
+                LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(_go);
+                _go = null;
             }
 
-            State_ = EffectState.Destroyed;
+            _state = EffectState.Destroyed;
         }
 
         public void Tick(float deltaTime)
@@ -47,15 +47,15 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            switch (State_)
+            switch (_state)
             {
                 case EffectState.Created:
                     break;
                 case EffectState.Pause:
                     break;
                 case EffectState.Playing:
-                    Time_ -= deltaTime * CurSpeed_;
-                    if (Time_ <= 0f)
+                    _time -= deltaTime * _curSpeed;
+                    if (_time <= 0f)
                     {
                         if (!IsLoop)
                         {
@@ -63,15 +63,15 @@ namespace LiteQuark.Runtime
                         }
                         else
                         {
-                            Play(CurSpeed_);
+                            Play(_curSpeed);
                         }
                     }
                     break;
                 case EffectState.Finishing:
-                    Time_ -= deltaTime * CurSpeed_;
-                    if (Time_ <= 0f)
+                    _time -= deltaTime * _curSpeed;
+                    if (_time <= 0f)
                     {
-                        State_ = EffectState.Finished;
+                        _state = EffectState.Finished;
                     }
                     break;
                 case EffectState.Finished:
@@ -83,86 +83,86 @@ namespace LiteQuark.Runtime
 
         private void OnLoad(GameObject go)
         {
-            if (State_ == EffectState.Created)
+            if (_state == EffectState.Created)
             {
-                State_ = EffectState.Pause;
-                Go_ = go;
+                _state = EffectState.Pause;
+                _go = go;
 
-                Binder_ = Go_.GetComponent<EffectBinder>();
-                if (Binder_ == null)
+                _binder = _go.GetComponent<EffectBinder>();
+                if (_binder == null)
                 {
 #if UNITY_EDITOR
-                    LLog.Warning($"Effect {Info_.Path} is not cached!");
+                    LLog.Warning($"Effect {_info.Path} is not cached!");
 #endif
-                    Binder_ = Go_.AddComponent<EffectBinder>();
-                    Binder_.UpdateInfo();
+                    _binder = _go.AddComponent<EffectBinder>();
+                    _binder.UpdateInfo();
                 }
-                else if (Binder_.IsEmpty())
+                else if (_binder.IsEmpty())
                 {
 #if UNITY_EDITOR
-                    LLog.Warning($"Effect {Info_.Path} is not cached!");
+                    LLog.Warning($"Effect {_info.Path} is not cached!");
 #endif
-                    Binder_.UpdateInfo();
+                    _binder.UpdateInfo();
                 }
                 
-                if (Info_.Parent != null)
+                if (_info.Parent != null)
                 {
-                    if ((Info_.Space & EffectSpace.LocalPosition) != 0)
+                    if ((_info.Space & EffectSpace.LocalPosition) != 0)
                     {
-                        go.transform.localPosition = Info_.Position;
+                        go.transform.localPosition = _info.Position;
                     }
                     else
                     {
-                        go.transform.position = Info_.Position;
+                        go.transform.position = _info.Position;
                     }
                 
-                    if ((Info_.Space & EffectSpace.LocalRotation) != 0)
+                    if ((_info.Space & EffectSpace.LocalRotation) != 0)
                     {
-                        go.transform.localRotation = Info_.Rotation;
+                        go.transform.localRotation = _info.Rotation;
                     }
                     else
                     {
-                        go.transform.rotation = Info_.Rotation;
+                        go.transform.rotation = _info.Rotation;
                     }
                 }
                 else
                 {
-                    go.transform.position = Info_.Position;
-                    go.transform.rotation = Info_.Rotation;
+                    go.transform.position = _info.Position;
+                    go.transform.rotation = _info.Rotation;
                 }
                     
-                go.transform.localScale = Vector3.one * Info_.Scale;
+                go.transform.localScale = Vector3.one * _info.Scale;
 
-                if (Info_.Order > 0)
+                if (_info.Order > 0)
                 {
-                    UnityUtils.AddSortingOrder(Go_, Info_.Order);
+                    UnityUtils.AddSortingOrder(_go, _info.Order);
                 }
 
-                if (!string.IsNullOrWhiteSpace(Info_.LayerName))
+                if (!string.IsNullOrWhiteSpace(_info.LayerName))
                 {
-                    UnityUtils.ChangeSortingLayerName(Go_, Info_.LayerName);
+                    UnityUtils.ChangeSortingLayerName(_go, _info.LayerName);
                 }
                 
-                Play(Info_.Speed);
+                Play(_info.Speed);
             }
         }
         
         public void SetSpeed(float speed)
         {
-            if (Mathf.Abs(CurSpeed_ - speed) > 0.0001f && IsValid)
+            if (Mathf.Abs(_curSpeed - speed) > 0.0001f && IsValid)
             {
-                LastSpeed_ = CurSpeed_;
-                CurSpeed_ = speed;
-                Binder_.SetSpeed(CurSpeed_);
+                _lastSpeed = _curSpeed;
+                _curSpeed = speed;
+                _binder.SetSpeed(_curSpeed);
             }
         }
 
         public void ResetSpeed()
         {
-            if (Mathf.Abs(CurSpeed_ - LastSpeed_) > 0.0001f && IsValid)
+            if (Mathf.Abs(_curSpeed - _lastSpeed) > 0.0001f && IsValid)
             {
-                CurSpeed_ = LastSpeed_;
-                Binder_.SetSpeed(CurSpeed_);
+                _curSpeed = _lastSpeed;
+                _binder.SetSpeed(_curSpeed);
             }
         }
 
@@ -170,7 +170,7 @@ namespace LiteQuark.Runtime
         {
             if (IsValid)
             {
-                Binder_.SetTime(time);
+                _binder.SetTime(time);
             }
         }
         
@@ -178,11 +178,11 @@ namespace LiteQuark.Runtime
         {
             if (IsValid)
             {
-                State_ = EffectState.Playing;
-                LastSpeed_ = CurSpeed_;
-                CurSpeed_ = speed;
-                Time_ = LifeTime;
-                Binder_.Play(speed);
+                _state = EffectState.Playing;
+                _lastSpeed = _curSpeed;
+                _curSpeed = speed;
+                _time = LifeTime;
+                _binder.Play(speed);
             }
         }
 
@@ -190,19 +190,19 @@ namespace LiteQuark.Runtime
         {
             if (IsValid)
             {
-                State_ = EffectState.Playing;
-                LastSpeed_ = CurSpeed_;
-                CurSpeed_ = speed;
-                Time_ = LifeTime;
-                Binder_.PlayAnimation(stateName, layer);
+                _state = EffectState.Playing;
+                _lastSpeed = _curSpeed;
+                _curSpeed = speed;
+                _time = LifeTime;
+                _binder.PlayAnimation(stateName, layer);
             }
         }
 
         public void Stop()
         {
-            State_ = EffectState.Finishing;
-            Time_ = Binder_.RetainTime;
-            Binder_.Stop();
+            _state = EffectState.Finishing;
+            _time = _binder.RetainTime;
+            _binder.Stop();
         }
     }
 }
