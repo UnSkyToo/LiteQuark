@@ -4,13 +4,13 @@ namespace LiteQuark.Runtime
 {
     public class BezierCurveCommon : IBezierCurve
     {
-        private readonly IBezierCurveModulator Modulator_;
+        private readonly EaseKind EaseKind_;
         private readonly Vector3[] Points_;
         private readonly Vector3[] Controller_;
 
-        public BezierCurveCommon(IBezierCurveModulator modulator, Vector3[] points)
+        public BezierCurveCommon(EaseKind easeKind, Vector3[] points)
         {
-            Modulator_ = modulator;
+            EaseKind_ = easeKind;
 
             if (points != null && points.Length > 1)
             {
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
                 return Vector3.zero;
             }
 
-            var modulateTime = Modulator_?.Modulation(time) ?? time;
+            var modulateTime = EaseUtils.Sample(EaseKind_, time);
             var count = GeneratorController(Points_, Points_.Length, modulateTime);
             while (count > 1)
             {
