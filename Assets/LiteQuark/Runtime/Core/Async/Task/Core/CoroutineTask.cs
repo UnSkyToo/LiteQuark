@@ -5,19 +5,19 @@ namespace LiteQuark.Runtime
 {
     public sealed class CoroutineTask : BaseTask
     {
-        private readonly IEnumerator Item_;
-        private Action Callback_;
+        private readonly IEnumerator _item;
+        private Action _callback;
 
         public CoroutineTask(IEnumerator item, Action callback)
             : base()
         {
-            Item_ = item;
-            Callback_ = callback;
+            _item = item;
+            _callback = callback;
         }
 
         public override void Dispose()
         {
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnExecute()
@@ -33,9 +33,9 @@ namespace LiteQuark.Runtime
                 {
                     yield return null;
                 }
-                else */if (Item_ != null && Item_.MoveNext())
+                else */if (_item != null && _item.MoveNext())
                 {
-                    yield return Item_.Current;
+                    yield return _item.Current;
                 }
                 else
                 {
@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            Callback_?.Invoke();
+            _callback?.Invoke();
         }
     }
 }

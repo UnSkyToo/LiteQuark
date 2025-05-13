@@ -17,13 +17,13 @@ namespace LiteQuark.Runtime
 
         public int SortingOrder { get; private set; }
 
-        private readonly List<Sprite> LoadSpriteList_ = new List<Sprite>();
-        private readonly int EventTag_;
+        private readonly List<Sprite> _loadSpriteList = new List<Sprite>();
+        private readonly int _eventTag;
 
         protected BaseUI()
             : base()
         {
-            EventTag_ = GetType().Name.GetHashCode();
+            _eventTag = GetType().Name.GetHashCode();
         }
 
         public void BindGo(GameObject go)
@@ -125,7 +125,7 @@ namespace LiteQuark.Runtime
         {
             LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
             {
-                LoadSpriteList_.Add(sprite);
+                _loadSpriteList.Add(sprite);
                 callback?.Invoke(sprite);
             });
         }
@@ -153,11 +153,11 @@ namespace LiteQuark.Runtime
 
         private void UnloadSprites()
         {
-            foreach (var sprite in LoadSpriteList_)
+            foreach (var sprite in _loadSpriteList)
             {
                 LiteRuntime.Asset.UnloadAsset(sprite);
             }
-            LoadSpriteList_.Clear();
+            _loadSpriteList.Clear();
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         protected void RegisterEvent<T>(Action<T> callback) where T : IEventData
         {
-            LiteRuntime.Event.Register(EventTag_, callback);
+            LiteRuntime.Event.Register(_eventTag, callback);
         }
 
         /// <summary>
@@ -173,12 +173,12 @@ namespace LiteQuark.Runtime
         /// </summary>
         protected void UnRegisterEvent<T>(Action<T> callback) where T : IEventData
         {
-            LiteRuntime.Event.UnRegister(EventTag_, callback);
+            LiteRuntime.Event.UnRegister(_eventTag, callback);
         }
         
         private void UnRegisterAllEvent()
         {
-            LiteRuntime.Event.UnRegisterAll(EventTag_);
+            LiteRuntime.Event.UnRegisterAll(_eventTag);
         }
     }
 }

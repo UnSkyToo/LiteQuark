@@ -11,17 +11,17 @@ namespace LiteQuark.Runtime
             Parallel,
         }
 
-        private readonly BuildType BuildType_;
-        private readonly string Tag_;
-        private readonly List<IAction> ActionList_;
-        private ActionBuilder Parent_;
+        private readonly BuildType _buildType;
+        private readonly string _tag;
+        private readonly List<IAction> _actionList;
+        private ActionBuilder _parent;
 
         private ActionBuilder(BuildType buildType, string tag)
         {
-            BuildType_ = buildType;
-            Tag_ = string.IsNullOrEmpty(tag) ? "unknown" : tag;
-            ActionList_ = new List<IAction>();
-            Parent_ = null;
+            _buildType = buildType;
+            _tag = string.IsNullOrEmpty(tag) ? "unknown" : tag;
+            _actionList = new List<IAction>();
+            _parent = null;
         }
         
         public static ActionBuilder Sequence(string tag = "unknown", bool isRepeat = false)
@@ -37,49 +37,49 @@ namespace LiteQuark.Runtime
         public ActionBuilder BeginSequence(string tag = "unknown", bool isRepeat = false)
         {
             var builder = Sequence(tag, isRepeat);
-            builder.Parent_ = this;
+            builder._parent = this;
             return builder;
         }
 
         public ActionBuilder EndSequence()
         {
-            if (Parent_ == null)
+            if (_parent == null)
             {
                 return null;
             }
 
-            Parent_.Action(Flush());
-            return Parent_;
+            _parent.Action(Flush());
+            return _parent;
         }
 
         public ActionBuilder BeginParallel(string tag = "unknown")
         {
             var builder = Parallel(tag);
-            builder.Parent_ = this;
+            builder._parent = this;
             return builder;
         }
 
         public ActionBuilder EndParallel()
         {
-            if (Parent_ == null)
+            if (_parent == null)
             {
                 return null;
             }
 
-            Parent_.Action(Flush());
-            return Parent_;
+            _parent.Action(Flush());
+            return _parent;
         }
         
         public IAction Flush()
         {
-            switch (BuildType_)
+            switch (_buildType)
             {
                 case BuildType.Sequence:
-                    return new SequenceAction(Tag_, ActionList_.ToArray());
+                    return new SequenceAction(_tag, _actionList.ToArray());
                 case BuildType.RepeatSequence:
-                    return new RepeatSequenceAction(Tag_, ActionList_.ToArray());
+                    return new RepeatSequenceAction(_tag, _actionList.ToArray());
                 case BuildType.Parallel:
-                    return new ParallelAction(Tag_, ActionList_.ToArray());
+                    return new ParallelAction(_tag, _actionList.ToArray());
             }
 
             return null;
@@ -87,7 +87,7 @@ namespace LiteQuark.Runtime
         
         public ActionBuilder Add(IAction action)
         {
-            ActionList_.Add(action);
+            _actionList.Add(action);
             return this;
         }
     }

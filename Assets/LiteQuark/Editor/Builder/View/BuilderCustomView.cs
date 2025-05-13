@@ -4,23 +4,23 @@ namespace LiteQuark.Editor
     {
         public override bool Enabled
         {
-            get => Config_.Enable;
-            protected set => Config_.Enable = value;
+            get => _config.Enable;
+            protected set => _config.Enable = value;
         }
 
-        private readonly CustomBuildConfig Config_;
-        private readonly ICustomBuildView View_;
+        private readonly CustomBuildConfig _config;
+        private readonly ICustomBuildView _view;
         
         public BuilderCustomView(ProjectBuilderWindow window, string title, CustomBuildConfig config, ICustomBuildView view)
             : base(window, title)
         {
-            Config_ = config;
-            View_ = view;
+            _config = config;
+            _view = view;
         }
 
         protected override void DrawContent()
         {
-            View_?.DrawContent(Config_);
+            _view?.DrawContent(_config);
         }
     }
 }

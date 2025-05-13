@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
 {
     public class Encoder
     {
-        private readonly List<Type> TypeList_ = new List<Type>();
+        private readonly List<Type> _typeList = new List<Type>();
         
         public Encoder()
         {
@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         
         public byte[] Encode<T>(T value)
         {
-            TypeList_.Clear();
+            _typeList.Clear();
             var result = new List<byte>();
             
             using (var stream = new MemoryStream())
@@ -194,11 +194,11 @@ namespace LiteQuark.Runtime
 
         private void WriteType(BinaryWriter writer, Type type)
         {
-            var index = TypeList_.IndexOf(type);
+            var index = _typeList.IndexOf(type);
             if (index == -1)
             {
-                TypeList_.Add(type);
-                index = TypeList_.Count - 1;
+                _typeList.Add(type);
+                index = _typeList.Count - 1;
             }
             
             writer.Write((ushort)index);
@@ -206,8 +206,8 @@ namespace LiteQuark.Runtime
 
         private void WriteTypeList(BinaryWriter writer)
         {
-            writer.Write(TypeList_.Count);
-            foreach (var type in TypeList_)
+            writer.Write(_typeList.Count);
+            foreach (var type in _typeList)
             {
                 writer.Write(type);
             }

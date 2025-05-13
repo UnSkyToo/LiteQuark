@@ -4,24 +4,24 @@ namespace LiteQuark.Runtime
 {
     public class RectTransformMoveAction : RectTransformBaseAction
     {
-        public override string DebugName => $"<RectTransformMove>({RT_.name},{OriginPos_}->{TargetPos_},{TotalTime_},{EaseKind_})";
+        public override string DebugName => $"<RectTransformMove>({RT.name},{_originPos}->{_targetPos},{_totalTime},{_easeKind})";
 
-        private readonly Vector2 Position_;
-        private readonly float TotalTime_;
-        private readonly bool IsRelative_;
-        private readonly EaseKind EaseKind_;
+        private readonly Vector2 _position;
+        private readonly float _totalTime;
+        private readonly bool _isRelative;
+        private readonly EaseKind _easeKind;
         
-        private Vector2 OriginPos_;
-        private Vector2 TargetPos_;
-        private float CurrentTime_;
+        private Vector2 _originPos;
+        private Vector2 _targetPos;
+        private float _currentTime;
 
         public RectTransformMoveAction(RectTransform transform, Vector2 position, float time, bool isRelative = false, EaseKind easeKind = EaseKind.Linear)
             : base(transform)
         {
-            Position_ = position;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            IsRelative_ = isRelative;
-            EaseKind_ = easeKind;
+            _position = position;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _isRelative = isRelative;
+            _easeKind = easeKind;
         }
 
         public override void Execute()
@@ -31,9 +31,9 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ = 0;
-            OriginPos_ = GetValue();
-            TargetPos_ = IsRelative_ ? OriginPos_ + Position_ : Position_;
+            _currentTime = 0;
+            _originPos = GetValue();
+            _targetPos = _isRelative ? _originPos + _position : _position;
             IsEnd = false;
         }
 
@@ -44,27 +44,27 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            var step = Mathf.Clamp01(CurrentTime_ / TotalTime_);
-            var v = EaseUtils.Sample(EaseKind_, step);
+            _currentTime += deltaTime;
+            var step = Mathf.Clamp01(_currentTime / _totalTime);
+            var v = EaseUtils.Sample(_easeKind, step);
             
-            SetValue(Vector2.LerpUnclamped(OriginPos_, TargetPos_, v));
+            SetValue(Vector2.LerpUnclamped(_originPos, _targetPos, v));
 
             if (step >= 1)
             {
-                SetValue(TargetPos_);
+                SetValue(_targetPos);
                 IsEnd = true;
             }
         }
 
         private Vector2 GetValue()
         {
-            return RT_.anchoredPosition;
+            return RT.anchoredPosition;
         }
         
         private void SetValue(Vector2 value)
         {
-            RT_.anchoredPosition = value;
+            RT.anchoredPosition = value;
         }
     }
 

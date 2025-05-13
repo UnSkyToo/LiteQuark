@@ -9,9 +9,9 @@ namespace LiteQuark.Runtime
 {
     internal sealed class AssetDatabaseProvider : IAssetProvider
     {
-        private bool SimulateAsyncDelayInEditor_;
-        private float AsyncDelayMinTime_;
-        private float AsyncDelayMaxTime_;
+        private bool _simulateAsyncDelayInEditor;
+        private float _asyncDelayMinTime;
+        private float _asyncDelayMaxTime;
         
         public AssetDatabaseProvider()
         {
@@ -21,13 +21,13 @@ namespace LiteQuark.Runtime
         {
             if (LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor)
             {
-                SimulateAsyncDelayInEditor_ = true;
-                AsyncDelayMinTime_ = MathF.Max(0f, LiteRuntime.Setting.Asset.AsyncDelayMinTime);
-                AsyncDelayMaxTime_ = MathF.Min(10f, LiteRuntime.Setting.Asset.AsyncDelayMaxTime);
+                _simulateAsyncDelayInEditor = true;
+                _asyncDelayMinTime = MathF.Max(0f, LiteRuntime.Setting.Asset.AsyncDelayMinTime);
+                _asyncDelayMaxTime = MathF.Min(10f, LiteRuntime.Setting.Asset.AsyncDelayMaxTime);
             }
             else
             {
-                SimulateAsyncDelayInEditor_ = false;
+                _simulateAsyncDelayInEditor = false;
             }
             
             return Task.FromResult(true);
@@ -43,9 +43,9 @@ namespace LiteQuark.Runtime
 
         private void SimulateAsync<T>(Action<T> callback, T value)
         {
-            if (SimulateAsyncDelayInEditor_)
+            if (_simulateAsyncDelayInEditor)
             {
-                LiteRuntime.Timer.AddTimer(UnityEngine.Random.Range(AsyncDelayMinTime_, AsyncDelayMaxTime_), () =>
+                LiteRuntime.Timer.AddTimer(UnityEngine.Random.Range(_asyncDelayMinTime, _asyncDelayMaxTime), () =>
                 {
                     callback?.Invoke(value);
                 });

@@ -2,85 +2,85 @@
 {
     public class PlaySoundAction : BaseAction
     {
-        public override string DebugName => $"<PlaySound>({Path_},{IsLoop_},{Limit_},{Volume_})";
+        public override string DebugName => $"<PlaySound>({_path},{_isLoop},{_limit},{_volume})";
 
-        private readonly string Path_;
-        private readonly bool IsLoop_;
-        private readonly int Limit_;
-        private readonly float Volume_;
+        private readonly string _path;
+        private readonly bool _isLoop;
+        private readonly int _limit;
+        private readonly float _volume;
         
         public PlaySoundAction(string path, bool isLoop, int limit, float volume)
         {
-            Path_ = path;
-            IsLoop_ = isLoop;
-            Limit_ = limit;
-            Volume_ = volume;
+            _path = path;
+            _isLoop = isLoop;
+            _limit = limit;
+            _volume = volume;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Get<AudioSystem>().PlaySound(Path_, IsLoop_, Limit_, Volume_);
+            LiteRuntime.Get<AudioSystem>().PlaySound(_path, _isLoop, _limit, _volume);
         }
     }
 
     public class MuteAllSoundAction : BaseAction
     {
-        public override string DebugName => $"<MuteAllSoundAction>({IsMute_})";
+        public override string DebugName => $"<MuteAllSoundAction>({_isMute})";
         
-        private readonly bool IsMute_;
+        private readonly bool _isMute;
         
         public MuteAllSoundAction(bool isMute)
         {
-            IsMute_ = isMute;
+            _isMute = isMute;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Get<AudioSystem>().MuteAllSound(IsMute_);
+            LiteRuntime.Get<AudioSystem>().MuteAllSound(_isMute);
         }
     }
     
     public class PlayMusicAction : BaseAction
     {
-        public override string DebugName => $"<PlayMusic>({Path_},{IsLoop_},{Volume_},{IsOnly_})";
+        public override string DebugName => $"<PlayMusic>({_path},{_isLoop},{_volume},{_isOnly})";
 
-        private readonly string Path_;
-        private readonly bool IsLoop_;
-        private readonly float Volume_;
-        private readonly bool IsOnly_;
+        private readonly string _path;
+        private readonly bool _isLoop;
+        private readonly float _volume;
+        private readonly bool _isOnly;
         
         public PlayMusicAction(string path, bool isLoop, float volume, bool isOnly)
         {
-            Path_ = path;
-            IsLoop_ = isLoop;
-            Volume_ = volume;
-            IsOnly_ = isOnly;
+            _path = path;
+            _isLoop = isLoop;
+            _volume = volume;
+            _isOnly = isOnly;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Get<AudioSystem>().PlayMusic(Path_, IsLoop_, Volume_, IsOnly_);
+            LiteRuntime.Get<AudioSystem>().PlayMusic(_path, _isLoop, _volume, _isOnly);
         }
     }
     
     public class MuteAllMusicAction : BaseAction
     {
-        public override string DebugName => $"<MuteAllMusicAction>({IsMute_})";
+        public override string DebugName => $"<MuteAllMusicAction>({_isMute})";
         
-        private readonly bool IsMute_;
+        private readonly bool _isMute;
         
         public MuteAllMusicAction(bool isMute)
         {
-            IsMute_ = isMute;
+            _isMute = isMute;
         }
 
         public override void Execute()
         {
             IsEnd = true;
-            LiteRuntime.Get<AudioSystem>().MuteAllMusic(IsMute_);
+            LiteRuntime.Get<AudioSystem>().MuteAllMusic(_isMute);
         }
     }
 

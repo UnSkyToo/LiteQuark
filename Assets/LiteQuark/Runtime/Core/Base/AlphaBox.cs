@@ -9,32 +9,32 @@ namespace LiteQuark.Runtime
     
     public class AlphaBox : IAlphaBox
     {
-        private readonly SpriteRenderer[] Renderers_;
-        private readonly CanvasGroup[] CanvasGroups_;
-        private readonly Color[] Colors_;
+        private readonly SpriteRenderer[] _renderers;
+        private readonly CanvasGroup[] _canvasGroups;
+        private readonly Color[] _colors;
 
         public AlphaBox(Transform transform)
         {
-            Renderers_ = transform.GetComponentsInChildren<SpriteRenderer>();
-            Colors_ = new Color[Renderers_.Length];
+            _renderers = transform.GetComponentsInChildren<SpriteRenderer>();
+            _colors = new Color[_renderers.Length];
 
-            for (var i = 0; i < Renderers_.Length; ++i)
+            for (var i = 0; i < _renderers.Length; ++i)
             {
-                Colors_[i] = Renderers_[i].color;
+                _colors[i] = _renderers[i].color;
             }
 
-            CanvasGroups_ = transform.GetComponentsInChildren<CanvasGroup>();
+            _canvasGroups = transform.GetComponentsInChildren<CanvasGroup>();
         }
 
         public void SetAlpha(float alpha)
         {
-            for (var i = 0; i < Renderers_.Length; ++i)
+            for (var i = 0; i < _renderers.Length; ++i)
             {
-                Colors_[i].a = alpha;
-                Renderers_[i].color = Colors_[i];
+                _colors[i].a = alpha;
+                _renderers[i].color = _colors[i];
             }
 
-            foreach (var group in CanvasGroups_)
+            foreach (var group in _canvasGroups)
             {
                 group.alpha = alpha;
             }

@@ -4,12 +4,12 @@ namespace LiteQuark.Runtime
 {
     public sealed class WaitCallbackTask : BaseTask
     {
-        private readonly Action<Action<bool>> Func_;
+        private readonly Action<Action<bool>> _func;
         
         public WaitCallbackTask(Action<Action<bool>> func)
             : base()
         {
-            Func_ = func;
+            _func = func;
         }
         
         public override void Dispose()
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            Func_.Invoke(OnCallback);
+            _func.Invoke(OnCallback);
         }
 
         private void OnCallback(bool isCompleted)

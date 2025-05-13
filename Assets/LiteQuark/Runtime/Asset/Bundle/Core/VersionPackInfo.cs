@@ -14,8 +14,8 @@ namespace LiteQuark.Runtime
         public bool HashMode { get; private set; }
         public BundleInfo[] BundleList { get; private set; }
 
-        private Dictionary<string, BundleInfo> BundlePathToBundleCache_ = new ();
-        private Dictionary<string, BundleInfo> AssetPathToBundleCache_ = new ();
+        private Dictionary<string, BundleInfo> _bundlePathToBundleCache = new ();
+        private Dictionary<string, BundleInfo> _assetPathToBundleCache = new ();
 
         public VersionPackInfo()
         {
@@ -34,16 +34,16 @@ namespace LiteQuark.Runtime
 
         public void Initialize()
         {
-            BundlePathToBundleCache_.Clear();
-            AssetPathToBundleCache_.Clear();
+            _bundlePathToBundleCache.Clear();
+            _assetPathToBundleCache.Clear();
             
             foreach (var bundle in BundleList)
             {
-                BundlePathToBundleCache_.Add(bundle.BundlePath, bundle);
+                _bundlePathToBundleCache.Add(bundle.BundlePath, bundle);
                 
                 foreach (var assetPath in bundle.AssetList)
                 {
-                    AssetPathToBundleCache_.Add(assetPath, bundle);
+                    _assetPathToBundleCache.Add(assetPath, bundle);
                 }
             }
         }
@@ -113,7 +113,7 @@ namespace LiteQuark.Runtime
         
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
         {
-            if (BundlePathToBundleCache_.TryGetValue(bundlePath, out var info))
+            if (_bundlePathToBundleCache.TryGetValue(bundlePath, out var info))
             {
                 return info;
             }
@@ -124,7 +124,7 @@ namespace LiteQuark.Runtime
 
         public BundleInfo GetBundleInfoFromAssetPath(string assetPath)
         {
-            if (AssetPathToBundleCache_.TryGetValue(assetPath, out var info))
+            if (_assetPathToBundleCache.TryGetValue(assetPath, out var info))
             {
                 return info;
             }

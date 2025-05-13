@@ -5,8 +5,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class DefaultLoggerRepository : LoggerRepositoryBase
     {
-        private readonly ILoggerFactory LoggerFactory_;
-        private readonly Dictionary<string, ILogger> LoggerCache_;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly Dictionary<string, ILogger> _loggerCache;
 
         public DefaultLoggerRepository()
             : this(new DefaultLoggerFactory())
@@ -16,24 +16,24 @@ namespace LiteQuark.Runtime
         
         public DefaultLoggerRepository(ILoggerFactory loggerFactory)
         {
-            LoggerFactory_ = loggerFactory;
-            LoggerCache_ = new Dictionary<string, ILogger>();
+            _loggerFactory = loggerFactory;
+            _loggerCache = new Dictionary<string, ILogger>();
         }
         
         public override void Dispose()
         {
             base.Dispose();
             
-            LoggerCache_.Clear();
+            _loggerCache.Clear();
         }
         
         public override ILogger[] GetCurrentLoggers() 
         {
             lock(this)
             {
-                var result = new List<ILogger>(LoggerCache_.Count);
+                var result = new List<ILogger>(_loggerCache.Count);
                 
-                foreach(var current in LoggerCache_)
+                foreach(var current in _loggerCache)
                 {
                     if (current.Value is LoggerBase logger) 
                     {
@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
                 throw new ArgumentNullException(nameof(name));
             }
 
-            return GetLogger(name, LoggerFactory_);
+            return GetLogger(name, _loggerFactory);
         }
         
         public override ILogger GetLogger(string name, ILoggerFactory factory) 
@@ -70,9 +70,9 @@ namespace LiteQuark.Runtime
             lock(this)
             {
                 LoggerBase logger = null;
-                if (LoggerCache_.ContainsKey(name))
+                if (_loggerCache.ContainsKey(name))
                 {
-                    logger = LoggerCache_[name] as LoggerBase;
+                    logger = _loggerCache[name] as LoggerBase;
                 }
                 
                 if (logger == null) 
@@ -81,7 +81,7 @@ namespace LiteQuark.Runtime
                     if (logger != null)
                     {
                         logger.Repository = this;
-                        LoggerCache_.Add(name, logger);
+                        _loggerCache.Add(name, logger);
                     }
                 }
 

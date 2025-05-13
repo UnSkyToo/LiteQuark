@@ -7,12 +7,12 @@ namespace LiteQuark.Runtime
     {
         public const int RepeatCountForever = -1;
 
-        private readonly float FrameInterval_ = 0.01f;
-        private readonly ListEx<ITimer> TimerList_ = new ListEx<ITimer>();
+        private readonly float _frameInterval = 0.01f;
+        private readonly ListEx<ITimer> _timerList = new ListEx<ITimer>();
 
         public TimerSystem()
         {
-            FrameInterval_ = MathF.Max(0.01f, 1.0f / LiteRuntime.Setting.Common.TargetFrameRate);
+            _frameInterval = MathF.Max(0.01f, 1.0f / LiteRuntime.Setting.Common.TargetFrameRate);
         }
         
         public Task<bool> Initialize()
@@ -22,12 +22,12 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            TimerList_.Clear();
+            _timerList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            TimerList_.Foreach(OnTimerTick, TimerList_, deltaTime);
+            _timerList.Foreach(OnTimerTick, _timerList, deltaTime);
         }
 
         private void OnTimerTick(ITimer timer, ListEx<ITimer> list, float dt)
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
 
         public ulong AddTimerWithFrame(int frameCount, Action onTick, int repeatCount = 1, float delayTime = 0f)
         {
-            return AddTimer(frameCount * FrameInterval_, onTick, repeatCount, delayTime);
+            return AddTimer(frameCount * _frameInterval, onTick, repeatCount, delayTime);
         }
 
         public ulong NextFrame(Action onTick)
@@ -70,7 +70,7 @@ namespace LiteQuark.Runtime
         private ulong CreateTimer(float interval, float delayTime, Action onTick, Action onComplete, int repeatCount = 1)
         {
             var newTimer = new NormalTimer(interval, delayTime, repeatCount, onTick, onComplete);
-            TimerList_.Add(newTimer);
+            _timerList.Add(newTimer);
             return newTimer.ID;
         }
         
@@ -81,7 +81,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
             
-            return TimerList_.ForeachReturn((timer, targetId) => timer.ID == targetId, id);
+            return _timerList.ForeachReturn((timer, targetId) => timer.ID == targetId, id);
         }
 
         public void StopTimer(ulong id)

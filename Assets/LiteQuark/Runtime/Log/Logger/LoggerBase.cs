@@ -8,36 +8,36 @@ namespace LiteQuark.Runtime
         public string Name { get; }
         public ILoggerRepository Repository { get; set; }
 
-        private LogLevel CurrentLevel_;
-        private readonly List<ILogAppender> AppenderList_;
+        private LogLevel _currentLevel;
+        private readonly List<ILogAppender> _appenderList;
 
         protected LoggerBase(string name)
         {
             Name = name;
-            CurrentLevel_ = LogLevel.All;
-            AppenderList_ = new List<ILogAppender>();
+            _currentLevel = LogLevel.All;
+            _appenderList = new List<ILogAppender>();
         }
 
         public void AddAppender(ILogAppender appender)
         {
             appender.Open();
-            AppenderList_.Add(appender);
+            _appenderList.Add(appender);
         }
 
         public void RemoveAppender(ILogAppender appender)
         {
             appender.Close();
-            AppenderList_.Remove(appender);
+            _appenderList.Remove(appender);
         }
 
         public void RemoveAllAppender()
         {
-            foreach (var appender in AppenderList_)
+            foreach (var appender in _appenderList)
             {
                 appender.Close();
             }
             
-            AppenderList_.Clear();
+            _appenderList.Clear();
         }
 
         public bool IsLevelEnable(LogLevel level)
@@ -47,18 +47,18 @@ namespace LiteQuark.Runtime
                 return false;
             }
             
-            return (CurrentLevel_ & level) == level;
+            return (_currentLevel & level) == level;
         }
 
         public void EnableLevel(LogLevel level, bool enabled)
         {
             if (enabled)
             {
-                CurrentLevel_ |= level;
+                _currentLevel |= level;
             }
             else
             {
-                CurrentLevel_ &= (~level);
+                _currentLevel &= (~level);
             }
         }
 
@@ -115,7 +115,7 @@ namespace LiteQuark.Runtime
 
             lock (this)
             {
-                foreach (var appender in AppenderList_)
+                foreach (var appender in _appenderList)
                 {
                     appender.DoAppend(loggingEvent);
                 }

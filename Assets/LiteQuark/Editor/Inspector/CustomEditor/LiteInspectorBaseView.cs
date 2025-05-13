@@ -4,18 +4,18 @@ namespace LiteQuark.Editor
 {
     internal abstract class LiteInspectorBaseView : UnityEditor.Editor
     {
-        private bool IsCompiling_ = false;
+        private bool _isCompiling = false;
 
         public sealed override void OnInspectorGUI()
         {
-            if (IsCompiling_ && !EditorApplication.isCompiling)
+            if (_isCompiling && !EditorApplication.isCompiling)
             {
-                IsCompiling_ = false;
+                _isCompiling = false;
                 OnCompileCompleted();
             }
-            else if (!IsCompiling_ && EditorApplication.isCompiling)
+            else if (!_isCompiling && EditorApplication.isCompiling)
             {
-                IsCompiling_ = true;
+                _isCompiling = true;
                 OnCompileStart();
             }
             

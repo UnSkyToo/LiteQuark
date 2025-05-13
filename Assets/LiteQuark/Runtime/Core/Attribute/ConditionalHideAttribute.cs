@@ -6,16 +6,16 @@ namespace LiteQuark.Runtime
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public sealed class ConditionalHideAttribute : PropertyAttribute
     {
-        public string ConditionalSourceField = "";
-        public string ConditionalSourceField2 = "";
-        public string[] ConditionalSourceFields = new string[] { };
-        public bool[] ConditionalSourceFieldInverseBools = new bool[] { };
-        public bool HideInInspector = false;
-        public bool Inverse = false;
-        public bool UseOrLogic = false;
+        public readonly string ConditionalSourceField = "";
+        public readonly string ConditionalSourceField2 = "";
+        public readonly string[] ConditionalSourceFields = new string[] { };
+        public readonly bool[] ConditionalSourceFieldInverseBools = new bool[] { };
+        public readonly bool HideInInspector = false;
+        public readonly bool Inverse = false;
+        public readonly bool UseOrLogic = false;
 
-        public bool InverseCondition1 = false;
-        public bool InverseCondition2 = false;
+        public readonly bool InverseCondition1 = false;
+        public readonly bool InverseCondition2 = false;
         
         public ConditionalHideAttribute(string conditionalSourceField)
         {

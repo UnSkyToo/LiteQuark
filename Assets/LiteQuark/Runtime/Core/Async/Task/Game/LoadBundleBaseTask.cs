@@ -7,39 +7,39 @@ namespace LiteQuark.Runtime
 {
     public abstract class LoadBundleBaseTask : BaseTask
     {
-        protected readonly string BundleUri_;
-        protected readonly List<LoadBundleBaseTask> ChildTasks_;
-        private AssetBundle Bundle_;
-        private Action<AssetBundle> Callback_;
-        private bool IsLoaded_;
+        protected readonly string BundleUri;
+        protected readonly List<LoadBundleBaseTask> ChildTasks;
+        private AssetBundle _bundle;
+        private Action<AssetBundle> _callback;
+        private bool _isLoaded;
 
         protected LoadBundleBaseTask(string bundleUri, Action<AssetBundle> callback)
             : base()
         {
-            BundleUri_ = bundleUri;
-            ChildTasks_ = new List<LoadBundleBaseTask>();
-            Bundle_ = null;
-            Callback_ = callback;
-            IsLoaded_ = false;
+            BundleUri = bundleUri;
+            ChildTasks = new List<LoadBundleBaseTask>();
+            _bundle = null;
+            _callback = callback;
+            _isLoaded = false;
         }
         
         public override void Dispose()
         {
-            Callback_ = null;
+            _callback = null;
         }
 
         protected override void OnTick(float deltaTime)
         {
-            var value = GetDownloadPercent() + ChildTasks_.Sum(childTask => childTask.Progress);
-            Progress = value / (1f + ChildTasks_.Count);
+            var value = GetDownloadPercent() + ChildTasks.Sum(childTask => childTask.Progress);
+            Progress = value / (1f + ChildTasks.Count);
 
-            if (IsLoaded_)
+            if (_isLoaded)
             {
-                var isChildDone = ChildTasks_.Count <= 0 || ChildTasks_.All(childTask => childTask.IsDone);
+                var isChildDone = ChildTasks.Count <= 0 || ChildTasks.All(childTask => childTask.IsDone);
                 if (isChildDone)
                 {
-                    Callback_?.Invoke(Bundle_);
-                    Complete(Bundle_);
+                    _callback?.Invoke(_bundle);
+                    Complete(_bundle);
                 }
             }
         }
@@ -51,13 +51,13 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            ChildTasks_.Add(childTask);
+            ChildTasks.Add(childTask);
         }
 
         protected void OnBundleLoaded(AssetBundle bundle)
         {
-            Bundle_ = bundle;
-            IsLoaded_ = true;
+            _bundle = bundle;
+            _isLoaded = true;
         }
 
         public abstract AssetBundle WaitCompleted();

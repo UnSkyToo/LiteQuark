@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadRemoteBundleTask : LoadBundleBaseTask
     {
-        private UnityWebRequest Request_;
+        private UnityWebRequest _request;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
@@ -15,10 +15,10 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            if (Request_ != null)
+            if (_request != null)
             {
-                Request_.Dispose();
-                Request_ = null;
+                _request.Dispose();
+                _request = null;
             }
             
             base.Dispose();
@@ -31,19 +31,19 @@ namespace LiteQuark.Runtime
 
         public override void Cancel()
         {
-            Request_?.Abort();
+            _request?.Abort();
             base.Cancel();
         }
 
         protected override float GetDownloadPercent()
         {
-            return Request_?.downloadProgress ?? 0f;
+            return _request?.downloadProgress ?? 0f;
         }
 
         protected override void OnExecute()
         {
-            Request_ = UnityWebRequestAssetBundle.GetAssetBundle(new Uri(BundleUri_));
-            var op = Request_.SendWebRequest();
+            _request = UnityWebRequestAssetBundle.GetAssetBundle(new Uri(BundleUri));
+            var op = _request.SendWebRequest();
             op.completed += OnBundleRequestCompleted;
         }
 
@@ -51,19 +51,19 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnBundleRequestCompleted;
             
-            if (Request_.result != UnityWebRequest.Result.Success)
+            if (_request.result != UnityWebRequest.Result.Success)
             {
-                LLog.Error($"Failed to download bundle : {BundleUri_}");
+                LLog.Error($"Failed to download bundle : {BundleUri}");
                 OnBundleLoaded(null);
             }
             else
             {
-                var bundle = DownloadHandlerAssetBundle.GetContent(Request_);
+                var bundle = DownloadHandlerAssetBundle.GetContent(_request);
                 OnBundleLoaded(bundle);
             }
             
-            Request_?.Dispose();
-            Request_ = null;
+            _request?.Dispose();
+            _request = null;
         }
     }
 }

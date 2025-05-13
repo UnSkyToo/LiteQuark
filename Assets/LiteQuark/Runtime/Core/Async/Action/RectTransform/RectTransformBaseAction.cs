@@ -4,16 +4,16 @@ namespace LiteQuark.Runtime
 {
     public abstract class RectTransformBaseAction : BaseAction
     {
-        protected readonly RectTransform RT_;
+        protected readonly RectTransform RT;
         
         protected RectTransformBaseAction(RectTransform transform)
         {
-            RT_ = transform;
+            RT = transform;
         }
 
         public bool CheckSafety()
         {
-            if (!IsSafety || RT_ != null)
+            if (!IsSafety || RT != null)
             {
                 return true;
             }

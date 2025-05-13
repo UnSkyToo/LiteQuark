@@ -7,33 +7,33 @@ namespace LiteQuark.Editor
     {
         public override bool Enabled
         {
-            get => Config_.Enable;
-            protected set => Config_.Enable = value;
+            get => _config.Enable;
+            protected set => _config.Enable = value;
         }
 
-        private readonly ResBuildConfig Config_;
+        private readonly ResBuildConfig _config;
         
         public BuilderResView(ProjectBuilderWindow window, string title, ResBuildConfig config)
             : base(window, title)
         {
-            Config_ = config;
+            _config = config;
         }
 
         protected override void DrawContent()
         {
-            Config_.Options = (BuildAssetBundleOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), Config_.Options, false);
+            _config.Options = (BuildAssetBundleOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), _config.Options, false);
 
-            Config_.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), Config_.HashMode);
+            _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), _config.HashMode);
             
-            Config_.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will be delete last build file"), Config_.CleanBuildMode);
+            _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will be delete last build file"), _config.CleanBuildMode);
 
-            Config_.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), Config_.CopyToStreamingAssets);
+            _config.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), _config.CopyToStreamingAssets);
 
-            if (Config_.CopyToStreamingAssets)
+            if (_config.CopyToStreamingAssets)
             {
                 using (new IndentLevelScope())
                 {
-                    Config_.CleanStreamingAssetsBeforeCopy = EditorGUILayout.Toggle(new GUIContent("Clean Before Copy", "Clean streaming assets before copy to streaming assets path"), Config_.CleanStreamingAssetsBeforeCopy);
+                    _config.CleanStreamingAssetsBeforeCopy = EditorGUILayout.Toggle(new GUIContent("Clean Before Copy", "Clean streaming assets before copy to streaming assets path"), _config.CleanStreamingAssetsBeforeCopy);
                 }
             }
         }

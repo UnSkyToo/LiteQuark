@@ -8,55 +8,55 @@ namespace LiteQuark.Runtime
     {
         private enum OperationType { Add, Remove }
         
-        private int InEach_;
+        private int _inEach;
 
-        private readonly List<T> Values_;
-        private readonly Queue<(OperationType type, T item)> Ops_;
+        private readonly List<T> _values;
+        private readonly Queue<(OperationType type, T item)> _ops;
         
-        public int Count => Values_.Count;
-        public T this[int index] => Values_[index];
+        public int Count => _values.Count;
+        public T this[int index] => _values[index];
         
         public SafeList()
         {
-            InEach_ = 0;
+            _inEach = 0;
 
-            Values_ = new List<T>();
-            Ops_ = new Queue<(OperationType type, T item)>();
+            _values = new List<T>();
+            _ops = new Queue<(OperationType type, T item)>();
         }
 
         public void Add(T item)
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
-                Ops_.Enqueue((OperationType.Add, item));
+                _ops.Enqueue((OperationType.Add, item));
             }
             else
             {
-                Values_.Add(item);
+                _values.Add(item);
             }
         }
 
         public void Remove(T item)
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
-                Ops_.Enqueue((OperationType.Remove, item));
+                _ops.Enqueue((OperationType.Remove, item));
             }
             else
             {
-                Values_.Remove(item);
+                _values.Remove(item);
             }
         }
 
         public void Clear()
         {
-            Values_.Clear();
-            Ops_.Clear();
+            _values.Clear();
+            _ops.Clear();
         }
 
         public bool Contains(T item)
         {
-            return Values_.Contains(item);
+            return _values.Contains(item);
         }
 
         public void Foreach(Action<T> func)
@@ -64,15 +64,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -81,15 +81,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -98,15 +98,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -115,15 +115,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2, param3);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -135,8 +135,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item) == true)
                     {
@@ -146,7 +146,7 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
@@ -159,8 +159,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item, param) == true)
                     {
@@ -170,28 +170,28 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
 
         public void Flush()
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
                 return;
             }
 
-            while (Ops_.Count > 0)
+            while (_ops.Count > 0)
             {
-                var (type, item) = Ops_.Dequeue();
+                var (type, item) = _ops.Dequeue();
                 switch (type)
                 {
                     case OperationType.Add:
-                        Values_.Add(item);
+                        _values.Add(item);
                         break;
                     case OperationType.Remove:
-                        Values_.Remove(item);
+                        _values.Remove(item);
                         break;
                 }
             }
@@ -202,9 +202,9 @@ namespace LiteQuark.Runtime
         {
             Flush();
             
-            for (var index = 0; index < Values_.Count; ++index)
+            for (var index = 0; index < _values.Count; ++index)
             {
-                yield return Values_[index];
+                yield return _values[index];
             }
         }
 
@@ -213,9 +213,9 @@ namespace LiteQuark.Runtime
         {
             Flush();
             
-            for (var index = 0; index < Values_.Count; ++index)
+            for (var index = 0; index < _values.Count; ++index)
             {
-                yield return Values_[index];
+                yield return _values[index];
             }
         }
     }

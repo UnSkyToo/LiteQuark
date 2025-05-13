@@ -2,7 +2,7 @@
 {
     internal sealed class InitSystemStage : IStage
     {
-        private StageCode CurrentCode_ = StageCode.Waiting;
+        private StageCode _currentCode = StageCode.Waiting;
         
         public InitSystemStage()
         {
@@ -10,9 +10,9 @@
         
         public async void Enter()
         {
-            CurrentCode_ = StageCode.Waiting;
+            _currentCode = StageCode.Waiting;
             var result = await SystemCenter.Instance.InitializeSystem();
-            CurrentCode_ = result ? StageCode.Completed : StageCode.Error;
+            _currentCode = result ? StageCode.Completed : StageCode.Error;
         }
 
         public void Leave()
@@ -21,7 +21,7 @@
 
         public StageCode Tick(float deltaTime)
         {
-            return CurrentCode_;
+            return _currentCode;
         }
     }
 }

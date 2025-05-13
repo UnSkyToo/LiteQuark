@@ -7,15 +7,15 @@ namespace LiteQuark.Runtime
 {
     public sealed class TaskSystem : ISystem, ITick
     {
-        private readonly UnityEngine.MonoBehaviour MonoBehaviourInstance_ = null;
-        private readonly SynchronizationContext MainThreadSynchronizationContext_ = null;
-        private readonly ListEx<ITask> TaskList_ = new ListEx<ITask>();
+        private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
+        private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
+        private readonly ListEx<ITask> _taskList = new ListEx<ITask>();
 
         public TaskSystem()
         {
-            MonoBehaviourInstance_ = LiteRuntime.Instance.Launcher;
-            MainThreadSynchronizationContext_ = SynchronizationContext.Current;
-            TaskList_.Clear();
+            _monoBehaviourInstance = LiteRuntime.Instance.Launcher;
+            _mainThreadSynchronizationContext = SynchronizationContext.Current;
+            _taskList.Clear();
         }
 
         public Task<bool> Initialize()
@@ -25,15 +25,15 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            MonoBehaviourInstance_?.StopAllCoroutines();
+            _monoBehaviourInstance?.StopAllCoroutines();
             
-            TaskList_.Foreach((task) => task.Dispose());
-            TaskList_.Clear();
+            _taskList.Foreach((task) => task.Dispose());
+            _taskList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            TaskList_.Foreach(OnTaskTick, TaskList_, deltaTime);
+            _taskList.Foreach(OnTaskTick, _taskList, deltaTime);
         }
 
         private void OnTaskTick(ITask task, ListEx<ITask> list, float dt)
@@ -73,93 +73,93 @@ namespace LiteQuark.Runtime
 
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
         {
-            return MonoBehaviourInstance_?.StartCoroutine(routine);
+            return _monoBehaviourInstance?.StartCoroutine(routine);
         }
 
         public void StopCoroutine(IEnumerator routine)
         {
-            MonoBehaviourInstance_?.StopCoroutine(routine);
+            _monoBehaviourInstance?.StopCoroutine(routine);
         }
 
         public void AddTask(ITask task)
         {
-            TaskList_.Add(task);
+            _taskList.Add(task);
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)
         {
             var task = new CoroutineTask(taskFunc, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public AsyncOperationTask AddTask(UnityEngine.AsyncOperation asyncOperation, Action callback = null)
         {
             var task = new AsyncOperationTask(asyncOperation, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public AsyncResultTask AddTask(IAsyncResult asyncResult, Action callback = null)
         {
             var task = new AsyncResultTask(asyncResult, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public WaitCallbackTask AddTask(Action<Action<bool>> func)
         {
             var task = new WaitCallbackTask(func);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public ParallelTask ParallelTask(ITask[] subTasks, Action<bool> callback)
         {
             var task = new ParallelTask(subTasks, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public SequenceTask SequenceTask(ITask[] subTasks, Action<bool> callback)
         {
             var task = new SequenceTask(subTasks, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
         
         public InstantiateGameObjectTask InstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
             var task = new InstantiateGameObjectTask(template, parent, count, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
         
         public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, int timeout, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
         {
             var task = new UnityWebGetRequestTask(uri, timeout, forceNoCache, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
 
         public LoadAssetBaseTask LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string name, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, name, callback);
-            TaskList_.Add(task);
+            _taskList.Add(task);
             return task;
         }
         
@@ -186,12 +186,12 @@ namespace LiteQuark.Runtime
         
         public void PostMainThreadTask(SendOrPostCallback callback, object state)
         {
-            MainThreadSynchronizationContext_?.Post(callback, state);
+            _mainThreadSynchronizationContext?.Post(callback, state);
         }
 
         public void SendMainThreadTask(SendOrPostCallback callback, object state)
         {
-            MainThreadSynchronizationContext_?.Send(callback, state);
+            _mainThreadSynchronizationContext?.Send(callback, state);
         }
     }
 }

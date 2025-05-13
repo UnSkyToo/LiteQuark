@@ -4,7 +4,7 @@
     {
         internal AssetVisitorInfo GetVisitorInfo()
         {
-            var info = new AssetVisitorInfo(AssetPath_, RefCount_, Stage.ToString(), RetainTime_);
+            var info = new AssetVisitorInfo(_assetPath, _refCount, Stage.ToString(), _retainTime);
             return info;
         }
     }

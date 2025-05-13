@@ -2,7 +2,7 @@
 {
     public class ParallelAction : CompositeAction
     {
-        public override string DebugName => $"<Parallel - {Tag_}>({Count_})";
+        public override string DebugName => $"<Parallel - {Tag}>({Count})";
         
         public ParallelAction(string tag, IAction[] args)
             : base(tag, args)
@@ -11,9 +11,9 @@
 
         public override void Execute()
         {
-            IsEnd = Count_ == 0;
+            IsEnd = Count == 0;
             
-            foreach (var action in SubActions_)
+            foreach (var action in SubActions)
             {
                 action.Execute();
             }
@@ -23,23 +23,23 @@
         {
             var endCount = 0;
 
-            for (var index = 0; index < Count_; ++index)
+            for (var index = 0; index < Count; ++index)
             {
-                if (SubActions_[index].IsEnd)
+                if (SubActions[index].IsEnd)
                 {
                     endCount++;
                     continue;
                 }
                 
-                SubActions_[index].Tick(deltaTime);
+                SubActions[index].Tick(deltaTime);
 
-                if (SubActions_[index].IsEnd)
+                if (SubActions[index].IsEnd)
                 {
-                    SubActions_[index].Dispose();
+                    SubActions[index].Dispose();
                 }
             }
             
-            if (endCount == Count_)
+            if (endCount == Count)
             {
                 IsEnd = true;
             }

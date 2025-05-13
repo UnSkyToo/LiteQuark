@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed class LogicCenter : Singleton<LogicCenter>, ISubstance
     {
-        private readonly List<ILogic> LogicList_ = new List<ILogic>();
+        private readonly List<ILogic> _logicList = new List<ILogic>();
         
         private LogicCenter()
         {
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         
         public void Tick(float deltaTime)
         {
-            foreach (var logic in LogicList_)
+            foreach (var logic in _logicList)
             {
                 logic.Tick(deltaTime);
             }
@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
         
         internal async Task<bool> InitializeLogic()
         {
-            LogicList_.Clear();
+            _logicList.Clear();
             
             foreach (var logicEntry in LiteRuntime.Setting.LogicList)
             {
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
                 var result = await logic.Initialize();
                 if (result)
                 {
-                    LogicList_.Add(logic);
+                    _logicList.Add(logic);
                 }
                 else
                 {
@@ -65,12 +65,12 @@ namespace LiteQuark.Runtime
 
         internal void UnInitializeLogic()
         {
-            foreach (var logic in LogicList_)
+            foreach (var logic in _logicList)
             {
                 logic.Dispose();
             }
             
-            LogicList_.Clear();
+            _logicList.Clear();
         }
     }
 }

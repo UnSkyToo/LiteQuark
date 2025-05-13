@@ -6,7 +6,7 @@
         {
             var info = new VisitorInfo("Bundle");
 
-            foreach (var chunk in BundleCacheMap_)
+            foreach (var chunk in _bundleCacheMap)
             {
                 info.AddBundleVisitor(chunk.Value.GetVisitorInfo());
             }

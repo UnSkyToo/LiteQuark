@@ -9,31 +9,31 @@ namespace LiteQuark.Runtime
 
         private const int MaxCounter = 1 << CounterBits;
         
-        private static readonly object Lock_ = new object();
-        private static long LastTimestamp_;
-        private static int Counter_;
+        private static readonly object Lock = new object();
+        private static long _lastTimestamp;
+        private static int _counter;
         
         public static ulong NextID()
         {
-            lock (Lock_)
+            lock (Lock)
             {
                 var currentTimestamp = (long)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds;
-                if (currentTimestamp > LastTimestamp_)
+                if (currentTimestamp > _lastTimestamp)
                 {
-                    LastTimestamp_ = currentTimestamp;
-                    Counter_ = 1;
+                    _lastTimestamp = currentTimestamp;
+                    _counter = 1;
                 }
                 else
                 {
-                    Counter_++;
-                    if (Counter_ >= MaxCounter)
+                    _counter++;
+                    if (_counter >= MaxCounter)
                     {
-                        Counter_ = 1;
-                        LastTimestamp_++;
+                        _counter = 1;
+                        _lastTimestamp++;
                     }
                 }
 
-                return ((ulong)LastTimestamp_ << CounterBits) | (uint)Counter_;
+                return ((ulong)_lastTimestamp << CounterBits) | (uint)_counter;
             }
         }
     }

@@ -6,9 +6,9 @@ namespace LiteQuark.Runtime
 {
     public sealed class LogSystem : ISystem
     {
-        private ILoggerRepository Repository_ = null;
-        private Dictionary<string, ILog> LogCache_ = null;
-        private ILog CommonLogger_ = null;
+        private ILoggerRepository _repository = null;
+        private Dictionary<string, ILog> _logCache = null;
+        private ILog _commonLogger = null;
 
         public LogSystem()
         {
@@ -16,23 +16,23 @@ namespace LiteQuark.Runtime
 
         public Task<bool> Initialize()
         {
-            Repository_ = new DefaultLoggerRepository();
-            LogCache_ = new Dictionary<string, ILog>();
-            CommonLogger_ = GetLogger("Default");
+            _repository = new DefaultLoggerRepository();
+            _logCache = new Dictionary<string, ILog>();
+            _commonLogger = GetLogger("Default");
 
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
             if (logEnable)
             {
-                Repository_.EnableLevel(LogLevel.Info, setting.LogInfo);
-                Repository_.EnableLevel(LogLevel.Warn, setting.LogWarn);
-                Repository_.EnableLevel(LogLevel.Error, setting.LogError);
-                Repository_.EnableLevel(LogLevel.Fatal, setting.LogFatal);
+                _repository.EnableLevel(LogLevel.Info, setting.LogInfo);
+                _repository.EnableLevel(LogLevel.Warn, setting.LogWarn);
+                _repository.EnableLevel(LogLevel.Error, setting.LogError);
+                _repository.EnableLevel(LogLevel.Fatal, setting.LogFatal);
                 UnityEngine.Debug.unityLogger.logEnabled = true;
             }
             else
             {
-                Repository_.EnableLevel(LogLevel.All, false);
+                _repository.EnableLevel(LogLevel.All, false);
                 UnityEngine.Debug.LogWarning("DebugMode is false, disable all log!");
                 UnityEngine.Debug.unityLogger.logEnabled = false;
             }
@@ -42,18 +42,18 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            LogCache_.Clear();
+            _logCache.Clear();
             
-            if (Repository_ != null)
+            if (_repository != null)
             {
-                Repository_.Dispose();
-                Repository_ = null;
+                _repository.Dispose();
+                _repository = null;
             }
         }
 
         public ILoggerRepository GetRepository()
         {
-            return Repository_;
+            return _repository;
         }
 
         public ILog GetLogger(Type type)
@@ -63,78 +63,78 @@ namespace LiteQuark.Runtime
 
         public ILog GetLogger(string name)
         {
-            if (LogCache_.TryGetValue(name, out var log))
+            if (_logCache.TryGetValue(name, out var log))
             {
                 return log;
             }
             
-            var logger = Repository_.GetLogger(name);
+            var logger = _repository.GetLogger(name);
             log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
-            LogCache_.Add(name, log);
+            _logCache.Add(name, log);
             return log;
         }
 
         public ILog GetLogger(string name, ILoggerFactory loggerFactory)
         {
-            if (LogCache_.TryGetValue(name, out var log))
+            if (_logCache.TryGetValue(name, out var log))
             {
                 return log;
             }
             
-            var logger = Repository_.GetLogger(name, loggerFactory);
+            var logger = _repository.GetLogger(name, loggerFactory);
             log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
-            LogCache_.Add(name, log);
+            _logCache.Add(name, log);
             return log;
         }
 
         public void EnableLevel(LogLevel level, bool enabled)
         {
-            CommonLogger_.EnableLevel(level, enabled);
+            _commonLogger.EnableLevel(level, enabled);
         }
 
         public void Info(string message)
         {
-            CommonLogger_.Info(message);
+            _commonLogger.Info(message);
         }
 
         public void Info(string format, params object[] args)
         {
-            CommonLogger_.Info(format, args);
+            _commonLogger.Info(format, args);
         }
 
         public void Warn(string message)
         {
-            CommonLogger_.Warn(message);
+            _commonLogger.Warn(message);
         }
 
         public void Warn(string format, params object[] args)
         {
-            CommonLogger_.Warn(format, args);
+            _commonLogger.Warn(format, args);
         }
 
         public void Error(string message)
         {
-            CommonLogger_.Error(message);
+            _commonLogger.Error(message);
         }
 
         public void Error(string format, params object[] args)
         {
-            CommonLogger_.Error(format, args);
+            _commonLogger.Error(format, args);
         }
 
         public void Fatal(string message)
         {
-            CommonLogger_.Fatal(message);
+            _commonLogger.Fatal(message);
         }
 
         public void Fatal(string message, Exception exception)
         {
-            CommonLogger_.Fatal(message, exception);
+            _commonLogger.Fatal(message, exception);
         }
 
         public void Fatal(string format, params object[] args)
         {
-            CommonLogger_.Fatal(format, args);
+            _commonLogger.Fatal(format, args);
         }
     }
 }

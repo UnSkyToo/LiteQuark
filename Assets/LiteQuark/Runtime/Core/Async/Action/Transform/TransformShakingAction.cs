@@ -4,28 +4,28 @@ namespace LiteQuark.Runtime
 {
     public class TransformShakingAction : TransformBaseAction
     {
-        public override string DebugName => $"<TransformShaking>({TS_.name},{TotalTime_},{Strength_},{Vibrato_},{Randomness_})";
+        public override string DebugName => $"<TransformShaking>({TS.name},{_totalTime},{_strength},{_vibrato},{_randomness})";
 
-        private readonly float TotalTime_;
-        private readonly float PerStepTime_;
-        private readonly float Strength_;
-        private readonly int Vibrato_;
-        private readonly float Randomness_;
+        private readonly float _totalTime;
+        private readonly float _perStepTime;
+        private readonly float _strength;
+        private readonly int _vibrato;
+        private readonly float _randomness;
 
-        private float Degress_;
-        private Vector3 Position_;
-        private float CurrentTime_;
-        private float StepTime_;
+        private float _degree;
+        private Vector3 _position;
+        private float _currentTime;
+        private float _stepTime;
 
         public TransformShakingAction(Transform transform, float time, float strength, int vibrato, float randomness = 90.0f)
             : base(transform)
         {
-            Position_ = TS_.localPosition;
-            TotalTime_ = MathUtils.ClampMinTime(time);
-            PerStepTime_ = 1.0f / vibrato;
-            Strength_ = strength;
-            Vibrato_ = vibrato;
-            Randomness_ = randomness;
+            _position = TS.localPosition;
+            _totalTime = MathUtils.ClampMinTime(time);
+            _perStepTime = 1.0f / vibrato;
+            _strength = strength;
+            _vibrato = vibrato;
+            _randomness = randomness;
         }
         
         public override void Execute()
@@ -35,10 +35,10 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            Position_ = TS_.localPosition;
-            CurrentTime_ = 0;
-            StepTime_ = 0;
-            Degress_ = Random.Range(0f, 360f);
+            _position = TS.localPosition;
+            _currentTime = 0;
+            _stepTime = 0;
+            _degree = Random.Range(0f, 360f);
             IsEnd = false;
         }
 
@@ -49,28 +49,28 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            CurrentTime_ += deltaTime;
-            StepTime_ += deltaTime;
+            _currentTime += deltaTime;
+            _stepTime += deltaTime;
 
-            if (StepTime_ >= PerStepTime_)
+            if (_stepTime >= _perStepTime)
             {
                 Shake();
-                StepTime_ -= PerStepTime_;
+                _stepTime -= _perStepTime;
             }
 
-            if (CurrentTime_ >= TotalTime_)
+            if (_currentTime >= _totalTime)
             {
-                TS_.localPosition = Position_;
+                TS.localPosition = _position;
                 IsEnd = true;
             }
         }
 
         private void Shake()
         {
-            Degress_ = Degress_ - 180f + Random.Range(-Randomness_, Randomness_);
+            _degree = _degree - 180f + Random.Range(-_randomness, _randomness);
             
-            var quaternion = Quaternion.AngleAxis(Random.Range(-Randomness_, Randomness_), Vector3.up);
-            TS_.localPosition = Position_ + quaternion * MathUtils.Vector3FromAngle(Degress_, Strength_);
+            var quaternion = Quaternion.AngleAxis(Random.Range(-_randomness, _randomness), Vector3.up);
+            TS.localPosition = _position + quaternion * MathUtils.Vector3FromAngle(_degree, _strength);
         }
     }
 

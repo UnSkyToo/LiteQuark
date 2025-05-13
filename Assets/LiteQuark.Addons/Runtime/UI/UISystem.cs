@@ -10,14 +10,14 @@ namespace LiteQuark.Runtime
     {
         private const int UIStepOrder = 100;
 
-        public RectTransform CanvasRoot => CanvasRoot_;
+        public RectTransform CanvasRoot => _canvasRoot;
         public Camera UICamera => LiteRuntime.Setting.UI.UICamera ?? Camera.main;
 
-        private RectTransform CanvasRoot_;
-        private readonly Dictionary<UIDepthMode, Transform> CanvasTransform_ = new Dictionary<UIDepthMode, Transform>();
-        private readonly List<BaseUI> OpenList_ = new List<BaseUI>();
-        private readonly List<BaseUI> UIList_ = new List<BaseUI>();
-        private readonly List<BaseUI> CloseList_ = new List<BaseUI>();
+        private RectTransform _canvasRoot;
+        private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new Dictionary<UIDepthMode, Transform>();
+        private readonly List<BaseUI> _openList = new List<BaseUI>();
+        private readonly List<BaseUI> _uiList = new List<BaseUI>();
+        private readonly List<BaseUI> _closeList = new List<BaseUI>();
 
         public UISystem()
         {
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
                 rectTrans.anchorMax = Vector2.one;
                 rectTrans.anchoredPosition = Vector2.zero;
                 rectTrans.sizeDelta = Vector2.zero;
-                CanvasTransform_.Add(depthMode, go.transform);
+                _canvasTransform.Add(depthMode, go.transform);
             }
         }
         
@@ -51,11 +51,11 @@ namespace LiteQuark.Runtime
             CloseAllUI();
             HandleCloseList();
 
-            foreach (var item in CanvasTransform_)
+            foreach (var item in _canvasTransform)
             {
                 GameObject.DestroyImmediate(item.Value.gameObject);
             }
-            CanvasTransform_.Clear();
+            _canvasTransform.Clear();
         }
 
         public void Tick(float deltaTime)
@@ -63,7 +63,7 @@ namespace LiteQuark.Runtime
             HandleOpenList();
             HandleCloseList();
             
-            foreach (var ui in UIList_)
+            foreach (var ui in _uiList)
             {
                 ui.Update(deltaTime);
             }
@@ -98,7 +98,7 @@ namespace LiteQuark.Runtime
                 
                 SetupUI(ui, instance);
                 ui.State = UIState.Opened;
-                OpenList_.Add(ui);
+                _openList.Add(ui);
                 ui.Open(paramList);
                 tcs.SetResult(ui);
             });
@@ -107,23 +107,23 @@ namespace LiteQuark.Runtime
 
         private void HandleOpenList()
         {
-            if (OpenList_.Count > 0)
+            if (_openList.Count > 0)
             {
-                foreach (var ui in OpenList_)
+                foreach (var ui in _openList)
                 {
-                    UIList_.Add(ui);
+                    _uiList.Add(ui);
                 }
-                OpenList_.Clear();
+                _openList.Clear();
             }
         }
 
         public void CloseUI(BaseUI ui)
         {
-            if (ui != null && !CloseList_.Contains(ui))
+            if (ui != null && !_closeList.Contains(ui))
             {
                 ui.State = UIState.Closing;
                 ui.Close();
-                CloseList_.Add(ui);
+                _closeList.Add(ui);
             }
         }
 
@@ -145,7 +145,7 @@ namespace LiteQuark.Runtime
 
         public void CloseAllUI()
         {
-            foreach (var ui in UIList_)
+            foreach (var ui in _uiList)
             {
                 CloseUI(ui);
             }
@@ -153,20 +153,20 @@ namespace LiteQuark.Runtime
 
         private void HandleCloseList()
         {
-            if (CloseList_.Count > 0)
+            if (_closeList.Count > 0)
             {
-                foreach (var ui in CloseList_)
+                foreach (var ui in _closeList)
                 {
                     CloseUIInternal(ui);
-                    UIList_.Remove(ui);
+                    _uiList.Remove(ui);
                 }
-                CloseList_.Clear();
+                _closeList.Clear();
             }
         }
 
         public T FindUI<T>() where T : BaseUI
         {
-            return UIList_.Find((ui) => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
+            return _uiList.Find((ui) => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
         }
 
         private void SetupUI(BaseUI ui, GameObject instance)
@@ -196,7 +196,7 @@ namespace LiteQuark.Runtime
 
         private Transform GetUIParent(UIDepthMode depthMode)
         {
-            if (CanvasTransform_.TryGetValue(depthMode, out var parent))
+            if (_canvasTransform.TryGetValue(depthMode, out var parent))
             {
                 return parent;
             }
@@ -231,7 +231,7 @@ namespace LiteQuark.Runtime
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;
 
-            CanvasRoot_ = rectTrans;
+            _canvasRoot = rectTrans;
         }
     }
 }

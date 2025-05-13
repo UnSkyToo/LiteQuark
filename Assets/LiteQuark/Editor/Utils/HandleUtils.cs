@@ -7,8 +7,8 @@ namespace LiteQuark.Editor
 {
     public static class HandleUtils
     {
-        private static readonly Color OutlineColor_ = new Color(1f, 1f, 1f, Handles.color.a);
-        private static readonly Stack<Color> ColorStack_ = new Stack<Color>();
+        private static readonly Color OutlineColor = new Color(1f, 1f, 1f, Handles.color.a);
+        private static readonly Stack<Color> ColorStack = new Stack<Color>();
 
         [DebuggerStepThrough]
         public static void DrawBox(Vector3 position, Vector3 size, Color color)
@@ -34,7 +34,7 @@ namespace LiteQuark.Editor
                 };
                 DrawPolygon(vertices, true);
                 
-                ApplyColor(OutlineColor_);
+                ApplyColor(OutlineColor);
                 DrawPolygon(vertices, false);
                 RevertColor();
             }
@@ -61,7 +61,7 @@ namespace LiteQuark.Editor
                 DrawCircle(lookMatrix, radius, true);
             }
 
-            ApplyColor(OutlineColor_);
+            ApplyColor(OutlineColor);
             DrawCircle(matrix, radius, false);
             DrawCircle(matrix * Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0)), radius, false);
             DrawCircle(matrix * Matrix4x4.Rotate(Quaternion.Euler(90, 0, 0)), radius, false);
@@ -102,28 +102,28 @@ namespace LiteQuark.Editor
         [DebuggerStepThrough]
         private static void ApplyColor(Color color)
         {
-            ColorStack_.Push(Handles.color);
+            ColorStack.Push(Handles.color);
             Handles.color = color;
         }
 
         [DebuggerStepThrough]
         private static void RevertColor()
         {
-            if (ColorStack_.Count > 0)
+            if (ColorStack.Count > 0)
             {
-                Handles.color = ColorStack_.Pop();
+                Handles.color = ColorStack.Pop();
             }
         }
         
         private static Vector3[] GetSphereVertices(Matrix4x4 matrix, float radius, int step = 30)
         {
-            const float TwoPI = Mathf.PI * 2f;
-            var deltaDeg = TwoPI / step;
+            const float twoPI = Mathf.PI * 2f;
+            var deltaDeg = twoPI / step;
             var vertices = new Vector3[step];
             
             for (var i = 0; i < step; ++i)
             {
-                var degree = TwoPI - deltaDeg * i;
+                var degree = twoPI - deltaDeg * i;
                 var pos = new Vector3(radius * Mathf.Cos(degree), radius * Mathf.Sin(degree), 0f);
                 vertices[i] = matrix.MultiplyPoint(pos);
             }

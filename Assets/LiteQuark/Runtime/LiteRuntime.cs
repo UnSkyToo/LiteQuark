@@ -11,11 +11,11 @@ namespace LiteQuark.Runtime
 
         public LiteLauncher Launcher { get; private set; }
         
-        private LiteSetting Setting_ = null;
-        private float EnterBackgroundTime_ = 0.0f;
-        private bool RestartWhenNextFrame_ = false;
+        private LiteSetting _setting = null;
+        private float _enterBackgroundTime = 0.0f;
+        private bool _restartWhenNextFrame = false;
 
-        private StageCenter StageCenter_;
+        private StageCenter _stageCenter;
 
         private LiteRuntime()
         {
@@ -26,22 +26,22 @@ namespace LiteQuark.Runtime
             IsPause = false;
             IsFocus = true;
             Launcher = launcher;
-            Setting_ = launcher.Setting;
-            IsDebugMode = Debug.isDebugBuild && Setting_.Debug.DebugMode;
-            EnterBackgroundTime_ = 0.0f;
-            RestartWhenNextFrame_ = false;
+            _setting = launcher.Setting;
+            IsDebugMode = Debug.isDebugBuild && _setting.Debug.DebugMode;
+            _enterBackgroundTime = 0.0f;
+            _restartWhenNextFrame = false;
 
-            StageCenter_ = new StageCenter();
+            _stageCenter = new StageCenter();
         }
 
         public void Shutdown()
         {
             OnEnterBackground();
             
-            if (StageCenter_ != null)
+            if (_stageCenter != null)
             {
-                StageCenter_.Dispose();
-                StageCenter_ = null;
+                _stageCenter.Dispose();
+                _stageCenter = null;
             }
             
             SystemCenter.Instance.Dispose();
@@ -54,12 +54,12 @@ namespace LiteQuark.Runtime
 
         internal void ErrorStage()
         {
-            StageCenter_?.ErrorStage();
+            _stageCenter?.ErrorStage();
         }
 
         public void Tick(float deltaTime)
         {
-            if (RestartWhenNextFrame_)
+            if (_restartWhenNextFrame)
             {
                 RestartRuntime();
                 return;
@@ -71,23 +71,23 @@ namespace LiteQuark.Runtime
             }
 
 #if UNITY_EDITOR
-            var time = deltaTime * Setting_.Debug.TimeScale;
+            var time = deltaTime * _setting.Debug.TimeScale;
 #else
             var time = deltaTime;
 #endif
             
             SystemCenter.Instance.Tick(deltaTime);
-            StageCenter_.Tick(time);
+            _stageCenter.Tick(time);
         }
 
         public void Restart()
         {
-            RestartWhenNextFrame_ = true;
+            _restartWhenNextFrame = true;
         }
 
         private void RestartRuntime()
         {
-            RestartWhenNextFrame_ = false;
+            _restartWhenNextFrame = false;
             Debug.ClearDeveloperConsole();
             Shutdown();
             Startup(Launcher);
@@ -106,13 +106,13 @@ namespace LiteQuark.Runtime
             LLog.Info("OnEnterForeground");
             Event.Send<EnterForegroundEvent>();
 
-            if (Setting_.Common.AutoRestartInBackground && Time.realtimeSinceStartup - EnterBackgroundTime_ >= Setting_.Common.BackgroundLimitTime)
+            if (_setting.Common.AutoRestartInBackground && Time.realtimeSinceStartup - _enterBackgroundTime >= _setting.Common.BackgroundLimitTime)
             {
                 Restart();
                 return;
             }
 
-            EnterBackgroundTime_ = Time.realtimeSinceStartup;
+            _enterBackgroundTime = Time.realtimeSinceStartup;
         }
 
         public void OnEnterBackground()
@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
  
             LLog.Info("OnEnterBackground");
             Event.Send<EnterBackgroundEvent>();
-            EnterBackgroundTime_ = Time.realtimeSinceStartup;
+            _enterBackgroundTime = Time.realtimeSinceStartup;
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace LiteQuark.Runtime
             return SystemCenter.Instance.GetSystem<T>();
         }
 
-        public static LiteSetting Setting => Instance.Setting_;
+        public static LiteSetting Setting => Instance._setting;
         
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();

@@ -8,12 +8,12 @@ namespace LiteQuark.Editor
         public ProjectBuilderWindow Window { get; }
         public abstract bool Enabled { get; protected set; }
 
-        private readonly string Title_;
+        private readonly string _title;
 
         protected BuilderStepView(ProjectBuilderWindow window, string title)
         {
             Window = window;
-            Title_ = title;
+            _title = title;
         }
 
         public void Draw(Rect rect)
@@ -44,7 +44,7 @@ namespace LiteQuark.Editor
 
         protected virtual void DrawTitle()
         {
-            Enabled = EditorGUILayout.ToggleLeft(Title_, Enabled);
+            Enabled = EditorGUILayout.ToggleLeft(_title, Enabled);
         }
 
         protected abstract void DrawContent();

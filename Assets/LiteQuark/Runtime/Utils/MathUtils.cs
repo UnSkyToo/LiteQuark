@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public static class MathUtils
     {
-        private static readonly System.Random Rand_ = new System.Random((int)DateTime.Now.Ticks);
+        private static readonly System.Random Rand = new System.Random((int)DateTime.Now.Ticks);
         
         public static bool Approximately(double a, double b)
         {
@@ -15,12 +15,12 @@ namespace LiteQuark.Runtime
         
         public static int RandInt(int min, int max)
         {
-            return Rand_.Next(min, max);
+            return Rand.Next(min, max);
         }
 
         public static float RandFloat()
         {
-            return (float)Rand_.NextDouble();
+            return (float)Rand.NextDouble();
         }
 
         public static float ClampMinTime(float time)

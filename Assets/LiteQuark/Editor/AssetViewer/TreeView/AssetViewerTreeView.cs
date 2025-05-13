@@ -19,9 +19,9 @@ namespace LiteQuark.Editor
 
         private const string BundleType = "bundle";
 
-        private readonly Dictionary<int, AssetViewerTreeItem> ItemCacheMap_ = new Dictionary<int, AssetViewerTreeItem>();
-        private int IDGenerator_ = 1;
-        private int SizeSortedAscendingType_ = 0;
+        private readonly Dictionary<int, AssetViewerTreeItem> _itemCacheMap = new Dictionary<int, AssetViewerTreeItem>();
+        private int _idGenerator = 1;
+        private int _sizeSortedAscendingType = 0;
         
         public AssetViewerTreeView(TreeViewState state)
             : base(state, CreateHeader())
@@ -66,13 +66,13 @@ namespace LiteQuark.Editor
         protected override TreeViewItem BuildRoot()
         {
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
-            IDGenerator_ = 1;
+            _idGenerator = 1;
             
             var collector = new ResCollector();
             var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false);
             
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
-            AssetViewerUtils.SortTreeItemList(items, SizeSortedAscendingType_);
+            AssetViewerUtils.SortTreeItemList(items, _sizeSortedAscendingType);
             
             SetupParentsAndChildrenFromDepths(root, items);
             
@@ -83,13 +83,13 @@ namespace LiteQuark.Editor
         private List<TreeViewItem> BuildWithNormalMode(VersionPackInfo packInfo)
         {
             var items = new List<TreeViewItem>();
-            ItemCacheMap_.Clear();
+            _itemCacheMap.Clear();
             
             foreach (var bundle in packInfo.BundleList)
             {
                 var bundleItem = CreateBundleItem(bundle.BundlePath, $"{Path.GetFileNameWithoutExtension(bundle.BundlePath)}({bundle.AssetList.Length})", 0);
                 items.Add(bundleItem);
-                ItemCacheMap_.Add(bundleItem.id, bundleItem);
+                _itemCacheMap.Add(bundleItem.id, bundleItem);
 
                 var totalSize = 0L;
                 foreach (var assetPath in bundle.AssetList)
@@ -97,12 +97,12 @@ namespace LiteQuark.Editor
                     var assetItem = CreateAssetItem(assetPath, bundleItem.depth + 1);
                     totalSize += assetItem.Size;
                     bundleItem.AddChild(assetItem);
-                    ItemCacheMap_.Add(assetItem.id, assetItem);
+                    _itemCacheMap.Add(assetItem.id, assetItem);
                 }
                 bundleItem.Size = totalSize;
                 bundleItem.DependencyList = bundle.DependencyList;
 
-                AssetViewerUtils.SortTreeItemList(bundleItem.children, SizeSortedAscendingType_);
+                AssetViewerUtils.SortTreeItemList(bundleItem.children, _sizeSortedAscendingType);
             }
 
             return items;
@@ -111,7 +111,7 @@ namespace LiteQuark.Editor
         private List<TreeViewItem> BuildWithCombineMode(VersionPackInfo packInfo)
         {
             var items = new List<TreeViewItem>();
-            ItemCacheMap_.Clear();
+            _itemCacheMap.Clear();
 
             var treeDict = new Dictionary<string, AssetViewerTreeItem>();
 
@@ -140,7 +140,7 @@ namespace LiteQuark.Editor
                         {
                             bundleItem.AddChild(item);
                         }
-                        ItemCacheMap_.Add(item.id, item);
+                        _itemCacheMap.Add(item.id, item);
                     }
                     
                     bundleItem = item;
@@ -152,12 +152,12 @@ namespace LiteQuark.Editor
                     var assetItem = CreateAssetItem(assetPath, bundleItem.depth + 1);
                     totalSize += assetItem.Size;
                     bundleItem.AddChild(assetItem);
-                    ItemCacheMap_.Add(assetItem.id, assetItem);
+                    _itemCacheMap.Add(assetItem.id, assetItem);
                 }
                 bundleItem.Size = totalSize;
                 bundleItem.DependencyList = bundle.DependencyList;
 
-                AssetViewerUtils.SortTreeItemList(bundleItem.children, SizeSortedAscendingType_);
+                AssetViewerUtils.SortTreeItemList(bundleItem.children, _sizeSortedAscendingType);
 
                 var cacheItem = bundleItem.parent as AssetViewerTreeItem;
                 while (cacheItem != null)
@@ -176,7 +176,7 @@ namespace LiteQuark.Editor
             
             var bundleItem = new AssetViewerTreeItem
             {
-                id = IDGenerator_++,
+                id = _idGenerator++,
                 displayName = displayName,
                 depth = depth,
                 TypeIcon = null,
@@ -201,7 +201,7 @@ namespace LiteQuark.Editor
             
             var assetItem = new AssetViewerTreeItem
             {
-                id = IDGenerator_++,
+                id = _idGenerator++,
                 displayName = Path.GetFileNameWithoutExtension(assetPath),
                 depth = depth,
                 TypeIcon = AssetDatabase.GetCachedIcon(assetFullPath),
@@ -262,7 +262,7 @@ namespace LiteQuark.Editor
             switch (header.sortedColumnIndex)
             {
                 case 2: // size
-                    SizeSortedAscendingType_ = header.state.columns[2].sortedAscending ? 1 : -1;
+                    _sizeSortedAscendingType = header.state.columns[2].sortedAscending ? 1 : -1;
                     Reload();
                     break;
             }
@@ -272,7 +272,7 @@ namespace LiteQuark.Editor
         {
             base.SelectionChanged(selectedIds);
 
-            if (selectedIds.Count == 1 && ItemCacheMap_.TryGetValue(selectedIds[0], out var item))
+            if (selectedIds.Count == 1 && _itemCacheMap.TryGetValue(selectedIds[0], out var item))
             {
                 OnItemSelectionChanged?.Invoke(item);
                 

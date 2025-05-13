@@ -10,31 +10,31 @@ namespace LiteQuark.Editor
 {
     internal sealed class LiteReorderableListWrap
     {
-        private readonly ReorderableList List_;
-        private readonly Type ElementType_;
-        private readonly bool IsList_;
-        private bool IsFoldout_;
-        private float Ident_;
-        private object[] Attributes_;
+        private readonly ReorderableList _list;
+        private readonly Type _elementType;
+        private readonly bool _isList;
+        private bool _isFoldout;
+        private float _ident;
+        private object[] _attributes;
 
         private LiteReorderableListWrap(IList data)
         {
-            IsList_ = TypeUtils.IsListType(data.GetType());
-            ElementType_ = TypeUtils.GetElementType(data.GetType());
+            _isList = TypeUtils.IsListType(data.GetType());
+            _elementType = TypeUtils.GetElementType(data.GetType());
             
-            List_ = new ReorderableList(data, ElementType_, true, false, true, true)
+            _list = new ReorderableList(data, _elementType, true, false, true, true)
             {
                 drawElementCallback = OnDrawElement,
                 onAddCallback = OnAddCallback,
                 onRemoveCallback = OnRemoveCallback
             };
 
-            IsFoldout_ = true;
+            _isFoldout = true;
         }
 
         public void Draw(GUIContent title, object[] attrs = null)
         {
-            if (List_ == null)
+            if (_list == null)
             {
                 return;
             }
@@ -45,22 +45,22 @@ namespace LiteQuark.Editor
             }
 
             EditorGUI.indentLevel++;
-            Ident_ = EditorGUI.indentLevel * 15;
-            Attributes_ = attrs;
-            var rect = EditorGUILayout.GetControlRect(false, List_.GetHeight());
-            rect.xMin += Ident_;
-            List_.DoList(rect);
+            _ident = EditorGUI.indentLevel * 15;
+            _attributes = attrs;
+            var rect = EditorGUILayout.GetControlRect(false, _list.GetHeight());
+            rect.xMin += _ident;
+            _list.DoList(rect);
             EditorGUI.indentLevel--;
         }
 
         private bool DrawListHeader(GUIContent title)
         {
-            var list = List_.list;
+            var list = _list.list;
             var count = list.Count;
 
             using (new GUILayout.HorizontalScope())
             {
-                IsFoldout_ = EditorGUILayout.Foldout(IsFoldout_, title);
+                _isFoldout = EditorGUILayout.Foldout(_isFoldout, title);
                 count = Mathf.Clamp(EditorGUILayout.DelayedIntField(count, GUILayout.Width(80)), 0, int.MaxValue);
             }
             EditorGUILayout.Space();
@@ -68,22 +68,22 @@ namespace LiteQuark.Editor
             var diff = count - list.Count;
             while (diff < 0)
             {
-                RemoveAtList(List_.count - 1);
+                RemoveAtList(_list.count - 1);
                 diff++;
             }
 
             while (diff > 0)
             {
-                AddToList(TypeUtils.CreateInstance(ElementType_));
+                AddToList(TypeUtils.CreateInstance(_elementType));
                 diff--;
             }
 
-            return IsFoldout_;
+            return _isFoldout;
         }
 
         private object DrawElementField(Rect rect, int index, object element)
         {
-            return LiteEditorDrawer.DrawElement(rect, new GUIContent($"Item {index}"), element, ElementType_, Attributes_);
+            return LiteEditorDrawer.DrawElement(rect, new GUIContent($"Item {index}"), element, _elementType, _attributes);
         }
 
         private void OnDrawElement(Rect rect, int index, bool isActive, bool isFocused)
@@ -95,68 +95,68 @@ namespace LiteQuark.Editor
                 // rect.xMin += width;
                 // rect.yMin += 1f;
                 // rect.yMax -= 1f;
-                List_.list[index] = DrawElementField(rect, index, List_.list[index]);
+                _list.list[index] = DrawElementField(rect, index, _list.list[index]);
             //}
         }
 
         private void OnAddCallback(ReorderableList list)
         {
-            var element = TypeUtils.CreateInstance(ElementType_);
+            var element = TypeUtils.CreateInstance(_elementType);
             AddToList(element);
         }
 
         private void OnRemoveCallback(ReorderableList list)
         {
-            RemoveAtList(List_.index);
+            RemoveAtList(_list.index);
         }
 
         private void AddToList(object element)
         {
-            if (IsList_)
+            if (_isList)
             {
-                List_.list.Add(element);
+                _list.list.Add(element);
             }
             else
             {
-                var newList = Array.CreateInstance(ElementType_, List_.list.Count + 1) as IList;
-                for (var i = 0; i < List_.list.Count; ++i)
+                var newList = Array.CreateInstance(_elementType, _list.list.Count + 1) as IList;
+                for (var i = 0; i < _list.list.Count; ++i)
                 {
-                    newList[i] = List_.list[i];
+                    newList[i] = _list.list[i];
                 }
 
                 newList[newList.Count - 1] = element;
-                List_.list = newList;
+                _list.list = newList;
             }
         }
 
         private void RemoveAtList(int index)
         {
-            if (IsList_)
+            if (_isList)
             {
-                List_.list.RemoveAt(index);
+                _list.list.RemoveAt(index);
             }
             else
             {
-                var newList = Array.CreateInstance(ElementType_, List_.list.Count - 1) as IList;
+                var newList = Array.CreateInstance(_elementType, _list.list.Count - 1) as IList;
                 for (var i = 0; i < index; ++i)
                 {
-                    newList[i] = List_.list[i];
+                    newList[i] = _list.list[i];
                 }
 
-                for (var i = index; i < List_.list.Count - 1; ++i)
+                for (var i = index; i < _list.list.Count - 1; ++i)
                 {
-                    newList[i] = List_.list[i + 1];
+                    newList[i] = _list.list[i + 1];
                 }
 
-                List_.list = newList;
+                _list.list = newList;
             }
         }
 
-        private static readonly Dictionary<object, LiteReorderableListWrap> ReorderableWraps_ = new Dictionary<object, LiteReorderableListWrap>();
+        private static readonly Dictionary<object, LiteReorderableListWrap> ReorderableWraps = new Dictionary<object, LiteReorderableListWrap>();
         [InitializeOnLoadMethod]
         private static void Clear()
         {
-            ReorderableWraps_.Clear();
+            ReorderableWraps.Clear();
         }
 
         internal static LiteReorderableListWrap GetWrap(IList data)
@@ -166,12 +166,12 @@ namespace LiteQuark.Editor
                 return null;
             }
 
-            if (!ReorderableWraps_.ContainsKey(data))
+            if (!ReorderableWraps.ContainsKey(data))
             {
-                ReorderableWraps_.Add(data, new LiteReorderableListWrap(data));
+                ReorderableWraps.Add(data, new LiteReorderableListWrap(data));
             }
 
-            return ReorderableWraps_[data];
+            return ReorderableWraps[data];
         }
     }
 }

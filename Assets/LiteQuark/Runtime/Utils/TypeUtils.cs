@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public static class TypeUtils
     {
-        private static List<Assembly> AssemblyList_ = new List<Assembly>();
+        private static readonly List<Assembly> AssemblyList = new List<Assembly>();
 
         static TypeUtils()
         {
@@ -22,18 +22,18 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (AssemblyList_.Contains(assembly))
+            if (AssemblyList.Contains(assembly))
             {
                 return;
             }
 
-            if (index < 0 || index >= AssemblyList_.Count)
+            if (index < 0 || index >= AssemblyList.Count)
             {
-                AssemblyList_.Add(assembly);
+                AssemblyList.Add(assembly);
             }
             else
             {
-                AssemblyList_.Insert(index, assembly);
+                AssemblyList.Insert(index, assembly);
             }
         }
 
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
 
         public static Type GetTypeWithAssembly(string typeName)
         {
-            foreach (var assembly in AssemblyList_)
+            foreach (var assembly in AssemblyList)
             {
                 var type = assembly.GetType(typeName);
                 if (type != null)

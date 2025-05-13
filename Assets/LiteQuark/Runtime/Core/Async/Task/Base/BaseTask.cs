@@ -10,19 +10,19 @@
         {
             get
             {
-                if (TCS_ == null)
+                if (_tcs == null)
                 {
-                    TCS_ = new System.Threading.Tasks.TaskCompletionSource<object>();
+                    _tcs = new System.Threading.Tasks.TaskCompletionSource<object>();
                     if (IsDone)
                     {
-                        TCS_.SetResult(null);
+                        _tcs.SetResult(null);
                     }
                 }
-                return TCS_.Task;
+                return _tcs.Task;
             }
         }
 
-        private System.Threading.Tasks.TaskCompletionSource<object> TCS_;
+        private System.Threading.Tasks.TaskCompletionSource<object> _tcs;
 
         protected BaseTask()
         {
@@ -59,7 +59,7 @@
             {
                 Progress = 1f;
                 State = TaskState.Completed;
-                TCS_?.TrySetResult(result);
+                _tcs?.TrySetResult(result);
             }
         }
 
@@ -68,7 +68,7 @@
             if (!IsDone)
             {
                 State = TaskState.Aborted;
-                TCS_?.TrySetResult(null);
+                _tcs?.TrySetResult(null);
             }
         }
 

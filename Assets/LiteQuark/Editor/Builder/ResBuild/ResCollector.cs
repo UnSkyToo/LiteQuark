@@ -11,10 +11,10 @@ namespace LiteQuark.Editor
     {
         public AssetBundleManifest Manifest { get; set; }
         
-        private readonly string DefaultBundlePath = $"default{LiteConst.BundleFileExt}";
-        private readonly Dictionary<string, BundleInfo> BundleInfoCache_ = new Dictionary<string, BundleInfo>();
-        private VersionPackInfo PackInfo_ = null;
-        private int BundleID_ = 1;
+        private readonly string _defaultBundlePath = $"default{LiteConst.BundleFileExt}";
+        private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new Dictionary<string, BundleInfo>();
+        private VersionPackInfo _packInfo = null;
+        private int _bundleID = 1;
 
         public VersionPackInfo GetVersionPackInfo(ProjectBuilder builder)
         {
@@ -23,25 +23,25 @@ namespace LiteQuark.Editor
         
         public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode)
         {
-            if (PackInfo_ == null)
+            if (_packInfo == null)
             {
-                BundleInfoCache_.Clear();
-                BundleID_ = 1;
+                _bundleInfoCache.Clear();
+                _bundleID = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
-                PackInfo_ = new VersionPackInfo(version, target.ToString(), hashMode, BundleInfoCache_.Values.ToArray());
+                _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, _bundleInfoCache.Values.ToArray());
             }
-            return PackInfo_;
+            return _packInfo;
         }
 
         public void CleanVersionPackInfo()
         {
-            PackInfo_ = null;
+            _packInfo = null;
             Manifest = null;
         }
 
         private void AddToBundleInfoCache(string bundlePath, string[] assetList, string[] dependencyList)
         {
-            if (BundleInfoCache_.TryGetValue(bundlePath, out var cache))
+            if (_bundleInfoCache.TryGetValue(bundlePath, out var cache))
             {
                 cache.BundlePath = bundlePath;
                 cache.AssetList = ArrayUtils.AppendArray(cache.AssetList, assetList, false);
@@ -49,8 +49,8 @@ namespace LiteQuark.Editor
             }
             else
             {
-                cache = new BundleInfo(BundleID_++, bundlePath, assetList, dependencyList);
-                BundleInfoCache_.Add(bundlePath, cache);
+                cache = new BundleInfo(_bundleID++, bundlePath, assetList, dependencyList);
+                _bundleInfoCache.Add(bundlePath, cache);
             }
         }
         
@@ -141,7 +141,7 @@ namespace LiteQuark.Editor
 
             if (string.IsNullOrWhiteSpace(bundlePath))
             {
-                return DefaultBundlePath;
+                return _defaultBundlePath;
             }
 
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);

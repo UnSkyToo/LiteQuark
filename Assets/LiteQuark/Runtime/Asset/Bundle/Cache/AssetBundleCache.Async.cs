@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            BundleLoaderCallbackList_.Add(callback);
+            _bundleLoaderCallbackList.Add(callback);
             if (Stage == AssetCacheStage.Loading)
             {
                 return;
@@ -20,43 +20,43 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loading;
             
-            if (Provider_.IsEnableRemoteBundle())
+            if (_provider.IsEnableRemoteBundle())
             {
-                var bundleUri = Provider_.GetBundleUri(BundleInfo_);
-                LoadBundleTask_ = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
+                var bundleUri = _provider.GetBundleUri(_bundleInfo);
+                _loadBundleTask = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
             else
             {
-                var bundleUri = Provider_.GetBundleUri(BundleInfo_);
-                LoadBundleTask_ = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
+                var bundleUri = _provider.GetBundleUri(_bundleInfo);
+                _loadBundleTask = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
             }
 
-            LoadDependencyBundleAsync(LoadBundleTask_);
+            LoadDependencyBundleAsync(_loadBundleTask);
         }
 
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
         {
-            LoadBundleTask_ = null;
+            _loadBundleTask = null;
 
             var isLoaded = OnBundleLoaded(bundle);
 
-            foreach (var loader in BundleLoaderCallbackList_)
+            foreach (var loader in _bundleLoaderCallbackList)
             {
                 loader?.Invoke(isLoaded);
             }
 
-            BundleLoaderCallbackList_.Clear();
+            _bundleLoaderCallbackList.Clear();
         }
 
         private void LoadDependencyBundleAsync(LoadBundleBaseTask mainTask)
         {
-            var dependencies = BundleInfo_.DependencyList ?? Array.Empty<string>();
+            var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
             
             foreach (var dependency in dependencies)
             {
-                var dependencyCache = Provider_.GetOrCreateBundleCache(dependency);
+                var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
                 dependencyCache.LoadBundleAsync(null);
-                mainTask.AddChildTask(dependencyCache.LoadBundleTask_);
+                mainTask.AddChildTask(dependencyCache._loadBundleTask);
             }
         }
 

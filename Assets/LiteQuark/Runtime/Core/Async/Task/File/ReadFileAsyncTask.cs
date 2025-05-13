@@ -8,18 +8,18 @@ namespace LiteQuark.Runtime
     {
         private const int BufferSize = 4096;
 
-        private readonly FileStream Stream_;
-        private readonly List<byte> Data_;
-        private readonly byte[] Buffer_ = new byte[BufferSize];
-        private readonly Action<byte[]> Callback_;
+        private readonly FileStream _stream;
+        private readonly List<byte> _data;
+        private readonly byte[] _buffer = new byte[BufferSize];
+        private readonly Action<byte[]> _callback;
 
         public ReadFileAsyncTask(string filePath, Action<byte[]> callback)
         {
             try
             {
-                Stream_ = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, BufferSize, true);
-                Data_ = new List<byte>();
-                Callback_ = callback;
+                _stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, BufferSize, true);
+                _data = new List<byte>();
+                _callback = callback;
             }
             catch
             {
@@ -31,8 +31,8 @@ namespace LiteQuark.Runtime
         
         public override void Dispose()
         {
-            Stream_.Close();
-            Stream_.Dispose();
+            _stream.Close();
+            _stream.Dispose();
         }
 
         protected override void OnExecute()
@@ -42,33 +42,33 @@ namespace LiteQuark.Runtime
 
         private async void ExecuteInternal()
         {
-            while (Stream_.CanRead)
+            while (_stream.CanRead)
             {
-                var task = Stream_.ReadAsync(Buffer_, 0, BufferSize);
+                var task = _stream.ReadAsync(_buffer, 0, BufferSize);
                 var readCount = await task.ConfigureAwait(false);
 
                 if (!task.IsCompleted)
                 {
-                    Callback_?.Invoke(null);
+                    _callback?.Invoke(null);
                     Abort();
                     break;
                 }
 
                 if (readCount == BufferSize)
                 {
-                    Data_.AddRange(Buffer_);
+                    _data.AddRange(_buffer);
                 }
                 else if (readCount > 0)
                 {
                     for (var i = 0; i < readCount; i++)
                     {
-                        Data_.Add(Buffer_[i]);
+                        _data.Add(_buffer[i]);
                     }
                 }
                 else
                 {
-                    var data = Data_.ToArray();
-                    Callback_?.Invoke(data);
+                    var data = _data.ToArray();
+                    _callback?.Invoke(data);
                     Complete(data);
                     break;
                 }

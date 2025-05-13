@@ -8,7 +8,7 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteDebugger))]
     internal class LiteDebuggerInspectorView : LiteInspectorBaseView
     {
-        private Dictionary<string, bool> LabelFoldout_ = new Dictionary<string, bool>();
+        private readonly Dictionary<string, bool> _labelFoldout = new Dictionary<string, bool>();
         
         protected override void OnDraw()
         {
@@ -24,10 +24,10 @@ namespace LiteQuark.Editor
 
         private void DrawFoldout(string label, System.Action func)
         {
-            LabelFoldout_.TryAdd(label, false);
+            _labelFoldout.TryAdd(label, false);
             
-            LabelFoldout_[label] = EditorGUILayout.Foldout(LabelFoldout_[label], label);
-            if (LabelFoldout_[label])
+            _labelFoldout[label] = EditorGUILayout.Foldout(_labelFoldout[label], label);
+            if (_labelFoldout[label])
             {
                 func.Invoke();
             }

@@ -6,25 +6,25 @@ namespace LiteQuark.Runtime
 {
     public sealed class LogQuietTextWriter : TextWriter
     {
-        public override Encoding Encoding => Writer_.Encoding;
+        public override Encoding Encoding => _writer.Encoding;
         
-        private readonly TextWriter Writer_;
+        private readonly TextWriter _writer;
         
         public LogQuietTextWriter(TextWriter writer)
         {
-            Writer_ = writer;
+            _writer = writer;
         }
 
         public override void Flush()
         {
-            Writer_.Flush();
+            _writer.Flush();
         }
 
         public override void Write(char value) 
         {
             try 
             {
-                Writer_.Write(value);
+                _writer.Write(value);
             } 
             catch(Exception e) 
             {
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
         {
             try 
             {
-                Writer_.Write(buffer, index, count);
+                _writer.Write(buffer, index, count);
             } 
             catch(Exception ex) 
             {
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
         {
             try 
             {
-                Writer_.Write(value);
+                _writer.Write(value);
             } 
             catch(Exception ex) 
             {
@@ -60,7 +60,7 @@ namespace LiteQuark.Runtime
         {
             try 
             {
-                Writer_.WriteLine();
+                _writer.WriteLine();
             } 
             catch(Exception ex) 
             {

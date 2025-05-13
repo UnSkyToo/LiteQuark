@@ -9,32 +9,32 @@ namespace LiteQuark.Runtime
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
 
-        private readonly string AssetPath_;
-        private readonly AssetBundleCache Cache_;
-        private readonly List<Action<bool>> AssetLoaderCallbackList_ = new();
+        private readonly string _assetPath;
+        private readonly AssetBundleCache _cache;
+        private readonly List<Action<bool>> _assetLoaderCallbackList = new();
         
-        public bool IsUsed => RefCount_ > 0;
-        private int RefCount_;
-        private float RetainTime_;
-        private LoadAssetBaseTask LoadAssetTask_;
+        public bool IsUsed => _refCount > 0;
+        private int _refCount;
+        private float _retainTime;
+        private LoadAssetBaseTask _loadAssetTask;
         
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
             Stage = AssetCacheStage.Created;
             Asset = null;
             
-            AssetPath_ = assetPath;
-            Cache_ = cache;
-            RefCount_ = 0;
-            RetainTime_ = 0;
+            _assetPath = assetPath;
+            _cache = cache;
+            _refCount = 0;
+            _retainTime = 0;
         }
 
         public void Dispose()
         {
             Unload();
 
-            LoadAssetTask_ = null;
-            AssetLoaderCallbackList_.Clear();
+            _loadAssetTask = null;
+            _assetLoaderCallbackList.Clear();
             Asset = null;
         }
 
@@ -45,12 +45,12 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (RefCount_ > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
+            if (_refCount > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
             {
-                LLog.Warning($"unload asset leak : {AssetPath_}({RefCount_})");
+                LLog.Warning($"unload asset leak : {_assetPath}({_refCount})");
             }
 
-            RefCount_ = 0;
+            _refCount = 0;
             Stage = AssetCacheStage.Unloaded;
         }
         
@@ -58,8 +58,8 @@ namespace LiteQuark.Runtime
         {
             if (Stage == AssetCacheStage.Retained)
             {
-                RetainTime_ -= deltaTime;
-                if (RetainTime_ <= 0f)
+                _retainTime -= deltaTime;
+                if (_retainTime <= 0f)
                 {
                     Stage = AssetCacheStage.Unloading;
                 }
@@ -75,32 +75,32 @@ namespace LiteQuark.Runtime
 
             if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
-                LLog.Error($"asset IncRef error, {AssetPath_} : {Stage}");
+                LLog.Error($"asset IncRef error, {_assetPath} : {Stage}");
             }
             
-            RefCount_++;
+            _refCount++;
         }
 
         private void DecRef()
         {
             if (Stage != AssetCacheStage.Loaded)
             {
-                LLog.Error($"asset DecRef error, {AssetPath_} : {Stage}");
+                LLog.Error($"asset DecRef error, {_assetPath} : {Stage}");
             }
             
-            RefCount_--;
+            _refCount--;
             
-            if (RefCount_ <= 0)
+            if (_refCount <= 0)
             {
                 if (LiteRuntime.Setting.Asset.EnableRetain)
                 {
                     Stage = AssetCacheStage.Retained;
-                    RetainTime_ = LiteRuntime.Setting.Asset.AssetRetainTime;
+                    _retainTime = LiteRuntime.Setting.Asset.AssetRetainTime;
                 }
                 else
                 {
                     Stage = AssetCacheStage.Unloading;
-                    RetainTime_ = 0f;
+                    _retainTime = 0f;
                 }
             }
         }
@@ -112,7 +112,7 @@ namespace LiteQuark.Runtime
             if (asset == null)
             {
                 Stage = AssetCacheStage.Unloading;
-                LLog.Error($"load asset failed : {AssetPath_}");
+                LLog.Error($"load asset failed : {_assetPath}");
                 return false;
             }
 
@@ -122,7 +122,7 @@ namespace LiteQuark.Runtime
 
         public void UnloadAsset(string assetPath)
         {
-            if (AssetPath_ != assetPath)
+            if (_assetPath != assetPath)
             {
                 return;
             }

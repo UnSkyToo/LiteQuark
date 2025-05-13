@@ -14,27 +14,27 @@ namespace LiteQuark.Editor
         private string[] PathList;
 
         [NonSerialized]
-        private List<string> RealPathList_;
+        private List<string> _realPathList;
 
         public NavigationData()
         {
             PathList = Array.Empty<string>();
-            RealPathList_ = new List<string>();
+            _realPathList = new List<string>();
         }
 
         public string[] GetPathList()
         {
-            return RealPathList_.ToArray();
+            return _realPathList.ToArray();
         }
 
         public void AddPath(string path)
         {
-            if (RealPathList_.Contains(path))
+            if (_realPathList.Contains(path))
             {
                 return;
             }
             
-            RealPathList_.Add(path);
+            _realPathList.Add(path);
         }
 
         public void AddPath(string[] pathList)
@@ -47,17 +47,17 @@ namespace LiteQuark.Editor
 
         public void RemovePath(string path)
         {
-            RealPathList_.Remove(path);
+            _realPathList.Remove(path);
         }
 
         private void FlushWhenLoad()
         {
-            RealPathList_.AddRange(PathList);
+            _realPathList.AddRange(PathList);
         }
 
         private void FlushWhenSave()
         {
-            PathList = RealPathList_.ToArray();
+            PathList = _realPathList.ToArray();
         }
 
         public static NavigationData FromJson(string jsonPath)

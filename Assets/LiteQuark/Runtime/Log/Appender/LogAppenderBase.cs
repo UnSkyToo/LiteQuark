@@ -13,24 +13,24 @@ namespace LiteQuark.Runtime
         private const int RenderBufferSize = 256;
         private const int RenderBufferMaxCapacity = 1024;
         
-        private readonly List<ILogFilter> FilterList_ = null;
-        private LogReusableStringWriter RenderWriter_ = null;
+        private readonly List<ILogFilter> _filterList = null;
+        private LogReusableStringWriter _renderWriter = null;
 
-        private bool IsOpened_;
-        private bool IsClosed_;
-        private bool RecursiveGuard_;
+        private bool _isOpened;
+        private bool _isClosed;
+        private bool _recursiveGuard;
 
         protected LogAppenderBase()
         {
-            IsClosed_ = false;
-            RecursiveGuard_ = false;
+            _isClosed = false;
+            _recursiveGuard = false;
 
-            FilterList_ = new List<ILogFilter>();
+            _filterList = new List<ILogFilter>();
         }
 
         ~LogAppenderBase()
         {
-            if (!IsClosed_)
+            if (!_isClosed)
             {
                 return;
             }
@@ -42,13 +42,13 @@ namespace LiteQuark.Runtime
         {
             lock (this)
             {
-                if (IsOpened_)
+                if (_isOpened)
                 {
                     return;
                 }
 
                 OnOpen();
-                IsOpened_ = true;
+                _isOpened = true;
             }
         }
 
@@ -60,13 +60,13 @@ namespace LiteQuark.Runtime
         {
             lock (this)
             {
-                if (IsClosed_)
+                if (_isClosed)
                 {
                     return;
                 }
 
                 OnClose();
-                IsClosed_ = true;
+                _isClosed = true;
             }
         }
 
@@ -81,33 +81,33 @@ namespace LiteQuark.Runtime
                 throw new ArgumentNullException($"{nameof(filter)} param must not be null");
             }
 
-            FilterList_.Add(filter);
+            _filterList.Add(filter);
         }
         
         public virtual void ClearFilterList()
         {
-            FilterList_.Clear();
+            _filterList.Clear();
         }
 
         public void DoAppend(LoggingEvent loggingEvent)
         {
             lock(this)
             {
-                if (IsClosed_)
+                if (_isClosed)
                 {
                     LogErrorHandler.Error($"Attempted to append to closed appender named [{Name}].");
                     return;
                 }
 
                 // prevent re-entry
-                if (RecursiveGuard_)
+                if (_recursiveGuard)
                 {
                     return;
                 }
 
                 try
                 {
-                    RecursiveGuard_ = true;
+                    _recursiveGuard = true;
 
                     if (FilterEvent(loggingEvent) && PreAppendCheck())
                     {
@@ -120,14 +120,14 @@ namespace LiteQuark.Runtime
                 }
                 finally
                 {
-                    RecursiveGuard_ = false;
+                    _recursiveGuard = false;
                 }
             }
         }
         
         protected virtual bool FilterEvent(LoggingEvent loggingEvent)
         {
-            foreach (var filter in FilterList_)
+            foreach (var filter in _filterList)
             {
                 var decision = filter.DoFilter(loggingEvent);
                 switch (decision)
@@ -159,18 +159,18 @@ namespace LiteQuark.Runtime
         
         protected string RenderLoggingEvent(LoggingEvent loggingEvent)
         {
-            if (RenderWriter_ == null)
+            if (_renderWriter == null)
             {
-                RenderWriter_ = new LogReusableStringWriter(System.Globalization.CultureInfo.InvariantCulture);
+                _renderWriter = new LogReusableStringWriter(System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            lock (RenderWriter_)
+            lock (_renderWriter)
             {
                 // Reset the writer so we can reuse it
-                RenderWriter_.Reset(RenderBufferMaxCapacity, RenderBufferSize);
+                _renderWriter.Reset(RenderBufferMaxCapacity, RenderBufferSize);
 
-                RenderLoggingEvent(RenderWriter_, loggingEvent);
-                return RenderWriter_.ToString();
+                RenderLoggingEvent(_renderWriter, loggingEvent);
+                return _renderWriter.ToString();
             }
         }
         

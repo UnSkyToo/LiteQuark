@@ -4,41 +4,41 @@ namespace LiteQuark.Runtime
 {
     public class BezierCurveCommon : IBezierCurve
     {
-        private readonly EaseKind EaseKind_;
-        private readonly Vector3[] Points_;
-        private readonly Vector3[] Controller_;
+        private readonly EaseKind _easeKind;
+        private readonly Vector3[] _points;
+        private readonly Vector3[] _controller;
 
         public BezierCurveCommon(EaseKind easeKind, Vector3[] points)
         {
-            EaseKind_ = easeKind;
+            _easeKind = easeKind;
 
             if (points != null && points.Length > 1)
             {
-                Points_ = points;
-                Controller_ = new Vector3[points.Length];
+                _points = points;
+                _controller = new Vector3[points.Length];
 
-                for (var index = 0; index < Controller_.Length; ++index)
+                for (var index = 0; index < _controller.Length; ++index)
                 {
-                    Controller_[index] = new Vector3();
+                    _controller[index] = new Vector3();
                 }
             }
         }
 
         public Vector3 Lerp(float time)
         {
-            if (Points_ == null)
+            if (_points == null)
             {
                 return Vector3.zero;
             }
 
-            var modulateTime = EaseUtils.Sample(EaseKind_, time);
-            var count = GeneratorController(Points_, Points_.Length, modulateTime);
+            var modulateTime = EaseUtils.Sample(_easeKind, time);
+            var count = GeneratorController(_points, _points.Length, modulateTime);
             while (count > 1)
             {
-                count = GeneratorController(Controller_, count, time);
+                count = GeneratorController(_controller, count, time);
             }
 
-            return Controller_[0];
+            return _controller[0];
         }
 
         private int GeneratorController(Vector3[] points, int count, float time)
@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
             var index = 0;
             for (var offset = 0; offset < count - 1; ++offset)
             {
-                Controller_[index++] = Vector3.Lerp(points[offset], points[offset + 1], time);
+                _controller[index++] = Vector3.Lerp(points[offset], points[offset + 1], time);
             }
 
             return index;

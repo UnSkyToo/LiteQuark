@@ -4,8 +4,8 @@ namespace LiteQuark.Runtime
 {
     public class Fsm : IFsm
     {
-        protected readonly Dictionary<int, IFsmState> StateMap_ = new Dictionary<int, IFsmState>();
-        protected IFsmState CurrentState_ = null;
+        protected readonly Dictionary<int, IFsmState> StateMap = new Dictionary<int, IFsmState>();
+        protected IFsmState CurrentState = null;
 
         public Fsm()
         {
@@ -13,70 +13,70 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            CurrentState_?.Leave();
+            CurrentState?.Leave();
 
-            foreach (var chunk in StateMap_)
+            foreach (var chunk in StateMap)
             {
                 chunk.Value.Dispose();
             }
-            StateMap_.Clear();
+            StateMap.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            CurrentState_?.Tick(deltaTime);
+            CurrentState?.Tick(deltaTime);
         }
 
         public void AddState(int id, IFsmState state)
         {
             state.Fsm = this;
-            StateMap_.TryAdd(id, state);
+            StateMap.TryAdd(id, state);
         }
 
         public IFsmState GetState(int id)
         {
-            return StateMap_.GetValueOrDefault(id);
+            return StateMap.GetValueOrDefault(id);
         }
 
         public void ChangeToNullState()
         {
-            if (CurrentState_ != null)
+            if (CurrentState != null)
             {
-                CurrentState_.Leave();
-                CurrentState_ = null;
+                CurrentState.Leave();
+                CurrentState = null;
             }
         }
 
         public bool ChangeToState(int id, params object[] args)
         {
-            if (CurrentState_ != null)
+            if (CurrentState != null)
             {
-                if (!CurrentState_.GotoCheck(id))
+                if (!CurrentState.GotoCheck(id))
                 {
                     return false;
                 }
                 
-                CurrentState_.Leave();
+                CurrentState.Leave();
             }
             
-            StateMap_.TryGetValue(id, out CurrentState_);
-            CurrentState_?.Enter(args);
+            StateMap.TryGetValue(id, out CurrentState);
+            CurrentState?.Enter(args);
             return true;
         }
 
         public bool IsState(int id)
         {
-            if (CurrentState_ == null)
+            if (CurrentState == null)
             {
                 return false;
             }
 
-            return CurrentState_.ID == id;
+            return CurrentState.ID == id;
         }
 
         public IFsmState GetCurrentState()
         {
-            return CurrentState_;
+            return CurrentState;
         }
     }
 }

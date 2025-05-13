@@ -7,55 +7,55 @@ namespace LiteQuark.Runtime
     {
         private enum OperationType { Add, Remove }
         
-        private int InEach_;
+        private int _inEach;
 
-        private readonly Dictionary<TKey, TValue> Values_;
-        private readonly Queue<(OperationType type, KeyValuePair<TKey, TValue> item)> Ops_;
+        private readonly Dictionary<TKey, TValue> _values;
+        private readonly Queue<(OperationType type, KeyValuePair<TKey, TValue> item)> _ops;
         
-        public int Count => Values_.Count;
-        public TValue this[TKey key] => Values_[key];
+        public int Count => _values.Count;
+        public TValue this[TKey key] => _values[key];
         
         public SafeDictionary()
         {
-            InEach_ = 0;
+            _inEach = 0;
 
-            Values_ = new Dictionary<TKey, TValue>();
-            Ops_ = new Queue<(OperationType type, KeyValuePair<TKey, TValue> item)>();
+            _values = new Dictionary<TKey, TValue>();
+            _ops = new Queue<(OperationType type, KeyValuePair<TKey, TValue> item)>();
         }
 
         public void Add(TKey key, TValue value)
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
-                Ops_.Enqueue((OperationType.Add, new KeyValuePair<TKey, TValue>(key, value)));
+                _ops.Enqueue((OperationType.Add, new KeyValuePair<TKey, TValue>(key, value)));
             }
             else
             {
-                Values_.Add(key, value);
+                _values.Add(key, value);
             }
         }
 
         public void Remove(TKey key)
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
-                Ops_.Enqueue((OperationType.Remove, new KeyValuePair<TKey, TValue>(key, default)));
+                _ops.Enqueue((OperationType.Remove, new KeyValuePair<TKey, TValue>(key, default)));
             }
             else
             {
-                Values_.Remove(key);
+                _values.Remove(key);
             }
         }
 
         public void Clear()
         {
-            Values_.Clear();
-            Ops_.Clear();
+            _values.Clear();
+            _ops.Clear();
         }
 
         public bool ContainsKey(TKey key)
         {
-            return Values_.ContainsKey(key);
+            return _values.ContainsKey(key);
         }
 
         public void Foreach(Action<KeyValuePair<TKey, TValue>> func)
@@ -63,15 +63,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -80,15 +80,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
 
@@ -97,15 +97,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -114,15 +114,15 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2, param3);
                 }
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
         }
         
@@ -134,8 +134,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item) == true)
                     {
@@ -145,7 +145,7 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
@@ -158,8 +158,8 @@ namespace LiteQuark.Runtime
             Flush();
             try
             {
-                InEach_++;
-                foreach (var item in Values_)
+                _inEach++;
+                foreach (var item in _values)
                 {
                     if (func?.Invoke(item, param) == true)
                     {
@@ -169,28 +169,28 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                InEach_--;
+                _inEach--;
             }
             return default;
         }
 
         public void Flush()
         {
-            if (InEach_ > 0)
+            if (_inEach > 0)
             {
                 return;
             }
 
-            while (Ops_.Count > 0)
+            while (_ops.Count > 0)
             {
-                var (type, item) = Ops_.Dequeue();
+                var (type, item) = _ops.Dequeue();
                 switch (type)
                 {
                     case OperationType.Add:
-                        Values_.Add(item.Key, item.Value);
+                        _values.Add(item.Key, item.Value);
                         break;
                     case OperationType.Remove:
-                        Values_.Remove(item.Key);
+                        _values.Remove(item.Key);
                         break;
                 }
             }

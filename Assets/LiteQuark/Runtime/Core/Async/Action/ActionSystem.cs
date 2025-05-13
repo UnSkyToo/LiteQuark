@@ -4,11 +4,11 @@ namespace LiteQuark.Runtime
 {
     public sealed class ActionSystem : ISystem, ITick
     {
-        private readonly ListEx<IAction> ActionList_ = new ListEx<IAction>();
+        private readonly ListEx<IAction> _actionList = new ListEx<IAction>();
         
         public ActionSystem()
         {
-            ActionList_.Clear();
+            _actionList.Clear();
         }
         
         public Task<bool> Initialize()
@@ -18,13 +18,13 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            ActionList_.Foreach((action) => action.Dispose());
-            ActionList_.Clear();
+            _actionList.Foreach((action) => action.Dispose());
+            _actionList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            ActionList_.Foreach(OnActionTick, ActionList_, deltaTime);
+            _actionList.Foreach(OnActionTick, _actionList, deltaTime);
         }
 
         private void OnActionTick(IAction action, ListEx<IAction> list, float dt)
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
 
         public bool IsIdle()
         {
-            return ActionList_.Count == 0;
+            return _actionList.Count == 0;
         }
 
         public bool IsEnd(ulong id)
@@ -62,7 +62,7 @@ namespace LiteQuark.Runtime
 
         public ListEx<IAction> GetActionList()
         {
-            return ActionList_;
+            return _actionList;
         }
 
         public IAction FindAction(ulong id)
@@ -72,7 +72,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
             
-            return ActionList_.ForeachReturn((action, targetId) => action.ID == targetId, id);
+            return _actionList.ForeachReturn((action, targetId) => action.ID == targetId, id);
         }
 
         public void StopAction(ulong id)
@@ -92,7 +92,7 @@ namespace LiteQuark.Runtime
                 action.MarkSafety();
             }
             
-            ActionList_.Add(action);
+            _actionList.Add(action);
             action.Execute();
             return action.ID;
         }

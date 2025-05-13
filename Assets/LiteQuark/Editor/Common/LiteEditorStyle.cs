@@ -20,14 +20,14 @@ namespace LiteQuark.Editor
         public static GUIStyle InFooter { get; private set; } = GUI.skin.GetStyle("IN Footer");
         public static GUIStyle FrameBox { get; private set; } = GUI.skin.GetStyle("FrameBox");
 
-        private static bool IsGenerated_ = false;
+        private static bool _isGenerated = false;
         public static void Generate()
         {
-            if (IsGenerated_)
+            if (_isGenerated)
             {
                 return;
             }
-            IsGenerated_ = true;
+            _isGenerated = true;
             
             ButtonSelect = new GUIStyle(GUI.skin.GetStyle("button"));
             ButtonSelect.normal.textColor = Color.green;
