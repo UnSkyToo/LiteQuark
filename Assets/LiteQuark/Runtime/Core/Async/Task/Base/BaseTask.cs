@@ -45,14 +45,12 @@
 
         public void Tick(float deltaTime)
         {
-            if (State == TaskState.Waiting)
+            if (State != TaskState.InProgress)
             {
-                Execute();
+                return;
             }
-            else if (State == TaskState.InProgress)
-            {
-                OnTick(deltaTime);
-            }
+
+            OnTick(deltaTime);
         }
 
         public void Complete(object result)
