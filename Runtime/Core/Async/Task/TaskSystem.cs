@@ -33,7 +33,25 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            TaskList_.Foreach((task, list, dt) =>
+            TaskList_.Foreach(OnTaskTick, TaskList_, deltaTime);
+        }
+
+        private void OnTaskTick(ITask task, ListEx<ITask> list, float dt)
+        {
+            if (task.State == TaskState.Waiting)
+            {
+                try
+                {
+                    task.Execute();
+                }
+                catch (Exception ex)
+                {
+                    LLog.Error($"Task {task.GetType().Name} execute failed: {ex}");
+                    task.Cancel();
+                }
+            }
+            
+            if (task.State == TaskState.InProgress)
             {
                 try
                 {
@@ -41,16 +59,16 @@ namespace LiteQuark.Runtime
                 }
                 catch (Exception ex)
                 {
-                    LLog.Error($"Task {task.GetType().Name} failed: {ex}");
+                    LLog.Error($"Task {task.GetType().Name} tick failed: {ex}");
                     task.Cancel();
                 }
-
-                if (task.IsDone)
-                {
-                    task.Dispose();
-                    list.Remove(task);
-                }
-            }, TaskList_, deltaTime);
+            }
+            
+            if (task.IsDone)
+            {
+                task.Dispose();
+                list.Remove(task);
+            }
         }
 
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
