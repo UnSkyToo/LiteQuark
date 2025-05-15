@@ -20,12 +20,24 @@ namespace LiteQuark.Editor
                 builder.LogError("AssetBundleManifest is null");
                 return;
             }
+            
+            var rootPath = builder.GetResOutputPath();
+            foreach (var bundle in versionPack.BundleList)
+            {
+                var fullPath = PathUtils.ConcatPath(rootPath, bundle.BundlePath);
+                var fileInfo = new System.IO.FileInfo(fullPath);
+                if (!fileInfo.Exists)
+                {
+                    LEditorLog.Warning($"Bundle file {fullPath} not exists");
+                    continue;
+                }
+                bundle.Size = fileInfo.Length;
+            }
 
             if (builder.ResConfig.HashMode)
             {
                 versionPack.ApplyHash(manifest);
-
-                var rootPath = builder.GetResOutputPath();
+                
                 foreach (var bundle in versionPack.BundleList)
                 {
                     var oldPath = PathUtils.ConcatPath(rootPath, bundle.BundlePath);
@@ -33,7 +45,7 @@ namespace LiteQuark.Editor
                     PathUtils.RenameFile(oldPath, newPath);
                 }
             }
-
+            
             var jsonText = versionPack.ToJson();
             PathUtils.CreateDirectory(builder.GetResOutputPath());
             System.IO.File.WriteAllText(PathUtils.ConcatPath(builder.GetResOutputPath(), AppUtils.GetVersionFileName()), jsonText);
