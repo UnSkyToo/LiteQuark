@@ -127,7 +127,10 @@ namespace LiteQuark.Editor
                 var path = GetBundlePathFromFullPath(dependencyPath);
                 if (!result.Contains(path))
                 {
-                    CreateBundleInfo(dependencyPath, new[] { PathUtils.GetRelativeAssetRootPath(dependencyPath).ToLower() });
+                    if (PathUtils.PathIsFile(dependencyPath))
+                    {
+                        CreateBundleInfo(dependencyPath, new[] { PathUtils.GetRelativeAssetRootPath(dependencyPath).ToLower() });
+                    }
                     result.Add(path);
                 }
             }
