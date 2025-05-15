@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
         public int BundleID { get; set; }
         public string BundlePath { get; set; }
         public string Hash { get; set; }
+        public long Size { get; set; }
         public string[] AssetList { get; set; }
         public string[] DependencyList { get; set; }
 
