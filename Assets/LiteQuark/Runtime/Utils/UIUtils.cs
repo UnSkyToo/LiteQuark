@@ -226,4 +226,65 @@ namespace LiteQuark.Runtime
             ReplaceSprite(go.transform, null, resPath);
         }
     }
+
+    public static class UIUtilsExtend
+    {
+        public static Transform FindChild(this GameObject parent, string path)
+        {
+            return UIUtils.FindChild(parent, path);
+        }
+
+        public static Transform FindChild(this Transform parent, string path)
+        {
+            return UIUtils.FindChild(parent, path);
+        }
+
+        public static Component FindComponent(this GameObject parent, string path, Type type)
+        {
+            return UIUtils.FindComponent(parent, path, type);
+        }
+
+        public static Component FindComponent(this Transform parent, string path, Type type)
+        {
+            return UIUtils.FindComponent(parent, path, type);
+        }
+
+        public static T FindComponent<T>(this GameObject parent, string path) where T : Component
+        {
+            return UIUtils.FindComponent<T>(parent, path);
+        }
+
+        public static T FindComponent<T>(this Transform parent, string path) where T : Component
+        {
+            return UIUtils.FindComponent<T>(parent, path);
+        }
+
+        public static T FindComponentUpper<T>(this GameObject current) where T : Component
+        {
+            return UIUtils.FindComponentUpper<T>(current);
+        }
+
+        public static T FindComponentUpper<T>(this Transform current) where T : Component
+        {
+            return UIUtils.FindComponentUpper<T>(current);
+        }
+
+        public static void SetActive(this GameObject parent, string path, bool value)
+        {
+            UIUtils.SetActive(parent, path, value);
+        }
+
+        public static void SetActive(this Transform transform, bool value)
+        {
+            if (transform != null)
+            {
+                transform.gameObject.SetActive(value);
+            }
+        }
+
+        public static void SetActive(this Transform parent, string path, bool value)
+        {
+            UIUtils.SetActive(parent, path, value);
+        }
+    }
 }
