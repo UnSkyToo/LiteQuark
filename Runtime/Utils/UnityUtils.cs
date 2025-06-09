@@ -4,34 +4,6 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public static class UnityUtilsEx
-    {
-        public static T GetComponentUpper<T>(this Transform parent) where T : Component
-        {
-            return UnityUtils.GetComponentUpper<T>(parent);
-        }
-        
-        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
-        {
-            return UnityUtils.GetOrAddComponent<T>(go);
-        }
-
-        public static T GetOrAddComponent<T>(this Transform go) where T : Component
-        {
-            return UnityUtils.GetOrAddComponent<T>(go);
-        }
-        
-        public static TaskAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation asyncOperation)
-        {
-            var tcs = new TaskCompletionSource<AsyncOperation>();
-            asyncOperation.completed += operation =>
-            {
-                tcs.SetResult(operation);
-            };
-            return tcs.Task.GetAwaiter();
-        }
-    }
-    
     public static class UnityUtils
     {
         public static T GetComponentUpper<T>(Transform parent) where T : Component
@@ -200,5 +172,33 @@ namespace LiteQuark.Runtime
             updateZoomAreaAndParentFunc.Invoke(gameView, null);
         }
 #endif
+    }
+    
+    public static class UnityUtilsExtend
+    {
+        public static T GetComponentUpper<T>(this Transform parent) where T : Component
+        {
+            return UnityUtils.GetComponentUpper<T>(parent);
+        }
+        
+        public static T GetOrAddComponent<T>(this GameObject go) where T : Component
+        {
+            return UnityUtils.GetOrAddComponent<T>(go);
+        }
+
+        public static T GetOrAddComponent<T>(this Transform go) where T : Component
+        {
+            return UnityUtils.GetOrAddComponent<T>(go);
+        }
+        
+        public static TaskAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation asyncOperation)
+        {
+            var tcs = new TaskCompletionSource<AsyncOperation>();
+            asyncOperation.completed += operation =>
+            {
+                tcs.SetResult(operation);
+            };
+            return tcs.Task.GetAwaiter();
+        }
     }
 }
