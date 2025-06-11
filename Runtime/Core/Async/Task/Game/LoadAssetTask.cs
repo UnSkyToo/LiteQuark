@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadAssetTask<T> : LoadAssetBaseTask where T : UnityEngine.Object
     {
-        private AssetBundleRequest AssetRequest_;
+        private AssetBundleRequest _assetRequest;
 
         public LoadAssetTask(AssetBundle bundle, string name, Action<UnityEngine.Object> callback)
             : base(bundle, name, callback)
@@ -14,13 +14,13 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            AssetRequest_ = Bundle.LoadAssetAsync<T>(Name);
-            AssetRequest_.completed += OnAssetRequestLoadCompleted;
+            _assetRequest = Bundle.LoadAssetAsync<T>(Name);
+            _assetRequest.completed += OnAssetRequestLoadCompleted;
         }
 
         protected override void OnTick(float deltaTime)
         {
-            Progress = AssetRequest_?.progress ?? 0f;
+            Progress = _assetRequest?.progress ?? 0f;
         }
 
         private void OnAssetRequestLoadCompleted(AsyncOperation op)
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
 
         public override UnityEngine.Object WaitCompleted()
         {
-            return AssetRequest_.asset;
+            return _assetRequest.asset;
         }
     }
 }
