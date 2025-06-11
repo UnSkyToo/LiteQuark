@@ -36,13 +36,7 @@ namespace LiteQuark.Editor
         private void DrawAction()
         {
             var actionList = LiteRuntime.Action?.GetActionList();
-            if (actionList == null || actionList.Count == 0)
-            {
-                EditorGUILayout.LabelField("Empty");
-                return;
-            }
-
-            actionList.Foreach((ac) =>
+            actionList?.Foreach((ac) =>
             {
                 if (ac is BaseAction action)
                 {
@@ -53,6 +47,11 @@ namespace LiteQuark.Editor
                     EditorGUILayout.LabelField($"Action {ac.ID}");
                 }
             });
+            
+            if (actionList == null || actionList.Count == 0)
+            {
+                EditorGUILayout.LabelField("Empty");
+            }
         }
 
         private void DrawAsset()

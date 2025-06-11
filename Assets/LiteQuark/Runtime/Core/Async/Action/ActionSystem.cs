@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     public sealed class ActionSystem : ISystem, ITick
     {
-        private readonly ListEx<IAction> _actionList = new ListEx<IAction>();
+        private readonly SafeList<IAction> _actionList = new SafeList<IAction>();
         
         public ActionSystem()
         {
@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
             _actionList.Foreach(OnActionTick, _actionList, deltaTime);
         }
 
-        private void OnActionTick(IAction action, ListEx<IAction> list, float dt)
+        private void OnActionTick(IAction action, SafeList<IAction> list, float dt)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace LiteQuark.Runtime
             return action == null || action.IsEnd;
         }
 
-        public ListEx<IAction> GetActionList()
+        public SafeList<IAction> GetActionList()
         {
             return _actionList;
         }
@@ -83,6 +83,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             action.Stop();
+            OnActionTick(action, _actionList, 0);
         }
 
         public ulong AddAction(IAction action, bool isSafety = false)
