@@ -2,16 +2,16 @@
 {
     public class SequenceAction : CompositeAction
     {
-        public override string DebugName => $"<Sequence - {Tag}>({Index_}/{Count})";
+        public override string DebugName => $"<Sequence - {Tag}>({Index}/{Count})";
         
-        private IAction Current_;
-        protected int Index_;
+        private IAction _current;
+        protected int Index;
         
         public SequenceAction(string tag, IAction[] args)
             : base(tag, args)
         {
-            Index_ = -1;
-            Current_ = null;
+            Index = -1;
+            _current = null;
         }
 
         public override void Execute()
@@ -22,18 +22,18 @@
 
         public override void Tick(float deltaTime)
         {
-            if (Current_ == null)
+            if (_current == null)
             {
                 return;
             }
             
-            if (Current_.IsEnd)
+            if (_current.IsEnd)
             {
                 ActiveNextAction();
             }
             else
             {
-                Current_.Tick(deltaTime);
+                _current.Tick(deltaTime);
             }
         }
 
@@ -41,24 +41,24 @@
         {
             while (!IsEnd)
             {
-                Current_?.Dispose();
+                _current?.Dispose();
 
-                Index_ = GetNextIndex();
-                if (Index_ == -1)
+                Index = GetNextIndex();
+                if (Index == -1)
                 {
-                    Current_ = null;
+                    _current = null;
                     IsEnd = true;
                 }
                 else
                 {
-                    Current_ = SubActions[Index_];
+                    _current = SubActions[Index];
                 }
 
-                if (Current_ != null)
+                if (_current != null)
                 {
-                    Current_.Execute();
+                    _current.Execute();
 
-                    if (Current_.IsEnd)
+                    if (_current.IsEnd)
                     {
                         continue;
                     }
@@ -70,14 +70,14 @@
 
         protected virtual int GetNextIndex()
         {
-            Index_++;
+            Index++;
             
-            if (Index_ >= Count)
+            if (Index >= Count)
             {
                 return -1;
             }
 
-            return Index_;
+            return Index;
         }
     }
 
@@ -90,14 +90,14 @@
 
         protected override int GetNextIndex()
         {
-            Index_++;
+            Index++;
 
-            if (Index_ >= Count)
+            if (Index >= Count)
             {
                 return 0;
             }
 
-            return Index_;
+            return Index;
         }
     }
 }
