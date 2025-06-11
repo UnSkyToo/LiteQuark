@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
     {
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
-        private readonly ListEx<ITask> _taskList = new ListEx<ITask>();
+        private readonly SafeList<ITask> _taskList = new SafeList<ITask>();
 
         public TaskSystem()
         {
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
             _taskList.Foreach(OnTaskTick, _taskList, deltaTime);
         }
 
-        private void OnTaskTick(ITask task, ListEx<ITask> list, float dt)
+        private void OnTaskTick(ITask task, SafeList<ITask> list, float dt)
         {
             if (task.State == TaskState.Waiting)
             {
@@ -110,20 +110,6 @@ namespace LiteQuark.Runtime
         public WaitCallbackTask AddTask(Action<Action<bool>> func)
         {
             var task = new WaitCallbackTask(func);
-            _taskList.Add(task);
-            return task;
-        }
-
-        public ParallelTask ParallelTask(ITask[] subTasks, Action<bool> callback)
-        {
-            var task = new ParallelTask(subTasks, callback);
-            _taskList.Add(task);
-            return task;
-        }
-
-        public SequenceTask SequenceTask(ITask[] subTasks, Action<bool> callback)
-        {
-            var task = new SequenceTask(subTasks, callback);
             _taskList.Add(task);
             return task;
         }
