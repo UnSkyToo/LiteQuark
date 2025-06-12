@@ -34,6 +34,10 @@
             else
             {
                 _current.Tick(deltaTime);
+                if (_current.IsEnd)
+                {
+                    ActiveNextAction();
+                }
             }
         }
 
