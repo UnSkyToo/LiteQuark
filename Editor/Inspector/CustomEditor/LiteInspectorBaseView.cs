@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Editor
 {
-    internal abstract class LiteInspectorBaseView : UnityEditor.Editor
+    public abstract class LiteInspectorBaseView : UnityEditor.Editor
     {
         private bool _isCompiling = false;
 
