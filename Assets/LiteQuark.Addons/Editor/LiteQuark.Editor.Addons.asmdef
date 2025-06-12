@@ -1,0 +1,19 @@
+{
+    "name": "LiteQuark.Editor.Addons",
+    "rootNamespace": "LiteQuark.Editor",
+    "references": [
+        "GUID:70cc8e28ad336ff488b406869409d3f1",
+        "GUID:93ab4d80b1d4ab64abd1db7a9d4de780"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
