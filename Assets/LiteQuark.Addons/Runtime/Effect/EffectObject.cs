@@ -62,10 +62,6 @@ namespace LiteQuark.Runtime
                             _info.CompleteCallback?.Invoke();
                             Stop();
                         }
-                        else
-                        {
-                            Play(_curSpeed);
-                        }
                     }
                     break;
                 case EffectState.Finishing:
