@@ -19,7 +19,13 @@ namespace LiteQuark.Editor
 
             if (GUILayout.Button("Update"))
             {
-                (target as EffectBinder)?.UpdateInfo();
+                if (target is EffectBinder binder)
+                {
+                    Undo.RecordObject(binder, "Update Effect Info");
+                    binder.UpdateInfo();
+                    EditorUtility.SetDirty(binder);
+                    AssetDatabase.SaveAssetIfDirty(binder);
+                }
             }
             
             serializedObject.ApplyModifiedProperties();
