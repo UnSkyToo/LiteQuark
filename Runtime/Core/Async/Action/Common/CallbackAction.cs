@@ -167,6 +167,58 @@
             _callback?.Invoke(_param1, _param2, _param3);
         }
     }
+    
+    public class CallbackAction<T1, T2, T3, T4> : BaseAction
+    {
+        public override string DebugName => "<Callback4>()";
+
+        private readonly System.Action<T1, T2, T3, T4> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
+        private readonly T3 _param3 = default;
+        private readonly T4 _param4 = default;
+        
+        public CallbackAction(System.Action<T1, T2, T3, T4> callback, T1 param1, T2 param2, T3 param3, T4 param4)
+        {
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
+            _param3 = param3;
+            _param4 = param4;
+        }
+
+        public override void Execute()
+        {
+            IsEnd = true;
+            _callback?.Invoke(_param1, _param2, _param3, _param4);
+        }
+    }
+    
+    public class CallbackFuncAction<T1, T2, T3, T4, TR> : BaseAction
+    {
+        public override string DebugName => "<Callback4>()";
+
+        private readonly System.Func<T1, T2, T3, T4, TR> _callback = null;
+        private readonly T1 _param1 = default;
+        private readonly T2 _param2 = default;
+        private readonly T3 _param3 = default;
+        private readonly T4 _param4 = default;
+        
+        public CallbackFuncAction(System.Func<T1, T2, T3, T4, TR> callback, T1 param1, T2 param2, T3 param3, T4 param4)
+        {
+            _callback = callback;
+            _param1 = param1;
+            _param2 = param2;
+            _param3 = param3;
+            _param4 = param4;
+        }
+
+        public override void Execute()
+        {
+            IsEnd = true;
+            _callback?.Invoke(_param1, _param2, _param3, _param4);
+        }
+    }
 
     public static partial class ActionBuilderExtend
     {
@@ -215,6 +267,18 @@
         public static ActionBuilder Callback<T1, T2, T3, TR>(this ActionBuilder builder, System.Func<T1, T2, T3, TR> callback, T1 param1, T2 param2, T3 param3)
         {
             builder.Add(new CallbackFuncAction<T1, T2, T3, TR>(callback, param1, param2, param3));
+            return builder;
+        }
+        
+        public static ActionBuilder Callback<T1, T2, T3, T4>(this ActionBuilder builder, System.Action<T1, T2, T3, T4> callback, T1 param1, T2 param2, T3 param3, T4 param4)
+        {
+            builder.Add(new CallbackAction<T1, T2, T3, T4>(callback, param1, param2, param3, param4));
+            return builder;
+        }
+
+        public static ActionBuilder Callback<T1, T2, T3, T4, TR>(this ActionBuilder builder, System.Func<T1, T2, T3, T4, TR> callback, T1 param1, T2 param2, T3 param3, T4 param4)
+        {
+            builder.Add(new CallbackFuncAction<T1, T2, T3, T4, TR>(callback, param1, param2, param3, param4));
             return builder;
         }
     }
