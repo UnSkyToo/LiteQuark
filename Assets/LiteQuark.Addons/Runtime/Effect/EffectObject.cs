@@ -16,8 +16,8 @@ namespace LiteQuark.Runtime
         private float _lastTimeScale = 1f;
         private float _time = 0f;
 
-        public bool IsLoop => _info.IsLoop || _binder.IsLoop;
-        public float LifeTime => _info.LifeTime > 0f ? _info.LifeTime : _binder.LifeTime;
+        public bool IsLoop => _info.IsLoop || (_binder?.IsLoop ?? false);
+        public float LifeTime => _info.LifeTime > 0f ? _info.LifeTime : _binder?.LifeTime ?? 0f;
         public bool IsValid => _state is > EffectState.Created and < EffectState.Finished;
         public bool IsEnd => _state == EffectState.Finished;
 
@@ -150,7 +150,7 @@ namespace LiteQuark.Runtime
             {
                 _lastSpeed = _curSpeed;
                 _curSpeed = speed;
-                _binder.SetSpeed(_curSpeed);
+                _binder?.SetSpeed(_curSpeed);
             }
         }
 
@@ -159,7 +159,7 @@ namespace LiteQuark.Runtime
             if (Mathf.Abs(_curSpeed - _lastSpeed) > 0.0001f && IsValid)
             {
                 _curSpeed = _lastSpeed;
-                _binder.SetSpeed(_curSpeed);
+                _binder?.SetSpeed(_curSpeed);
             }
         }
 
@@ -167,7 +167,7 @@ namespace LiteQuark.Runtime
         {
             if (IsValid)
             {
-                _binder.SetTime(time);
+                _binder?.SetTime(time);
             }
         }
         
@@ -179,7 +179,7 @@ namespace LiteQuark.Runtime
                 _lastSpeed = _curSpeed;
                 _curSpeed = speed;
                 _time = LifeTime;
-                _binder.Play(speed);
+                _binder?.Play(speed);
             }
         }
 
@@ -191,15 +191,15 @@ namespace LiteQuark.Runtime
                 _lastSpeed = _curSpeed;
                 _curSpeed = speed;
                 _time = LifeTime;
-                _binder.PlayAnimation(stateName, layer);
+                _binder?.PlayAnimation(stateName, layer);
             }
         }
 
         public void Stop()
         {
             _state = EffectState.Finishing;
-            _time = _binder.RetainTime;
-            _binder.Stop();
+            _time = _binder?.RetainTime ?? 0f;
+            _binder?.Stop();
         }
     }
 }

@@ -34,7 +34,6 @@ namespace LiteQuark.Runtime
                         for (var layer = 0; layer < animator.layerCount; ++layer)
                         {
                             var info = animator.GetCurrentAnimatorStateInfo(layer);
-                            animator.playbackTime = 0;
                             animator.Play(info.fullPathHash, layer, 0);
                         }
                     }
@@ -66,7 +65,6 @@ namespace LiteQuark.Runtime
                 {
                     if (animator != null)
                     {
-                        animator.playbackTime = 0;
                         animator.StopPlayback();
                     }
                 }
