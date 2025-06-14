@@ -226,7 +226,7 @@ namespace LiteQuark.Editor
         
         public string GetResOutputPath()
         {
-            return $"{GetRootOutputPath()}/Res";
+            return $"{GetRootOutputPath()}/Res/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}";
         }
         
         public string GetAppOutputPath()
