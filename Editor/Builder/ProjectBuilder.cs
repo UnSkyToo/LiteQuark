@@ -243,6 +243,17 @@ namespace LiteQuark.Editor
         {
             return "XCodeProject";
         }
+
+        public string GetLegalProduceName()
+        {
+            var legalProduceName = AppConfig.ProduceName;
+            foreach (var c in System.IO.Path.GetInvalidFileNameChars())
+            {
+                legalProduceName = legalProduceName.Replace(c, '_');
+            }
+
+            return legalProduceName.Replace(' ', '_');
+        }
         
         public string[] GetBuildSceneList()
         {
