@@ -4,19 +4,20 @@
     {
         public override string DebugName => $"<Parallel - {Tag}>({Count})";
         
-        public ParallelAction(string tag, IAction[] args)
-            : base(tag, args)
+        private int _currentCount;
+        
+        public ParallelAction(string tag, int repeatCount, IAction[] args)
+            : base(tag, repeatCount, args)
         {
+            _currentCount = 0;
         }
 
         public override void Execute()
         {
             IsEnd = Count == 0;
+            _currentCount = 0;
             
-            foreach (var action in SubActions)
-            {
-                action.Execute();
-            }
+            ExecuteSubActions();
         }
 
         public override void Tick(float deltaTime)
@@ -41,7 +42,23 @@
             
             if (endCount == Count)
             {
-                IsEnd = true;
+                _currentCount++;
+                if (RepeatCount < 0 || _currentCount < RepeatCount)
+                {
+                    ExecuteSubActions();
+                }
+                else
+                {
+                    IsEnd = true;
+                }
+            }
+        }
+
+        private void ExecuteSubActions()
+        {
+            foreach (var action in SubActions)
+            {
+                action.Execute();
             }
         }
     }

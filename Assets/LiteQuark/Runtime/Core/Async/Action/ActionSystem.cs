@@ -103,14 +103,14 @@ namespace LiteQuark.Runtime
             return AddAction(builder.Flush(), isSafety);
         }
 
-        public ActionBuilder Sequence(string tag, bool isRepeat = false)
+        public ActionBuilder Sequence(string tag, int repeatCount = 1)
         {
-            return ActionBuilder.Sequence(tag, isRepeat);
+            return ActionBuilder.Sequence(tag, repeatCount);
         }
 
-        public ActionBuilder Parallel(string tag)
+        public ActionBuilder Parallel(string tag, int repeatCount = 1)
         {
-            return ActionBuilder.Parallel(tag);
+            return ActionBuilder.Parallel(tag, repeatCount);
         }
     }
 }

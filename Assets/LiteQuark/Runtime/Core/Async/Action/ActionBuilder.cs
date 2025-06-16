@@ -7,36 +7,37 @@ namespace LiteQuark.Runtime
         private enum BuildType
         {
             Sequence,
-            RepeatSequence,
             Parallel,
         }
 
         private readonly BuildType _buildType;
         private readonly string _tag;
+        private readonly int _repeatCount;
         private readonly List<IAction> _actionList;
         private ActionBuilder _parent;
 
-        private ActionBuilder(BuildType buildType, string tag)
+        private ActionBuilder(BuildType buildType, string tag, int repeatCount = 1)
         {
             _buildType = buildType;
             _tag = string.IsNullOrEmpty(tag) ? "unknown" : tag;
+            _repeatCount = repeatCount;
             _actionList = new List<IAction>();
             _parent = null;
         }
         
-        public static ActionBuilder Sequence(string tag = "unknown", bool isRepeat = false)
+        public static ActionBuilder Sequence(string tag = "unknown", int repeatCount = 1)
         {
-            return new ActionBuilder(isRepeat ? BuildType.RepeatSequence : BuildType.Sequence, tag);
+            return new ActionBuilder(BuildType.Sequence, tag, repeatCount);
         }
 
-        public static ActionBuilder Parallel(string tag = "unknown")
+        public static ActionBuilder Parallel(string tag = "unknown", int repeatCount = 1)
         {
-            return new ActionBuilder(BuildType.Parallel, tag);
+            return new ActionBuilder(BuildType.Parallel, tag, repeatCount);
         }
 
-        public ActionBuilder BeginSequence(string tag = "unknown", bool isRepeat = false)
+        public ActionBuilder BeginSequence(string tag = "unknown", int repeatCount = 1)
         {
-            var builder = Sequence(tag, isRepeat);
+            var builder = Sequence(tag, repeatCount);
             builder._parent = this;
             return builder;
         }
@@ -52,9 +53,9 @@ namespace LiteQuark.Runtime
             return _parent;
         }
 
-        public ActionBuilder BeginParallel(string tag = "unknown")
+        public ActionBuilder BeginParallel(string tag = "unknown", int repeatCount = 1)
         {
-            var builder = Parallel(tag);
+            var builder = Parallel(tag, repeatCount);
             builder._parent = this;
             return builder;
         }
@@ -75,11 +76,9 @@ namespace LiteQuark.Runtime
             switch (_buildType)
             {
                 case BuildType.Sequence:
-                    return new SequenceAction(_tag, _actionList.ToArray());
-                case BuildType.RepeatSequence:
-                    return new RepeatSequenceAction(_tag, _actionList.ToArray());
+                    return new SequenceAction(_tag, _repeatCount, _actionList.ToArray());
                 case BuildType.Parallel:
-                    return new ParallelAction(_tag, _actionList.ToArray());
+                    return new ParallelAction(_tag, _repeatCount, _actionList.ToArray());
             }
 
             return null;
