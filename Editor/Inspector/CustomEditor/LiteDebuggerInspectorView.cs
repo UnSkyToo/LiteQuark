@@ -9,6 +9,7 @@ namespace LiteQuark.Editor
     internal class LiteDebuggerInspectorView : LiteInspectorBaseView
     {
         private readonly Dictionary<string, bool> _labelFoldout = new Dictionary<string, bool>();
+        private readonly Dictionary<ulong, bool> _idFoldout = new Dictionary<ulong, bool>();
         
         protected override void OnDraw()
         {
@@ -36,21 +37,61 @@ namespace LiteQuark.Editor
         private void DrawAction()
         {
             var actionList = LiteRuntime.Action?.GetActionList();
-            actionList?.Foreach((ac) =>
-            {
-                if (ac is BaseAction action)
-                {
-                    EditorGUILayout.LabelField(action.DebugName);
-                }
-                else
-                {
-                    EditorGUILayout.LabelField($"Action {ac.ID}");
-                }
-            });
-            
             if (actionList == null || actionList.Count == 0)
             {
                 EditorGUILayout.LabelField("Empty");
+            }
+            else
+            {
+                actionList.Foreach(DrawOneAction, EditorGUI.indentLevel);
+            }
+        }
+
+        private void DrawOneAction(IAction action, int indent)
+        {
+            using (new IndentLevelScope(indent))
+            {
+                if (action is CompositeAction compositeAction)
+                {
+                    _idFoldout.TryAdd(action.ID, false);
+                    if (!compositeAction.IsEnd)
+                    {
+                        using (new ColorScope(Color.green))
+                        {
+                            _idFoldout[action.ID] = EditorGUILayout.Foldout(_idFoldout[action.ID], $"- {compositeAction.DebugName}");
+                        }
+                    }
+                    else
+                    {
+                        _idFoldout[action.ID] = EditorGUILayout.Foldout(_idFoldout[action.ID], $"{compositeAction.DebugName}");
+                    }
+
+                    if (_idFoldout[action.ID])
+                    {
+                        foreach (var subAc in compositeAction.GetSubActions())
+                        {
+                            DrawOneAction(subAc, indent + 1);
+                        }
+                    }
+                }
+                else if (action is BaseAction baseAction)
+                {
+                    if (!baseAction.IsEnd)
+                    {
+                        using (new ColorScope(Color.green))
+                        {
+                            EditorGUILayout.LabelField($"- {baseAction.DebugName}");
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(baseAction.DebugName);
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.LabelField($"Action {action.ID}");
+                }
             }
         }
 
