@@ -82,7 +82,20 @@ namespace LiteQuark.Runtime
             return Mathf.RoundToInt(start + (end - start) * t);
         }
     }
+    
+    public class ColorValueFromToAction : ValueFromToAction<Color>
+    {
+        public ColorValueFromToAction(Func<Color> getter, Action<Color> setter, Color value, float time, EaseKind easeKind = EaseKind.Linear)
+            : base(getter, setter, value, time, easeKind)
+        {
+        }
 
+        protected override Color LerpUnclamped(Color start, Color end, float t)
+        {
+            return Color.LerpUnclamped(start, end, t);
+        }
+    }
+    
     public static partial class ActionBuilderExtend
     {
         public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<float> getter, Action<float> setter, float value, float time, EaseKind easeKind = EaseKind.Linear)
@@ -94,6 +107,12 @@ namespace LiteQuark.Runtime
         public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<int> getter, Action<int> setter, int value, float time, EaseKind easeKind = EaseKind.Linear)
         {
             builder.Add(new IntValueFromToAction(getter, setter, value, time, easeKind));
+            return builder;
+        }
+        
+        public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<Color> getter, Action<Color> setter, Color value, float time, EaseKind easeKind = EaseKind.Linear)
+        {
+            builder.Add(new ColorValueFromToAction(getter, setter, value, time, easeKind));
             return builder;
         }
     }
