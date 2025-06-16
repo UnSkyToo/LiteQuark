@@ -226,17 +226,17 @@ namespace LiteQuark.Editor
         
         public string GetResOutputPath()
         {
-            return $"{GetRootOutputPath()}/Res/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}";
+            return $"{GetRootOutputPath()}/Res";
         }
         
         public string GetAppOutputPath()
         {
-            return $"{GetRootOutputPath()}/App/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}";
+            return $"{GetRootOutputPath()}/App";
         }
 
         public string GetRootOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{Version}");
+            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{Version}/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}");
         }
 
         public string GetIOSWorkspaceName()
