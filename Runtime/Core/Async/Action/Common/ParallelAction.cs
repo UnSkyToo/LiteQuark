@@ -37,6 +37,7 @@
                 if (SubActions[index].IsEnd)
                 {
                     SubActions[index].Dispose();
+                    endCount++;
                 }
             }
             
