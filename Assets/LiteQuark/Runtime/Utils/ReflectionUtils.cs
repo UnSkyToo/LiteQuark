@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         public const BindingFlags DefaultInstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         public const BindingFlags DefaultStaticFlags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
         
-        public static MethodInfo GetMethod(Type type, string methodName, BindingFlags flags)
+        public static MethodInfo GetMethod(Type type, string methodName, BindingFlags flags = DefaultStaticFlags)
         {
             var methodInfo = type.GetMethod(methodName, flags);
             if (methodInfo == null)
@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
             return methodInfo;
         }
 
-        public static MethodInfo GetMethod(Type type, string methodName, int paramCount, BindingFlags flags)
+        public static MethodInfo GetMethod(Type type, string methodName, int paramCount, BindingFlags flags = DefaultStaticFlags)
         {
             var methods = type.GetMethods(flags);
 
@@ -47,20 +47,20 @@ namespace LiteQuark.Runtime
             InvokeMethod(instance.GetType(), instance, methodName, flags);
         }
         
-        public static void InvokeMethod(Type type, object instance, string methodName, BindingFlags flags)
+        public static void InvokeMethod(Type type, object instance, string methodName, BindingFlags flags = DefaultInstanceFlags)
         {
             var methodInfo = GetMethod(type, methodName, flags);
             methodInfo.Invoke(instance, null);
         }
         
-        public static object InvokeGenericMethod<T>(Type type, string methodName, object[] paramList, BindingFlags flags)
+        public static object InvokeGenericMethod<T>(Type type, string methodName, object[] paramList, BindingFlags flags = DefaultStaticFlags)
         {
             var methodInfo = GetMethod(type, methodName, flags);
             var method = methodInfo.MakeGenericMethod(typeof(T));
             return method.Invoke(null, paramList);
         }
 
-        public static object InvokeGenericMethod<T>(object instance, string methodName, object[] paramList, BindingFlags flags)
+        public static object InvokeGenericMethod<T>(object instance, string methodName, object[] paramList, BindingFlags flags = DefaultInstanceFlags)
         {
             if (instance == null)
             {
@@ -89,17 +89,17 @@ namespace LiteQuark.Runtime
             return type.GetField(fieldName, flags);
         }
 
-        public static object GetFieldValue(Type type, string fieldName, BindingFlags flags = BindingFlags.Static)
+        public static object GetFieldValue(Type type, string fieldName, BindingFlags flags = DefaultStaticFlags)
         {
             return GetFieldValue(type, null, fieldName, flags);
         }
         
-        public static object GetFieldValue(object instance, string fieldName, BindingFlags flags = BindingFlags.Instance)
+        public static object GetFieldValue(object instance, string fieldName, BindingFlags flags = DefaultInstanceFlags)
         {
             return GetFieldValue(instance.GetType(), instance, fieldName, flags);
         }
         
-        public static object GetFieldValue(Type type, object instance, string fieldName, BindingFlags flags)
+        public static object GetFieldValue(Type type, object instance, string fieldName, BindingFlags flags = DefaultInstanceFlags)
         {
             var fieldInfo = GetFieldInfo(type, fieldName, flags);
             if (fieldInfo == null)
@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
             SetFieldValue(instance.GetType(), instance, fieldName, fieldValue, flags);
         }
         
-        public static void SetFieldValue(Type type, object instance, string fieldName, object fieldValue, BindingFlags flags)
+        public static void SetFieldValue(Type type, object instance, string fieldName, object fieldValue, BindingFlags flags = DefaultInstanceFlags)
         {
             var fieldInfo = GetFieldInfo(type, fieldName, flags);
             if (fieldInfo == null)
@@ -163,7 +163,7 @@ namespace LiteQuark.Runtime
             return GetPropertyValue(instance.GetType(), instance, propertyName, flags);
         }
         
-        public static object GetPropertyValue(Type type, object instance, string propertyName, BindingFlags flags)
+        public static object GetPropertyValue(Type type, object instance, string propertyName, BindingFlags flags = DefaultInstanceFlags)
         {
             var propertyInfo = GetPropertyInfo(type, propertyName, flags);
             if (propertyInfo == null)
@@ -190,7 +190,7 @@ namespace LiteQuark.Runtime
             SetPropertyValue(instance.GetType(), instance, propertyName, propertyValue, flags);
         }
         
-        public static void SetPropertyValue(Type type, object instance, string propertyName, object propertyValue, BindingFlags flags)
+        public static void SetPropertyValue(Type type, object instance, string propertyName, object propertyValue, BindingFlags flags = DefaultInstanceFlags)
         {
             var propertyInfo = GetPropertyInfo(type, propertyName, flags);
             if (propertyInfo == null)
