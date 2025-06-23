@@ -13,6 +13,7 @@ namespace LiteQuark.Editor
         
         private readonly string _defaultBundlePath = $"default{LiteConst.BundleFileExt}";
         private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new Dictionary<string, BundleInfo>();
+        private ResCollectorSetting _setting = null;
         private VersionPackInfo _packInfo = null;
         private int _bundleID = 1;
 
@@ -25,6 +26,7 @@ namespace LiteQuark.Editor
         {
             if (_packInfo == null)
             {
+                _setting = ResCollectorSetting.GetOrCreateSetting();
                 _bundleInfoCache.Clear();
                 _bundleID = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
@@ -35,6 +37,7 @@ namespace LiteQuark.Editor
 
         public void CleanVersionPackInfo()
         {
+            _setting = null;
             _packInfo = null;
             Manifest = null;
         }
@@ -74,7 +77,7 @@ namespace LiteQuark.Editor
             {
                 CollectBundleInfo(subBundlePath);
             }
-
+            
             CreateBundleInfo(rootPath);
         }
         
@@ -140,7 +143,8 @@ namespace LiteQuark.Editor
         
         private string GetBundlePathFromFullPath(string fullPath)
         {
-            var bundlePath = PathUtils.GetRelativeAssetRootPath(fullPath);
+            var realPath = GetRealBundlePathBySetting(fullPath);
+            var bundlePath = PathUtils.GetRelativeAssetRootPath(realPath);
 
             if (string.IsNullOrWhiteSpace(bundlePath))
             {
@@ -149,8 +153,33 @@ namespace LiteQuark.Editor
 
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
             bundlePath = bundlePath.ToLower();
-
+            
             return $"{bundlePath}{LiteConst.BundleFileExt}";
+        }
+
+        private string GetRealBundlePathBySetting(string bundlePath)
+        {
+            if (_setting.IgnorePathList.Count == 0)
+            {
+                return bundlePath;
+            }
+            
+            var lastIndividualPath = bundlePath;
+            
+            while (!string.IsNullOrEmpty(bundlePath))
+            {
+                if (_setting.IsIgnorePath(bundlePath))
+                {
+                    lastIndividualPath = PathUtils.GetParentPath(bundlePath);
+                    bundlePath = lastIndividualPath;
+                }
+                else
+                {
+                    bundlePath = PathUtils.GetParentPath(bundlePath);
+                }
+            }
+
+            return lastIndividualPath;
         }
         
         private bool AssetFilter(string filePath)

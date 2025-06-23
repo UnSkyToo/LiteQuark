@@ -31,6 +31,12 @@ namespace LiteQuark.Runtime
             return ConcatPath(ConcatPath(path1, path2), path3);
         }
 
+        public static string GetParentPath(string path)
+        {
+            var index = path.LastIndexOf(DirectorySeparatorChar);
+            return index > 0 ? path.Substring(0, index) : string.Empty;
+        }
+
         public static string GetRelativePath(string rootPath, string fullPath)
         {
             var path = fullPath.Replace(rootPath, string.Empty).TrimStart(DirectorySeparatorChar);
