@@ -57,10 +57,14 @@ namespace LiteQuark.Editor
             }
             
             var steps = new List<IBuildStep>();
+
+            if (!config.IncrementBuildModel)
+            {
+                steps.Add(new ResCleanFileStep());
+            }
             
             if (config.CleanBuildMode)
             {
-                steps.Add(new ResCleanFileStep());
                 steps.Add(new ResCleanInfoStep());
             }
             
