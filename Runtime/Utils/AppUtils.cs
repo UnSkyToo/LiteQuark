@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -28,6 +29,20 @@ namespace LiteQuark.Runtime
             catch
             {
                 return version;
+            }
+        }
+
+        public static int CompareVersion(string version1, string version2)
+        {
+            try
+            {
+                var v1 = int.Parse(version1.Replace(".", string.Empty));
+                var v2 = int.Parse(version2.Replace(".", string.Empty));
+                return v1.CompareTo(v2);
+            }
+            catch
+            {
+                return 0;
             }
         }
         

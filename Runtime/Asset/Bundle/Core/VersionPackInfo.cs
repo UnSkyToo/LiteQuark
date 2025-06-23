@@ -98,7 +98,7 @@ namespace LiteQuark.Runtime
                 var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundleFileExt, string.Empty)}/";
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
-                    if (!bundle.AssetList[index].Contains('/'))
+                    if (!bundle.AssetList[index].StartsWith("assets"))
                     {
                         bundle.AssetList[index] = $"{bundlePath}{bundle.AssetList[index]}";
                     }
