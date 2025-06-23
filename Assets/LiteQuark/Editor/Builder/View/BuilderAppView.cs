@@ -65,6 +65,7 @@ namespace LiteQuark.Editor
                 if (!_config.IsDevelopmentBuild)
                 {
                     _config.CleanBuildMode = true;
+                    Window.ResCfg.IncrementBuildModel = false;
                     Window.ResCfg.CleanBuildMode = true;
                     Window.ResCfg.CleanStreamingAssetsBeforeCopy = true;
                 }

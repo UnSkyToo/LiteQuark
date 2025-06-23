@@ -25,7 +25,9 @@ namespace LiteQuark.Editor
 
             _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), _config.HashMode);
             
-            _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will be delete last build file"), _config.CleanBuildMode);
+            _config.IncrementBuildModel = EditorGUILayout.Toggle(new GUIContent("Increment Build", "Increment build mode will be use last build info"), _config.IncrementBuildModel);
+            
+            _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will remove all bundle info"), _config.CleanBuildMode);
 
             _config.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), _config.CopyToStreamingAssets);
 

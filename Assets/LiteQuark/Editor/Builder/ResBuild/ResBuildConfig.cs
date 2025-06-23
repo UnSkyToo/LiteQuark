@@ -18,9 +18,14 @@ namespace LiteQuark.Editor
         /// Enable hash mode for bundle
         /// </summary>
         public bool HashMode { get; set; } = true;
+
+        /// <summary>
+        /// Increment build mode will be use last build info
+        /// </summary>
+        public bool IncrementBuildModel { get; set; } = false;
         
         /// <summary>
-        /// Clean mode will delete last build file
+        /// Clean mode will remove all bundle info
         /// </summary>
         public bool CleanBuildMode { get; set; } = true;
 

@@ -29,6 +29,7 @@ namespace LiteQuark.Editor
             var resCfg = new ResBuildConfig
             {
                 Enable = argumentData.GetEnableResBuild(),
+                IncrementBuildModel = false,
                 CleanBuildMode = true,
                 CopyToStreamingAssets = true,
                 CleanStreamingAssetsBeforeCopy = true,
