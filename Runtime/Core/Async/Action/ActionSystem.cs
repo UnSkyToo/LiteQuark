@@ -1,13 +1,16 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public sealed class ActionSystem : ISystem, ITick
     {
+        private readonly Action<IAction, SafeList<IAction>, float> _onTickDelegate;
         private readonly SafeList<IAction> _actionList = new SafeList<IAction>();
         
         public ActionSystem()
         {
+            _onTickDelegate = OnActionTick;
             _actionList.Clear();
         }
         
@@ -24,7 +27,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _actionList.Foreach(OnActionTick, _actionList, deltaTime);
+            _actionList.Foreach(_onTickDelegate, _actionList, deltaTime);
         }
 
         private void OnActionTick(IAction action, SafeList<IAction> list, float dt)
