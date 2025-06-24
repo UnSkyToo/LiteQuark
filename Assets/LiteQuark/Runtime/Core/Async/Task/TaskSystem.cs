@@ -9,12 +9,14 @@ namespace LiteQuark.Runtime
     {
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
+        private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate;
         private readonly SafeList<ITask> _taskList = new SafeList<ITask>();
 
         public TaskSystem()
         {
             _monoBehaviourInstance = LiteRuntime.Instance.Launcher;
             _mainThreadSynchronizationContext = SynchronizationContext.Current;
+            _onTickDelegate = OnTaskTick;
             _taskList.Clear();
         }
 
@@ -33,7 +35,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _taskList.Foreach(OnTaskTick, _taskList, deltaTime);
+            _taskList.Foreach(_onTickDelegate, _taskList, deltaTime);
         }
 
         private void OnTaskTick(ITask task, SafeList<ITask> list, float dt)
