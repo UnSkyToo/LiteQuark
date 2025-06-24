@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
@@ -10,19 +11,27 @@ namespace LiteQuark.Runtime
     public class AlphaBox : IAlphaBox
     {
         private readonly SpriteRenderer[] _renderers;
+        private readonly Color[] _renderColors;
+        private readonly Graphic[] _graphics;
+        private readonly Color[] _graphicColors;
         private readonly CanvasGroup[] _canvasGroups;
-        private readonly Color[] _colors;
 
         public AlphaBox(Transform transform)
         {
             _renderers = transform.GetComponentsInChildren<SpriteRenderer>();
-            _colors = new Color[_renderers.Length];
-
+            _renderColors = new Color[_renderers.Length];
             for (var i = 0; i < _renderers.Length; ++i)
             {
-                _colors[i] = _renderers[i].color;
+                _renderColors[i] = _renderers[i].color;
             }
-
+            
+            _graphics = transform.GetComponentsInChildren<Graphic>();
+            _graphicColors = new Color[_graphics.Length];
+            for (var i = 0; i < _graphics.Length; ++i)
+            {
+                _graphicColors[i] = _graphics[i].color;
+            }
+            
             _canvasGroups = transform.GetComponentsInChildren<CanvasGroup>();
         }
 
@@ -30,8 +39,14 @@ namespace LiteQuark.Runtime
         {
             for (var i = 0; i < _renderers.Length; ++i)
             {
-                _colors[i].a = alpha;
-                _renderers[i].color = _colors[i];
+                _renderColors[i].a = alpha;
+                _renderers[i].color = _renderColors[i];
+            }
+            
+            for (var i = 0; i < _graphics.Length; ++i)
+            {
+                _graphicColors[i].a = alpha;
+                _graphics[i].color = _graphicColors[i];
             }
 
             foreach (var group in _canvasGroups)
