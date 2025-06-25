@@ -161,6 +161,10 @@ namespace LiteQuark.Runtime
                     UnityEngine.Object.DestroyImmediate(asset);
                 }
             }
+            else
+            {
+                UnityEngine.Resources.UnloadAsset(asset);
+            }
         }
 
         public void UnloadSceneAsync(string scenePath, Action callback)
