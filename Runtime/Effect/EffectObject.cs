@@ -33,8 +33,17 @@ namespace LiteQuark.Runtime
         {
             if (_go != null)
             {
+                if (_info.Order > 0)
+                {
+                    UnityUtils.AddSortingOrder(_go, -_info.Order);
+                }
+                
                 LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(_go);
                 _go = null;
+            }
+            else
+            {
+                LLog.Warning($"Effect {_info.Path} parent is destroyed, not recycle!");
             }
 
             _state = EffectState.Destroyed;
