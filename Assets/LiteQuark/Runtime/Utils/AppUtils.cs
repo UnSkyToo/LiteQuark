@@ -36,9 +36,24 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                var v1 = int.Parse(version1.Replace(".", string.Empty));
-                var v2 = int.Parse(version2.Replace(".", string.Empty));
-                return v1.CompareTo(v2);
+                var chunk1 = version1.Split('.');
+                var chunk2 = version2.Split('.');
+                
+                for (var i = 0; i < chunk1.Length; i++)
+                {
+                    var v1 = int.Parse(chunk1[i]);
+                    var v2 = int.Parse(chunk2[i]);
+                    if (v1 > v2)
+                    {
+                        return 1;
+                    }
+                    else if (v1 < v2)
+                    {
+                        return -1;
+                    }
+                }
+                
+                return 0;
             }
             catch
             {
