@@ -41,6 +41,11 @@ namespace LiteQuark.Runtime
         {
         }
 
+        public string GetVersion()
+        {
+            return AppUtils.GetVersion();
+        }
+
         private void SimulateAsync<T>(Action<T> callback, T value)
         {
             if (_simulateAsyncDelayInEditor)

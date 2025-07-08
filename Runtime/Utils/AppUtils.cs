@@ -15,9 +15,20 @@ namespace LiteQuark.Runtime
 #endif
         }
 
+        /// <summary>
+        /// Get Local App Version
+        /// </summary>
         public static string GetVersion()
         {
             return Application.version;
+        }
+
+        /// <summary>
+        /// Get Local Res Version
+        /// </summary>
+        public static string GetResVersion()
+        {
+            return LiteRuntime.Asset?.GetVersion() ?? GetVersion();
         }
 
         public static string GetNextVersion(string version)

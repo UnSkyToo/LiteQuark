@@ -90,6 +90,11 @@ namespace LiteQuark.Runtime
             }
         }
         
+        public string GetVersion()
+        {
+            return _packInfo?.Version ?? AppUtils.GetVersion();
+        }
+        
         internal AssetBundleCache GetOrCreateBundleCache(string bundlePath)
         {
             if (_bundleCacheMap.TryGetValue(bundlePath, out var cache))
