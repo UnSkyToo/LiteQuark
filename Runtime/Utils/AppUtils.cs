@@ -1,4 +1,5 @@
 using System;
+using System.Net.NetworkInformation;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -77,6 +78,33 @@ namespace LiteQuark.Runtime
         public static string GetVersionFileName()
         {
             return $"version_{GetMainVersion()}.txt";
+        }
+        
+        public static string GetDeviceID()
+        {
+            return $"{SystemInfo.deviceUniqueIdentifier}{GetMacAddress()}";
+        }
+        
+        private static string GetMacAddress()
+        {
+            foreach (var nf in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nf.OperationalStatus != OperationalStatus.Up)
+                {
+                    continue;
+                }
+
+                if (nf.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.Wireless80211)
+                {
+                    var macAddress = nf.GetPhysicalAddress().ToString();
+                    if (macAddress.Length > 0)
+                    {
+                        return macAddress.ToLower();
+                    }
+                }
+            }
+            
+            return string.Empty;
         }
     }
 }
