@@ -47,6 +47,11 @@ namespace LiteQuark.Runtime
             _provider?.Tick(deltaTime);
         }
 
+        public string GetVersion()
+        {
+            return _provider?.GetVersion();
+        }
+
         private string FormatPath(string path)
         {
             if (string.IsNullOrEmpty(path))

@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     public interface IAssetProvider : ITick, IDispose
     {
         Task<bool> Initialize();
+        string GetVersion();
 
         void PreloadBundle(string bundlePath, Action<bool> callback);
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
