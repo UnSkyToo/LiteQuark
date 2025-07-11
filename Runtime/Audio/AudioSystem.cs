@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             
             if (_root != null)
             {
-                Object.DestroyImmediate(_root.gameObject);
+                Object.Destroy(_root.gameObject);
                 _root = null;
             }
         }

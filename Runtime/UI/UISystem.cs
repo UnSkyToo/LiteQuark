@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
 
             foreach (var item in _canvasTransform)
             {
-                GameObject.DestroyImmediate(item.Value.gameObject);
+                UnityEngine.Object.Destroy(item.Value.gameObject);
             }
             _canvasTransform.Clear();
         }
