@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
 
             if (Parent != null)
             {
-                Object.DestroyImmediate(Parent.gameObject);
+                Object.Destroy(Parent.gameObject);
                 Parent = null;
             }
         }
@@ -71,7 +71,7 @@ namespace LiteQuark.Runtime
 
         protected virtual void OnDestroy(GameObject go)
         {
-            Object.DestroyImmediate(go);
+            Object.Destroy(go);
         }
 
         public void Generate(int count, System.Action<IBasePool> callback)
