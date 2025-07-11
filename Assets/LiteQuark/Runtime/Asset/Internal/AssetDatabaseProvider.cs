@@ -134,7 +134,7 @@ namespace LiteQuark.Runtime
             {
                 if (go.scene.isLoaded)
                 {
-                    UnityEngine.Object.DestroyImmediate(asset);
+                    UnityEngine.Object.Destroy(asset);
                 }
             }
         }

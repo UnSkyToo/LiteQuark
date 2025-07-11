@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Object.DestroyImmediate(_go);
+            Object.Destroy(_go);
         }
         
         public void Tick(float deltaTime)

@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
         {
             if (Template != null)
             {
-                Object.DestroyImmediate(Template);
+                Object.Destroy(Template);
                 Template = null;
             }
             
