@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
 
             _request.timeout = _timeout;
             var asyncOperation = _request.SendWebRequest();
-            asyncOperation.completed += OnBundleRequestCompleted;
+            asyncOperation.completed += OnRequestCompleted;
         }
 
         protected override void OnTick(float deltaTime)
@@ -44,9 +44,9 @@ namespace LiteQuark.Runtime
             Progress = _request?.downloadProgress ?? 0f;
         }
 
-        private void OnBundleRequestCompleted(AsyncOperation op)
+        private void OnRequestCompleted(AsyncOperation op)
         {
-            op.completed -= OnBundleRequestCompleted;
+            op.completed -= OnRequestCompleted;
             
             if (_request.result != UnityWebRequest.Result.Success)
             {
