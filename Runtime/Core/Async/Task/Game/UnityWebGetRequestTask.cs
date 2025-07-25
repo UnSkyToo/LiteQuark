@@ -60,5 +60,10 @@ namespace LiteQuark.Runtime
                 Complete(_request.downloadedBytes);
             }
         }
+
+        public void AddRequestHeader(string name, string value)
+        {
+            _request?.SetRequestHeader(name, value);
+        }
     }
 }
