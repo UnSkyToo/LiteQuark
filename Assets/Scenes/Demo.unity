@@ -197,6 +197,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Setting:
     LogicList: []
+    SystemList: []
     Common:
       TargetFrameRate: 60
       MultiTouch: 0
@@ -205,11 +206,15 @@ MonoBehaviour:
       ThrowException: 0
     Asset:
       AssetMode: 1
+      EditorForceStreamingAssets: 1
+      LocaterMode: 0
+      BundleRemoteUri: https://localhost:8000/
       EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300
-      EnableRemoteBundle: 0
-      BundleRemoteUri: https://localhost:8000/
+      SimulateAsyncDelayInEditor: 1
+      AsyncDelayMinTime: 0.01
+      AsyncDelayMaxTime: 0.1
     Action:
       SafetyMode: 0
     Log:
@@ -224,6 +229,7 @@ MonoBehaviour:
       DebugMode: 1
       TimeScale: 1
     UI:
+      UICamera: {fileID: 0}
       ScaleMode: 1
       MatchMode: 0
       MatchValue: 0

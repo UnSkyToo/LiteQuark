@@ -19,17 +19,9 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            
-            if (_provider.IsEnableRemoteBundle())
-            {
-                var bundleUri = _provider.GetBundleUri(_bundleInfo);
-                _loadBundleTask = LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, HandleBundleLoadCompleted);
-            }
-            else
-            {
-                var bundleUri = _provider.GetBundleUri(_bundleInfo);
-                _loadBundleTask = LiteRuntime.Task.LoadLocalBundleTask(bundleUri, HandleBundleLoadCompleted);
-            }
+
+            var bundlePath = _provider.GetBundlePath(_bundleInfo);
+            _loadBundleTask = _provider.GetLocater().LoadBundle(bundlePath, HandleBundleLoadCompleted);
 
             LoadDependencyBundleAsync(_loadBundleTask);
         }

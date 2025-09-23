@@ -507,16 +507,16 @@ MonoBehaviour:
       BackgroundLimitTime: 90
       ThrowException: 0
     Asset:
-      AssetMode: 0
+      AssetMode: 1
       EditorForceStreamingAssets: 1
+      BundleLocater: 0
+      BundleRemoteUri: http://127.0.0.1:8000/
       EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300
       SimulateAsyncDelayInEditor: 1
       AsyncDelayMinTime: 0.05
       AsyncDelayMaxTime: 0.1
-      EnableRemoteBundle: 0
-      BundleRemoteUri: http://127.0.0.1:8000/
     Action:
       SafetyMode: 0
     Log:

@@ -38,8 +38,7 @@ namespace LiteBattle.Runtime
                     Instance_ = AssetDatabase.LoadAssetAtPath<LiteNexusConfig>(configPath);
 #else
                     var task = LiteRuntime.Asset.LoadAssetAsync<LiteNexusConfig>(ConfigName);
-                    task.Wait();
-                    Instance_ = task.Result;
+                    Instance_ = task.GetAwaiter().GetResult();
 #endif
                 }
                 
