@@ -4,13 +4,13 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
-    public class ConditionalHidePropertyDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(ConditionalShowAttribute))]
+    public class ConditionalShowPropertyDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var condHAtt = attribute as ConditionalHideAttribute;
-            var enabled = GetConditionalHideAttributeResult(condHAtt, property);
+            var condHAtt = attribute as ConditionalShowAttribute;
+            var enabled = GetConditionalShowAttributeResult(condHAtt, property);
 
             var wasEnabled = GUI.enabled;
             GUI.enabled = enabled;
@@ -24,8 +24,8 @@ namespace LiteQuark.Editor
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            var condHAtt = attribute as ConditionalHideAttribute;
-            var enabled = GetConditionalHideAttributeResult(condHAtt, property);
+            var condAttr = attribute as ConditionalShowAttribute;
+            var enabled = GetConditionalShowAttributeResult(condAttr, property);
 
             if (enabled)
             {
@@ -39,7 +39,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private bool GetConditionalHideAttributeResult(ConditionalHideAttribute condHAtt, SerializedProperty property)
+        private bool GetConditionalShowAttributeResult(ConditionalShowAttribute condHAtt, SerializedProperty property)
         {
             var enabled = true;
 

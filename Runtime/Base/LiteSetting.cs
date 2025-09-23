@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
             [Tooltip("是否允许后台固定时长自动重启")] [SerializeField]
             public bool AutoRestartInBackground = false;
 
-            [Tooltip("开启后台重启后，设定重启时间，单位（秒)")] [ConditionalHide(nameof(AutoRestartInBackground), true), SerializeField]
+            [Tooltip("开启后台重启后，设定重启时间，单位（秒)")] [ConditionalShow(nameof(AutoRestartInBackground), true), SerializeField]
             public float BackgroundLimitTime = 90.0f;
 
             [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")] [SerializeField]
@@ -64,31 +64,31 @@ namespace LiteQuark.Runtime
             [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
             public AssetProviderMode AssetMode = AssetProviderMode.Internal;
 
-            [Tooltip("Bundle定位器，可选包内或者远端")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
+            [Tooltip("Bundle定位器，可选包内或者远端")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public BundleLocaterMode BundleLocater = BundleLocaterMode.BuiltIn;
 
-            [Tooltip("远程资源根目录，根据版本和平台动态分目录\n例如:https://localhost:8000/android/1.0.0/bundle_pack.bytes")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
+            [Tooltip("远程资源根目录，根据版本和平台动态分目录\n例如:https://localhost:8000/android/1.0.0/bundle_pack.bytes")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public string BundleRemoteUri = "https://localhost:8000/";
-
-            [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
+            
+            [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EnableRetain = true;
 
-            [Tooltip("开启缓存后，设定资源保留时间，单位（秒）")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
+            [Tooltip("开启缓存后，设定资源保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
             public float AssetRetainTime = 120; // 2 min
 
-            [Tooltip("开启缓存后，设定Bundle保留时间，单位（秒）")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
+            [Tooltip("开启缓存后，设定Bundle保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
             public float BundleRetainTime = 300f; // 5 min
             
-            [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
+            [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EditorForceStreamingAssets = true;
             
-            [Tooltip("编辑器模式下模拟异步加载的延迟")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Internal), SerializeField]
+            [Tooltip("编辑器模式下模拟异步加载的延迟")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal), SerializeField]
             public bool SimulateAsyncDelayInEditor = true;
 
-            [Tooltip("模拟异步加载的延迟时间范围，单位（帧)")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
+            [Tooltip("模拟异步加载的延迟时间范围，单位（帧)")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMinFrame = 1;
 
-            [Tooltip("模拟异步加载的延迟时间范围，单位（帧）")] [ConditionalHide(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
+            [Tooltip("模拟异步加载的延迟时间范围，单位（帧）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMaxFrame = 6;
 
             public AssetSetting()
@@ -110,12 +110,12 @@ namespace LiteQuark.Runtime
         public class LogSetting
         {
             [SerializeField] public bool SimpleLog = true;
-            [SerializeField] public bool ReceiveLog = true;
-            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogInfo = true;
-            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogWarn = true;
-            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogError = true;
-            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool LogFatal = true;
-            [ConditionalHide(nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = true;
+            [ConditionalShow(nameof(SimpleLog), false), SerializeField] public bool ReceiveLog = true;
+            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogInfo = true;
+            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogWarn = true;
+            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogError = true;
+            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogFatal = true;
+            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = true;
 
             public LogSetting()
             {
