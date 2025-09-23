@@ -10,8 +10,8 @@ namespace LiteQuark.Runtime
     internal sealed class AssetDatabaseProvider : IAssetProvider
     {
         private bool _simulateAsyncDelayInEditor;
-        private float _asyncDelayMinTime;
-        private float _asyncDelayMaxTime;
+        private int _asyncDelayMinFrame;
+        private int _asyncDelayMaxFrame;
         
         public AssetDatabaseProvider()
         {
@@ -22,8 +22,8 @@ namespace LiteQuark.Runtime
             if (LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor)
             {
                 _simulateAsyncDelayInEditor = true;
-                _asyncDelayMinTime = MathF.Max(0f, LiteRuntime.Setting.Asset.AsyncDelayMinTime);
-                _asyncDelayMaxTime = MathF.Min(10f, LiteRuntime.Setting.Asset.AsyncDelayMaxTime);
+                _asyncDelayMinFrame = Math.Max(0, LiteRuntime.Setting.Asset.AsyncDelayMinFrame);
+                _asyncDelayMaxFrame = Math.Min(60, LiteRuntime.Setting.Asset.AsyncDelayMaxFrame);
             }
             else
             {
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
         {
             if (_simulateAsyncDelayInEditor)
             {
-                LiteRuntime.Timer.AddTimer(UnityEngine.Random.Range(_asyncDelayMinTime, _asyncDelayMaxTime), () =>
+                LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), () =>
                 {
                     callback?.Invoke(value);
                 });

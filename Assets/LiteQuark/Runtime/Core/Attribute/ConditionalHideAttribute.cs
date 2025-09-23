@@ -6,58 +6,30 @@ namespace LiteQuark.Runtime
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public sealed class ConditionalHideAttribute : PropertyAttribute
     {
-        public readonly string ConditionalSourceField = "";
-        public readonly string ConditionalSourceField2 = "";
-        public readonly string[] ConditionalSourceFields = new string[] { };
-        public readonly bool[] ConditionalSourceFieldInverseBools = new bool[] { };
-        public readonly bool HideInInspector = false;
-        public readonly bool Inverse = false;
-        public readonly bool UseOrLogic = false;
-
-        public readonly bool InverseCondition1 = false;
-        public readonly bool InverseCondition2 = false;
+        public readonly string[] SourceFields = new string[] { };
+        public readonly object[] Values = new object[] { };
+        public readonly bool[] Inverses = new bool[] { };
         
-        public ConditionalHideAttribute(string conditionalSourceField)
+        public ConditionalHideAttribute(string sourceField, object value)
+            : this(sourceField, value, false)
         {
-            this.ConditionalSourceField = conditionalSourceField;
-            this.HideInInspector = false;
-            this.Inverse = false;
+        }
+        
+        public ConditionalHideAttribute(string sourceField1, object value1, string sourceField2, object value2)
+            : this(new[] { sourceField1, sourceField2 }, new[] { value1, value2 }, new[] { false, false })
+        {
         }
 
-        public ConditionalHideAttribute(string conditionalSourceField, bool hideInInspector)
+        public ConditionalHideAttribute(string sourceField, object value, bool inverse)
+            : this(new[] { sourceField }, new[] { value }, new[] { inverse })
         {
-            this.ConditionalSourceField = conditionalSourceField;
-            this.HideInInspector = hideInInspector;
-            this.Inverse = false;
         }
 
-        public ConditionalHideAttribute(string conditionalSourceField, bool hideInInspector, bool inverse)
+        public ConditionalHideAttribute(string[] conditionalSourceFields, object[] values, bool[] inverses)
         {
-            this.ConditionalSourceField = conditionalSourceField;
-            this.HideInInspector = hideInInspector;
-            this.Inverse = inverse;
-        }
-
-        public ConditionalHideAttribute(bool hideInInspector = false)
-        {
-            this.ConditionalSourceField = "";
-            this.HideInInspector = hideInInspector;
-            this.Inverse = false;
-        }
-
-        public ConditionalHideAttribute(string[] conditionalSourceFields, bool[] conditionalSourceFieldInverseBools, bool hideInInspector, bool inverse)
-        {
-            this.ConditionalSourceFields = conditionalSourceFields;
-            this.ConditionalSourceFieldInverseBools = conditionalSourceFieldInverseBools;
-            this.HideInInspector = hideInInspector;
-            this.Inverse = inverse;
-        }
-
-        public ConditionalHideAttribute(string[] conditionalSourceFields, bool hideInInspector, bool inverse)
-        {
-            this.ConditionalSourceFields = conditionalSourceFields;
-            this.HideInInspector = hideInInspector;
-            this.Inverse = inverse;
+            this.SourceFields = conditionalSourceFields;
+            this.Values = values;
+            this.Inverses = inverses;
         }
     }
 }

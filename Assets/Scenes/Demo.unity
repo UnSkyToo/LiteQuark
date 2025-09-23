@@ -207,14 +207,14 @@ MonoBehaviour:
     Asset:
       AssetMode: 1
       EditorForceStreamingAssets: 1
-      LocaterMode: 0
+      BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300
       SimulateAsyncDelayInEditor: 1
-      AsyncDelayMinTime: 0.01
-      AsyncDelayMaxTime: 0.1
+      AsyncDelayMinFrame: 1
+      AsyncDelayMaxFrame: 6
     Action:
       SafetyMode: 0
     Log:
