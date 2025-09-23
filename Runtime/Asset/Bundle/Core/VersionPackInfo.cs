@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -187,14 +187,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public static Task<VersionPackInfo> LoadPackAsync(string bundleUri)
+        public static UniTask<VersionPackInfo> LoadPackAsync(string bundleUri)
         {
             try
             {
-                var tcs = new TaskCompletionSource<VersionPackInfo>();
+                var tcs = new UniTaskCompletionSource<VersionPackInfo>();
                 LoadPackAsync(bundleUri, (info) =>
                 {
-                    tcs.SetResult(info);
+                    tcs.TrySetResult(info);
                 });
                 return tcs.Task;
             }

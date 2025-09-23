@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal async Task<bool> InitializeSystem()
+        internal async UniTask<bool> InitializeSystem()
         {
             _addList.Clear();
             _systemList.Clear();

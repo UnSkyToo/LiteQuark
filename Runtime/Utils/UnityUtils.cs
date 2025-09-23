@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -191,12 +191,12 @@ namespace LiteQuark.Runtime
             return UnityUtils.GetOrAddComponent<T>(go);
         }
         
-        public static TaskAwaiter<AsyncOperation> GetAwaiter(this AsyncOperation asyncOperation)
+        public static UniTask<AsyncOperation>.Awaiter GetAwaiter(this AsyncOperation asyncOperation)
         {
-            var tcs = new TaskCompletionSource<AsyncOperation>();
+            var tcs = new UniTaskCompletionSource<AsyncOperation>();
             asyncOperation.completed += operation =>
             {
-                tcs.SetResult(operation);
+                tcs.TrySetResult(operation);
             };
             return tcs.Task.GetAwaiter();
         }

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal async Task<bool> InitializeLogic()
+        internal async UniTask<bool> InitializeLogic()
         {
             _logicList.Clear();
             
