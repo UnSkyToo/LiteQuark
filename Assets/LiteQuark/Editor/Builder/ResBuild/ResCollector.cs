@@ -70,6 +70,11 @@ namespace LiteQuark.Editor
             {
                 return;
             }
+
+            if (!ValidFilter(rootPath))
+            {
+                return;
+            }
             
             var subBundlePathList = PathUtils.GetDirectoryList(rootPath);
             
@@ -214,6 +219,20 @@ namespace LiteQuark.Editor
             if (filePath.Contains("#") || filePath.Contains("~"))
             {
                 return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidFilter(string filePath)
+        {
+            foreach (var ch in LiteConst.InvalidFileNameChars)
+            {
+                if (filePath.Contains(ch))
+                {
+                    LEditorLog.Error($"invalid path with '{ch}' : {filePath}");
+                    return false;
+                }
             }
 
             return true;

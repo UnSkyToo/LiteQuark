@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -138,17 +139,22 @@ namespace LiteQuark.Runtime
             return HashMode ? bundle.GetBundlePathWithHash() : bundle.BundlePath;
         }
 
-        public string ToJson()
+        public byte[] ToBinaryData()
         {
             SimplifyPath();
-            // var jsonText = Newtonsoft.Json.JsonConvert.SerializeObject(this);
             var jsonText = LitJson.JsonMapper.ToJson(this);
-            return jsonText;
+            var jsonData = Encoding.UTF8.GetBytes(jsonText);
+            if (LiteConst.EnableSecurity)
+            {
+                return SecurityUtils.AesEncrypt(jsonData, LiteConst.SecurityKey);
+            }
+            return jsonData;
         }
 
-        public static VersionPackInfo FromJson(string jsonText)
+        public static VersionPackInfo FromBinaryData(byte[] data)
         {
-            // var packInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<VersionPackInfo>(jsonText);
+            var jsonData = LiteConst.EnableSecurity ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
+            var jsonText = Encoding.UTF8.GetString(jsonData);
             var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
             packInfo.RestorePath();
             return packInfo;
@@ -162,7 +168,7 @@ namespace LiteQuark.Runtime
                 {
                     if (downloadHandler?.isDone ?? false)
                     {
-                        var info = FromJson(downloadHandler.text);
+                        var info = FromBinaryData(downloadHandler.data);
 
                         if (info is not { IsValid: true })
                         {
