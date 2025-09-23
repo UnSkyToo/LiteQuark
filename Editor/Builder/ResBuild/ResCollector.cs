@@ -31,6 +31,15 @@ namespace LiteQuark.Editor
                 _bundleID = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
                 _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, _bundleInfoCache.Values.ToArray());
+                
+                var checkResult = ResDependencyChecker.FindUniqueCycles(_packInfo);
+                if (checkResult.Count > 0)
+                {
+                    foreach (var cycle in checkResult)
+                    {
+                        LEditorLog.Error("发现循环依赖: " + string.Join(" -> ", cycle));
+                    }
+                }
             }
             return _packInfo;
         }
@@ -114,7 +123,7 @@ namespace LiteQuark.Editor
                     }
                 }
 
-                var bundlePath = $"{GetBundlePathFromFullPath(bundleFullPath)}";
+                var bundlePath = GetBundlePathFromFullPath(bundleFullPath);
                 dependencyList.Remove(bundlePath);
                 AddToBundleInfoCache(bundlePath, assetList.ToArray(), dependencyList.ToArray());
             }
