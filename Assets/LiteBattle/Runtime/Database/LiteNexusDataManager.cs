@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
         {
         }
         
-        public Task<bool> Startup()
+        public UniTask<bool> Startup()
         {
             return Load();
         }
@@ -25,7 +25,7 @@ namespace LiteBattle.Runtime
             Unload();
         }
 
-        private async Task<bool> Load()
+        private async UniTask<bool> Load()
         {
             var jsonPath = PathUtils.GetRelativeAssetRootPath(LiteNexusConfig.Instance.GetDatabaseJsonPath());
             var text = await LiteRuntime.Asset.LoadAssetAsync<TextAsset>(jsonPath);
@@ -59,7 +59,7 @@ namespace LiteBattle.Runtime
             await Load();
         }
 
-        private async Task<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList)
+        private async UniTask<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList)
         {
             var group = new Dictionary<string, LiteStateConfig>();
             

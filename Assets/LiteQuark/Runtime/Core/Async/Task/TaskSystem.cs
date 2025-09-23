@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Threading;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -20,9 +20,9 @@ namespace LiteQuark.Runtime
             _taskList.Clear();
         }
 
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

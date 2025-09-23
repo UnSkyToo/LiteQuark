@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -15,9 +15,9 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public Task<bool> Startup()
+        public UniTask<bool> Startup()
         {
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Shutdown()

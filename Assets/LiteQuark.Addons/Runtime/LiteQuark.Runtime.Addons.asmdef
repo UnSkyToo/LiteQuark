@@ -2,7 +2,8 @@
     "name": "LiteQuark.Runtime.Addons",
     "rootNamespace": "LiteQuark.Runtime",
     "references": [
-        "GUID:4d0f6ef532c59e64a8bf7b34db570772"
+        "GUID:4d0f6ef532c59e64a8bf7b34db570772",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

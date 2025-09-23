@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public async Task<bool> Initialize()
+        public async UniTask<bool> Initialize()
         {
             var versionPackUri = string.Empty;
             

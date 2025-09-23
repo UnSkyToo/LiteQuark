@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
     {
         private GameObject _go;
         
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
                 scaler.matchWidthOrHeight = LiteRuntime.Setting.UI.MatchValue;
             }
 
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

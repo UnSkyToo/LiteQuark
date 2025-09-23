@@ -492,13 +492,13 @@ MonoBehaviour:
         Culture=neutral, PublicKeyToken=null
     SystemList:
     - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.Addons.AudioSystem, LiteQuark.Runtime.Addons,
+      AssemblyQualifiedName: LiteQuark.Runtime.AudioSystem, LiteQuark.Runtime.Addons,
         Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.Addons.EffectSystem, LiteQuark.Runtime.Addons,
+      AssemblyQualifiedName: LiteQuark.Runtime.EffectSystem, LiteQuark.Runtime.Addons,
         Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.Addons.UISystem, LiteQuark.Runtime.Addons,
+      AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
         Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Common:
       TargetFrameRate: 60
@@ -508,13 +508,14 @@ MonoBehaviour:
       ThrowException: 0
     Asset:
       AssetMode: 0
+      EditorForceStreamingAssets: 1
       EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300
       SimulateAsyncDelayInEditor: 1
       AsyncDelayMinTime: 0.05
       AsyncDelayMaxTime: 0.1
-      EnableRemoteBundle: 1
+      EnableRemoteBundle: 0
       BundleRemoteUri: http://127.0.0.1:8000/
     Action:
       SafetyMode: 0

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
@@ -14,13 +14,13 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public Task<bool> Startup()
+        public UniTask<bool> Startup()
         {
             EntityList_.Clear();
             AddList_.Clear();
             RemoveList_.Clear();
             
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Shutdown()

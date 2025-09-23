@@ -35,7 +35,7 @@ namespace LiteBattle.Runtime
                 LLog.Info($"{Entity.DebugName} 死亡");
             }
 
-            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, $"-{damageValue}");
+            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, Entity, $"-{damageValue}");
         }
 
         private double CalculateDamage(LiteEntity attacker, LiteEntity target)

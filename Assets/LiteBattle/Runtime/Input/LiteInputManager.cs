@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -57,7 +57,7 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public Task<bool> Startup()
+        public UniTask<bool> Startup()
         {
             Keyboard_ = new LiteKeyboardInput();
             Touch_ = new LiteTouchInput(OnTouchMove, OnTouchScale);
@@ -71,7 +71,7 @@ namespace LiteBattle.Runtime
             EnableKeyboard = false;
             EnableTouch = false;
             
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Shutdown()

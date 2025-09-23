@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
             }
         }
         
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             return _provider.Initialize();
         }
@@ -68,12 +68,12 @@ namespace LiteQuark.Runtime
             _provider?.PreloadBundle(formatPath, callback);
         }
 
-        public Task<bool> PreloadBundle(string bundlePath)
+        public UniTask<bool> PreloadBundle(string bundlePath)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new UniTaskCompletionSource<bool>();
             PreloadBundle(bundlePath, (result) =>
             {
-                tcs.SetResult(result);
+                tcs.TrySetResult(result);
             });
             return tcs.Task;
         }
@@ -84,12 +84,12 @@ namespace LiteQuark.Runtime
             _provider?.PreloadAsset<T>(formatPath, callback);
         }
 
-        public Task<bool> PreloadAsset<T>(string assetPath) where T : UnityEngine.Object
+        public UniTask<bool> PreloadAsset<T>(string assetPath) where T : UnityEngine.Object
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new UniTaskCompletionSource<bool>();
             PreloadAsset<T>(assetPath, (result) =>
             {
-                tcs.SetResult(result);
+                tcs.TrySetResult(result);
             });
             return tcs.Task;
         }
@@ -100,12 +100,12 @@ namespace LiteQuark.Runtime
             _provider?.LoadAssetAsync<T>(formatPath, callback);
         }
         
-        public Task<T> LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
+        public UniTask<T> LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
         {
-            var tcs = new TaskCompletionSource<T>();
+            var tcs = new UniTaskCompletionSource<T>();
             LoadAssetAsync<T>(assetPath, (asset) =>
             {
-                tcs.SetResult(asset);
+                tcs.TrySetResult(asset);
             });
             return tcs.Task;
         }
@@ -122,12 +122,12 @@ namespace LiteQuark.Runtime
             _provider?.InstantiateAsync(formatPath, parent, callback);
         }
         
-        public Task<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent)
+        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent)
         {
-            var tcs = new TaskCompletionSource<UnityEngine.GameObject>();
+            var tcs = new UniTaskCompletionSource<UnityEngine.GameObject>();
             InstantiateAsync(assetPath, parent, (gameObject) =>
             {
-                tcs.SetResult(gameObject);
+                tcs.TrySetResult(gameObject);
             });
             return tcs.Task;
         }
@@ -145,12 +145,12 @@ namespace LiteQuark.Runtime
             _provider?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
         }
         
-        public Task<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new UniTaskCompletionSource<bool>();
             LoadSceneAsync(scenePath, parameters, (result) =>
             {
-                tcs.SetResult(result);
+                tcs.TrySetResult(result);
             });
             return tcs.Task;
         }
@@ -179,12 +179,12 @@ namespace LiteQuark.Runtime
             _provider?.UnloadSceneAsync(formatPath, callback);
         }
         
-        public Task UnloadSceneAsync(string scenePath)
+        public UniTask UnloadSceneAsync(string scenePath)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new UniTaskCompletionSource<bool>();
             UnloadSceneAsync(scenePath, () =>
             {
-                tcs.SetResult(true);
+                tcs.TrySetResult(true);
             });
             return tcs.Task;
         }

@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
             GlobalContext = new LiteContext(null);
         }
 
-        public async Task<bool> Startup()
+        public async UniTask<bool> Startup()
         {
             await LiteNexusDataManager.Instance.Startup();
             await LiteInputManager.Instance.Startup();

@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 
@@ -10,10 +10,10 @@ namespace LiteQuark.Demo
         {
         }
         
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             return LiteNexusEngine.Instance.Startup();
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

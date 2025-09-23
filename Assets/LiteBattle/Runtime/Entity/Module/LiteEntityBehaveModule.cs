@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -137,7 +138,7 @@ namespace LiteBattle.Runtime
 
                 LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity).ContinueWith(r =>
                 {
-                    HUD_ = r.Result;
+                    HUD_ = r;
                 });
 
                 IsLoad_ = true;

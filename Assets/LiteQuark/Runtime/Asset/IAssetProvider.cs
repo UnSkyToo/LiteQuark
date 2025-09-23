@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
     public interface IAssetProvider : ITick, IDispose
     {
-        Task<bool> Initialize();
+        UniTask<bool> Initialize();
         string GetVersion();
 
         void PreloadBundle(string bundlePath, Action<bool> callback);
