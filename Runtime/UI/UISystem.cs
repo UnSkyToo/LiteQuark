@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -40,9 +40,9 @@ namespace LiteQuark.Runtime
             }
         }
         
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()
@@ -69,18 +69,18 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public Task<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
+        public UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
         {
             if (config.IsMutex)
             {
                 var existUI = FindUI<T>();
                 if (existUI != null)
                 {
-                    return Task.FromResult(existUI);
+                    return UniTask.FromResult(existUI);
                 }
             }
 
-            var tcs = new TaskCompletionSource<T>();
+            var tcs = new UniTaskCompletionSource<T>();
             var ui = Activator.CreateInstance<T>();
             ui.Config = config;
             ui.System = this;
@@ -92,7 +92,7 @@ namespace LiteQuark.Runtime
                 {
                     ui.State = UIState.Error;
                     LLog.Error($"ui prefab load error : {config.PrefabPath}");
-                    tcs.SetResult(null);
+                    tcs.TrySetResult(null);
                     return;
                 }
                 
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
                 ui.State = UIState.Opened;
                 _openList.Add(ui);
                 ui.Open(paramList);
-                tcs.SetResult(ui);
+                tcs.TrySetResult(ui);
             });
             return tcs.Task;
         }
