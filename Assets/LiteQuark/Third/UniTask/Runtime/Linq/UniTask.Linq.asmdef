@@ -1,9 +1,7 @@
 {
-    "name": "LiteQuark.Runtime",
-    "rootNamespace": "LiteQuark.Runtime",
+    "name": "UniTask.Linq",
     "references": [
-        "GUID:5058424d4219fbf4a894472663d51cfd",
-        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

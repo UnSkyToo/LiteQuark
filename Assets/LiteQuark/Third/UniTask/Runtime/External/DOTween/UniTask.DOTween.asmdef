@@ -1,9 +1,8 @@
 {
-    "name": "LiteQuark.Runtime",
-    "rootNamespace": "LiteQuark.Runtime",
+    "name": "UniTask.DOTween",
     "references": [
-        "GUID:5058424d4219fbf4a894472663d51cfd",
-        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+        "UniTask",
+        "DOTween.Modules"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -12,6 +11,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.demigiant.dotween",
+            "expression": "",
+            "define": "UNITASK_DOTWEEN_SUPPORT"
+        }
+    ],
     "noEngineReferences": false
 }
