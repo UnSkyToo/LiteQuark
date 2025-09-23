@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -14,10 +14,10 @@ namespace LiteQuark.Runtime
             _poolCache.Clear();
         }
         
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             _root = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

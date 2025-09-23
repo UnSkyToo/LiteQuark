@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             _repository = new DefaultLoggerRepository();
             _logCache = new Dictionary<string, ILog>();
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
                 UnityEngine.Debug.unityLogger.logEnabled = false;
             }
 
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

@@ -1,6 +1,6 @@
 ﻿#if UNITY_EDITOR
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public Task<bool> Initialize()
+        public UniTask<bool> Initialize()
         {
             if (LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor)
             {
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
                 _simulateAsyncDelayInEditor = false;
             }
             
-            return Task.FromResult(true);
+            return UniTask.FromResult(true);
         }
 
         public void Dispose()

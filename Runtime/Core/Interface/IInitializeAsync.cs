@@ -1,9 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public interface IInitializeAsync
     {
-        Task<bool> Initialize();
+        UniTask<bool> Initialize();
     }
 }
