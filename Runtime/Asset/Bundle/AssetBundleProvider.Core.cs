@@ -6,13 +6,12 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
+        private IBundleLocater _bundleLocater = null;
         private VersionPackInfo _packInfo = null;
         
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
         private readonly Dictionary<int, AssetIDToPathData> _assetIDToPathMap = new();
         private readonly List<string> _unloadBundleList = new();
-        private bool _isEnableRemoteBundle = false;
-        private string _bundleRemoteUri = string.Empty;
         
         public AssetBundleProvider()
         {
@@ -20,32 +19,13 @@ namespace LiteQuark.Runtime
         
         public async UniTask<bool> Initialize()
         {
-            var versionPackUri = string.Empty;
+            _bundleLocater = CreateLocater();
+            if (_bundleLocater == null)
+            {
+                return false;
+            }
             
-            _isEnableRemoteBundle = LiteRuntime.Setting.Asset.EnableRemoteBundle;
-            if (_isEnableRemoteBundle)
-            {
-                _bundleRemoteUri = PathUtils.ConcatPath(
-                    LiteRuntime.Setting.Asset.BundleRemoteUri,
-                    AppUtils.GetCurrentPlatform(),
-                    AppUtils.GetVersion()).ToLower();
-                LLog.Info("BundleRemoteUri: " + _bundleRemoteUri);
-
-                versionPackUri = PathUtils.ConcatPath(_bundleRemoteUri, AppUtils.GetVersionFileName());
-            }
-            else
-            {
-                versionPackUri = PathUtils.GetFullPathInRuntime(AppUtils.GetVersionFileName());
-                
-#if UNITY_EDITOR
-                if (LiteRuntime.Setting.Asset.EditorForceStreamingAssets)
-                {
-                    versionPackUri = PathUtils.GetStreamingAssetsPath(LiteConst.Tag, AppUtils.GetVersionFileName());
-                }
-#endif
-            }
-
-            _packInfo = await VersionPackInfo.LoadPackAsync(versionPackUri);
+            _packInfo = await _bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName());
             if (_packInfo == null)
             {
                 return false;
@@ -258,19 +238,27 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal string GetBundleUri(BundleInfo bundle)
+        internal string GetBundlePath(BundleInfo bundle)
         {
-            var bundleName = _packInfo.GetBundlePath(bundle);
-            if (_isEnableRemoteBundle)
-            {
-                return PathUtils.ConcatPath(_bundleRemoteUri, bundleName);
-            }
-            return PathUtils.GetFullPathInRuntime(bundleName);
+            return _packInfo.GetBundlePath(bundle);
         }
 
-        internal bool IsEnableRemoteBundle()
+        internal IBundleLocater GetLocater()
         {
-            return _isEnableRemoteBundle;
+            return _bundleLocater;
+        }
+
+        private IBundleLocater CreateLocater()
+        {
+            switch (LiteRuntime.Setting.Asset.BundleLocater)
+            {
+                case BundleLocaterMode.BuiltIn:
+                    return new BundleBuiltInLocater();
+                case BundleLocaterMode.Remote:
+                    return new BundleRemoteLocater();
+                default:
+                    throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
+            }
         }
     }
 }

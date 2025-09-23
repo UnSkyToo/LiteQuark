@@ -66,7 +66,13 @@ namespace LiteQuark.Runtime
 
             [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [SerializeField]
             public bool EditorForceStreamingAssets = true;
-
+            
+            [Tooltip("Bundle定位器，可选包内或者远端")] [SerializeField]
+            public BundleLocaterMode BundleLocater = BundleLocaterMode.BuiltIn;
+            
+            [Tooltip("远程资源根目录，根据版本和平台动态分目录\n例如:https://localhost:8000/android/1.0.0/bundle_pack.bytes")] [SerializeField]
+            public string BundleRemoteUri = "https://localhost:8000/";
+            
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [SerializeField]
             public bool EnableRetain = true;
 
@@ -84,12 +90,6 @@ namespace LiteQuark.Runtime
 
             [Tooltip("模拟异步加载的延迟时间范围，单位（秒）")] [ConditionalHide(nameof(SimulateAsyncDelayInEditor), true), SerializeField] [Range(0.01f, 10f)]
             public float AsyncDelayMaxTime = 0.1f;
-
-            [Tooltip("是否开启远程资源模式")] [SerializeField]
-            public bool EnableRemoteBundle = false;
-
-            [Tooltip("远程资源根目录，根据版本和平台动态分目录\n例如:https://localhost:8000/android/1.0.0/bundle_pack.bytes")] [ConditionalHide(nameof(EnableRemoteBundle), true), SerializeField]
-            public string BundleRemoteUri = "https://localhost:8000/";
             
             public AssetSetting()
             {
