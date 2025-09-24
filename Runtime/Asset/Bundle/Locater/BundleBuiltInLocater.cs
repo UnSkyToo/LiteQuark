@@ -4,11 +4,10 @@ namespace LiteQuark.Runtime
 {
     internal class BundleBuiltInLocater : IBundleLocater
     {
-        private readonly bool _editorForceStreamingAssets;
+        public bool EditorForceStreamingAssets { get; set; } = true;
         
         public BundleBuiltInLocater()
         {
-            _editorForceStreamingAssets = LiteRuntime.Setting.Asset.EditorForceStreamingAssets;
         }
 
         private string GetRuntimeFullPath(string path)
@@ -16,7 +15,7 @@ namespace LiteQuark.Runtime
             var uri = PathUtils.GetFullPathInRuntime(path);
                 
 #if UNITY_EDITOR
-            if (_editorForceStreamingAssets)
+            if (EditorForceStreamingAssets)
             {
                 uri = PathUtils.GetStreamingAssetsPath(LiteConst.Tag, path);
             }
