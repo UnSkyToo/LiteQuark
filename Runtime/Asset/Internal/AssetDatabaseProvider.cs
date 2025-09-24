@@ -95,6 +95,15 @@ namespace LiteQuark.Runtime
                 callback?.Invoke(instance);
             });
         }
+        
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
+        {
+            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
+            {
+                var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
+                callback?.Invoke(instance);
+            });
+        }
 
         public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
         {
