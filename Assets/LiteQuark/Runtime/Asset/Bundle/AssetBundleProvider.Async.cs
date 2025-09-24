@@ -40,6 +40,16 @@ namespace LiteQuark.Runtime
             });
         }
 
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
+        {
+            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
+            {
+                var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
+                UpdateAssetIDToPathMap(instance, assetPath);
+                callback?.Invoke(instance);
+            });
+        }
+
         public void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
