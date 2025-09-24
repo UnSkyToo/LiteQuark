@@ -20,6 +20,12 @@ namespace LiteQuark.Runtime
             return unifyPath.TrimEnd(DirectorySeparatorChar);
         }
 
+        private static readonly string InvalidFlatChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
+        public static string ToFlatPath(string path)
+        {
+            return InvalidFlatChars.Aggregate(path, (current, ch) => current.Replace(ch, '_'));
+        }
+
         public static string ConcatPath(string path1, string path2)
         {
             var path = Path.Combine(path1, path2.TrimStart(DirectorySeparatorChar));

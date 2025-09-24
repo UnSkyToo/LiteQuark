@@ -26,12 +26,13 @@ namespace LiteQuark.Editor
                     LEditorLog.Error($"loop reference : {buildInfo.BundlePath}");
                     continue;
                 }
-                
+
+                var bundlePath = packInfo.GetBundleFileBuildPath(buildInfo);
                 foreach (var assetPath in buildInfo.AssetList)
                 {
                     var fullPath = assetPath.StartsWith("assets") ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
                     var importer = AssetImporter.GetAtPath(fullPath);
-                    importer.SetAssetBundleNameAndVariant(buildInfo.BundlePath, string.Empty);
+                    importer.SetAssetBundleNameAndVariant(bundlePath, string.Empty);
                 }
             }
             

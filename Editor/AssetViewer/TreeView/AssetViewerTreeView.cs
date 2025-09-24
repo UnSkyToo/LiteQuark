@@ -69,7 +69,7 @@ namespace LiteQuark.Editor
             _idGenerator = 1;
             
             var collector = new ResCollector();
-            var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false);
+            var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false, false);
             
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
             AssetViewerUtils.SortTreeItemList(items, _sizeSortedAscendingType);

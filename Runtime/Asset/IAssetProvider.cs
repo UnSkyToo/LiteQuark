@@ -1,6 +1,5 @@
 ﻿using System;
 using Cysharp.Threading.Tasks;
-using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -15,7 +14,7 @@ namespace LiteQuark.Runtime
         void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object;
         void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback);
         void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback);
-        void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback);
+        void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback);
         
         void UnloadAsset(string assetPath);
         void UnloadAsset<T>(T asset) where T : UnityEngine.Object;

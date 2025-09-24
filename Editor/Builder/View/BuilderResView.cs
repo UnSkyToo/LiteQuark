@@ -25,6 +25,8 @@ namespace LiteQuark.Editor
 
             _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), _config.HashMode);
             
+            _config.FlatMode = EditorGUILayout.Toggle(new GUIContent("Flat Mode", "Flat mode will remove bundle folder"), _config.FlatMode);
+            
             _config.IncrementBuildModel = EditorGUILayout.Toggle(new GUIContent("Increment Build", "Increment build mode will be use last build info"), _config.IncrementBuildModel);
             
             _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will remove all bundle info"), _config.CleanBuildMode);

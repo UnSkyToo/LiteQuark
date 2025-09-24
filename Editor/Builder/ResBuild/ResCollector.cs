@@ -19,10 +19,10 @@ namespace LiteQuark.Editor
 
         public VersionPackInfo GetVersionPackInfo(ProjectBuilder builder)
         {
-            return GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode);
+            return GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode, builder.ResConfig.FlatMode);
         }
         
-        public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode)
+        public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode, bool flatMode)
         {
             if (_packInfo == null)
             {
@@ -30,7 +30,7 @@ namespace LiteQuark.Editor
                 _bundleInfoCache.Clear();
                 _bundleID = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
-                _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, _bundleInfoCache.Values.ToArray());
+                _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, flatMode, _bundleInfoCache.Values.ToArray());
                 
                 var checkResult = ResDependencyChecker.FindUniqueCycles(_packInfo);
                 if (checkResult.Count > 0)

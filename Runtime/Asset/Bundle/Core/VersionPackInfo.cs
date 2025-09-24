@@ -13,8 +13,10 @@ namespace LiteQuark.Runtime
         public string Version { get; private set; }
         public string Platform { get; private set; }
         public bool HashMode { get; private set; }
+        public bool FlatMode { get; private set; }
         public BundleInfo[] BundleList { get; private set; }
 
+        private Dictionary<string, string> _bundleFileLoadPathCache = new ();
         private Dictionary<string, BundleInfo> _bundlePathToBundleCache = new ();
         private Dictionary<string, BundleInfo> _assetPathToBundleCache = new ();
 
@@ -23,11 +25,12 @@ namespace LiteQuark.Runtime
             IsValid = false;
         }
 
-        public VersionPackInfo(string version, string platform, bool hashMode, BundleInfo[] bundleList)
+        public VersionPackInfo(string version, string platform, bool hashMode, bool flatMode, BundleInfo[] bundleList)
         {
             Version = version;
             Platform = platform;
             HashMode = hashMode;
+            FlatMode = flatMode;
             BundleList = bundleList;
             
             IsValid = true;
@@ -35,6 +38,7 @@ namespace LiteQuark.Runtime
 
         public void Initialize()
         {
+            _bundleFileLoadPathCache.Clear();
             _bundlePathToBundleCache.Clear();
             _assetPathToBundleCache.Clear();
             
@@ -58,7 +62,8 @@ namespace LiteQuark.Runtime
             
             foreach (var bundle in BundleList)
             {
-                bundle.Hash = manifest.GetAssetBundleHash(bundle.BundlePath).ToString();
+                var bundlePath = GetBundleFileBuildPath(bundle);
+                bundle.Hash = manifest.GetAssetBundleHash(bundlePath).ToString();
                 bundle.Hash = bundle.Hash.Replace(" ", string.Empty).ToLower();
             }
         }
@@ -134,9 +139,31 @@ namespace LiteQuark.Runtime
             return null;
         }
 
-        public string GetBundlePath(BundleInfo bundleInfo)
+        public string GetBundleFileLoadPath(BundleInfo bundleInfo)
         {
-            return HashMode ? bundleInfo.GetBundlePathWithHash() : bundleInfo.BundlePath;
+            if (_bundleFileLoadPathCache.TryGetValue(bundleInfo.BundlePath, out var loadPath))
+            {
+                return loadPath;
+            }
+
+            loadPath = GetBundleFileBuildPath(bundleInfo);
+            if (HashMode)
+            {
+                loadPath = loadPath.Replace(LiteConst.BundleFileExt, $"_{bundleInfo.Hash}{LiteConst.BundleFileExt}");
+            }
+
+            if (HashMode && FlatMode)
+            {
+                loadPath = $"{bundleInfo.Hash}{LiteConst.BundleFileExt}";
+            }
+            
+            _bundleFileLoadPathCache.Add(bundleInfo.BundlePath, loadPath);
+            return loadPath;
+        }
+
+        public string GetBundleFileBuildPath(BundleInfo bundleInfo)
+        {
+            return FlatMode ? PathUtils.ToFlatPath(bundleInfo.BundlePath) : bundleInfo.BundlePath;
         }
 
         public byte[] ToBinaryData()
@@ -144,7 +171,7 @@ namespace LiteQuark.Runtime
             SimplifyPath();
             var jsonText = LitJson.JsonMapper.ToJson(this);
             var jsonData = Encoding.UTF8.GetBytes(jsonText);
-            if (LiteConst.EnableSecurity)
+            if (LiteConst.SecurityMode)
             {
                 return SecurityUtils.AesEncrypt(jsonData, LiteConst.SecurityKey);
             }
@@ -153,7 +180,7 @@ namespace LiteQuark.Runtime
 
         public static VersionPackInfo FromBinaryData(byte[] data)
         {
-            var jsonData = LiteConst.EnableSecurity ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
+            var jsonData = LiteConst.SecurityMode ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
             var jsonText = Encoding.UTF8.GetString(jsonData);
             var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
             packInfo.RestorePath();

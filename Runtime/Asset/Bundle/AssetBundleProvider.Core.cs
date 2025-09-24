@@ -240,7 +240,7 @@ namespace LiteQuark.Runtime
         
         internal LoadBundleBaseTask LoadBundle(BundleInfo bundleInfo, Action<UnityEngine.AssetBundle> callback)
         {
-            var bundlePath = _packInfo.GetBundlePath(bundleInfo);
+            var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
             return _bundleLocater.LoadBundle(bundlePath, callback);
         }
 
