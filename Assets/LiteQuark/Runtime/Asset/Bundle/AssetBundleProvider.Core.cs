@@ -249,9 +249,15 @@ namespace LiteQuark.Runtime
             switch (LiteRuntime.Setting.Asset.BundleLocater)
             {
                 case BundleLocaterMode.BuiltIn:
-                    return new BundleBuiltInLocater();
+                    return new BundleBuiltInLocater
+                    {
+                        EditorForceStreamingAssets = LiteRuntime.Setting.Asset.EditorForceStreamingAssets
+                    };
                 case BundleLocaterMode.Remote:
-                    return new BundleRemoteLocater();
+                    return new BundleRemoteLocater(PathUtils.ConcatPath(
+                        LiteRuntime.Setting.Asset.BundleRemoteUri,
+                        AppUtils.GetCurrentPlatform(),
+                        AppUtils.GetVersion()));
                 default:
                     throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
             }

@@ -6,12 +6,9 @@ namespace LiteQuark.Runtime
     {
         private readonly string _remoteUri;
         
-        public BundleRemoteLocater()
+        public BundleRemoteLocater(string remoteUri)
         {
-            _remoteUri = PathUtils.ConcatPath(
-                LiteRuntime.Setting.Asset.BundleRemoteUri,
-                AppUtils.GetCurrentPlatform(),
-                AppUtils.GetVersion()).ToLower();
+            _remoteUri = remoteUri.ToLower();
             LLog.Info("BundleRemoteUri: {0}", _remoteUri);
         }
 
