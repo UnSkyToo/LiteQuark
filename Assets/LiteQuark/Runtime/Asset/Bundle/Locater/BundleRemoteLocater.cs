@@ -12,13 +12,13 @@ namespace LiteQuark.Runtime
                 LiteRuntime.Setting.Asset.BundleRemoteUri,
                 AppUtils.GetCurrentPlatform(),
                 AppUtils.GetVersion()).ToLower();
-            LLog.Info($"BundleRemoteUri: {_remoteUri}");
+            LLog.Info("BundleRemoteUri: {0}", _remoteUri);
         }
 
         public UniTask<VersionPackInfo> LoadVersionPack(string versionFileName)
         {
             var versionPackUri = PathUtils.ConcatPath(_remoteUri, versionFileName);
-            LLog.Info($"VersionPackUri : {versionPackUri}");
+            LLog.Info("VersionPackUri : {0}", versionPackUri);
             return VersionPackInfo.LoadPackAsync(versionPackUri);
         }
 

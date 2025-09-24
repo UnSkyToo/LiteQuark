@@ -35,17 +35,17 @@ namespace LiteQuark.Runtime
                     continue;
                 }
                 
-                LLog.Info($"initialize {logicEntry.AssemblyQualifiedName} logic");
+                LLog.Info("Initialize {0} logic", logicEntry.AssemblyQualifiedName);
 
                 var logicType = System.Type.GetType(logicEntry.AssemblyQualifiedName);
                 if (logicType == null)
                 {
-                    throw new System.Exception($"can't not find logic class type : {logicEntry.AssemblyQualifiedName}");
+                    throw new System.Exception($"Can't not find logic class type : {logicEntry.AssemblyQualifiedName}");
                 }
                 
                 if (System.Activator.CreateInstance(logicType) is not ILogic logic)
                 {
-                    throw new System.Exception($"incorrect {typeof(ILogic)} type : {logicType.AssemblyQualifiedName}");
+                    throw new System.Exception($"Incorrect {typeof(ILogic)} type : {logicType.AssemblyQualifiedName}");
                 }
                 
                 var result = await logic.Initialize();
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    LLog.Error($"Initialize {logicType.AssemblyQualifiedName} failed");
+                    LLog.Error("Initialize {0} failed", logicType.AssemblyQualifiedName);
                     return false;
                 }
             }

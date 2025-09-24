@@ -15,6 +15,19 @@ namespace LiteQuark.Runtime
 
             return _log;
         }
+
+        public static void Info(string format, params object[] args)
+        {
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogFormat(format, args);
+            }
+            else
+            {
+                log.Info(format, args);
+            }
+        }
         
         public static void Info(string msg)
         {
@@ -26,6 +39,19 @@ namespace LiteQuark.Runtime
             else
             {
                 log.Info(msg);
+            }
+        }
+        
+        public static void Warning(string format, params object[] args)
+        {
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogWarningFormat(format, args);
+            }
+            else
+            {
+                log.Warn(format, args);
             }
         }
 
@@ -41,6 +67,19 @@ namespace LiteQuark.Runtime
                 log.Warn(msg);
             }
         }
+        
+        public static void Error(string format, params object[] args)
+        {
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogErrorFormat(format, args);
+            }
+            else
+            {
+                log.Error(format, args);
+            }
+        }
 
         public static void Error(string msg)
         {
@@ -54,6 +93,20 @@ namespace LiteQuark.Runtime
                 log.Error(msg);
             }
         }
+        
+        public static void Exception(Exception ex, string format, params object[] args)
+        {
+            var log = GetLog();
+            if (log == null)
+            {
+                UnityEngine.Debug.LogErrorFormat(format, args);
+                UnityEngine.Debug.LogException(ex);
+            }
+            else
+            {
+                log.Fatal(ex, format, args);
+            }
+        }
 
         public static void Exception(Exception ex)
         {
@@ -64,7 +117,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                log.Fatal(ex.Message, ex);
+                log.Fatal(ex, ex.Message);
             }
         }
     }

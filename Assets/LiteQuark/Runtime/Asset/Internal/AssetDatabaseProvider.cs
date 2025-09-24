@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
             var asset = AssetDatabase.LoadAssetAtPath<T>(fullPath);
             if (asset == null)
             {
-                LLog.Error($"can't load asset : {fullPath}");
+                LLog.Error("Can't load asset : {0}", fullPath);
             }
             return asset;
         }

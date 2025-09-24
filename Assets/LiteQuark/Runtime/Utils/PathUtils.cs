@@ -198,7 +198,7 @@ namespace LiteQuark.Runtime
             {
                 if (!Directory.CreateDirectory(path).Exists)
                 {
-                    LLog.Warning($"can't create directory : {path}");
+                    LLog.Warning("Can't create directory : {0}", path);
                 }
             }
         }

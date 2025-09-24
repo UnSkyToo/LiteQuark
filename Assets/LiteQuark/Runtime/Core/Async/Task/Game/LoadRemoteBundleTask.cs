@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             
             if (_request.result != UnityWebRequest.Result.Success)
             {
-                LLog.Error($"Failed to download bundle : {BundleUri}");
+                LLog.Error("Failed to download bundle : {0}", BundleUri);
                 OnBundleLoaded(null);
             }
             else

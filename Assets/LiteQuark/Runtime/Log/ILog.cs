@@ -24,8 +24,8 @@ namespace LiteQuark.Runtime
         void Error(string format, params object[] args);
         
         void Fatal(string message);
-        void Fatal(string message, Exception exception);
-        void Fatal(string format, params object[] args);
+        void Fatal(Exception exception, string message);
+        void Fatal(Exception exception, string format, params object[] args);
     }
     
     public sealed class LogImpl : ILog
@@ -70,7 +70,7 @@ namespace LiteQuark.Runtime
             {
                 if (SimpleLog)
                 {
-                    UnityEngine.Debug.Log(string.Format(CultureInfo.InvariantCulture, format, args));
+                    UnityEngine.Debug.LogFormat(format, args);
                 }
                 else
                 {
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
             {
                 if (SimpleLog)
                 {
-                    UnityEngine.Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, format, args));
+                    UnityEngine.Debug.LogWarningFormat(format, args);
                 }
                 else
                 {
@@ -130,7 +130,7 @@ namespace LiteQuark.Runtime
             {
                 if (SimpleLog)
                 {
-                    UnityEngine.Debug.LogError(string.Format(CultureInfo.InvariantCulture, format, args));
+                    UnityEngine.Debug.LogErrorFormat(format, args);
                 }
                 else
                 {
@@ -154,13 +154,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void Fatal(string message, Exception exception)
+        public void Fatal(Exception exception, string message)
         {
             if (IsFatalEnabled)
             {
                 if (SimpleLog)
                 {
                     UnityEngine.Debug.LogException(exception);
+                    UnityEngine.Debug.LogError(message);
                 }
                 else
                 {
@@ -169,17 +170,17 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void Fatal(string format, params object[] args)
+        public void Fatal(Exception exception, string format, params object[] args)
         {
             if (IsFatalEnabled)
             {
                 if (SimpleLog)
                 {
-                    UnityEngine.Debug.LogException(new Exception(string.Format(CultureInfo.InvariantCulture, format, args)));
+                    UnityEngine.Debug.LogException(new Exception(string.Format(CultureInfo.InvariantCulture, format, args), exception));
                 }
                 else
                 {
-                    Logger.Log(LogLevel.Fatal, string.Format(CultureInfo.InvariantCulture, format, args), null);
+                    Logger.Log(LogLevel.Fatal, string.Format(CultureInfo.InvariantCulture, format, args), exception);
                 }
             }
         }

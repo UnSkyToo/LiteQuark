@@ -127,14 +127,14 @@ namespace LiteQuark.Runtime
             _commonLogger.Fatal(message);
         }
 
-        public void Fatal(string message, Exception exception)
+        public void Fatal(Exception exception, string message)
         {
-            _commonLogger.Fatal(message, exception);
+            _commonLogger.Fatal(exception, message);
         }
 
-        public void Fatal(string format, params object[] args)
+        public void Fatal(Exception exception, string format, params object[] args)
         {
-            _commonLogger.Fatal(format, args);
+            _commonLogger.Fatal(exception, format, args);
         }
     }
 }

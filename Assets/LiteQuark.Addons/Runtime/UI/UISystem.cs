@@ -91,7 +91,7 @@ namespace LiteQuark.Runtime
                 if (instance == null)
                 {
                     ui.State = UIState.Error;
-                    LLog.Error($"ui prefab load error : {config.PrefabPath}");
+                    LLog.Error("Load ui prefab error : {0}", config.PrefabPath);
                     tcs.TrySetResult(null);
                     return;
                 }
@@ -201,7 +201,7 @@ namespace LiteQuark.Runtime
                 return parent;
             }
 
-            LLog.Error($"can't find canvas : {depthMode}");
+            LLog.Error("Can't find canvas : {0}", depthMode);
             return null;
         }
 

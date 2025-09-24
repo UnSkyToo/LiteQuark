@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
         public UniTask<VersionPackInfo> LoadVersionPack(string versionFileName)
         {
             var versionPackUri = GetRuntimeFullPath(versionFileName);
-            LLog.Info($"VersionPackUri : {versionPackUri}");
+            LLog.Info("VersionPackUri : {0}", versionPackUri);
             return VersionPackInfo.LoadPackAsync(versionPackUri);
         }
         

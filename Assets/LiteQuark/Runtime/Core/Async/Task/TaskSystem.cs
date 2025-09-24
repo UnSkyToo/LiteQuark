@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
                 }
                 catch (Exception ex)
                 {
-                    LLog.Error($"Task {task.GetType().Name} execute failed: {ex}");
+                    LLog.Error("Task {0} execute failed: {1}", task.GetType().Name, ex);
                     task.Cancel();
                 }
             }
@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
                 }
                 catch (Exception ex)
                 {
-                    LLog.Error($"Task {task.GetType().Name} tick failed: {ex}");
+                    LLog.Error("Task {0} tick failed: {1}", task.GetType().Name, ex);
                     task.Cancel();
                 }
             }

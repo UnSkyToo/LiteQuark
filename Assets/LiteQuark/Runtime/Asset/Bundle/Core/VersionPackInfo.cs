@@ -119,7 +119,7 @@ namespace LiteQuark.Runtime
                 return info;
             }
 
-            LLog.Error($"can't get bundle info : {bundlePath}");
+            LLog.Error("Can't get bundle info : {0}", bundlePath);
             return null;
         }
 
@@ -130,7 +130,7 @@ namespace LiteQuark.Runtime
                 return info;
             }
             
-            LLog.Error($"can't get bundle info : {assetPath}");
+            LLog.Error("Can't get bundle info : {0}", assetPath);
             return null;
         }
 
@@ -172,7 +172,7 @@ namespace LiteQuark.Runtime
 
                         if (info is not { IsValid: true })
                         {
-                            LLog.Error($"bundle package parse error\n{downloadHandler.error}");
+                            LLog.Error("Bundle package parse error\n{0}", downloadHandler.error);
                             callback?.Invoke(null);
                             return;
                         }
@@ -182,7 +182,7 @@ namespace LiteQuark.Runtime
                     }
                     else
                     {
-                        LLog.Error($"download bundle package error : {bundleUri}\n{downloadHandler?.error}");
+                        LLog.Error("Bundle package download error : {0}\n{1}", bundleUri, downloadHandler?.error);
                         callback?.Invoke(null);
                     }
                 });

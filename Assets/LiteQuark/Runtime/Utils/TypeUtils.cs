@@ -138,13 +138,13 @@ namespace LiteQuark.Runtime
         {
             if (type.IsInterface)
             {
-                LLog.Error($"can't create instance of interface type {type.Name}");
+                LLog.Error("Can't create instance of interface type {0}", type.Name);
                 return null;
             }
 
             if (type.IsAbstract)
             {
-                LLog.Error($"can't create instance of abstract type {type.Name}");
+                LLog.Error("Can't create instance of abstract type {0}", type.Name);
                 return null;
             }
             
@@ -170,13 +170,13 @@ namespace LiteQuark.Runtime
         {
             if (type.IsInterface)
             {
-                LLog.Error($"can't create instance of interface type {type.Name}");
+                LLog.Error("Can't create instance of interface type {0}", type.Name);
                 return null;
             }
 
             if (type.IsAbstract)
             {
-                LLog.Error($"can't create instance of abstract type {type.Name}");
+                LLog.Error("Can't create instance of abstract type {0}", type.Name);
                 return null;
             }
             
@@ -195,7 +195,7 @@ namespace LiteQuark.Runtime
                 return CreateGenericDictionary(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
             }
             
-            LLog.Error($"can't create instance of array type {type.Name}");
+            LLog.Error("Can't create instance of array type {0}", type.Name);
             return null;
         }
 
