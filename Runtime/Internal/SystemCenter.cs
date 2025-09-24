@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
                     throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
                 }
                 
-                LLog.Info($"Initialize {assemblyQualifiedName}");
+                LLog.Info("Initialize {0}", assemblyQualifiedName);
                 
                 var result = await system.Initialize();
                 if (result)
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    LLog.Error($"Initialize {assemblyQualifiedName} failed");
+                    LLog.Error("Initialize {0} failed", assemblyQualifiedName);
                     return false;
                 }
             }

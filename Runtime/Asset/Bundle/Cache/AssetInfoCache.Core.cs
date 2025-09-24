@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
             
             if (_refCount > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
             {
-                LLog.Warning($"unload asset leak : {_assetPath}({_refCount})");
+                LLog.Warning("Unload asset leak : {0}({1})", _assetPath, _refCount);
             }
 
             _refCount = 0;
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
 
             if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
-                LLog.Error($"asset IncRef error, {_assetPath} : {Stage}");
+                LLog.Error("Asset IncRef error, {0} : {1}", _assetPath, Stage);
             }
             
             _refCount++;
@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
         {
             if (Stage != AssetCacheStage.Loaded)
             {
-                LLog.Error($"asset DecRef error, {_assetPath} : {Stage}");
+                LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
             }
             
             _refCount--;
@@ -112,7 +112,7 @@ namespace LiteQuark.Runtime
             if (asset == null)
             {
                 Stage = AssetCacheStage.Unloading;
-                LLog.Error($"load asset failed : {_assetPath}");
+                LLog.Error("Load asset failed : {0}", _assetPath);
                 return false;
             }
 

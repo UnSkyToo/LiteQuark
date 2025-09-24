@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
             
             if (_request.result != UnityWebRequest.Result.Success)
             {
-                LLog.Error($"get request uri : {_uri}\n{_request.error}");
+                LLog.Error("UnityWebGetRequestTask error : {0} - {1}\n{2}", _uri, _request.result, _request.error);
                 _callback?.Invoke(null);
                 Abort();
             }

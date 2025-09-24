@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
         {
             if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Leave {_currentStage.GetType().Name}");
+                LLog.Info("StageCenter: Leave {0}", _currentStage.GetType().Name);
                 _currentStage?.Leave();
                 _currentStage = null;
             }
@@ -74,11 +74,11 @@ namespace LiteQuark.Runtime
             
             if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Leave {_currentStage.GetType().Name}");
+                LLog.Info("StageCenter: Leave {0}", _currentStage.GetType().Name);
                 _currentStage.Leave();
                 _watch.Stop();
                 var totalSec = _watch.Elapsed.TotalSeconds;
-                LLog.Info($"StageCenter: {_currentStage.GetType().Name} duration {totalSec}s");
+                LLog.Info("StageCenter: {0} duration {1}s", _currentStage.GetType().Name, totalSec);
             }
             
             _currentStage = _stageList[index];
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
             
             if (_currentStage != null)
             {
-                LLog.Info($"StageCenter: Enter {_currentStage.GetType().Name}");
+                LLog.Info("StageCenter: Enter {0}", _currentStage.GetType().Name);
                 _watch.Restart();
                 _currentStage.Enter();
             }
