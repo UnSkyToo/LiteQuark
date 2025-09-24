@@ -122,6 +122,50 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &52801015
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 52801017}
+  - component: {fileID: 52801016}
+  m_Layer: 0
+  m_Name: Debugger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &52801016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52801015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 831e433173704008b340a93d39821306, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &52801017
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52801015}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &111413538
 GameObject:
   m_ObjectHideFlags: 0
@@ -508,15 +552,15 @@ MonoBehaviour:
       ThrowException: 0
     Asset:
       AssetMode: 1
-      EditorForceStreamingAssets: 1
       BundleLocater: 0
       BundleRemoteUri: http://127.0.0.1:8000/
       EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300
+      EditorForceStreamingAssets: 1
       SimulateAsyncDelayInEditor: 1
-      AsyncDelayMinTime: 0.05
-      AsyncDelayMaxTime: 0.1
+      AsyncDelayMinFrame: 1
+      AsyncDelayMaxFrame: 6
     Action:
       SafetyMode: 0
     Log:
@@ -720,3 +764,4 @@ SceneRoots:
   - {fileID: 230417445}
   - {fileID: 321517260}
   - {fileID: 1112059206}
+  - {fileID: 52801017}

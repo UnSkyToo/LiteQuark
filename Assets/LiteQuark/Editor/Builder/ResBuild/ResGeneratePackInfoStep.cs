@@ -24,7 +24,8 @@ namespace LiteQuark.Editor
             var rootPath = builder.GetResOutputPath();
             foreach (var bundle in versionPack.BundleList)
             {
-                var fullPath = PathUtils.ConcatPath(rootPath, bundle.BundlePath);
+                var bundlePath = versionPack.GetBundleFileBuildPath(bundle);
+                var fullPath = PathUtils.ConcatPath(rootPath, bundlePath);
                 var fileInfo = new System.IO.FileInfo(fullPath);
                 if (!fileInfo.Exists)
                 {
@@ -40,8 +41,8 @@ namespace LiteQuark.Editor
                 
                 foreach (var bundleInfo in versionPack.BundleList)
                 {
-                    var oldPath = PathUtils.ConcatPath(rootPath, bundleInfo.BundlePath);
-                    var newPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundlePath(bundleInfo));
+                    var oldPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundleFileBuildPath(bundleInfo));
+                    var newPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundleFileLoadPath(bundleInfo));
                     PathUtils.RenameFile(oldPath, newPath);
                 }
             }

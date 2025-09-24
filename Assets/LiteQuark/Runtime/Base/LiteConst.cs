@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public static class LiteConst
     {
         public const string Tag = "LiteQuark";
-        public const bool EnableSecurity = true;
+        public const bool SecurityMode = true;
         public const string SecurityKey = "li1" + "te9" + "qua9" + "rk1";
         public const string AssetRootPath = "Assets/StandaloneAssets";
         public const string BundleFileExt = ".ab";

@@ -215,7 +215,6 @@ MonoBehaviour:
       SimulateAsyncDelayInEditor: 1
       AsyncDelayMinFrame: 1
       AsyncDelayMaxFrame: 6
-      EnableEncrypt: 0
     Action:
       SafetyMode: 0
     Log:
