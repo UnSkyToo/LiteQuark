@@ -19,9 +19,7 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-
-            var bundlePath = _provider.GetBundlePath(_bundleInfo);
-            _loadBundleTask = _provider.GetLocater().LoadBundle(bundlePath, HandleBundleLoadCompleted);
+            _loadBundleTask = _provider.LoadBundle(_bundleInfo, HandleBundleLoadCompleted);
 
             LoadDependencyBundleAsync(_loadBundleTask);
         }
