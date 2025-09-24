@@ -192,7 +192,7 @@ namespace LiteQuark.Runtime
         /// <summary>
         /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用
         /// </summary>
-        /// <param name="maxDepth">循环释放嵌套引用的最大层数。例如：A->B->C，如果为2，则只释放到B这一层</param>
+        /// <param name="maxDepth">释放引用的最大层数。例如：A->B->C，如果为2，则只释放到B这一层</param>
         public void UnloadUnusedAssets(int maxDepth = 5)
         {
             _provider?.UnloadUnusedAssets(maxDepth);

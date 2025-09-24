@@ -38,10 +38,10 @@ namespace LiteQuark.Editor
             {
                 versionPack.ApplyHash(manifest);
                 
-                foreach (var bundle in versionPack.BundleList)
+                foreach (var bundleInfo in versionPack.BundleList)
                 {
-                    var oldPath = PathUtils.ConcatPath(rootPath, bundle.BundlePath);
-                    var newPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundlePath(bundle));
+                    var oldPath = PathUtils.ConcatPath(rootPath, bundleInfo.BundlePath);
+                    var newPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundlePath(bundleInfo));
                     PathUtils.RenameFile(oldPath, newPath);
                 }
             }

@@ -134,9 +134,9 @@ namespace LiteQuark.Runtime
             return null;
         }
 
-        public string GetBundlePath(BundleInfo bundle)
+        public string GetBundlePath(BundleInfo bundleInfo)
         {
-            return HashMode ? bundle.GetBundlePathWithHash() : bundle.BundlePath;
+            return HashMode ? bundleInfo.GetBundlePathWithHash() : bundleInfo.BundlePath;
         }
 
         public byte[] ToBinaryData()
