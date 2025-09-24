@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
                     var nodeValue = ui.FindChild(attr.Path);
                     if (nodeValue == null)
                     {
-                        LLog.Warning($"can't bind node : {attr.Path}");
+                        LLog.Warning("can't bind node : {0}", attr.Path);
                         continue;
                     }
 
@@ -78,7 +78,7 @@ namespace LiteQuark.Runtime
                     var componentValue = ui.FindComponent(attr.Path, field.FieldType);
                     if (componentValue == null)
                     {
-                        LLog.Warning($"can't bind component : {attr.Path}");
+                        LLog.Warning("can't bind component : {0}", attr.Path);
                         continue;
                     }
 
@@ -101,7 +101,7 @@ namespace LiteQuark.Runtime
                     }
                     catch (Exception ex)
                     {
-                        LLog.Warning($"can't bind component : {attr.Path}\n{ex.Message}");
+                        LLog.Warning("can't bind component : {0}\n{1}", attr.Path, ex.Message);
                     }
                 }
             }
@@ -121,7 +121,7 @@ namespace LiteQuark.Runtime
                     }
                     catch (Exception ex)
                     {
-                        LLog.Warning($"can't unbind component : {attr.Path}\n{ex.Message}");
+                        LLog.Warning("can't unbind component : {0}\n{1}", attr.Path, ex.Message);
                     }
                 }
             }

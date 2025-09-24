@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                LLog.Warning($"Effect {_info.Path} parent is destroyed, not recycle!");
+                LLog.Warning("Effect {0} parent is destroyed, not recycle!", _info.Path);
             }
 
             _state = EffectState.Destroyed;
@@ -98,7 +98,7 @@ namespace LiteQuark.Runtime
                 if (_binder == null)
                 {
 #if UNITY_EDITOR
-                    LLog.Warning($"Effect {_info.Path} is not cached!");
+                    LLog.Warning("Effect {0} is not cached!", _info.Path);
 #endif
                     _binder = _go.AddComponent<EffectBinder>();
                     _binder.UpdateInfo();
@@ -106,7 +106,7 @@ namespace LiteQuark.Runtime
                 else if (_binder.IsEmpty())
                 {
 #if UNITY_EDITOR
-                    LLog.Warning($"Effect {_info.Path} is not cached!");
+                    LLog.Warning("Effect {0} is not cached!", _info.Path);
 #endif
                     _binder.UpdateInfo();
                 }

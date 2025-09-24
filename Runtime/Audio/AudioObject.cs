@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
                 {
                     if (clip == null)
                     {
-                        LLog.Warning($"can't play audio : {clipPath}");
+                        LLog.Warning("can't play audio : {0}", clipPath);
                         callback?.Invoke(false);
                         return;
                     }
