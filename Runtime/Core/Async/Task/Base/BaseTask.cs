@@ -1,28 +1,31 @@
-﻿namespace LiteQuark.Runtime
+﻿using Cysharp.Threading.Tasks;
+
+namespace LiteQuark.Runtime
 {
     public abstract class BaseTask : ITask
     {
         public float Progress { get; protected set; }
         public bool IsDone => State is TaskState.Completed or TaskState.Aborted;
+        public object Result { get; protected set; }
         public TaskState State { get; protected set; }
 
-        public System.Threading.Tasks.Task Task
+        public UniTask<object> Task
         {
             get
             {
                 if (_tcs == null)
                 {
-                    _tcs = new System.Threading.Tasks.TaskCompletionSource<object>();
+                    _tcs = new UniTaskCompletionSource<object>();
                     if (IsDone)
                     {
-                        _tcs.SetResult(null);
+                        _tcs.TrySetResult(Result);
                     }
                 }
                 return _tcs.Task;
             }
         }
 
-        private System.Threading.Tasks.TaskCompletionSource<object> _tcs;
+        private UniTaskCompletionSource<object> _tcs;
 
         protected BaseTask()
         {
@@ -40,6 +43,7 @@
 
             State = TaskState.InProgress;
             Progress = 0;
+            Result = null;
             OnExecute();
         }
 
@@ -59,6 +63,7 @@
             {
                 Progress = 1f;
                 State = TaskState.Completed;
+                Result = result;
                 _tcs?.TrySetResult(result);
             }
         }
@@ -68,6 +73,7 @@
             if (!IsDone)
             {
                 State = TaskState.Aborted;
+                Result = null;
                 _tcs?.TrySetResult(null);
             }
         }

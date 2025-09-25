@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -6,8 +7,9 @@ namespace LiteQuark.Runtime
     {
         public float Progress { get; }
         public bool IsDone { get; }
+        public object Result { get; }
         public TaskState State { get; }
-        public System.Threading.Tasks.Task Task { get; }
+        public UniTask<object> Task { get; }
         
         public void Execute();
         public void Cancel();

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -185,56 +184,6 @@ namespace LiteQuark.Runtime
             var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
             packInfo.RestorePath();
             return packInfo;
-        }
-        
-        public static void LoadPackAsync(string bundleUri, Action<VersionPackInfo> callback)
-        {
-            try
-            {
-                LiteRuntime.Task.UnityWebGetRequestTask(bundleUri, 0, true, (downloadHandler) =>
-                {
-                    if (downloadHandler?.isDone ?? false)
-                    {
-                        var info = FromBinaryData(downloadHandler.data);
-
-                        if (info is not { IsValid: true })
-                        {
-                            LLog.Error("Bundle package parse error\n{0}", downloadHandler.error);
-                            callback?.Invoke(null);
-                            return;
-                        }
-
-                        info.Initialize();
-                        callback?.Invoke(info);
-                    }
-                    else
-                    {
-                        LLog.Error("Bundle package download error : {0}\n{1}", bundleUri, downloadHandler?.error);
-                        callback?.Invoke(null);
-                    }
-                });
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public static UniTask<VersionPackInfo> LoadPackAsync(string bundleUri)
-        {
-            try
-            {
-                var tcs = new UniTaskCompletionSource<VersionPackInfo>();
-                LoadPackAsync(bundleUri, (info) =>
-                {
-                    tcs.TrySetResult(info);
-                });
-                return tcs.Task;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
         }
     }
 }

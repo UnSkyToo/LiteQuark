@@ -129,6 +129,13 @@ namespace LiteQuark.Runtime
             _taskList.Add(task);
             return task;
         }
+        
+        public LoadVersionPackTask LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
+        {
+            var task = new LoadVersionPackTask(uri, callback);
+            _taskList.Add(task);
+            return task;
+        }
 
         public LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
