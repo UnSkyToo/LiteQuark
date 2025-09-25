@@ -20,6 +20,7 @@ namespace LiteQuark.Editor
             
             DrawFoldout("Action", DrawAction);
             DrawFoldout("Asset", DrawAsset);
+            DrawFoldout("Task", DrawTask);
             DrawFoldout("ObjectPool", DrawObjectPool);
         }
 
@@ -122,6 +123,28 @@ namespace LiteQuark.Editor
                         EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
                     }
                 }
+            }
+        }
+
+        private void DrawTask()
+        {
+            var taskList = LiteRuntime.Task?.GetTaskList();
+            if (taskList == null)
+            {
+                EditorGUILayout.LabelField("Empty");
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"Tasks:{LiteRuntime.Task.RunningTaskCount}/{LiteRuntime.Task.TotalTaskCount}");
+                taskList.Foreach(DrawOneTask, EditorGUI.indentLevel);
+            }
+        }
+
+        private void DrawOneTask(ITask task, int indent)
+        {
+            using (new IndentLevelScope(indent))
+            {
+                EditorGUILayout.LabelField($"{task.GetType().Name} {task.Progress*100:0.0}% {task.State}");
             }
         }
 

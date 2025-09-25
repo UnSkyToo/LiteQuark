@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     public sealed class ObjectPoolSystem : ISystem
     {
         private readonly Dictionary<string, IBasePool> _poolCache = new ();
-        private Transform _root;
+        private Transform _root = null;
 
         public ObjectPoolSystem()
         {

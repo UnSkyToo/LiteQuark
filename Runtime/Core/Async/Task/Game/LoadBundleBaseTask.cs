@@ -35,13 +35,17 @@ namespace LiteQuark.Runtime
 
             if (_isLoaded)
             {
-                var isChildDone = ChildTasks.Count <= 0 || ChildTasks.All(childTask => childTask.IsDone);
-                if (isChildDone)
+                if (IsChildDone())
                 {
                     _callback?.Invoke(_bundle);
                     Complete(_bundle);
                 }
             }
+        }
+
+        private bool IsChildDone()
+        {
+            return ChildTasks.Count <= 0 || ChildTasks.All(childTask => childTask.IsDone);
         }
 
         public void AddChildTask(LoadBundleBaseTask childTask)
