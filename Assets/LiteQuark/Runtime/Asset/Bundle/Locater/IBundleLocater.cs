@@ -1,10 +1,8 @@
-﻿using Cysharp.Threading.Tasks;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
     internal interface IBundleLocater
     {
-        UniTask<VersionPackInfo> LoadVersionPack(string versionFileName);
+        LoadVersionPackTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback);
         LoadBundleBaseTask LoadBundle(string bundlePath, System.Action<UnityEngine.AssetBundle> callback);
     }
 }

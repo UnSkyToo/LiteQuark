@@ -1,6 +1,4 @@
-﻿using Cysharp.Threading.Tasks;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
     internal class BundleBuiltInLocater : IBundleLocater
     {
@@ -24,11 +22,10 @@ namespace LiteQuark.Runtime
             return uri;
         }
         
-        public UniTask<VersionPackInfo> LoadVersionPack(string versionFileName)
+        public LoadVersionPackTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)
         {
             var versionPackUri = GetRuntimeFullPath(versionFileName);
-            LLog.Info("VersionPackUri : {0}", versionPackUri);
-            return VersionPackInfo.LoadPackAsync(versionPackUri);
+            return LiteRuntime.Task.LoadVersionPackTask(versionPackUri, callback);
         }
         
         public LoadBundleBaseTask LoadBundle(string bundlePath, System.Action<UnityEngine.AssetBundle> callback)

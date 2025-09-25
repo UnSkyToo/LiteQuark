@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
                 return false;
             }
             
-            _packInfo = await _bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName());
+            _packInfo = await _bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
             if (_packInfo == null)
             {
                 return false;
