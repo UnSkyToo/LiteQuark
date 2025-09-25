@@ -30,6 +30,8 @@ namespace LiteQuark.Editor
             {
                 Enable = argumentData.GetEnableResBuild(),
                 IncrementBuildModel = false,
+                HashMode = argumentData.GetHashMode(),
+                FlatMode = argumentData.GetFlatMode(),
                 CleanBuildMode = true,
                 CopyToStreamingAssets = true,
                 CleanStreamingAssetsBeforeCopy = true,
@@ -210,6 +212,16 @@ namespace LiteQuark.Editor
             public string GetAppVersion()
             {
                 return GetStringValue("appVersion", PlayerSettings.bundleVersion);
+            }
+
+            public bool GetHashMode()
+            {
+                return GetBoolValue("hashMode", true);
+            }
+
+            public bool GetFlatMode()
+            {
+                return GetBoolValue("flatMode", true);
             }
 
             public int GetAppCode()
