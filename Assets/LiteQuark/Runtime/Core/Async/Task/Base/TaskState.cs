@@ -2,7 +2,7 @@ namespace LiteQuark.Runtime
 {
     public enum TaskState
     {
-        Waiting,
+        Pending,
         InProgress,
         Completed,
         Aborted,

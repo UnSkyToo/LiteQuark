@@ -4,7 +4,7 @@ using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadVersionPackTask : BaseTask
+    internal sealed class LoadVersionPackTask : BaseTask
     {
         private readonly Uri _uri;
         private Action<VersionPackInfo> _callback;

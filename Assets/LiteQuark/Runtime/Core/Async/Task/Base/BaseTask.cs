@@ -29,14 +29,14 @@ namespace LiteQuark.Runtime
 
         protected BaseTask()
         {
-            State = TaskState.Waiting;
+            State = TaskState.Pending;
         }
 
         public abstract void Dispose();
         
         public void Execute()
         {
-            if (State != TaskState.Waiting)
+            if (State != TaskState.Pending)
             {
                 return;
             }

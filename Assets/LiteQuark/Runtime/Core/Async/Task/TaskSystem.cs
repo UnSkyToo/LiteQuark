@@ -7,9 +7,13 @@ namespace LiteQuark.Runtime
 {
     public sealed class TaskSystem : ISystem, ITick
     {
+        // public int ConcurrencyLimit { get; set; } = 1;
+        public int TotalTaskCount { get; private set; } = 0;
+        public int RunningTaskCount { get; private set; } = 0;
+
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
-        private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate;
+        private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate = null;
         private readonly SafeList<ITask> _taskList = new SafeList<ITask>();
 
         public TaskSystem()
@@ -22,6 +26,8 @@ namespace LiteQuark.Runtime
 
         public UniTask<bool> Initialize()
         {
+            TotalTaskCount = 0;
+            RunningTaskCount = 0;
             return UniTask.FromResult(true);
         }
 
@@ -31,6 +37,9 @@ namespace LiteQuark.Runtime
             
             _taskList.Foreach((task) => task.Dispose());
             _taskList.Clear();
+            
+            TotalTaskCount = 0;
+            RunningTaskCount = 0;
         }
 
         public void Tick(float deltaTime)
@@ -40,11 +49,12 @@ namespace LiteQuark.Runtime
 
         private void OnTaskTick(ITask task, SafeList<ITask> list, float dt)
         {
-            if (task.State == TaskState.Waiting)
+            if (task.State == TaskState.Pending)
             {
                 try
                 {
                     task.Execute();
+                    RunningTaskCount++;
                 }
                 catch (Exception ex)
                 {
@@ -70,7 +80,14 @@ namespace LiteQuark.Runtime
             {
                 task.Dispose();
                 list.Remove(task);
+                RunningTaskCount--;
+                TotalTaskCount--;
             }
+        }
+        
+        public SafeList<ITask> GetTaskList()
+        {
+            return _taskList;
         }
 
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
@@ -86,75 +103,76 @@ namespace LiteQuark.Runtime
         public void AddTask(ITask task)
         {
             _taskList.Add(task);
+            TotalTaskCount++;
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)
         {
             var task = new CoroutineTask(taskFunc, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public AsyncOperationTask AddTask(UnityEngine.AsyncOperation asyncOperation, Action callback = null)
         {
             var task = new AsyncOperationTask(asyncOperation, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public AsyncResultTask AddTask(IAsyncResult asyncResult, Action callback = null)
         {
             var task = new AsyncResultTask(asyncResult, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public WaitCallbackTask AddTask(Action<Action<bool>> func)
         {
             var task = new WaitCallbackTask(func);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
         
         public InstantiateGameObjectTask InstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
             var task = new InstantiateGameObjectTask(template, parent, count, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
         
         public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, int timeout, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
         {
             var task = new UnityWebGetRequestTask(uri, timeout, forceNoCache, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
         
-        public LoadVersionPackTask LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
+        internal LoadVersionPackTask LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
         {
             var task = new LoadVersionPackTask(uri, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
 
         public LoadAssetBaseTask LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string name, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, name, callback);
-            _taskList.Add(task);
+            AddTask(task);
             return task;
         }
         
