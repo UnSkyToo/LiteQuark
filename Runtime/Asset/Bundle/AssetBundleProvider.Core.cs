@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
     {
         private IBundleLocater _bundleLocater = null;
         private VersionPackInfo _packInfo = null;
+        private AssetBundleLoader _bundleLoader = null;
         
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
         private readonly Dictionary<int, AssetIDToPathData> _assetIDToPathMap = new();
@@ -31,6 +32,8 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
+            _bundleLoader = new AssetBundleLoader(_bundleLocater, LiteRuntime.Setting.Asset.ConcurrencyLimit);
+
             _bundleCacheMap.Clear();
             _assetIDToPathMap.Clear();
             _unloadBundleList.Clear();
@@ -50,6 +53,8 @@ namespace LiteQuark.Runtime
         
         public void Tick(float deltaTime)
         {
+            _bundleLoader.Post();
+            
             foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
@@ -96,7 +101,7 @@ namespace LiteQuark.Runtime
         public void PreloadBundle(string bundlePath, Action<bool> callback)
         {
             var cache = GetOrCreateBundleCache(bundlePath);
-            cache.LoadBundleAsync(callback);
+            cache.LoadBundleAsync(0, callback);
         }
         
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
@@ -238,10 +243,11 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal LoadBundleBaseTask LoadBundle(BundleInfo bundleInfo, Action<UnityEngine.AssetBundle> callback)
+        internal void LoadBundle(BundleInfo bundleInfo, int priority, Action<UnityEngine.AssetBundle> callback)
         {
             var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
-            return _bundleLocater.LoadBundle(bundlePath, callback);
+            // return _bundleLocater.LoadBundle(bundlePath, callback);
+            _bundleLoader.LoadBundle(bundlePath, priority, callback);
         }
 
         private IBundleLocater CreateLocater()

@@ -7,8 +7,6 @@ namespace LiteQuark.Runtime
 {
     public sealed class TaskSystem : ISystem, ITick
     {
-        // public int ConcurrencyLimit { get; set; } = 1;
-        public int TotalTaskCount { get; private set; } = 0;
         public int RunningTaskCount { get; private set; } = 0;
 
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
@@ -26,7 +24,6 @@ namespace LiteQuark.Runtime
 
         public UniTask<bool> Initialize()
         {
-            TotalTaskCount = 0;
             RunningTaskCount = 0;
             return UniTask.FromResult(true);
         }
@@ -38,7 +35,6 @@ namespace LiteQuark.Runtime
             _taskList.Foreach((task) => task.Dispose());
             _taskList.Clear();
             
-            TotalTaskCount = 0;
             RunningTaskCount = 0;
         }
 
@@ -53,8 +49,8 @@ namespace LiteQuark.Runtime
             {
                 try
                 {
-                    task.Execute();
                     RunningTaskCount++;
+                    task.Execute();
                 }
                 catch (Exception ex)
                 {
@@ -81,7 +77,6 @@ namespace LiteQuark.Runtime
                 task.Dispose();
                 list.Remove(task);
                 RunningTaskCount--;
-                TotalTaskCount--;
             }
         }
         
@@ -103,7 +98,6 @@ namespace LiteQuark.Runtime
         public void AddTask(ITask task)
         {
             _taskList.Add(task);
-            TotalTaskCount++;
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)

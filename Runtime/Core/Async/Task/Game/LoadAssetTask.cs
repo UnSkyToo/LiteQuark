@@ -26,15 +26,7 @@ namespace LiteQuark.Runtime
         private void OnAssetRequestLoadCompleted(AsyncOperation op)
         {
             op.completed -= OnAssetRequestLoadCompleted;
-
-            var asset = (op as AssetBundleRequest)?.asset;
-            Callback?.Invoke(asset);
-            Complete(asset);
-        }
-
-        public override UnityEngine.Object WaitCompleted()
-        {
-            return _assetRequest.asset;
+            OnAssetLoaded(_assetRequest.asset);
         }
     }
 }

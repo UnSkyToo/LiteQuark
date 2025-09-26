@@ -18,7 +18,6 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
-        private LoadBundleBaseTask _loadBundleTask;
 
         public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
@@ -35,7 +34,6 @@ namespace LiteQuark.Runtime
         {
             Unload();
             
-            _loadBundleTask = null;
             _bundleLoaderCallbackList.Clear();
             _unloadAssetList.Clear();
 

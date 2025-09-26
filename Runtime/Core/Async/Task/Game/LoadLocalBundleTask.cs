@@ -12,20 +12,9 @@ namespace LiteQuark.Runtime
         {
         }
         
-        public override AssetBundle WaitCompleted()
+        protected override void OnTick(float deltaTime)
         {
-            foreach (var childTask in ChildTasks)
-            {
-                childTask.WaitCompleted();
-            }
-            
-            var bundle = _bundleRequest.assetBundle;
-            return bundle;
-        }
-
-        protected override float GetDownloadPercent()
-        {
-            return _bundleRequest?.progress ?? 0f;
+            Progress = _bundleRequest?.progress ?? 0f;
         }
 
         protected override void OnExecute()

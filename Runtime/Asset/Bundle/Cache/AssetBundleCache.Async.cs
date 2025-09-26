@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        internal void LoadBundleAsync(Action<bool> callback)
+        internal void LoadBundleAsync(int priority, Action<bool> callback)
         {
             if (IsLoaded)
             {
@@ -19,15 +19,12 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            _loadBundleTask = _provider.LoadBundle(_bundleInfo, HandleBundleLoadCompleted);
-
-            LoadDependencyBundleAsync(_loadBundleTask);
+            LoadDependencyBundleAsync(priority + 1);
+            _provider.LoadBundle(_bundleInfo, priority, HandleBundleLoadCompleted);
         }
 
         private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
         {
-            _loadBundleTask = null;
-
             var isLoaded = OnBundleLoaded(bundle);
 
             foreach (var loader in _bundleLoaderCallbackList)
@@ -38,15 +35,14 @@ namespace LiteQuark.Runtime
             _bundleLoaderCallbackList.Clear();
         }
 
-        private void LoadDependencyBundleAsync(LoadBundleBaseTask mainTask)
+        private void LoadDependencyBundleAsync(int priority)
         {
             var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
-            
+
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
-                dependencyCache.LoadBundleAsync(null);
-                mainTask.AddChildTask(dependencyCache._loadBundleTask);
+                dependencyCache.LoadBundleAsync(priority, null);
             }
         }
 
