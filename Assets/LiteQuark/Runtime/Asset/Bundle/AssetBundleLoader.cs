@@ -9,87 +9,84 @@ namespace LiteQuark.Runtime
         private readonly IBundleLocater _bundleLocater;
         private readonly int _concurrencyLimit;
         
-        private readonly Dictionary<string, InternalLoadTask> _loadMap;
-        private readonly PriorityQueue<InternalLoadTask> _loadQueues;
-        private readonly Dictionary<string, LoadBundleBaseTask> _loadTasks;
-        private readonly List<string> _loadCompleteList;
+        private readonly Dictionary<string, WaitingTask> _waitTaskMap;
+        private readonly PriorityQueue<WaitingTask> _waitTaskQueue;
+        private readonly List<RunningTask> _runningTasks;
         
         public AssetBundleLoader(IBundleLocater locater, int concurrencyLimit)
         {
             _bundleLocater = locater;
             _concurrencyLimit = concurrencyLimit;
             
-            _loadMap = new Dictionary<string, InternalLoadTask>();
-            _loadQueues = new PriorityQueue<InternalLoadTask>((x, y) => x.Priority.CompareTo(y.Priority));
-            _loadTasks = new Dictionary<string, LoadBundleBaseTask>();
-            _loadCompleteList = new List<string>();
+            _waitTaskMap = new Dictionary<string, WaitingTask>();
+            _waitTaskQueue = new PriorityQueue<WaitingTask>((x, y) => x.Priority.CompareTo(y.Priority));
+            _runningTasks = new List<RunningTask>();
         }
 
         public void LoadBundle(string bundlePath, int priority, Action<AssetBundle> callback)
         {
-            if (_loadMap.TryGetValue(bundlePath, out var loadInfo))
+            if (_waitTaskMap.TryGetValue(bundlePath, out var loadInfo))
             {
                 loadInfo.Priority = Mathf.Max(loadInfo.Priority, priority);
                 loadInfo.Callback += callback;
             }
             else
             {
-                loadInfo = new InternalLoadTask(bundlePath, callback, priority);
-                _loadMap.Add(bundlePath, loadInfo);
-                _loadQueues.Enqueue(loadInfo);
+                loadInfo = new WaitingTask(bundlePath, callback, priority);
+                _waitTaskMap.Add(bundlePath, loadInfo);
+                _waitTaskQueue.Enqueue(loadInfo);
             }
         }
 
         public void Post()
         {
-            foreach (var (path, task) in _loadTasks)
+            for (var i = _runningTasks.Count - 1; i >= 0; i--)
             {
-                if (task.IsDone)
+                var running = _runningTasks[i];
+                if (running.Task.IsDone)
                 {
-                    _loadCompleteList.Add(path);
-                }
-            }
+                    _runningTasks.RemoveAt(i);
 
-            if (_loadCompleteList.Count > 0)
-            {
-                foreach (var path in _loadCompleteList)
-                {
-                    var bundle = _loadTasks[path]?.GetBundle();
-                    _loadTasks.Remove(path);
-                    
-                    if (_loadMap.Remove(path, out var info))
+                    var bundle = running.Task.GetBundle();
+                    if (_waitTaskMap.Remove(running.Path, out var info))
                     {
-                        _loadQueues.Remove(info);
-                        
                         try { info.Callback?.Invoke(bundle); }
                         catch (Exception ex) { LLog.Exception(ex); }
                     }
                 }
-                
-                _loadCompleteList.Clear();
             }
             
-            if (_loadTasks.Count < _concurrencyLimit)
+            while (_runningTasks.Count < _concurrencyLimit && _waitTaskQueue.Count > 0)
             {
-                while (_loadTasks.Count < _concurrencyLimit && _loadQueues.Count > 0)
-                {
-                    var info = _loadQueues.Dequeue();
-                    _loadTasks.Add(info.Path, _bundleLocater.LoadBundle(info.Path, null));
-                }
+                var info = _waitTaskQueue.Dequeue();
+                var task = _bundleLocater.LoadBundle(info.Path, null);
+                _runningTasks.Add(new RunningTask(info.Path, task));
             }
         }
         
-        private class InternalLoadTask
+        private class WaitingTask
         {
             public string Path { get; }
             public Action<AssetBundle> Callback { get; set; }
             public int Priority { get; set; }
             
-            public InternalLoadTask(string path, Action<AssetBundle> callback, int priority)
+            public WaitingTask(string path, Action<AssetBundle> callback, int priority)
             {
                 Path = path;
                 Callback = callback;
                 Priority = priority;
+            }
+        }
+        
+        private class RunningTask
+        {
+            public string Path { get; }
+            public LoadBundleBaseTask Task { get; }
+
+            public RunningTask(string path, LoadBundleBaseTask task)
+            {
+                Path = path;
+                Task = task;
             }
         }
     }
