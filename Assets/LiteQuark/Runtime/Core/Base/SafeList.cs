@@ -24,11 +24,6 @@ namespace LiteQuark.Runtime
             _ops = new Queue<(OperationType type, T item)>();
         }
 
-        public bool IsDirty()
-        {
-            return _ops.Count > 0;
-        }
-
         public void Add(T item)
         {
             if (_inEach > 0)

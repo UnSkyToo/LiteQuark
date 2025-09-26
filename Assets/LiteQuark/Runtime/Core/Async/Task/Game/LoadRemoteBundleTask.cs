@@ -24,20 +24,15 @@ namespace LiteQuark.Runtime
             base.Dispose();
         }
 
-        public override AssetBundle WaitCompleted()
-        {
-            throw new Exception($"{nameof(LoadRemoteBundleTask)} can't wait completed.");
-        }
-
         public override void Cancel()
         {
             _request?.Abort();
             base.Cancel();
         }
 
-        protected override float GetDownloadPercent()
+        protected override void OnTick(float deltaTime)
         {
-            return _request?.downloadProgress ?? 0f;
+            Progress = _request?.downloadProgress ?? 0f;
         }
 
         protected override void OnExecute()

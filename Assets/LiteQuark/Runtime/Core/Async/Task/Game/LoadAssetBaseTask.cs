@@ -7,20 +7,33 @@ namespace LiteQuark.Runtime
     {
         protected readonly AssetBundle Bundle;
         protected readonly string Name;
-        protected Action<UnityEngine.Object> Callback;
+        private UnityEngine.Object _asset;
+        private Action<UnityEngine.Object> _callback;
         
         protected LoadAssetBaseTask(AssetBundle bundle, string name, Action<UnityEngine.Object> callback)
         {
             Bundle = bundle;
             Name = name;
-            Callback = callback;
+            _asset = null;
+            _callback = callback;
         }
         
         public override void Dispose()
         {
-            Callback = null;
+            _callback = null;
         }
         
-        public abstract UnityEngine.Object WaitCompleted();
+        protected void OnAssetLoaded(UnityEngine.Object asset)
+        {
+            _asset = asset;
+            
+            _callback?.Invoke(_asset);
+            Complete(_asset);
+        }
+
+        public UnityEngine.Object GetAsset()
+        {
+            return _asset;
+        }
     }
 }

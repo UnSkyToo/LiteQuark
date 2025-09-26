@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadBundleAsync((isLoaded) =>
+            cache.LoadBundleAsync(0, (isLoaded) =>
             {
                 if (!isLoaded)
                 {
@@ -60,7 +60,7 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadBundleAsync((isLoaded) =>
+            cache.LoadBundleAsync(0, (isLoaded) =>
             {
                 if (!isLoaded)
                 {
