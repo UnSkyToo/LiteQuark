@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         public bool IsDone { get; }
         public object Result { get; }
         public TaskState State { get; }
+        public TaskPriority Priority { get; }
         public UniTask<object> Task { get; }
         
         public void Execute();

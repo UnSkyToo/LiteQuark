@@ -15,6 +15,7 @@ namespace LiteQuark.Runtime
         {
             _uri = new Uri(uri);
             _callback = callback;
+            SetPriority(TaskPriority.Urgent);
         }
 
         public override void Dispose()
