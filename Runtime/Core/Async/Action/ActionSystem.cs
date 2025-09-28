@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
             {
                 if (action.IsEnd)
                 {
-                    action.FinalCallback?.Invoke(action);
+                    LiteUtils.SafeInvoke(action.FinalCallback, action);
                     action.Dispose();
                     list.Remove(action);
                 }

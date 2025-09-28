@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         {
             if (IsLoaded)
             {
-                callback?.Invoke(true);
+                LiteUtils.SafeInvoke(callback, true);
                 return;
             }
             
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
 
             foreach (var loader in _bundleLoaderCallbackList)
             {
-                loader?.Invoke(isLoaded);
+                LiteUtils.SafeInvoke(loader, isLoaded);
             }
 
             _bundleLoaderCallbackList.Clear();
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
                     IncRef();
                 }
                 
-                callback?.Invoke(asset);
+                LiteUtils.SafeInvoke(callback, asset);
             });
         }
 
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
             var op = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, parameters);
             if (op == null)
             {
-                callback?.Invoke(false);
+                LiteUtils.SafeInvoke(callback, false);
                 return;
             }
             
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
                 {
                     IncRef();
                 }
-                callback?.Invoke(result.isDone);
+                LiteUtils.SafeInvoke(callback, result.isDone);
             };
         }
     }

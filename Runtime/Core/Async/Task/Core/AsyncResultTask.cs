@@ -42,8 +42,8 @@ namespace LiteQuark.Runtime
                     Complete(null);
                 }
             }
-
-            _callback?.Invoke();
+            
+            LiteUtils.SafeInvoke(_callback);
         }
     }
 }

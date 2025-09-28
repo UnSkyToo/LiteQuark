@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            _func.Invoke(OnCallback);
+            LiteUtils.SafeInvoke(_func, OnCallback);
         }
 
         private void OnCallback(bool isCompleted)

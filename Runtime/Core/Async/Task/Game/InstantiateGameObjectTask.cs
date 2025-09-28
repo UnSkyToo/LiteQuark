@@ -51,12 +51,12 @@ namespace LiteQuark.Runtime
                     result[i] = asyncOperation.Result[i] as GameObject;
                 }
                 
-                _callback?.Invoke(result);
+                LiteUtils.SafeInvoke(_callback, result);
                 Complete(result);
             }
             else
             {
-                _callback?.Invoke(Array.Empty<GameObject>());
+                LiteUtils.SafeInvoke(_callback, Array.Empty<GameObject>());
                 Abort();
             }
         }

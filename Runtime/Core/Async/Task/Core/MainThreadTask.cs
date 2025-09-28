@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            _func?.Invoke(_param);
+            LiteUtils.SafeInvoke(_func, _param);
             Complete(null);
         }
     }

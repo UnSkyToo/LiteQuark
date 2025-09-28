@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            _callback?.Invoke();
+            LiteUtils.SafeInvoke(_callback);
         }
     }
 }

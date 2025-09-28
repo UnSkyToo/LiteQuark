@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
             {
-                callback?.Invoke(null);
+                LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
@@ -18,14 +18,14 @@ namespace LiteQuark.Runtime
             {
                 if (!isLoaded)
                 {
-                    callback?.Invoke(null);
+                    LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
                 
                 cache.LoadAssetAsync<T>(assetPath, (asset) =>
                 {
                     UpdateAssetIDToPathMap(asset, assetPath);
-                    callback?.Invoke(asset);
+                    LiteUtils.SafeInvoke(callback, asset);
                 });
             });
         }
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
             {
                 var instance = UnityEngine.Object.Instantiate(asset, parent);
                 UpdateAssetIDToPathMap(instance, assetPath);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 
@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
             {
                 var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
                 UpdateAssetIDToPathMap(instance, assetPath);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
             {
-                callback?.Invoke(false);
+                LiteUtils.SafeInvoke(callback, false);
                 return;
             }
 
@@ -64,13 +64,13 @@ namespace LiteQuark.Runtime
             {
                 if (!isLoaded)
                 {
-                    callback?.Invoke(false);
+                    LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
                 
                 cache.LoadSceneAsync(sceneName, parameters, (result) =>
                 {
-                    callback?.Invoke(result);
+                    LiteUtils.SafeInvoke(callback, result);
                 });
             });
         }

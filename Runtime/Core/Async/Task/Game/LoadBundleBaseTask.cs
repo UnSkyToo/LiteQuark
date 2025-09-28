@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
         {
             _bundle = bundle;
             
-            _callback?.Invoke(bundle);
+            LiteUtils.SafeInvoke(_callback, bundle);
             Complete(bundle);
         }
 
