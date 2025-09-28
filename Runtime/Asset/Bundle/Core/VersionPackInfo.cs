@@ -191,23 +191,50 @@ namespace LiteQuark.Runtime
 
         public byte[] ToBinaryData()
         {
-            SimplifyPath();
-            var jsonText = LitJson.JsonMapper.ToJson(this);
-            var jsonData = Encoding.UTF8.GetBytes(jsonText);
-            if (LiteConst.SecurityMode)
+            if (!IsValid)
             {
-                return SecurityUtils.AesEncrypt(jsonData, LiteConst.SecurityKey);
+                throw new InvalidOperationException("VersionPackInfo is not valid");
             }
-            return jsonData;
+            
+            SimplifyPath();
+            try
+            {
+                var jsonText = LitJson.JsonMapper.ToJson(this);
+                var jsonData = Encoding.UTF8.GetBytes(jsonText);
+                if (LiteConst.SecurityMode)
+                {
+                    return SecurityUtils.AesEncrypt(jsonData, LiteConst.SecurityKey);
+                }
+
+                return jsonData;
+            }
+            catch(Exception ex)
+            {
+                LLog.Exception(ex, "Failed to serialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
+                throw;
+            }
         }
 
         public static VersionPackInfo FromBinaryData(byte[] data)
         {
-            var jsonData = LiteConst.SecurityMode ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
-            var jsonText = Encoding.UTF8.GetString(jsonData);
-            var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
-            packInfo.RestorePath();
-            return packInfo;
+            if (data == null || data.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            try
+            {
+                var jsonData = LiteConst.SecurityMode ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
+                var jsonText = Encoding.UTF8.GetString(jsonData);
+                var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
+                packInfo.RestorePath();
+                return packInfo;
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Failed to deserialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
+                throw;
+            }
         }
     }
 }
