@@ -22,6 +22,7 @@ namespace LiteQuark.Runtime
         public VersionPackInfo()
         {
             IsValid = false;
+            BundleList = Array.Empty<BundleInfo>();
         }
 
         public VersionPackInfo(string version, string platform, bool hashMode, bool flatMode, BundleInfo[] bundleList)
@@ -69,15 +70,18 @@ namespace LiteQuark.Runtime
 
         private void SimplifyPath()
         {
-            var bundleIDMap = new Dictionary<string, string>();
+            var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
             foreach (var bundle in BundleList)
             {
                 bundleIDMap.Add(bundle.BundlePath, bundle.BundleID.ToString());
             }
             
+            const string bundleFileExt = LiteConst.BundleFileExt;
+            
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundleFileExt, string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
+                
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
@@ -85,33 +89,53 @@ namespace LiteQuark.Runtime
 
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
                 {
-                    bundle.DependencyList[index] = bundleIDMap[bundle.DependencyList[index]];
+                    var dependencyPath = bundle.DependencyList[index];
+                    if (bundleIDMap.TryGetValue(dependencyPath, out var dependencyId))
+                    {
+                        bundle.DependencyList[index] = dependencyId;
+                    }
+                    else
+                    {
+                        throw new KeyNotFoundException($"Dependency not found: {dependencyPath}, bundle: {bundle.BundlePath}");
+                    }
                 }
             }
         }
 
         private void RestorePath()
         {
-            var bundleIDMap = new Dictionary<string, string>();
+            var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
             foreach (var bundle in BundleList)
             {
                 bundleIDMap.Add(bundle.BundleID.ToString(), bundle.BundlePath);
             }
             
+            const string bundleFileExt = LiteConst.BundleFileExt;
+            
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Replace(LiteConst.BundleFileExt, string.Empty)}/";
+                var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
+                
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
-                    if (!bundle.AssetList[index].StartsWith("assets"))
+                    var assetPath = bundle.AssetList[index];
+                    if (!assetPath.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase))
                     {
-                        bundle.AssetList[index] = $"{bundlePath}{bundle.AssetList[index]}";
+                        bundle.AssetList[index] = $"{bundlePath}{assetPath}";
                     }
                 }
 
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
                 {
-                    bundle.DependencyList[index] = bundleIDMap[bundle.DependencyList[index]];
+                    var dependencyId = bundle.DependencyList[index];
+                    if (bundleIDMap.TryGetValue(dependencyId, out var dependencyPath))
+                    {
+                        bundle.DependencyList[index] = dependencyPath;
+                    }
+                    else
+                    {
+                        throw new KeyNotFoundException($"Dependency ID not found: {dependencyId}, bundle: {bundle.BundlePath}");
+                    }
                 }
             }
         }
@@ -148,7 +172,7 @@ namespace LiteQuark.Runtime
             loadPath = GetBundleFileBuildPath(bundleInfo);
             if (HashMode)
             {
-                loadPath = loadPath.Replace(LiteConst.BundleFileExt, $"_{bundleInfo.Hash}{LiteConst.BundleFileExt}");
+                loadPath = System.IO.Path.ChangeExtension(loadPath, $"_{bundleInfo.Hash}{LiteConst.BundleFileExt}");
             }
 
             if (LiteConst.SecurityMode && HashMode && FlatMode)
