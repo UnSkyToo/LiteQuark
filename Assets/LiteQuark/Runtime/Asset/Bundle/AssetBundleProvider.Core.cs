@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
         
         public void Tick(float deltaTime)
         {
-            _bundleLoader.Post();
+            _bundleLoader.Tick(deltaTime);
             
             foreach (var chunk in _bundleCacheMap)
             {
