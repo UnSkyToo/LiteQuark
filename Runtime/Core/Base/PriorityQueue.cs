@@ -19,6 +19,11 @@ namespace LiteQuark.Runtime
             _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
+        public void Clear()
+        {
+            _heap.Clear();
+        }
+
         public void Enqueue(T item)
         {
             _heap.Add(item);
