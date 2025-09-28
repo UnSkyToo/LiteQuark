@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<T>(assetPath, (asset) =>
             {
-                callback?.Invoke(asset != null);
+                LiteUtils.SafeInvoke(callback, asset != null);
             });
         }
         

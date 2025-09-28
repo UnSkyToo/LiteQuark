@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
         {
             if (string.IsNullOrEmpty(bundlePath))
             {
-                callback?.Invoke(null);
+                LiteUtils.SafeInvoke(callback, null);
                 return;
             }
             
@@ -63,8 +63,7 @@ namespace LiteQuark.Runtime
                     var bundle = runningTask.LoadTask.GetBundle();
                     if (_pendingTaskMap.Remove(runningTask.Path, out var pendingTask))
                     {
-                        try { pendingTask.Callback?.Invoke(bundle); }
-                        catch (Exception ex) { LLog.Exception(ex); }
+                        LiteUtils.SafeInvoke(pendingTask.Callback, bundle);
                     }
                 }
             }

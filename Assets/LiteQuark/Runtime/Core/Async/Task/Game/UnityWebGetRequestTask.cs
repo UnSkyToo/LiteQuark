@@ -51,12 +51,12 @@ namespace LiteQuark.Runtime
             if (_request.result != UnityWebRequest.Result.Success)
             {
                 LLog.Error("UnityWebGetRequestTask error : {0} - {1}\n{2}", _uri, _request.result, _request.error);
-                _callback?.Invoke(null);
+                LiteUtils.SafeInvoke(_callback, null);
                 Abort();
             }
             else
             {
-                _callback?.Invoke(_request.downloadHandler);
+                LiteUtils.SafeInvoke(_callback, _request.downloadHandler);
                 Complete(_request.downloadedBytes);
             }
         }

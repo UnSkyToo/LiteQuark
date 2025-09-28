@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
             if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
             {
                 LLog.Error("LoadVersionPackTask error : {0} - {1}\n{2}", _uri, _request.result, _request.error);
-                _callback?.Invoke(null);
+                LiteUtils.SafeInvoke(_callback, null);
                 Abort();
             }
             else
@@ -56,13 +56,13 @@ namespace LiteQuark.Runtime
                 if (info is not { IsValid: true })
                 {
                     LLog.Error("Bundle package parse error\n{0}", downloadHandler.error);
-                    _callback?.Invoke(null);
+                    LiteUtils.SafeInvoke(_callback, null);
                     Abort();
                 }
                 else
                 {
                     info.Initialize();
-                    _callback?.Invoke(info);
+                    LiteUtils.SafeInvoke(_callback, info);
                     Complete(info);
                 }
             }

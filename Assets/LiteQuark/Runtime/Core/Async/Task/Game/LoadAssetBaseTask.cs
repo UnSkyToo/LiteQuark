@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
         {
             _asset = asset;
             
-            _callback?.Invoke(_asset);
+            LiteUtils.SafeInvoke(_callback, _asset);
             Complete(_asset);
         }
 

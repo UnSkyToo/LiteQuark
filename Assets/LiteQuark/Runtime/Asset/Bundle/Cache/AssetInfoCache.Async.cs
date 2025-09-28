@@ -10,11 +10,11 @@ namespace LiteQuark.Runtime
             {
                 if (!isLoaded)
                 {
-                    callback?.Invoke(null);
+                    LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
                 
-                callback?.Invoke(Asset as T);
+                LiteUtils.SafeInvoke(callback, Asset as T);
             });
         }
 
@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
             if (IsLoaded)
             {
                 IncRef();
-                callback?.Invoke(true);
+                LiteUtils.SafeInvoke(callback, true);
                 return;
             }
             
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             
             foreach (var loader in _assetLoaderCallbackList)
             {
-                loader?.Invoke(isLoaded);
+                LiteUtils.SafeInvoke(loader, isLoaded);
             }
             
             _assetLoaderCallbackList.Clear();
