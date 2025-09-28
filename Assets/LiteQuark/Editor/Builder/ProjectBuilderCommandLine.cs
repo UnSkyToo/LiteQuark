@@ -32,7 +32,6 @@ namespace LiteQuark.Editor
                 IncrementBuildModel = false,
                 HashMode = argumentData.GetHashMode(),
                 FlatMode = argumentData.GetFlatMode(),
-                CleanBuildMode = true,
                 CopyToStreamingAssets = true,
                 CleanStreamingAssetsBeforeCopy = true,
             };

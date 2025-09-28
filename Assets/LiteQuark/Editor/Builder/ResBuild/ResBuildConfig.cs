@@ -28,11 +28,6 @@ namespace LiteQuark.Editor
         /// Increment build mode will be use last build info
         /// </summary>
         public bool IncrementBuildModel { get; set; } = false;
-        
-        /// <summary>
-        /// Clean mode will remove all bundle info
-        /// </summary>
-        public bool CleanBuildMode { get; set; } = true;
 
         /// <summary>
         /// Copy asset bundle to streaming asset folder

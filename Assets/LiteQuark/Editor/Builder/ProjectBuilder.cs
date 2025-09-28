@@ -63,19 +63,9 @@ namespace LiteQuark.Editor
                 steps.Add(new ResCleanFileStep());
             }
             
-            if (config.CleanBuildMode)
-            {
-                steps.Add(new ResCleanInfoStep());
-            }
-            
             steps.Add(new ResCollectInfoStep());
             steps.Add(new ResBuildFileStep());
             steps.Add(new ResGeneratePackInfoStep());
-
-            if (config.CleanBuildMode)
-            {
-                steps.Add(new ResCleanInfoStep());
-            }
 
             if (config.CopyToStreamingAssets)
             {

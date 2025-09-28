@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using LiteQuark.Runtime;
 using UnityEditor;
 
@@ -14,29 +15,38 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var versionPack = builder.Collector.GetVersionPackInfo(builder);
-            ApplyVersionPack(versionPack);
+            CollectAssetBundleBuilds(builder, versionPack);
         }
 
-        private void ApplyVersionPack(VersionPackInfo packInfo)
+        private void CollectAssetBundleBuilds(ProjectBuilder builder, VersionPackInfo versionPack)
         {
-            foreach (var buildInfo in packInfo.BundleList)
+            builder.Collector.Builds = new AssetBundleBuild[versionPack.BundleList.Length];
+
+            for (var i = 0; i < versionPack.BundleList.Length; i++)
             {
-                if (buildInfo.DependencyList.Contains(buildInfo.BundlePath))
+                var bundleInfo = versionPack.BundleList[i];
+                if (bundleInfo.DependencyList.Contains(bundleInfo.BundlePath))
                 {
-                    LEditorLog.Error($"loop reference : {buildInfo.BundlePath}");
+                    LEditorLog.Error($"loop reference : {bundleInfo.BundlePath}");
                     continue;
                 }
+                
+                var bundlePath = versionPack.GetBundleFileBuildPath(bundleInfo);
+                var assetPaths = new string[bundleInfo.AssetList.Length];
 
-                var bundlePath = packInfo.GetBundleFileBuildPath(buildInfo);
-                foreach (var assetPath in buildInfo.AssetList)
+                for (var j = 0; j < bundleInfo.AssetList.Length; j++)
                 {
-                    var fullPath = assetPath.StartsWith("assets") ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
-                    var importer = AssetImporter.GetAtPath(fullPath);
-                    importer.SetAssetBundleNameAndVariant(bundlePath, string.Empty);
+                    var assetPath = bundleInfo.AssetList[j];
+                    var fullPath = assetPath.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase) ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
+                    assetPaths[j] = fullPath;
                 }
+
+                builder.Collector.Builds[i] = new AssetBundleBuild()
+                {
+                    assetBundleName = bundlePath,
+                    assetNames = assetPaths,
+                };
             }
-            
-            AssetDatabase.Refresh();
         }
     }
 }

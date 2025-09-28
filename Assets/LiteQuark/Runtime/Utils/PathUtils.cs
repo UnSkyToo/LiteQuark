@@ -72,7 +72,7 @@ namespace LiteQuark.Runtime
         /// <returns>Assets/StandaloneAssets/{path}</returns>
         public static string GetFullPathInAssetRoot(string path)
         {
-            if (path.ToLower().StartsWith("assets"))
+            if (path.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase))
             {
                 return path;
             }
