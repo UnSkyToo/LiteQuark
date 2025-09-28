@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LiteQuark.Runtime
 {
@@ -100,7 +101,7 @@ namespace LiteQuark.Runtime
                 return CombineArray(array1, array2);
             }
 
-            var array = new List<T>(array1);
+            var array = new HashSet<T>(array1);
             foreach (var item in array2)
             {
                 if (!array.Contains(item))
