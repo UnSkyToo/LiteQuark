@@ -8,11 +8,14 @@ namespace LiteQuark.Runtime
     public sealed class TaskSystem : ISystem, ITick
     {
         public int RunningTaskCount { get; private set; } = 0;
+        public int PendingTaskCount { get; private set; } = 0;
 
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
         private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate = null;
         private readonly SafeList<ITask> _taskList = new SafeList<ITask>();
+        private readonly int _concurrencyLimit = 20;
+        private readonly TaskPriority _ignoreLimitPriority = TaskPriority.High;
 
         public TaskSystem()
         {
@@ -20,11 +23,14 @@ namespace LiteQuark.Runtime
             _mainThreadSynchronizationContext = SynchronizationContext.Current;
             _onTickDelegate = OnTaskTick;
             _taskList.Clear();
+            _concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
+            _ignoreLimitPriority = LiteRuntime.Setting.Task.IgnoreLimitPriority;
         }
 
         public UniTask<bool> Initialize()
         {
             RunningTaskCount = 0;
+            PendingTaskCount = 0;
             return UniTask.FromResult(true);
         }
 
@@ -36,6 +42,7 @@ namespace LiteQuark.Runtime
             _taskList.Clear();
             
             RunningTaskCount = 0;
+            PendingTaskCount = 0;
         }
 
         public void Tick(float deltaTime)
@@ -49,8 +56,12 @@ namespace LiteQuark.Runtime
             {
                 try
                 {
-                    RunningTaskCount++;
-                    task.Execute();
+                    if (RunningTaskCount < _concurrencyLimit || task.Priority >= _ignoreLimitPriority)
+                    {
+                        RunningTaskCount++;
+                        PendingTaskCount--;
+                        task.Execute();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -98,6 +109,7 @@ namespace LiteQuark.Runtime
         public void AddTask(ITask task)
         {
             _taskList.Add(task);
+            PendingTaskCount++;
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)

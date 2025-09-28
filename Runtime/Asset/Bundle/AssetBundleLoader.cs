@@ -72,6 +72,7 @@ namespace LiteQuark.Runtime
             {
                 var info = _pendingTaskQueue.Dequeue();
                 var task = _bundleLocater.LoadBundle(info.Path, null);
+                task.SetPriority(TaskPriority.Urgent);
                 _runningTasks.Add(new RunningTask(info.Path, task));
             }
         }

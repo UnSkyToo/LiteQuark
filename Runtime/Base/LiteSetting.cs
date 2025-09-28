@@ -14,6 +14,8 @@ namespace LiteQuark.Runtime
         [SerializeField] public List<LiteSystemEntryData> SystemList;
         [Header("基础设置")]
         [SerializeField] public CommonSetting Common;
+        [Header("任务设置")]
+        [SerializeField] public TaskSetting Task;
         [Header("资源设置")]
         [SerializeField] public AssetSetting Asset;
         [Header("Action设置")]
@@ -31,6 +33,7 @@ namespace LiteQuark.Runtime
             SystemList = new List<LiteSystemEntryData>();
 
             Common = new CommonSetting();
+            Task = new TaskSetting();
             Asset = new AssetSetting();
             Action = new ActionSetting();
             Log = new LogSetting();
@@ -57,7 +60,21 @@ namespace LiteQuark.Runtime
             {
             }
         }
+        
+        [Serializable]
+        public class TaskSetting
+        {
+            [Tooltip("并发任务数量限制")] [Range(1, 50), SerializeField]
+            public int ConcurrencyLimit = 20;
 
+            [Tooltip("忽略并发限制起始等级")]
+            public TaskPriority IgnoreLimitPriority = TaskPriority.High;
+
+            public TaskSetting()
+            {
+            }
+        }
+        
         [Serializable]
         public class AssetSetting
         {

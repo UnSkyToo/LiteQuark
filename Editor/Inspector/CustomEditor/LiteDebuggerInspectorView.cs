@@ -135,7 +135,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                EditorGUILayout.LabelField($"Tasks:{LiteRuntime.Task.RunningTaskCount}");
+                EditorGUILayout.LabelField($"Tasks:{LiteRuntime.Task.RunningTaskCount}/{LiteRuntime.Task.PendingTaskCount}");
                 taskList.Foreach(DrawOneTask, EditorGUI.indentLevel);
             }
         }
