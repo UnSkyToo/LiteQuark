@@ -4,7 +4,8 @@
     {
         internal AssetVisitorInfo GetVisitorInfo()
         {
-            var info = new AssetVisitorInfo(_assetPath, _refCount, Stage.ToString(), _retainTime);
+            var memSize = IsLoaded ? UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(Asset) : 0L;
+            var info = new AssetVisitorInfo(_assetPath, memSize, _refCount, Stage.ToString(), _retainTime);
             return info;
         }
     }
