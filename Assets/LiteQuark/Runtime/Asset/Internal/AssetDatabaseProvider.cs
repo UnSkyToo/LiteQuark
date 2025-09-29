@@ -148,9 +148,8 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, Action callback)
+        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
         {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)
             {

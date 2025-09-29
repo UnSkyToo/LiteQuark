@@ -153,15 +153,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, Action callback)
+        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
             {
                 return;
             }
-
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.UnloadSceneAsync(sceneName, callback);
