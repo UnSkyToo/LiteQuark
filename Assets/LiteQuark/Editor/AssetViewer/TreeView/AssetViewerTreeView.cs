@@ -20,6 +20,7 @@ namespace LiteQuark.Editor
         private const string BundleType = "bundle";
 
         private readonly Dictionary<int, AssetViewerTreeItem> _itemCacheMap = new Dictionary<int, AssetViewerTreeItem>();
+        private readonly Dictionary<string, AssetViewerTreeItem> _bundlePathCacheMap = new Dictionary<string, AssetViewerTreeItem>();
         private int _idGenerator = 1;
         private int _sizeSortedAscendingType = 0;
         
@@ -84,12 +85,14 @@ namespace LiteQuark.Editor
         {
             var items = new List<TreeViewItem>();
             _itemCacheMap.Clear();
+            _bundlePathCacheMap.Clear();
             
             foreach (var bundle in packInfo.BundleList)
             {
                 var bundleItem = CreateBundleItem(bundle.BundlePath, $"{Path.GetFileNameWithoutExtension(bundle.BundlePath)}({bundle.AssetList.Length})", 0);
                 items.Add(bundleItem);
                 _itemCacheMap.Add(bundleItem.id, bundleItem);
+                _bundlePathCacheMap.Add(bundle.BundlePath, bundleItem);
 
                 var totalSize = 0L;
                 foreach (var assetPath in bundle.AssetList)
@@ -248,7 +251,7 @@ namespace LiteQuark.Editor
                         EditorGUI.LabelField(rect, item.Type);
                         break;
                     case 2:
-                        EditorGUI.LabelField(rect, AssetViewerUtils.GetSizeString(item.Size));
+                        EditorGUI.LabelField(rect, LiteEditorUtils.GetSizeString(item.Size));
                         break;
                     case 3:
                         EditorGUI.LabelField(rect, item.Path);
@@ -289,6 +292,11 @@ namespace LiteQuark.Editor
                     }
                 }
             }
+        }
+
+        public AssetViewerTreeItem GetDependencyTreeItem(string path)
+        {
+            return _bundlePathCacheMap.GetValueOrDefault(path);
         }
     }
 }

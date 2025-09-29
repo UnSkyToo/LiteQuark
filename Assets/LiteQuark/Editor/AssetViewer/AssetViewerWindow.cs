@@ -92,7 +92,9 @@ namespace LiteQuark.Editor
                 var y = 0f;
                 foreach (var item in _selectItem.DependencyList)
                 {
-                    EditorGUI.LabelField(new Rect(0, y, detailRect.width - 10, EditorGUIUtility.singleLineHeight), item);
+                    var depItem = _assetTreeView.GetDependencyTreeItem(item);
+                    var info = $"{item}({LiteEditorUtils.GetSizeString(depItem?.Size ?? 0)})";
+                    EditorGUI.LabelField(new Rect(0, y, detailRect.width - 10, EditorGUIUtility.singleLineHeight), info);
                     y += EditorGUIUtility.singleLineHeight;
                 }
             }

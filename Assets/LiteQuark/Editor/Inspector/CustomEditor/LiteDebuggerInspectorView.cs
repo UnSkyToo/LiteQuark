@@ -114,13 +114,13 @@ namespace LiteQuark.Editor
 
             foreach (var bundleInfo in visitorInfo.BundleVisitorList)
             {
-                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{bundleInfo.RefCount} {bundleInfo.Stage}({bundleInfo.RetainTime:0.0}s)");
+                EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{LiteEditorUtils.GetSizeString(bundleInfo.MemorySize)} {bundleInfo.RefCount} {bundleInfo.Stage}({bundleInfo.RetainTime:0.0}s)");
 
                 using (new EditorGUI.IndentLevelScope())
                 {
                     foreach (var assetInfo in bundleInfo.AssetVisitorList)
                     {
-                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
+                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{LiteEditorUtils.GetSizeString(assetInfo.MemorySize)} {assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
                     }
                 }
             }

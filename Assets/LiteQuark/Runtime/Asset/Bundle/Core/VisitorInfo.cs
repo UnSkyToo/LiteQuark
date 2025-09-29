@@ -22,15 +22,17 @@ namespace LiteQuark.Runtime
     public readonly struct BundleVisitorInfo
     {
         public string BundlePath { get; }
+        public long MemorySize { get; }
         public int RefCount { get; }
         public string Stage { get; }
         public float RetainTime { get; }
         
         public List<AssetVisitorInfo> AssetVisitorList { get; }
 
-        public BundleVisitorInfo(string bundlePath, int refCount, string stage, float retainTime)
+        public BundleVisitorInfo(string bundlePath, long memorySize, int refCount, string stage, float retainTime)
         {
             BundlePath = bundlePath;
+            MemorySize = memorySize;
             RefCount = refCount;
             Stage = stage;
             RetainTime = retainTime;
@@ -47,16 +49,18 @@ namespace LiteQuark.Runtime
     public readonly struct AssetVisitorInfo
     {
         public string AssetPath { get; }
+        public long MemorySize { get; }
         public int RefCount { get; }
         public string Stage { get; }
         public float RetainTime { get; }
 
-        public AssetVisitorInfo(string assetPath, int refCount, string stage, float retainTime)
+        public AssetVisitorInfo(string assetPath, long memorySize, int refCount, string stage, float retainTime)
         {
             AssetPath = assetPath;
             RefCount = refCount;
             Stage = stage;
             RetainTime = retainTime;
+            MemorySize = memorySize;
         }
     }
 }
