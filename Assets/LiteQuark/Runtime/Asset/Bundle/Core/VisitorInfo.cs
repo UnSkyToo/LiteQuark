@@ -57,10 +57,10 @@ namespace LiteQuark.Runtime
         public AssetVisitorInfo(string assetPath, long memorySize, int refCount, string stage, float retainTime)
         {
             AssetPath = assetPath;
+            MemorySize = memorySize;
             RefCount = refCount;
             Stage = stage;
             RetainTime = retainTime;
-            MemorySize = memorySize;
         }
     }
 }

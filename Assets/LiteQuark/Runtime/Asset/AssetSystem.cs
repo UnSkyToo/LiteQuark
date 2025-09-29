@@ -179,7 +179,7 @@ namespace LiteQuark.Runtime
             _provider?.UnloadSceneAsync(formatPath, callback);
         }
         
-        public UniTask UnloadSceneAsync(string scenePath)
+        public UniTask<bool> UnloadSceneAsync(string scenePath)
         {
             var tcs = new UniTaskCompletionSource<bool>();
             UnloadSceneAsync(scenePath, () =>

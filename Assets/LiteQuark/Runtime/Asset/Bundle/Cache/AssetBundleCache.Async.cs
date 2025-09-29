@@ -49,14 +49,14 @@ namespace LiteQuark.Runtime
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             var cache = GetOrCreateAssetCache(assetPath);
-            cache.LoadAssetAsync<T>((asset) =>
+            cache.LoadAssetAsync<T>((isLoaded) =>
             {
-                if (asset != null)
+                if (isLoaded)
                 {
                     IncRef();
                 }
                 
-                LiteUtils.SafeInvoke(callback, asset);
+                LiteUtils.SafeInvoke(callback, cache.Asset as T);
             });
         }
 

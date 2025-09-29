@@ -4,21 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(Action<T> callback) where T : UnityEngine.Object
-        {
-            InternalLoadAssetAsync<T>((isLoaded) =>
-            {
-                if (!isLoaded)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                LiteUtils.SafeInvoke(callback, Asset as T);
-            });
-        }
-
-        private void InternalLoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
         {
             if (IsLoaded)
             {
