@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         
         void UnloadAsset(string assetPath);
         void UnloadAsset<T>(T asset) where T : UnityEngine.Object;
-        void UnloadSceneAsync(string scenePath, Action callback);
+        void UnloadSceneAsync(string scenePath, string sceneName, Action callback);
         void UnloadUnusedAssets(int maxDepth);
     }
 }
