@@ -42,6 +42,12 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
+            _bundleLocater = null;
+            _packInfo = null;
+            
+            _bundleLoader?.Dispose();
+            _bundleLoader = null;
+            
             _unloadBundleList.Clear();
             _assetIDToPathMap.Clear();
             foreach (var chunk in _bundleCacheMap)
@@ -153,7 +159,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
+        public void UnloadSceneAsync(string scenePath, Action callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
@@ -163,6 +169,7 @@ namespace LiteQuark.Runtime
             
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
+                var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
                 cache.UnloadSceneAsync(sceneName, callback);
             }
         }

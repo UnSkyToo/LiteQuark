@@ -112,12 +112,12 @@ namespace LiteQuark.Runtime
             return instance;
         }
         
-        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback)
+        public void LoadSceneAsync(string scenePath, LoadSceneParameters parameters, Action<bool> callback)
         {
-            SimulateAsync(callback, LoadSceneSync(scenePath, sceneName, parameters));
+            SimulateAsync(callback, LoadSceneSync(scenePath, parameters));
         }
         
-        public bool LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
+        public bool LoadSceneSync(string scenePath, LoadSceneParameters parameters)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
             if (SceneManager.GetSceneByPath(fullPath).isLoaded)
@@ -148,8 +148,9 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
+        public void UnloadSceneAsync(string scenePath, Action callback)
         {
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)
             {

@@ -140,9 +140,8 @@ namespace LiteQuark.Runtime
         
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
-            _provider?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
+            _provider?.LoadSceneAsync(formatPath, parameters, callback);
         }
         
         public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
@@ -175,17 +174,16 @@ namespace LiteQuark.Runtime
         
         public void UnloadSceneAsync(string scenePath, Action callback)
         {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
-            _provider?.UnloadSceneAsync(formatPath, sceneName, callback);
+            _provider?.UnloadSceneAsync(formatPath, callback);
         }
         
-        public UniTask<bool> UnloadSceneAsync(string scenePath)
+        public UniTask UnloadSceneAsync(string scenePath)
         {
-            var tcs = new UniTaskCompletionSource<bool>();
+            var tcs = new UniTaskCompletionSource();
             UnloadSceneAsync(scenePath, () =>
             {
-                tcs.TrySetResult(true);
+                tcs.TrySetResult();
             });
             return tcs.Task;
         }
