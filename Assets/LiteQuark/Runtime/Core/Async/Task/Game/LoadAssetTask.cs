@@ -3,18 +3,39 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadAssetTask<T> : LoadAssetBaseTask where T : UnityEngine.Object
+    public sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
+        private readonly AssetBundle _bundle;
+        private readonly string _assetName;
+        private Action<UnityEngine.Object> _callback;
         private AssetBundleRequest _assetRequest;
+        private UnityEngine.Object _asset;
 
-        public LoadAssetTask(AssetBundle bundle, string name, Action<UnityEngine.Object> callback)
-            : base(bundle, name, callback)
+        public LoadAssetTask(AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback)
+            : base()
         {
+            _bundle = bundle;
+            _assetName = assetName;
+            _callback = callback;
+            _assetRequest = null;
+            _asset = null;
+        }
+
+        public override void Dispose()
+        {
+            _callback = null;
+            _assetRequest = null;
+            _asset = null;
+        }
+        
+        public UnityEngine.Object GetAsset()
+        {
+            return _asset;
         }
 
         protected override void OnExecute()
         {
-            _assetRequest = Bundle.LoadAssetAsync<T>(Name);
+            _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
             _assetRequest.completed += OnAssetRequestLoadCompleted;
         }
 
@@ -26,7 +47,10 @@ namespace LiteQuark.Runtime
         private void OnAssetRequestLoadCompleted(AsyncOperation op)
         {
             op.completed -= OnAssetRequestLoadCompleted;
-            OnAssetLoaded(_assetRequest.asset);
+            _asset = _assetRequest.asset;
+            
+            LiteUtils.SafeInvoke(_callback, _asset);
+            Complete(_asset);
         }
     }
 }

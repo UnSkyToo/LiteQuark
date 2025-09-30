@@ -169,8 +169,7 @@ namespace LiteQuark.Runtime
             
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
-                var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-                cache.UnloadSceneAsync(sceneName, callback);
+                cache.UnloadSceneAsync(scenePath, callback);
             }
         }
 

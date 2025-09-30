@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
-        private LoadAssetBaseTask _loadAssetTask;
+        private BaseTask _loadAssetTask;
         
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {

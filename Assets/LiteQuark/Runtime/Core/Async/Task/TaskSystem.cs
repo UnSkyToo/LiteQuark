@@ -175,9 +175,16 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public LoadAssetBaseTask LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string name, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
+        public LoadAssetTask<T> LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
         {
-            var task = new LoadAssetTask<T>(bundle, name, callback);
+            var task = new LoadAssetTask<T>(bundle, assetName, callback);
+            AddTask(task);
+            return task;
+        }
+
+        public LoadSceneTask LoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        {
+            var task = new LoadSceneTask(sceneName, parameters, callback);
             AddTask(task);
             return task;
         }
