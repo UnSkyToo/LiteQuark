@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    public readonly struct VisitorInfo
+    internal readonly struct VisitorInfo
     {
         public string Tag { get; }
         public List<BundleVisitorInfo> BundleVisitorList { get; }
@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
         }
     }
     
-    public readonly struct BundleVisitorInfo
+    internal readonly struct BundleVisitorInfo
     {
         public string BundlePath { get; }
         public long MemorySize { get; }
@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
         }
     }
     
-    public readonly struct AssetVisitorInfo
+    internal readonly struct AssetVisitorInfo
     {
         public string AssetPath { get; }
         public long MemorySize { get; }

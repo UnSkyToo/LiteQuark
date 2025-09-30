@@ -198,7 +198,7 @@ namespace LiteQuark.Runtime
         }
         
 #if UNITY_EDITOR
-        public VisitorInfo GetVisitorInfo()
+        internal VisitorInfo GetVisitorInfo()
         {
             if (_provider is AssetBundleProvider provider)
             {

@@ -62,21 +62,14 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
-            var op = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, parameters);
-            if (op == null)
+            LiteRuntime.Task.LoadSceneTask(sceneName, parameters, (isLoaded) =>
             {
-                LiteUtils.SafeInvoke(callback, false);
-                return;
-            }
-            
-            op.completed += (result) =>
-            {
-                if (result.isDone)
+                if (isLoaded)
                 {
                     IncRef();
                 }
-                LiteUtils.SafeInvoke(callback, result.isDone);
-            };
+                LiteUtils.SafeInvoke(callback, isLoaded);
+            });
         }
     }
 }
