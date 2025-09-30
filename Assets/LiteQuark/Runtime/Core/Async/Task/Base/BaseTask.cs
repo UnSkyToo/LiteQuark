@@ -1,4 +1,5 @@
-﻿using Cysharp.Threading.Tasks;
+﻿using System.Collections;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -63,7 +64,7 @@ namespace LiteQuark.Runtime
             OnTick(deltaTime);
         }
 
-        public void Complete(object result)
+        protected void Complete(object result)
         {
             if (!IsDone)
             {
@@ -74,7 +75,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void Abort()
+        protected void Abort()
         {
             if (!IsDone)
             {
@@ -95,15 +96,15 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public bool MoveNext()
+        bool IEnumerator.MoveNext()
         {
             return !IsDone;
         }
         
-        public void Reset()
+        void IEnumerator.Reset()
         {
         }
 
-        public object Current => null;
+        object IEnumerator.Current => null;
     }
 }
