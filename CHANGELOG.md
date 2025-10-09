@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] - 2025-10-09
+- 完善AssetSystem，增加新打包模式和编译选项，统一加载方式
+- 重构VersionPackInfo，支持加密，优化加载
+- 引入UniTask
+- 若干BUG修复
+
 ## [0.1.0-preview] - 2025-02-25
 - 重构并扩展Task模块
 - Asset模块支持远程资源，可把所有Bundle放到远端
