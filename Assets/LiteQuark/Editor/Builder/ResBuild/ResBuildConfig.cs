@@ -22,7 +22,7 @@ namespace LiteQuark.Editor
         /// <summary>
         /// Flat mode will remove bundle folder
         /// </summary>
-        public bool FlatMode { get; set; } = true;
+        public bool FlatMode { get; set; } = false;
 
         /// <summary>
         /// Increment build mode will be use last build info
