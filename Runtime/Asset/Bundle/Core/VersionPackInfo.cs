@@ -172,7 +172,8 @@ namespace LiteQuark.Runtime
             loadPath = GetBundleFileBuildPath(bundleInfo);
             if (HashMode)
             {
-                loadPath = System.IO.Path.ChangeExtension(loadPath, $"{bundleInfo.Hash}{LiteConst.BundleFileExt}");
+                // loadPath = System.IO.Path.ChangeExtension(loadPath, $"{bundleInfo.Hash}{LiteConst.BundleFileExt}");
+                loadPath = $"{loadPath.Substring(0, loadPath.Length - LiteConst.BundleFileExt.Length)}_{bundleInfo.Hash}{LiteConst.BundleFileExt}";
             }
 
             if (LiteConst.SecurityMode && HashMode && FlatMode)
