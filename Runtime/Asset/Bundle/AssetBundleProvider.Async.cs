@@ -14,19 +14,10 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadBundleAsync(0, (isLoaded) =>
+            cache.LoadAssetAsync<T>(assetPath, (asset) =>
             {
-                if (!isLoaded)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                cache.LoadAssetAsync<T>(assetPath, (asset) =>
-                {
-                    UpdateAssetIDToPathMap(asset, assetPath);
-                    LiteUtils.SafeInvoke(callback, asset);
-                });
+                UpdateAssetIDToPathMap(asset, assetPath);
+                LiteUtils.SafeInvoke(callback, asset);
             });
         }
 
@@ -60,19 +51,10 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadBundleAsync(0, (isLoaded) =>
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            cache.LoadSceneAsync(sceneName, parameters, (result) =>
             {
-                if (!isLoaded)
-                {
-                    LiteUtils.SafeInvoke(callback, false);
-                    return;
-                }
-                
-                var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-                cache.LoadSceneAsync(sceneName, parameters, (result) =>
-                {
-                    LiteUtils.SafeInvoke(callback, result);
-                });
+                LiteUtils.SafeInvoke(callback, result);
             });
         }
     }

@@ -62,22 +62,6 @@ namespace LiteQuark.Runtime
             return path.TrimStart('/').ToLower();
         }
 
-        public void PreloadBundle(string bundlePath, Action<bool> callback)
-        {
-            var formatPath = FormatPath(bundlePath);
-            _provider?.PreloadBundle(formatPath, callback);
-        }
-
-        public UniTask<bool> PreloadBundle(string bundlePath)
-        {
-            var tcs = new UniTaskCompletionSource<bool>();
-            PreloadBundle(bundlePath, (result) =>
-            {
-                tcs.TrySetResult(result);
-            });
-            return tcs.Task;
-        }
-
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
