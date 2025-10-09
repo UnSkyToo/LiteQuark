@@ -61,11 +61,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void PreloadBundle(string bundlePath, Action<bool> callback)
-        {
-            SimulateAsync(callback, true);
-        }
-
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             SimulateAsync(callback, true);
