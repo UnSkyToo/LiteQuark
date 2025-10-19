@@ -9,10 +9,13 @@ namespace LiteQuark.Runtime
 
         public AssetSystem()
         {
-#if UNITY_EDITOR
             var mode = LiteRuntime.Setting.Asset.AssetMode;
-#else
-            var mode = AssetProviderMode.Bundle;
+            
+#if !UNITY_EDITOR
+            if (mode == AssetProviderMode.Internal)
+            {
+                mode = AssetProviderMode.Bundle;
+            }
 #endif
             switch (mode)
             {
@@ -23,6 +26,9 @@ namespace LiteQuark.Runtime
 #endif
                 case AssetProviderMode.Bundle:
                     _provider = new AssetBundleProvider();
+                    break;
+                case AssetProviderMode.Resource:
+                    _provider = new ResourceProvider();
                     break;
                 default:
                     throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");

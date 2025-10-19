@@ -550,10 +550,14 @@ MonoBehaviour:
       AutoRestartInBackground: 0
       BackgroundLimitTime: 90
       ThrowException: 0
+    Task:
+      ConcurrencyLimit: 20
+      IgnoreLimitPriority: 2
     Asset:
-      AssetMode: 1
+      AssetMode: 0
       BundleLocater: 0
       BundleRemoteUri: http://127.0.0.1:8000/
+      ConcurrencyLimit: 5
       EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300

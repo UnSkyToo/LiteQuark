@@ -193,6 +193,14 @@ namespace LiteQuark.Runtime
             return Path.GetFileNameWithoutExtension(path);
         }
 
+        public static string GetFilePathWithoutExt(string path)
+        {
+            var directory = Path.GetDirectoryName(path);
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+            var pathWithoutExtension = ConcatPath(directory, fileNameWithoutExtension);
+            return pathWithoutExtension;
+        }
+
         public static void CreateDirectory(string path)
         {
             if (PathIsFile(path))

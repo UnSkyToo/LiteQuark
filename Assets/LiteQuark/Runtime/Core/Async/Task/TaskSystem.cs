@@ -189,6 +189,13 @@ namespace LiteQuark.Runtime
             return task;
         }
         
+        public LoadResourceTask<T> LoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
+        {
+            var task = new LoadResourceTask<T>(assetName, callback);
+            AddTask(task);
+            return task;
+        }
+        
         // public IEnumerator WaitTask(IEnumerator taskFunc, Action callback = null)
         // {
         //     var task = new CoroutineTask(taskFunc, callback);
