@@ -1,5 +1,6 @@
 using System;
 using System.Net.NetworkInformation;
+using System.Text;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -72,18 +73,19 @@ namespace LiteQuark.Runtime
                 return 0;
             }
         }
-        
+
+        /// <summary>
+        /// 取版本号前两位
+        /// </summary>
         public static string GetMainVersion()
         {
             var version = Application.version;
             var chunk = version.Split('.');
-            if (chunk.Length != 3)
-            {
-                return string.Empty;
-            }
-
-            var mainVer = $"{chunk[0]}.{chunk[1]}";
-            return mainVer;
+            var mainVer = new StringBuilder();
+            mainVer.Append(chunk.Length > 0 ? chunk[0] : "1");
+            mainVer.Append(".");
+            mainVer.Append(chunk.Length > 1 ? chunk[1] : "0");
+            return mainVer.ToString();
         }
 
         public static string GetVersionFileName()
