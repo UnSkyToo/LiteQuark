@@ -261,8 +261,8 @@ namespace LiteQuark.Runtime
                 case BundleLocaterMode.Remote:
                     return new BundleRemoteLocater(PathUtils.ConcatPath(
                         LiteRuntime.Setting.Asset.BundleRemoteUri,
-                        AppUtils.GetCurrentPlatform(),
-                        AppUtils.GetVersion()));
+                        AppUtils.GetCurrentPlatformName(),
+                        AppUtils.GetMainVersion()));
                 default:
                     throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
             }

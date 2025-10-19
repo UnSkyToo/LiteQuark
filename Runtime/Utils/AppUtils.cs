@@ -7,13 +7,56 @@ namespace LiteQuark.Runtime
 {
     public static class AppUtils
     {
-        public static string GetCurrentPlatform()
+        public static string GetCurrentPlatformName()
         {
 #if UNITY_EDITOR
-            return UnityEditor.EditorUserBuildSettings.activeBuildTarget.ToString();
+            return ConvertBuildTargetToString(UnityEditor.EditorUserBuildSettings.activeBuildTarget);
 #else
-            return Application.platform.ToString();
+            return ConvertRuntimePlatformToString(Application.platform);
 #endif
+        }
+        
+#if UNITY_EDITOR
+        private static string ConvertBuildTargetToString(UnityEditor.BuildTarget target)
+        {
+            // 将BuildTarget转换为统一字符串
+            switch (target)
+            {
+                case UnityEditor.BuildTarget.StandaloneWindows:
+                case UnityEditor.BuildTarget.StandaloneWindows64:
+                    return "Windows";
+                case UnityEditor.BuildTarget.StandaloneOSX:
+                    return "MacOS";
+                case UnityEditor.BuildTarget.Android:
+                    return "Android";
+                case UnityEditor.BuildTarget.iOS:
+                    return "iOS";
+                case UnityEditor.BuildTarget.WebGL:
+                    return "WebGL";
+                default:
+                    return target.ToString();
+            }
+        }
+#endif
+
+        private static string ConvertRuntimePlatformToString(RuntimePlatform platform)
+        {
+            // 将RuntimePlatform转换为统一字符串
+            switch (platform)
+            {
+                case RuntimePlatform.WindowsPlayer:
+                    return "Windows";
+                case RuntimePlatform.OSXPlayer:
+                    return "MacOS";
+                case RuntimePlatform.Android:
+                    return "Android";
+                case RuntimePlatform.IPhonePlayer:
+                    return "iOS";
+                case RuntimePlatform.WebGLPlayer:
+                    return "WebGL";
+                default:
+                    return platform.ToString();
+            }
         }
 
         /// <summary>
