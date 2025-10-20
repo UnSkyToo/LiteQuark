@@ -139,6 +139,13 @@ namespace LiteQuark.Runtime
             AddTask(task);
             return task;
         }
+
+        public MainThreadTask AddMainThreadTask(Action<object> func, object param)
+        {
+            var task = new MainThreadTask(func, param);
+            AddTask(task);
+            return task;
+        }
         
         public InstantiateGameObjectTask InstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
@@ -195,28 +202,7 @@ namespace LiteQuark.Runtime
             AddTask(task);
             return task;
         }
-        
-        // public IEnumerator WaitTask(IEnumerator taskFunc, Action callback = null)
-        // {
-        //     var task = new CoroutineTask(taskFunc, callback);
-        //     TaskList_.Add(task);
-        //     yield return MonoBehaviourInstance.StartCoroutine(task.Execute());
-        // }
 
-        // public WriteFileAsyncTask AddTask(string filePath, byte[] data, Action<bool> callback)
-        // {
-        //     var task = new WriteFileAsyncTask(filePath, data, callback);
-        //     TaskList_.Add(task);
-        //     return task;
-        // }
-        //
-        // public ReadFileAsyncTask AddTask(string filePath, Action<byte[]> callback)
-        // {
-        //     var task = new ReadFileAsyncTask(filePath, callback);
-        //     TaskList_.Add(task);
-        //     return task;
-        // }
-        
         public void PostMainThreadTask(SendOrPostCallback callback, object state)
         {
             _mainThreadSynchronizationContext?.Post(callback, state);

@@ -33,6 +33,17 @@ namespace LiteQuark.Runtime
             _callback = null;
         }
 
+        public override void Cancel()
+        {
+            if (_task != null)
+            {
+                _task.Cancel();
+                _task.WaitForCompletion();
+                _task = null;
+            }
+            base.Cancel();
+        }
+
         protected override void OnExecute()
         {
             _task = UnityEngine.Object.InstantiateAsync(_template, _count, _parent, Vector3.zero, Quaternion.identity);

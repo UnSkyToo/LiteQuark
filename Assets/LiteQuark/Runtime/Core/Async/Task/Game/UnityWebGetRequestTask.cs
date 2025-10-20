@@ -26,6 +26,12 @@ namespace LiteQuark.Runtime
             _callback = null;
         }
 
+        public override void Cancel()
+        {
+            _request?.Abort();
+            base.Cancel();
+        }
+
         protected override void OnExecute()
         {
             _request = UnityWebRequest.Get(_uri);
