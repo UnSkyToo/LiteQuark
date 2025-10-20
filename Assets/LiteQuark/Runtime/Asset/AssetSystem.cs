@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
             var mode = LiteRuntime.Setting.Asset.AssetMode;
             
 #if !UNITY_EDITOR
-            if (mode == AssetProviderMode.Internal)
+            if (mode == AssetProviderMode.Editor)
             {
                 mode = AssetProviderMode.Bundle;
             }
@@ -116,6 +116,22 @@ namespace LiteQuark.Runtime
         {
             var tcs = new UniTaskCompletionSource<UnityEngine.GameObject>();
             InstantiateAsync(assetPath, parent, (gameObject) =>
+            {
+                tcs.TrySetResult(gameObject);
+            });
+            return tcs.Task;
+        }
+        
+        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
+        {
+            var formatPath = FormatPath(assetPath);
+            _provider?.InstantiateAsync(formatPath, parent, position, rotation, callback);
+        }
+        
+        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation)
+        {
+            var tcs = new UniTaskCompletionSource<UnityEngine.GameObject>();
+            InstantiateAsync(assetPath, parent, position, rotation, (gameObject) =>
             {
                 tcs.TrySetResult(gameObject);
             });
