@@ -4,9 +4,9 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class ResourceProvider : IAssetProvider
+    internal sealed class AssetResourceProvider : IAssetProvider
     {
-        public ResourceProvider()
+        public AssetResourceProvider()
         {
         }
         

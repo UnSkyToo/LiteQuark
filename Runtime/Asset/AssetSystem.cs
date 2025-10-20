@@ -20,15 +20,15 @@ namespace LiteQuark.Runtime
             switch (mode)
             {
 #if UNITY_EDITOR
-                case AssetProviderMode.Internal:
-                    _provider = new AssetDatabaseProvider();
+                case AssetProviderMode.Editor:
+                    _provider = new AssetEditorProvider();
                     break;
 #endif
                 case AssetProviderMode.Bundle:
                     _provider = new AssetBundleProvider();
                     break;
                 case AssetProviderMode.Resource:
-                    _provider = new ResourceProvider();
+                    _provider = new AssetResourceProvider();
                     break;
                 default:
                     throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");

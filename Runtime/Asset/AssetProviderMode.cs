@@ -2,7 +2,7 @@
 {
     public enum AssetProviderMode : byte
     {
-        Internal = 0,
+        Editor = 0,
         Bundle = 1,
         Resource = 2,
     }

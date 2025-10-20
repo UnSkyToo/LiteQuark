@@ -79,7 +79,7 @@ namespace LiteQuark.Runtime
         public class AssetSetting
         {
             [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
-            public AssetProviderMode AssetMode = AssetProviderMode.Internal;
+            public AssetProviderMode AssetMode = AssetProviderMode.Editor;
 
             [Tooltip("Bundle定位器，可选包内或者远端")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public BundleLocaterMode BundleLocater = BundleLocaterMode.BuiltIn;
@@ -102,13 +102,13 @@ namespace LiteQuark.Runtime
             [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EditorForceStreamingAssets = true;
             
-            [Tooltip("编辑器模式下模拟异步加载的延迟")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal), SerializeField]
+            [Tooltip("编辑器模式下模拟异步加载的延迟")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor), SerializeField]
             public bool SimulateAsyncDelayInEditor = true;
 
-            [Tooltip("模拟异步加载的延迟时间范围，单位（帧)")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
+            [Tooltip("模拟异步加载的延迟时间范围，单位（帧)")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMinFrame = 1;
 
-            [Tooltip("模拟异步加载的延迟时间范围，单位（帧）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Internal, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
+            [Tooltip("模拟异步加载的延迟时间范围，单位（帧）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMaxFrame = 6;
 
             public AssetSetting()

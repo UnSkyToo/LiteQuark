@@ -7,13 +7,13 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class AssetDatabaseProvider : IAssetProvider
+    internal sealed class AssetEditorProvider : IAssetProvider
     {
         private bool _simulateAsyncDelayInEditor;
         private int _asyncDelayMinFrame;
         private int _asyncDelayMaxFrame;
         
-        public AssetDatabaseProvider()
+        public AssetEditorProvider()
         {
         }
 
