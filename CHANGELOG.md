@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.2] - 2025-11-20
+- 修复重构导致的Scene加载失败
+
 ## [0.2.1] - 2025-11-20
 - 优化AssetSystem，增加Resource模式
 - 统一了平台字符串，例如WebGL和WebGLPlayer
