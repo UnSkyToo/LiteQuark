@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2025-11-20
+- 优化AssetSystem，增加Resource模式
+- 统一了平台字符串，例如WebGL和WebGLPlayer
+- 优化AssetSystem，远程模式采用主版本号
+- 修复版本号不足3位的BUG
+
 ## [0.2.0] - 2025-10-09
 - 完善AssetSystem，增加新打包模式和编译选项，统一加载方式
 - 重构VersionPackInfo，支持加密，优化加载
