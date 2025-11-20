@@ -84,7 +84,7 @@ namespace LiteQuark.Runtime
             [Tooltip("Bundle定位器，可选包内或者远端")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public BundleLocaterMode BundleLocater = BundleLocaterMode.BuiltIn;
 
-            [Tooltip("远程资源根目录，根据主版本和平台动态分目录\n例如:https://localhost:8000/android/1.0/version_1.0.txt")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
+            [Tooltip("远程资源根目录，根据主版本和平台动态分目录\n例如:https://localhost:8000/webgl/1.0/version_1.0.txt")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public string BundleRemoteUri = "https://localhost:8000/";
             
             [Tooltip("并发加载数量限制")] [Range(1, 30), SerializeField]
