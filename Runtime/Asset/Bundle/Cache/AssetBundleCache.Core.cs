@@ -194,10 +194,9 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, Action callback)
+        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
         {
             DecRef();
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(sceneName);
             LiteRuntime.Task.AddTask(op, callback);
         }
