@@ -1,23 +1,15 @@
 using System;
-using UnityEngine;
 using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class UnityWebGetRequestTask : BaseTask
+    public sealed class UnityWebGetRequestTask : UnityDownloadBaseTask
     {
-        private readonly Uri _uri;
-        private readonly int _timeout;
-        private readonly bool _forceNoCache;
         private Action<DownloadHandler> _callback;
-        private UnityWebRequest _request;
         
-        public UnityWebGetRequestTask(string uri, int timeout, bool forceNoCache, Action<DownloadHandler> callback)
-            : base()
+        public UnityWebGetRequestTask(string uri, int timeout, int retryCount, bool forceNoCache, Action<DownloadHandler> callback)
+            : base(uri, timeout, retryCount, forceNoCache)
         {
-            _uri = new Uri(uri);
-            _timeout = timeout;
-            _forceNoCache = forceNoCache;
             _callback = callback;
         }
 
@@ -26,50 +18,16 @@ namespace LiteQuark.Runtime
             _callback = null;
         }
 
-        public override void Cancel()
+        protected override void OnFailed()
         {
-            _request?.Abort();
-            base.Cancel();
+            LiteUtils.SafeInvoke(_callback, null);
+            Abort();
         }
 
-        protected override void OnExecute()
+        protected override void OnSuccess(UnityWebRequest request)
         {
-            _request = UnityWebRequest.Get(_uri);
-            if (_forceNoCache)
-            {
-                _request.SetRequestHeader("Cache-Control", "no-cache");
-            }
-
-            _request.timeout = _timeout;
-            var asyncOperation = _request.SendWebRequest();
-            asyncOperation.completed += OnRequestCompleted;
-        }
-
-        protected override void OnTick(float deltaTime)
-        {
-            Progress = _request?.downloadProgress ?? 0f;
-        }
-
-        private void OnRequestCompleted(AsyncOperation op)
-        {
-            op.completed -= OnRequestCompleted;
-            
-            if (_request.result != UnityWebRequest.Result.Success)
-            {
-                LLog.Error("UnityWebGetRequestTask error : {0} - {1}\n{2}", _uri, _request.result, _request.error);
-                LiteUtils.SafeInvoke(_callback, null);
-                Abort();
-            }
-            else
-            {
-                LiteUtils.SafeInvoke(_callback, _request.downloadHandler);
-                Complete(_request.downloadedBytes);
-            }
-        }
-
-        public void AddRequestHeader(string name, string value)
-        {
-            _request?.SetRequestHeader(name, value);
+            LiteUtils.SafeInvoke(_callback, request.downloadHandler);
+            Complete(request.downloadedBytes);
         }
     }
 }

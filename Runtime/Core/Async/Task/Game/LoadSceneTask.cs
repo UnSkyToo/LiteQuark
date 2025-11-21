@@ -30,7 +30,12 @@ namespace LiteQuark.Runtime
         {
             return _scene;
         }
-
+        
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = _sceneRequest?.progress ?? 0f;
+        }
+        
         protected override void OnExecute()
         {
             _sceneRequest = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(_sceneName, _parameters);
@@ -41,11 +46,6 @@ namespace LiteQuark.Runtime
                 return;
             }
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
-        }
-        
-        protected override void OnTick(float deltaTime)
-        {
-            Progress = _sceneRequest?.progress ?? 0f;
         }
 
         private void OnSceneRequestLoadCompleted(AsyncOperation op)

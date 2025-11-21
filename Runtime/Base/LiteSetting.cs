@@ -90,6 +90,12 @@ namespace LiteQuark.Runtime
             [Tooltip("并发加载数量限制")] [Range(1, 30), SerializeField]
             public int ConcurrencyLimit = 5;
             
+            [Tooltip("远程资源下载超时设置，默认60秒")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
+            public int BundleDownloadTimeout = 60;
+            
+            [Tooltip("远程资源下载重试次数，默认3")] [Range(0, 10), ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
+            public int BundleDownloadMaxRetries = 3;
+            
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EnableRetain = true;
 

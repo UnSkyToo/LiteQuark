@@ -25,17 +25,17 @@ namespace LiteQuark.Runtime
             _resourceRequest = null;
             _asset = null;
         }
-
+        
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = _resourceRequest?.progress ?? 0f;
+        }
+        
         protected override void OnExecute()
         {
             var path = PathUtils.GetFilePathWithoutExt(_assetName);
             _resourceRequest = Resources.LoadAsync<T>(path);
             _resourceRequest.completed += OnResourceRequestLoadCompleted;
-        }
-
-        protected override void OnTick(float deltaTime)
-        {
-            Progress = _resourceRequest?.progress ?? 0f;
         }
 
         private void OnResourceRequestLoadCompleted(AsyncOperation op)
