@@ -1,19 +1,15 @@
 ﻿using System;
-using UnityEngine;
 using UnityEngine.Networking;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadVersionPackTask : BaseTask
+    internal sealed class LoadVersionPackTask : UnityDownloadBaseTask
     {
-        private readonly Uri _uri;
         private Action<VersionPackInfo> _callback;
-        private UnityWebRequest _request;
         
         public LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
-            : base()
+            : base(uri, 60, 3, true)
         {
-            _uri = new Uri(uri);
             _callback = callback;
             SetPriority(TaskPriority.Urgent);
         }
@@ -22,56 +18,33 @@ namespace LiteQuark.Runtime
         {
             _callback = null;
         }
-
-        public override void Cancel()
-        {
-            _request?.Abort();
-            base.Cancel();
-        }
-
+        
         protected override void OnExecute()
         {
-            _request = UnityWebRequest.Get(_uri);
-            _request.SetRequestHeader("Cache-Control", "no-cache");
-            _request.timeout = 0;
-            var asyncOperation = _request.SendWebRequest();
-            asyncOperation.completed += OnRequestCompleted;
-            
-            LLog.Info("VersionPackUri : {0}", _uri);
+            LLog.Info("Download VersionPackUri : {0}", Uri);
+            base.OnExecute();
         }
 
-        protected override void OnTick(float deltaTime)
+        protected override void OnFailed()
         {
-            Progress = _request?.downloadProgress ?? 0f;
+            LiteUtils.SafeInvoke(_callback, null);
+            Abort();
         }
 
-        private void OnRequestCompleted(AsyncOperation op)
+        protected override void OnSuccess(UnityWebRequest request)
         {
-            op.completed -= OnRequestCompleted;
-            
-            var downloadHandler = _request.downloadHandler;
-            
-            if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
+            var info = VersionPackInfo.FromBinaryData(request.downloadHandler.data);
+            if (info is not { IsValid: true })
             {
-                LLog.Error("LoadVersionPackTask error : {0} - {1}\n{2}", _uri, _request.result, _request.error);
+                LLog.Error("Bundle package parse error\n{0}", request.downloadHandler.error);
                 LiteUtils.SafeInvoke(_callback, null);
                 Abort();
             }
             else
             {
-                var info = VersionPackInfo.FromBinaryData(downloadHandler.data);
-                if (info is not { IsValid: true })
-                {
-                    LLog.Error("Bundle package parse error\n{0}", downloadHandler.error);
-                    LiteUtils.SafeInvoke(_callback, null);
-                    Abort();
-                }
-                else
-                {
-                    info.Initialize();
-                    LiteUtils.SafeInvoke(_callback, info);
-                    Complete(info);
-                }
+                info.Initialize();
+                LiteUtils.SafeInvoke(_callback, info);
+                Complete(info);
             }
         }
     }

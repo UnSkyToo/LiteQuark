@@ -32,16 +32,16 @@ namespace LiteQuark.Runtime
         {
             return _asset;
         }
+        
+        protected override void OnTick(float deltaTime)
+        {
+            Progress = _assetRequest?.progress ?? 0f;
+        }
 
         protected override void OnExecute()
         {
             _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
             _assetRequest.completed += OnAssetRequestLoadCompleted;
-        }
-
-        protected override void OnTick(float deltaTime)
-        {
-            Progress = _assetRequest?.progress ?? 0f;
         }
 
         private void OnAssetRequestLoadCompleted(AsyncOperation op)

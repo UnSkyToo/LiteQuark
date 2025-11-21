@@ -7,6 +7,8 @@ namespace LiteQuark.Runtime
     public sealed class LoadRemoteBundleTask : LoadBundleBaseTask
     {
         private UnityWebRequest _request;
+        private int _timeout;
+        private int _retryCount;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
@@ -37,7 +39,18 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
+            _retryCount = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadMaxRetries, 0);
+            _timeout = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadTimeout, 0);
+            StartDownload();
+        }
+
+        private void StartDownload()
+        {
             _request = UnityWebRequestAssetBundle.GetAssetBundle(new Uri(BundleUri));
+            if (_timeout > 0)
+            {
+                _request.timeout = _timeout;
+            }
             var op = _request.SendWebRequest();
             op.completed += OnBundleRequestCompleted;
         }
@@ -48,8 +61,18 @@ namespace LiteQuark.Runtime
             
             if (_request.result != UnityWebRequest.Result.Success)
             {
-                LLog.Error("Failed to download bundle : {0}", BundleUri);
-                OnBundleLoaded(null);
+                var error = _request.error;
+                LLog.Error("Failed to download bundle : {0}\n{1}", BundleUri, error);
+
+                if (_retryCount > 0 && IsCanRetryError(error))
+                {
+                    _retryCount--;
+                    LiteRuntime.Timer.AddTimer(1f, StartDownload);
+                }
+                else
+                {
+                    OnBundleLoaded(null);
+                }
             }
             else
             {
@@ -59,6 +82,11 @@ namespace LiteQuark.Runtime
             
             _request?.Dispose();
             _request = null;
+        }
+
+        private bool IsCanRetryError(string error)
+        {
+            return error.Contains("timeout") || error.Contains("Unknown Error") || error.Contains("connection");
         }
     }
 }
