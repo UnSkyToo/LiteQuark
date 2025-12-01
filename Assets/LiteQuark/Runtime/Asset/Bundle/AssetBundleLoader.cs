@@ -42,6 +42,7 @@ namespace LiteQuark.Runtime
             {
                 waitTask.Priority = Mathf.Max(waitTask.Priority, priority);
                 waitTask.Callback += callback;
+                _pendingTaskQueue.UpdatePriority(waitTask);
             }
             else
             {

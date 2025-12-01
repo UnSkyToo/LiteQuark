@@ -64,25 +64,21 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            LoadDependencyBundleAsync(priority + 1);
-            _provider.LoadBundle(_bundleInfo, priority, HandleBundleLoadCompleted);
-        }
-        
-        private void LoadDependencyBundleAsync(int priority)
-        {
+            
             var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
-
+            var acg = new AsyncCompletionGroup<UnityEngine.AssetBundle>(dependencies.Length + 1, HandleBundleLoadCompleted);
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
-                dependencyCache.LoadBundleAsync(priority, null);
+                dependencyCache.LoadBundleAsync(priority, acg.SignalSub);
             }
+            _provider.LoadBundle(_bundleInfo, priority, acg.SignalMain);
         }
         
-        private void HandleBundleLoadCompleted(UnityEngine.AssetBundle bundle)
+        private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
-            var isLoaded = OnBundleLoaded(bundle);
-
+            var isLoaded = success && OnBundleLoaded(bundle);
+            
             foreach (var loader in _bundleLoaderCallbackList)
             {
                 LiteUtils.SafeInvoke(loader, isLoaded);

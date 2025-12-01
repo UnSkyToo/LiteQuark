@@ -80,6 +80,18 @@ namespace LiteQuark.Runtime
             
             return true;
         }
+        
+        public void UpdatePriority(T item)
+        {
+            var index = _heap.IndexOf(item);
+            if (index < 0)
+            {
+                return;
+            }
+            
+            HeapifyUp(index);
+            HeapifyDown(index);
+        }
 
         private void HeapifyUp(int index)
         {
