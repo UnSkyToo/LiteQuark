@@ -65,7 +65,7 @@ namespace LiteQuark.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUI.BeginChangeCheck();
-                _combineMode = EditorGUILayout.Toggle(new GUIContent("Combine Mode", "Displaying bundles that merge sub paths"), _combineMode);
+                _combineMode = EditorGUILayout.Toggle(new GUIContent("Combine Mode", "Displaying bundles that merge sub paths"), _combineMode, GUILayout.ExpandWidth(false));
                 if (EditorGUI.EndChangeCheck())
                 {
                     _assetTreeView.CombineMode = _combineMode;
@@ -75,6 +75,11 @@ namespace LiteQuark.Editor
                 using (new ColorScope(Color.red))
                 {
                     EditorGUILayout.LabelField("Exclude folders whose names contain '~' or '#', as well as assets within the Packages directory.");
+                }
+
+                if (GUILayout.Button("Decrypt Version", GUILayout.ExpandWidth(false)))
+                {
+                    AssetViewerUtils.DecryptVersionFile();
                 }
             }
             

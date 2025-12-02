@@ -190,6 +190,26 @@ namespace LiteQuark.Runtime
             return FlatMode ? PathUtils.ToFlatPath(bundleInfo.BundlePath) : bundleInfo.BundlePath;
         }
 
+        internal string ToJsonData()
+        {
+            if (!IsValid)
+            {
+                throw new InvalidOperationException("VersionPackInfo is not valid");
+            }
+            
+            SimplifyPath();
+            try
+            {
+                var jsonText = LitJson.JsonMapper.ToJson(this);
+                return jsonText;
+            }
+            catch(Exception ex)
+            {
+                LLog.Exception(ex, "Failed to serialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
+                throw;
+            }
+        }
+
         public byte[] ToBinaryData()
         {
             if (!IsValid)
