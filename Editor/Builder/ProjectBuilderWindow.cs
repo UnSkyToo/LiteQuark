@@ -24,8 +24,7 @@ namespace LiteQuark.Editor
         [MenuItem("Lite/Builder &B")]
         private static void ShowWin()
         {
-            var win = GetWindow<ProjectBuilderWindow>();
-            win.titleContent = new GUIContent("Project Builder");
+            var win = GetWindow<ProjectBuilderWindow>("Project Builder");
             win.minSize = new Vector2(615, 500);
             win.Show();
         }

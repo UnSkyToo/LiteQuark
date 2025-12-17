@@ -7,7 +7,7 @@ using UnityEditor.IMGUI.Controls;
 
 namespace LiteQuark.Editor
 {
-    internal static class AssetViewerUtils
+    internal static class BundleViewerUtils
     {
         public static void SortTreeItemList(List<TreeViewItem> items, int type)
         {
@@ -18,11 +18,11 @@ namespace LiteQuark.Editor
             
             if (type < 0)
             {
-                items.Sort((a, b) => ((AssetViewerTreeItem)b).Size.CompareTo(((AssetViewerTreeItem)a).Size));
+                items.Sort((a, b) => ((BundleViewerTreeItem)b).Size.CompareTo(((BundleViewerTreeItem)a).Size));
             }
             else
             {
-                items.Sort((a, b) => ((AssetViewerTreeItem)a).Size.CompareTo(((AssetViewerTreeItem)b).Size));
+                items.Sort((a, b) => ((BundleViewerTreeItem)a).Size.CompareTo(((BundleViewerTreeItem)b).Size));
             }
         }
 

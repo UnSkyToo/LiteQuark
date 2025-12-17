@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal class AssetViewerTreeItem : TreeViewItem
+    internal class BundleViewerTreeItem : TreeViewItem
     {
         public Texture TypeIcon { get; set; }
         public string Type { get; set; }

@@ -4,21 +4,21 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal sealed class AssetViewerWindow : EditorWindow
+    internal sealed class BundleViewerWindow : EditorWindow
     {
         private TreeViewState _assetTreeState;
-        private AssetViewerTreeView _assetTreeView;
+        private BundleViewerTreeView _bundleTreeView;
         private SearchField _searchField;
-        private AssetViewerTreeItem _selectItem = null;
+        private BundleViewerTreeItem _selectItem = null;
         private Vector2 _detailScrollPos = Vector2.zero;
 
         private bool _combineMode = true;
         
-        [MenuItem("Lite/Asset Viewer")]
+        [MenuItem("Lite/Asset/Bundle Viewer")]
         private static void ShowWin()
         {
-            var win = GetWindow<AssetViewerWindow>();
-            win.titleContent = new GUIContent("Asset Viewer");
+            var win = GetWindow<BundleViewerWindow>("Bundle Viewer");
+            win.minSize = new Vector2(900, 600);
             win.Show();
         }
 
@@ -29,10 +29,10 @@ namespace LiteQuark.Editor
                 _assetTreeState = new TreeViewState();
             }
             
-            _assetTreeView = new AssetViewerTreeView(_assetTreeState);
+            _bundleTreeView = new BundleViewerTreeView(_assetTreeState);
             _searchField = new SearchField();
 
-            _assetTreeView.OnItemSelectionChanged += (item) =>
+            _bundleTreeView.OnItemSelectionChanged += (item) =>
             {
                 _selectItem = item;
                 _detailScrollPos = Vector2.zero;
@@ -46,7 +46,7 @@ namespace LiteQuark.Editor
 
         private void OnGUI()
         {
-            if (!_assetTreeView.IsLoaded)
+            if (!_bundleTreeView.IsLoaded)
             {
                 var centerRect = new Rect(0, 0, position.width, position.height);
                 EditorGUI.DrawRect(centerRect, new Color(0, 0, 0, 0.5f));
@@ -68,8 +68,8 @@ namespace LiteQuark.Editor
                 _combineMode = EditorGUILayout.Toggle(new GUIContent("Combine Mode", "Displaying bundles that merge sub paths"), _combineMode, GUILayout.ExpandWidth(false));
                 if (EditorGUI.EndChangeCheck())
                 {
-                    _assetTreeView.CombineMode = _combineMode;
-                    _assetTreeView.Reload();
+                    _bundleTreeView.CombineMode = _combineMode;
+                    _bundleTreeView.Reload();
                 }
 
                 using (new ColorScope(Color.red))
@@ -79,16 +79,16 @@ namespace LiteQuark.Editor
 
                 if (GUILayout.Button("Decrypt Version", GUILayout.ExpandWidth(false)))
                 {
-                    AssetViewerUtils.DecryptVersionFile();
+                    BundleViewerUtils.DecryptVersionFile();
                 }
             }
             
             var searchRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(true), GUILayout.Height(EditorGUIUtility.singleLineHeight));
-            _assetTreeView.searchString = _searchField.OnGUI(searchRect, _assetTreeView.searchString);
+            _bundleTreeView.searchString = _searchField.OnGUI(searchRect, _bundleTreeView.searchString);
 
             var treeRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             treeRect.height -= 150;
-            _assetTreeView.OnGUI(treeRect);
+            _bundleTreeView.OnGUI(treeRect);
 
             var detailRect = new Rect(treeRect.x, treeRect.yMax + 5, treeRect.width, 140);
             _detailScrollPos = GUI.BeginScrollView(detailRect, _detailScrollPos, new Rect(0, 0, detailRect.width, detailRect.height), true, false);
@@ -97,7 +97,7 @@ namespace LiteQuark.Editor
                 var y = 0f;
                 foreach (var item in _selectItem.DependencyList)
                 {
-                    var depItem = _assetTreeView.GetDependencyTreeItem(item);
+                    var depItem = _bundleTreeView.GetDependencyTreeItem(item);
                     var info = $"{item}({LiteEditorUtils.GetSizeString(depItem?.Size ?? 0)})";
                     EditorGUI.LabelField(new Rect(0, y, detailRect.width - 10, EditorGUIUtility.singleLineHeight), info);
                     y += EditorGUIUtility.singleLineHeight;
