@@ -5,6 +5,23 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
+    /// <summary>
+    /// CI Build Command Line
+    /// -debugBuild : is debug build (true/false)
+    /// -target : build target (Android/iOS/WebGL)
+    /// -enableApp : isBuildApp (true/false)
+    /// -enableRes : isBuildRes (true/false)
+    /// -enableCustom : isBuildCustom (true/false)
+    /// -appVersion : app version (1.0.0)
+    /// -appCode : app build code (1)
+    /// -hashMode : enable hashMode (true/false)
+    /// -flatMode : enable flatMode (true/flase)
+    /// -copyToStreaming : copy to streaming assets (true/false)
+    /// -arm64 : enable arm64 archive, only android (true/false)
+    /// -isAAB : enable aab mode, only android (true/false)
+    /// -splitApp : enable split apk, only android (true/false)
+    /// -createSymbols : enable create symbol file, only android (true/false)
+    /// </summary>
     public static class ProjectBuilderCommandLine
     {
         public static void Build()
@@ -32,7 +49,7 @@ namespace LiteQuark.Editor
                 IncrementBuildModel = false,
                 HashMode = argumentData.GetHashMode(),
                 FlatMode = argumentData.GetFlatMode(),
-                CopyToStreamingAssets = true,
+                CopyToStreamingAssets = argumentData.GetCopyToStreaming(),
                 CleanStreamingAssetsBeforeCopy = true,
             };
 
@@ -213,16 +230,6 @@ namespace LiteQuark.Editor
                 return GetStringValue("appVersion", PlayerSettings.bundleVersion);
             }
 
-            public bool GetHashMode()
-            {
-                return GetBoolValue("hashMode", true);
-            }
-
-            public bool GetFlatMode()
-            {
-                return GetBoolValue("flatMode", true);
-            }
-
             public int GetAppCode()
             {
 #if UNITY_ANDROID
@@ -232,7 +239,17 @@ namespace LiteQuark.Editor
 #endif
                 return 0;
             }
+            
+            public bool GetHashMode()
+            {
+                return GetBoolValue("hashMode", false);
+            }
 
+            public bool GetFlatMode()
+            {
+                return GetBoolValue("flatMode", false);
+            }
+            
             public bool GetArm64()
             {
 #if UNITY_ANDROID
@@ -244,12 +261,29 @@ namespace LiteQuark.Editor
 
             public bool GetIsAAB()
             {
+#if UNITY_ANDROID
                 return GetBoolValue("isAAB", false);
+#else
+                return false;
+#endif
             }
 
             public bool GetSplitApp()
             {
+#if UNITY_ANDROID
                 return GetBoolValue("splitApp", false);
+#else
+                return false;
+#endif
+            }
+            
+            public bool GetCreateSymbols()
+            {
+#if UNITY_ANDROID
+                return GetBoolValue("createSymbols", false);
+#else
+                return false;
+#endif
             }
             
             public bool GetDebugBuild()
@@ -257,9 +291,10 @@ namespace LiteQuark.Editor
                 return GetBoolValue("debugBuild", false);
             }
             
-            public bool GetCreateSymbols()
+
+            public bool GetCopyToStreaming()
             {
-                return GetBoolValue("createSymbols", false);
+                return GetBoolValue("copyToStreaming", false);
             }
 #endregion
         }
