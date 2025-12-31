@@ -25,6 +25,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = UnityEngine.Object.Instantiate(asset, parent);
                 UpdateAssetIDToPathMap(instance, assetPath);
                 LiteUtils.SafeInvoke(callback, instance);
@@ -35,6 +41,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
                 UpdateAssetIDToPathMap(instance, assetPath);
                 LiteUtils.SafeInvoke(callback, instance);
