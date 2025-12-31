@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
         {
             LiteUtils.SafeInvoke(_callback, null);
             Abort();
-            LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.NetError, "VersionPack download failed"));
+            LiteRuntime.FrameworkError(FrameworkErrorCode.NetError, "VersionPack download failed");
         }
 
         protected override void OnSuccess(UnityWebRequest request)

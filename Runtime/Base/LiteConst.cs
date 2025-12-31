@@ -26,4 +26,11 @@ namespace LiteQuark.Runtime
             { typeof(ActionSystem).AssemblyQualifiedName, 99300 },
         };
     }
+    
+    public enum FrameworkErrorCode
+    {
+        Unknown,
+        Startup,
+        NetError,
+    }
 }
