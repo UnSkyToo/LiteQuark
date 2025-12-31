@@ -9,6 +9,7 @@
         public void Enter()
         {
             LLog.Error("Enter <ErrorStage>, please check log.");
+            LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.Startup, "System Startup error"));
         }
 
         public void Leave()
