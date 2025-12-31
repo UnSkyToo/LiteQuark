@@ -1,5 +1,12 @@
 # Changelog
 
+## **[0.2.4] - 2025-12-31**
+- 新增：AssetViewer增加解密版本文件功能
+- 新增：资源版本比较工具
+- 新增：命令行打包增加新参数copyToStreaming
+- 新增：引擎报错事件FrameworkErrorEvent，方面业务层处理如网络请求失败的业务逻辑
+- 优化：TaskSystem权限优化，避免过多不必要的函数暴露
+
 ## **[0.2.3] - 2025-12-01**
 - 新增：网络相关逻辑与远程 Bundle 下载的重试机制
 - 修复：AssetSystem 在 Remote 模式下依赖加载顺序错误的问题
