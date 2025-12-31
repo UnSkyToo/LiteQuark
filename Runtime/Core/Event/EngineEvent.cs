@@ -3,7 +3,8 @@
     public enum FrameworkErrorCode
     {
         Unknown,
-        NetError
+        Startup,
+        NetError,
     }
     
     public sealed class FrameworkErrorEvent : IEventData
