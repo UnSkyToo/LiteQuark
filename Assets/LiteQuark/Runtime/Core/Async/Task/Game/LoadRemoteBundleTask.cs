@@ -72,6 +72,7 @@ namespace LiteQuark.Runtime
                 else
                 {
                     OnBundleLoaded(null);
+                    LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.NetError, error));
                 }
             }
             else

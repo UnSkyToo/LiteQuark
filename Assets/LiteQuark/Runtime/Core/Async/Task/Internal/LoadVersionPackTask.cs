@@ -36,9 +36,11 @@ namespace LiteQuark.Runtime
             var info = VersionPackInfo.FromBinaryData(request.downloadHandler.data);
             if (info is not { IsValid: true })
             {
-                LLog.Error("Bundle package parse error\n{0}", request.downloadHandler.error);
+                var error = request.downloadHandler.error;
+                LLog.Error("Bundle package parse error\n{0}", error);
                 LiteUtils.SafeInvoke(_callback, null);
                 Abort();
+                LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.NetError, error));
             }
             else
             {
