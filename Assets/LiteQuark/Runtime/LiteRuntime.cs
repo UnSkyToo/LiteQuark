@@ -4,6 +4,8 @@ namespace LiteQuark.Runtime
 {
     public sealed partial class LiteRuntime : Singleton<LiteRuntime>
     {
+        public static event System.Action<FrameworkErrorCode, string> OnFrameworkError;
+        
         public static bool IsDebugMode { get; private set; } = false;
         
         public bool IsPause { get; set; }
@@ -135,6 +137,12 @@ namespace LiteQuark.Runtime
         public static T Get<T>() where T : ISystem
         {
             return SystemCenter.Instance.GetSystem<T>();
+        }
+        
+        internal static void FrameworkError(FrameworkErrorCode code, string message)
+        {
+            LLog.Error("FrameworkError: {0}, {1}", code, message);
+            OnFrameworkError?.Invoke(code, message);
         }
 
         public static LiteSetting Setting => Instance._setting;
