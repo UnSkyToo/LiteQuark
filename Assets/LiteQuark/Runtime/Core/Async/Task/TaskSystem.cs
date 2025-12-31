@@ -168,35 +168,35 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        internal LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
             AddTask(task);
             return task;
         }
 
-        public LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        internal LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, callback);
             AddTask(task);
             return task;
         }
 
-        public LoadAssetTask<T> LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
+        internal LoadAssetTask<T> LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, assetName, callback);
             AddTask(task);
             return task;
         }
 
-        public LoadSceneTask LoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        internal LoadSceneTask LoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
             var task = new LoadSceneTask(sceneName, parameters, callback);
             AddTask(task);
             return task;
         }
         
-        public LoadResourceTask<T> LoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
+        internal LoadResourceTask<T> LoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
         {
             var task = new LoadResourceTask<T>(assetName, callback);
             AddTask(task);
