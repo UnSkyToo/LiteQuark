@@ -29,6 +29,7 @@ namespace LiteQuark.Runtime
         {
             LiteUtils.SafeInvoke(_callback, null);
             Abort();
+            LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.NetError, "VersionPack download failed"));
         }
 
         protected override void OnSuccess(UnityWebRequest request)
@@ -40,7 +41,6 @@ namespace LiteQuark.Runtime
                 LLog.Error("Bundle package parse error\n{0}", error);
                 LiteUtils.SafeInvoke(_callback, null);
                 Abort();
-                LiteRuntime.Event.Send(new FrameworkErrorEvent(FrameworkErrorCode.NetError, error));
             }
             else
             {
