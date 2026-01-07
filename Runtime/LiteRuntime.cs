@@ -146,7 +146,7 @@ namespace LiteQuark.Runtime
         }
 
         public static LiteSetting Setting => Instance._setting;
-        
+
         // frequently used system
         public static LogSystem Log => Get<LogSystem>();
         public static EventSystem Event => Get<EventSystem>();
@@ -155,5 +155,7 @@ namespace LiteQuark.Runtime
         public static AssetSystem Asset => Get<AssetSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
+        public static NetworkSystem Network => Get<NetworkSystem>();
+        public static HttpClient Http => Network?.Http;
     }
 }

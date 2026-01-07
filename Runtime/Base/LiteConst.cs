@@ -21,9 +21,10 @@ namespace LiteQuark.Runtime
             { typeof(EventSystem).AssemblyQualifiedName, 99800 },
             { typeof(TaskSystem).AssemblyQualifiedName, 99700 },
             { typeof(TimerSystem).AssemblyQualifiedName, 99600 },
-            { typeof(AssetSystem).AssemblyQualifiedName, 99500 },
-            { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99400 },
-            { typeof(ActionSystem).AssemblyQualifiedName, 99300 },
+            { typeof(NetworkSystem).AssemblyQualifiedName, 99500 },
+            { typeof(AssetSystem).AssemblyQualifiedName, 99400 },
+            { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99300 },
+            { typeof(ActionSystem).AssemblyQualifiedName, 99200 },
         };
     }
     
