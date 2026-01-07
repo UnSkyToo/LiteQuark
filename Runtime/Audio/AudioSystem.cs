@@ -74,6 +74,11 @@ namespace LiteQuark.Runtime
                 _removeList.Clear();
             }
         }
+        
+        public AudioObject GetAudio(ulong id)
+        {
+            return _audioCache.GetValueOrDefault(id);
+        }
 
         private int GetAudioCountByPath(string path)
         {
@@ -215,6 +220,14 @@ namespace LiteQuark.Runtime
                 {
                     chunk.Value.Mute(isMute);
                 }
+            }
+        }
+        
+        public void SetAllAudioVolume(float volume)
+        {
+            foreach (var chunk in _audioCache)
+            {
+                chunk.Value.SetVolume(volume);
             }
         }
     }
