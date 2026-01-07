@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
                     
                     Source = Carrier.GetOrAddComponent<AudioSource>();
                     Source.clip = clip;
-                    Source.volume = volume;
+                    Source.volume = Mathf.Clamp01(volume);
                     Source.loop = isLoop;
                     Source.pitch = 1.0f;
                     Carrier.name = DebugName;
