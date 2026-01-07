@@ -224,7 +224,7 @@ namespace LiteQuark.Runtime
                 var jsonData = Encoding.UTF8.GetBytes(jsonText);
                 if (LiteConst.SecurityMode)
                 {
-                    return SecurityUtils.AesEncrypt(jsonData, LiteConst.SecurityKey);
+                    return SecurityUtils.EncryptBytes(jsonData, LiteConst.SecurityKey);
                 }
 
                 return jsonData;
@@ -245,7 +245,7 @@ namespace LiteQuark.Runtime
 
             try
             {
-                var jsonData = LiteConst.SecurityMode ? SecurityUtils.AesDecrypt(data, LiteConst.SecurityKey) : data;
+                var jsonData = LiteConst.SecurityMode ? SecurityUtils.DecryptBytes(data, LiteConst.SecurityKey) : data;
                 var jsonText = Encoding.UTF8.GetString(jsonData);
                 var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
                 packInfo.RestorePath();
