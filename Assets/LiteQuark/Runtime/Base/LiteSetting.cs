@@ -28,6 +28,8 @@ namespace LiteQuark.Runtime
         [SerializeField] public UISetting UI;
         [Header("网络设置")]
         [SerializeField] public NetworkSetting Network;
+        [Header("数据设置")]
+        [SerializeField] public DataSetting Data;
 
         public LiteSetting()
         {
@@ -42,6 +44,7 @@ namespace LiteQuark.Runtime
             Debug = new DebugSetting();
             UI = new UISetting();
             Network = new NetworkSetting();
+            Data = new DataSetting();
         }
 
         [Serializable]
@@ -193,6 +196,23 @@ namespace LiteQuark.Runtime
             public int DefaultRetryCount = 3;
 
             public NetworkSetting()
+            {
+            }
+        }
+
+        [Serializable]
+        public class DataSetting
+        {
+            [Tooltip("数据存储模式\nPlayerPrefs: 适合少量配置数据\nJsonFile: 适合结构化数据，可读性好\nBinaryFile: 适合大量数据，性能最好"), SerializeField]
+            public DataProviderMode ProviderMode = DataProviderMode.PlayerPrefs;
+
+            [Tooltip("启用数据加密（防止玩家修改存档）"), SerializeField]
+            public bool EnableEncryption = true;
+
+            [Tooltip("加密密钥（建议每个游戏使用不同的密钥）"), ConditionalShow(nameof(EnableEncryption), true), SerializeField]
+            public string EncryptionKey = "LiteQuark";
+
+            public DataSetting()
             {
             }
         }

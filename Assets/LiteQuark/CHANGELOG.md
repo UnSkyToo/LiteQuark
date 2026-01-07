@@ -2,10 +2,14 @@
 
 ## **[0.2.7] - 2026-01-07**
 - ✨ 新增 NetworkSystem 网络模块
-- ✨ 支持 GET/POST/PUT/DELETE 请求
-- ✨ 支持文件上传/下载（带进度）
-- ✨ 支持请求重试机制和并发控制
-- ✨ 提供扩展接口（INetworkChannel, IProtocolCodec）
+- 支持 GET/POST/PUT/DELETE 请求
+- 支持文件上传/下载（带进度）
+- 支持请求重试机制和并发控制
+- 提供扩展接口（INetworkChannel, IProtocolCodec）
+- ✨ 新增 DataSystem 数据持久化模块
+- 支持 PlayerPrefs / JSON文件 / 二进制文件 三种存储模式
+- 支持 AES-256 数据加密
+- 提供同步和异步API
 
 ## **[0.2.6] - 2025-12-31**
 - 修复：引擎未初始化时抛出FrameworkError，逻辑层收不到
