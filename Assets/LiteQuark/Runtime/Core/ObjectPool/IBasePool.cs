@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -9,19 +10,23 @@ namespace LiteQuark.Runtime
         int CountAll { get; }
         int CountActive { get; }
         int CountInactive { get; }
-        
+        bool IsReady { get; }
+
         void Initialize(string key, params object[] args);
         void Generate(int count, System.Action<IBasePool> callback);
+        UniTask WaitReadyAsync();
     }
 
     public interface IObjectPool<T> : IBasePool
     {
         void Alloc(System.Action<T> callback);
+        UniTask<T> Alloc();
         void Recycle(T value);
     }
     
     public interface IGameObjectPool : IObjectPool<GameObject>
     {
         void Alloc(Transform parent, System.Action<GameObject> callback);
+        UniTask<GameObject> Alloc(Transform parent);
     }
 }

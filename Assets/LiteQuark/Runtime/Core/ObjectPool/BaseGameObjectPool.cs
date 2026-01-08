@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -10,6 +11,7 @@ namespace LiteQuark.Runtime
         public int CountAll => Pool?.CountAll ?? 0;
         public int CountActive => Pool?.CountActive ?? 0;
         public int CountInactive => Pool?.CountInactive ?? 0;
+        public bool IsReady => Template != null;
 
         protected Transform Parent;
         protected GameObject Template;
@@ -125,7 +127,23 @@ namespace LiteQuark.Runtime
                 return;
             }
             
+
             Pool.Release(value);
+        }
+
+        public virtual UniTask<GameObject> Alloc()
+        {
+            return Alloc(parent: null);
+        }
+
+        public virtual UniTask<GameObject> Alloc(Transform parent)
+        {
+            var tcs = new UniTaskCompletionSource<GameObject>();
+            Alloc(parent, (go) =>
+            {
+                tcs.TrySetResult(go);
+            });
+            return tcs.Task;
         }
 
         protected void RunWhenLoadTemplated(System.Action callback)
@@ -144,6 +162,23 @@ namespace LiteQuark.Runtime
         {
             Template = template;
             LoadTemplateCallback?.Invoke();
+        }
+        
+        public UniTask WaitReadyAsync()
+        {
+            var tcs = new UniTaskCompletionSource();
+            if (IsReady)
+            {
+                tcs.TrySetResult();
+            }
+            else
+            {
+                RunWhenLoadTemplated(() =>
+                {
+                    tcs.TrySetResult();
+                });
+            }
+            return tcs.Task;
         }
     }
 }
