@@ -154,5 +154,24 @@ namespace LiteQuark.Runtime
         {
             return GetPool<ParticlePool>(path, _root);
         }
+        
+        public UniTask PreloadPoolAsync<TPool>(string key, params object[] args) where TPool : class, IBasePool
+        {
+            var pool = GetPool<TPool>(key, args);
+            return pool.WaitReadyAsync();
+        }
+        
+        public async UniTask PreloadPoolAsync<TPool>(string key, int generateCount, params object[] args) where TPool : class, IBasePool
+        {
+            await PreloadPoolAsync<TPool>(key, args);
+
+            if (generateCount > 0)
+            {
+                var pool = GetPool<TPool>(key, args);
+                var tcs = new UniTaskCompletionSource();
+                pool.Generate(generateCount, (_) => tcs.TrySetResult());
+                await tcs.Task;
+            }
+        }
     }
 }

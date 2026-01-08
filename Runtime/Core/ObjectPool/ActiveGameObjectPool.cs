@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -49,6 +50,16 @@ namespace LiteQuark.Runtime
 
                 callback?.Invoke(go);
             });
+        }
+
+        public override UniTask<GameObject> Alloc(Transform parent)
+        {
+            var tcs = new UniTaskCompletionSource<GameObject>();
+            Alloc(parent, (go) =>
+            {
+                tcs.TrySetResult(go);
+            });
+            return tcs.Task;
         }
     }
 }
