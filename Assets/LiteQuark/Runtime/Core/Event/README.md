@@ -669,18 +669,3 @@ LiteRuntime.Event.UnRegister(handler);
 4. 在Editor模式下检查Console警告
 
 ---
-
-## 更新日志
-
-### v0.2.6
-- ✨ 类型安全的事件系统
-- ✨ 支持全局事件和独立事件模块
-- ✨ 支持Tag标签管理
-- ✨ Editor模式下自动检测未注销的监听器
-- ✨ 内置前后台切换事件
-
----
-
-## 许可证
-
-MIT License - 与 LiteQuark 框架保持一致

@@ -288,7 +288,3 @@ void SaveAudioSettings()
 ```
 
 ---
-
-## 许可证
-
-MIT License - 与 LiteQuark 框架保持一致
