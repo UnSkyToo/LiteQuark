@@ -106,7 +106,7 @@ namespace LiteQuark.Runtime
             IsFocus = true;
 
             LLog.Info("OnEnterForeground");
-            Event.Send<EnterForegroundEvent>();
+            Event?.Send<EnterForegroundEvent>();
 
             if (_setting.Common.AutoRestartInBackground && Time.realtimeSinceStartup - _enterBackgroundTime >= _setting.Common.BackgroundLimitTime)
             {
@@ -127,7 +127,7 @@ namespace LiteQuark.Runtime
             IsFocus = false;
  
             LLog.Info("OnEnterBackground");
-            Event.Send<EnterBackgroundEvent>();
+            Event?.Send<EnterBackgroundEvent>();
             _enterBackgroundTime = Time.realtimeSinceStartup;
         }
 
