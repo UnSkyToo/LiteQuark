@@ -38,7 +38,7 @@ namespace LiteQuark.Editor
         {
             var stepList = new List<IBuildStep>();
             
-            stepList.Add(new SwitchPlatformStep());
+            stepList.Add(new BuilderConfigureStep());
             
             var resStep = GenerateResBuildStep(ResConfig);
             stepList.AddRange(resStep);

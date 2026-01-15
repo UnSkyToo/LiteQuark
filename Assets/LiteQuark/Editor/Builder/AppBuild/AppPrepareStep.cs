@@ -23,11 +23,6 @@ namespace LiteQuark.Editor
 
         private void ApplySetting(ProjectBuilder builder)
         {
-            var namedBuildTarget = LiteEditorUtils.GetNamedBuildTarget(builder.Target);
-            PlayerSettings.SetScriptingBackend(namedBuildTarget, builder.AppConfig.Backend);
-            PlayerSettings.SplashScreen.showUnityLogo = false;
-            
-            EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
             if (builder.AppConfig.IsDevelopmentBuild)
             {
                 builder.AppConfig.Options |= BuildOptions.Development;
@@ -36,9 +31,7 @@ namespace LiteQuark.Editor
             {
                 builder.AppConfig.Options &= ~BuildOptions.Development;
             }
-            PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
-            PlayerSettings.bundleVersion = builder.Version;
-            PlayerSettings.productName = builder.AppConfig.ProduceName;
+            
 #if UNITY_ANDROID
             PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
             PlayerSettings.Android.targetArchitectures = builder.AppConfig.Architecture;
