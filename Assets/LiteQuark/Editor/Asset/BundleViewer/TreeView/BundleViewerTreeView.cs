@@ -115,6 +115,7 @@ namespace LiteQuark.Editor
         {
             var items = new List<TreeViewItem>();
             _itemCacheMap.Clear();
+            _bundlePathCacheMap.Clear();
 
             var treeDict = new Dictionary<string, BundleViewerTreeItem>();
 
@@ -148,7 +149,9 @@ namespace LiteQuark.Editor
                     
                     bundleItem = item;
                 }
-
+                
+                _bundlePathCacheMap.Add(bundle.BundlePath, bundleItem);
+                
                 var totalSize = 0L;
                 foreach (var assetPath in bundle.AssetList)
                 {
