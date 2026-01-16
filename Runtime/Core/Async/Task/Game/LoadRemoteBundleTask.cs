@@ -79,6 +79,7 @@ namespace LiteQuark.Runtime
             {
                 var bundle = DownloadHandlerAssetBundle.GetContent(_request);
                 OnBundleLoaded(bundle);
+                LLog.Info("[LoadRemoteBundle] {0} : {1}KB", BundleUri, _request.downloadedBytes / 1024);
             }
             
             _request?.Dispose();
