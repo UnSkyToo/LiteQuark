@@ -13,6 +13,7 @@
         public LoadVersionPackTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)
         {
             var versionPackUri = PathUtils.ConcatPath(_remoteUri, versionFileName);
+            versionPackUri = $"{versionPackUri}?t={AppUtils.GetVersion()}";
             return LiteRuntime.Task.LoadVersionPackTask(versionPackUri, callback);
         }
 

@@ -46,6 +46,7 @@ namespace LiteQuark.Runtime
             if (_forceNoCache)
             {
                 _request.SetRequestHeader("Cache-Control", "no-cache");
+                _request.SetRequestHeader("Pragma", "no-cache");
             }
 
             if (_timeout > 0)
