@@ -5,6 +5,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadSceneTask : BaseTask
     {
+        public override string DebugName => $"LoadScene:{_sceneName}";
+        
         private readonly string _sceneName;
         private readonly UnityEngine.SceneManagement.LoadSceneParameters _parameters;
         private Action<bool> _callback;

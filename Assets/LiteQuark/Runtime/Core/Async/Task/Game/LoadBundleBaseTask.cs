@@ -5,6 +5,8 @@ namespace LiteQuark.Runtime
 {
     public abstract class LoadBundleBaseTask : BaseTask
     {
+        public override string DebugName => $"LoadBundle {PathUtils.GetFileName(BundleUri)}";
+
         protected readonly string BundleUri;
         private AssetBundle _bundle;
         private Action<AssetBundle> _callback;

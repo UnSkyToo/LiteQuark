@@ -5,6 +5,8 @@ namespace LiteQuark.Runtime
 {
     public sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
+        public override string DebugName => $"LoadAsset {_assetName}";
+        
         private readonly AssetBundle _bundle;
         private readonly string _assetName;
         private Action<UnityEngine.Object> _callback;
