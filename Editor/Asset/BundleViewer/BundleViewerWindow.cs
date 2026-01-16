@@ -91,7 +91,7 @@ namespace LiteQuark.Editor
             _bundleTreeView.OnGUI(treeRect);
 
             var detailRect = new Rect(treeRect.x, treeRect.yMax + 5, treeRect.width, 140);
-            _detailScrollPos = GUI.BeginScrollView(detailRect, _detailScrollPos, new Rect(0, 0, detailRect.width, detailRect.height), true, false);
+            _detailScrollPos = GUI.BeginScrollView(detailRect, _detailScrollPos, new Rect(0, 0, detailRect.width, Mathf.Max(detailRect.height, EditorGUIUtility.singleLineHeight * (_selectItem?.DependencyList.Length ?? 0))), true, false);
             if (_selectItem != null && _selectItem.DependencyList.Length > 0)
             {
                 var y = 0f;
