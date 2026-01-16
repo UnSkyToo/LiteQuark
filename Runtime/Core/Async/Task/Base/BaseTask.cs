@@ -3,8 +3,10 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    public abstract class BaseTask : ITask
+    public abstract class BaseTask : BaseObject, ITask
     {
+        public override string DebugName => GetType().Name;
+        
         public float Progress { get; protected set; }
         public bool IsDone => State is TaskState.Completed or TaskState.Aborted;
         public object Result { get; protected set; }
@@ -30,6 +32,7 @@ namespace LiteQuark.Runtime
         private UniTaskCompletionSource<object> _tcs;
 
         protected BaseTask()
+            : base()
         {
             State = TaskState.Pending;
         }

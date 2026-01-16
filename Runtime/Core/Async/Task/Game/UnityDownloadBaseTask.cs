@@ -6,6 +6,8 @@ namespace LiteQuark.Runtime
 {
     public abstract class UnityDownloadBaseTask : BaseTask
     {
+        public override string DebugName => $"Download {Uri}";
+        
         protected readonly Uri Uri;
         private readonly int _timeout;
         private readonly bool _forceNoCache;

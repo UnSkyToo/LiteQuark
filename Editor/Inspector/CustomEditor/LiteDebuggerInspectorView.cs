@@ -144,7 +144,16 @@ namespace LiteQuark.Editor
         {
             using (new IndentLevelScope(indent))
             {
-                EditorGUILayout.LabelField($"{task.GetType().Name} {task.Progress*100:0.0}% {task.State}");
+                var taskName = string.Empty;
+                if (task is BaseObject baseObj)
+                {
+                    taskName = baseObj.DebugName;
+                }
+                else
+                {
+                    taskName = task.GetType().Name;
+                }
+                EditorGUILayout.LabelField($"{taskName} {task.Progress*100:0.0}% {task.State}");
             }
         }
 
