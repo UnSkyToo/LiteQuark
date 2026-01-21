@@ -18,6 +18,11 @@ namespace LiteQuark.Runtime
         /// <summary>
         /// 二进制文件存储（适合大量数据，性能好）
         /// </summary>
-        BinaryFile
+        BinaryFile,
+        
+        /// <summary>
+        /// 自定义存储（适合自定义数据存储方式）
+        /// </summary>
+        Custom
     }
 }

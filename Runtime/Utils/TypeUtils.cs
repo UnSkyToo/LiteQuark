@@ -217,6 +217,27 @@ namespace LiteQuark.Runtime
             var genericType = typeDict.MakeGenericType(keyType, valueType);
             return Activator.CreateInstance(genericType);
         }
+
+        public static T CreateEntryInstance<T>(LiteTypeEntryData<T> entryData)
+        {
+            if (entryData == null || entryData.Disabled)
+            {
+                return default;
+            }
+
+            var logicType = System.Type.GetType(entryData.AssemblyQualifiedName);
+            if (logicType == null)
+            {
+                throw new System.Exception($"Can't not find class type : {entryData.AssemblyQualifiedName}");
+            }
+
+            if (System.Activator.CreateInstance(logicType) is not T instanceType)
+            {
+                throw new System.Exception($"Incorrect {typeof(T)} type : {logicType.AssemblyQualifiedName}");
+            }
+
+            return instanceType;
+        }
         
         public static T GetAttribute<T>(Type type, object[] attrs) where T : Attribute
         {

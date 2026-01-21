@@ -5,7 +5,7 @@ using UnityEngine;
 namespace LiteQuark.Editor
 {
     [CustomPropertyDrawer(typeof(ConditionalShowAttribute))]
-    public class ConditionalShowPropertyDrawer : PropertyDrawer
+    internal class ConditionalShowPropertyDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
