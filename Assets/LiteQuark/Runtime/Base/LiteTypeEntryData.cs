@@ -4,15 +4,17 @@ using UnityEngine;
 namespace LiteQuark.Runtime
 {
     [Serializable]
-    public class LiteSystemEntryData
+    public class LiteTypeEntryData<T>
     {
         [SerializeField]
         public bool Disabled;
         [SerializeField]
         public string AssemblyQualifiedName;
-
-        public LiteSystemEntryData()
+        [HideInInspector] public string BaseTypeName;
+        
+        public LiteTypeEntryData()
         {
+            BaseTypeName = typeof(T).AssemblyQualifiedName;
         }
     }
 }

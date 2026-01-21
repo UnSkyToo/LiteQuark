@@ -32,6 +32,10 @@ namespace LiteQuark.Runtime
                     _provider = new BinaryProvider(setting.EnableEncryption, setting.EncryptionKey);
                     break;
 
+                case DataProviderMode.Custom:
+                    _provider = TypeUtils.CreateEntryInstance(setting.CustomProviderType);
+                    break;
+                
                 default:
                     _provider = new PlayerPrefsProvider(setting.EnableEncryption, setting.EncryptionKey);
                     break;

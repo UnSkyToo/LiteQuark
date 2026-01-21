@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    [CustomPropertyDrawer(typeof(LiteLogicEntryData))]
-    public class LiteLogicEntryDataDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(LiteTypeEntryData<>))]
+    internal class LiteTypeEntryDataDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -16,7 +16,8 @@ namespace LiteQuark.Editor
             var disabledProperty = property.FindPropertyRelative("Disabled");
             var assemblyQualifiedNameProperty = property.FindPropertyRelative("AssemblyQualifiedName");
             
-            var typeList = GetLogicTypeList();
+            var baseTypeProperty = property.FindPropertyRelative("BaseTypeName");
+            var typeList = GetTypeList(baseTypeProperty.stringValue);
             var selectIndex = Array.FindIndex(typeList, s => s == assemblyQualifiedNameProperty.stringValue);
             
             var disabledRect = new Rect(position.x, position.y, position.height, position.height);
@@ -37,9 +38,10 @@ namespace LiteQuark.Editor
             EditorGUI.EndProperty();
         }
         
-        private string[] GetLogicTypeList()
+        private string[] GetTypeList(string baseTypeName)
         {
-            var typeList = TypeCache.GetTypesDerivedFrom(typeof(ILogic));
+            var baseType = Type.GetType(baseTypeName);
+            var typeList = TypeCache.GetTypesDerivedFrom(baseType);
             var nameList = new List<string>();
 
             foreach (var type in typeList)

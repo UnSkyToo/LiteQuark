@@ -9,9 +9,9 @@ namespace LiteQuark.Runtime
     public sealed class LiteSetting
     {
         [Header("逻辑列表")]
-        [SerializeField] public List<LiteLogicEntryData> LogicList;
+        [SerializeField] public List<LiteTypeEntryData<ILogic>> LogicList;
         [Header("额外模块")]
-        [SerializeField] public List<LiteSystemEntryData> SystemList;
+        [SerializeField] public List<LiteTypeEntryData<ISystem>> SystemList;
         [Header("基础设置")]
         [SerializeField] public CommonSetting Common;
         [Header("任务设置")]
@@ -33,8 +33,8 @@ namespace LiteQuark.Runtime
 
         public LiteSetting()
         {
-            LogicList = new List<LiteLogicEntryData>();
-            SystemList = new List<LiteSystemEntryData>();
+            LogicList = new List<LiteTypeEntryData<ILogic>>();
+            SystemList = new List<LiteTypeEntryData<ISystem>>();
 
             Common = new CommonSetting();
             Task = new TaskSetting();
@@ -205,6 +205,9 @@ namespace LiteQuark.Runtime
         {
             [Tooltip("数据存储模式\nPlayerPrefs: 适合少量配置数据\nJsonFile: 适合结构化数据，可读性好\nBinaryFile: 适合大量数据，性能最好"), SerializeField]
             public DataProviderMode ProviderMode = DataProviderMode.PlayerPrefs;
+
+            [ConditionalShow(nameof(ProviderMode), (int)DataProviderMode.Custom)]
+            public LiteTypeEntryData<IDataProvider> CustomProviderType;
 
             [Tooltip("启用数据加密（防止玩家修改存档）"), SerializeField]
             public bool EnableEncryption = true;
