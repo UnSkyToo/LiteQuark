@@ -155,8 +155,6 @@ namespace LiteQuark.Runtime
         public static AssetSystem Asset => Get<AssetSystem>();
         public static ObjectPoolSystem ObjectPool => Get<ObjectPoolSystem>();
         public static ActionSystem Action => Get<ActionSystem>();
-        public static NetworkSystem Network => Get<NetworkSystem>();
-        public static HttpClient Http => Network?.Http;
         public static DataSystem Data => Get<DataSystem>();
     }
 }
