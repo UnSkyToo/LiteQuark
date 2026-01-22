@@ -37,7 +37,7 @@ public class NetworkSystemExample : MonoBehaviour
     // ============================================
     public async void Example_SimpleGet()
     {
-        var response = await LiteRuntime.Http.Get<UserData>("https://jsonplaceholder.typicode.com/users/1");
+        var response = await LiteRuntime.Get<NetworkSystem>().Http.Get<UserData>("https://jsonplaceholder.typicode.com/users/1");
 
         if (response.IsSuccess)
         {
@@ -61,7 +61,7 @@ public class NetworkSystemExample : MonoBehaviour
             password = "123456"
         };
 
-        var response = await LiteRuntime.Http.PostJson<LoginResponse>(
+        var response = await LiteRuntime.Get<NetworkSystem>().Http.PostJson<LoginResponse>(
             "https://example.com/api/login",
             loginData
         );
@@ -88,7 +88,7 @@ public class NetworkSystemExample : MonoBehaviour
 
         try
         {
-            var fileData = await LiteRuntime.Http.DownloadFile(
+            var fileData = await LiteRuntime.Get<NetworkSystem>().Http.DownloadFile(
                 "https://example.com/asset.bundle",
                 progress
             );
@@ -115,7 +115,7 @@ public class NetworkSystemExample : MonoBehaviour
             Debug.Log($"上传进度：{p * 100:F1}%");
         });
 
-        var response = await LiteRuntime.Http.UploadFile<LoginResponse>(
+        var response = await LiteRuntime.Get<NetworkSystem>().Http.UploadFile<LoginResponse>(
             "https://example.com/api/upload",
             screenshot,
             "screenshot.png",
@@ -147,7 +147,7 @@ public class NetworkSystemExample : MonoBehaviour
             ExponentialBackoff = true // 1s, 2s, 4s
         };
 
-        var response = await LiteRuntime.Http.SendWithRetry<UserData>(request, retryPolicy);
+        var response = await LiteRuntime.Get<NetworkSystem>().Http.SendWithRetry<UserData>(request, retryPolicy);
 
         if (response.IsSuccess)
         {
@@ -171,7 +171,7 @@ public class NetworkSystemExample : MonoBehaviour
             new HttpRequest("https://jsonplaceholder.typicode.com/users/3", HttpMethod.GET),
         };
 
-        var responses = await LiteRuntime.Http.SendBatch<UserData>(requests, maxConcurrent: 2);
+        var responses = await LiteRuntime.Get<NetworkSystem>().Http.SendBatch<UserData>(requests, maxConcurrent: 2);
 
         for (int i = 0; i < responses.Length; i++)
         {
@@ -193,7 +193,7 @@ public class NetworkSystemExample : MonoBehaviour
             { "X-Custom-Header", "CustomValue" }
         };
 
-        var response = await LiteRuntime.Http.Get<UserData>(
+        var response = await LiteRuntime.Get<NetworkSystem>().Http.Get<UserData>(
             "https://example.com/api/user",
             headers
         );
@@ -228,7 +228,7 @@ public class NetworkSystemExample : MonoBehaviour
     public void Example_UseInterceptor()
     {
         // 添加拦截器
-        LiteRuntime.Http.AddInterceptor(new AuthInterceptor());
+        LiteRuntime.Get<NetworkSystem>().Http.AddInterceptor(new AuthInterceptor());
 
         // 之后所有请求都会自动添加Token和记录日志
     }
@@ -238,7 +238,7 @@ public class NetworkSystemExample : MonoBehaviour
     // ============================================
     public void Example_CheckNetworkStatus()
     {
-        var networkSystem = LiteRuntime.Network;
+        var networkSystem = LiteRuntime.Get<NetworkSystem>();
         Debug.Log($"最大并发数：{networkSystem.MaxConcurrentRequests}");
         Debug.Log($"当前活动请求数：{networkSystem.ActiveRequests}");
         Debug.Log($"默认超时时间：{networkSystem.DefaultTimeout}秒");
