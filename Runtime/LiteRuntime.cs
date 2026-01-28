@@ -79,7 +79,7 @@ namespace LiteQuark.Runtime
 #endif
             
             SystemCenter.Instance.Tick(deltaTime);
-            _stageCenter.Tick(time);
+            _stageCenter?.Tick(time);
         }
 
         public void Restart()
