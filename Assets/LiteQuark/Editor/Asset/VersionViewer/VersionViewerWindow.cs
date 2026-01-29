@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -7,12 +8,12 @@ using LiteQuark.Runtime;
 
 namespace LiteQuark.Editor
 {
-    public class VersionPackDiffWindow : EditorWindow
+    public class VersionViewerWindow : EditorWindow
     {
-        [MenuItem("Lite/Asset/Version Diff Tool")]
+        [MenuItem("Lite/Asset/Version Viewer")]
         public static void ShowWindow()
         {
-            var win = GetWindow<VersionPackDiffWindow>("Version Diff");
+            var win = GetWindow<VersionViewerWindow>("Version Viewer");
             win.minSize = new Vector2(900, 600);
             win.Show();
         }
@@ -104,9 +105,14 @@ namespace LiteQuark.Editor
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             
-            if (GUILayout.Button("Clear", EditorStyles.toolbarButton, GUILayout.Width(50)))
+            if (GUILayout.Button("Clear", EditorStyles.toolbarButton, GUILayout.Width(60)))
             {
                 ClearAll();
+            }
+
+            if (GUILayout.Button("Decrypt", EditorStyles.toolbarButton, GUILayout.Width(60)))
+            {
+                DecryptVersionFile();
             }
             
             GUILayout.FlexibleSpace();
@@ -434,7 +440,7 @@ namespace LiteQuark.Editor
             GUILayout.FlexibleSpace();
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            EditorGUILayout.LabelField("Select two version files and click 'Compare Versions' to see differences", EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField("Select version files", EditorStyles.centeredGreyMiniLabel);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
@@ -758,6 +764,29 @@ namespace LiteQuark.Editor
             result.SetPixels(pix);
             result.Apply();
             return result;
+        }
+        
+        public static void DecryptVersionFile()
+        {
+            try
+            {
+                var filePath = EditorUtility.OpenFilePanelWithFilters("Open Version File", PathUtils.GetLiteQuarkRootPath(string.Empty), new string[] { "Version File", "txt" });
+                if (File.Exists(filePath))
+                {
+                    var binaryData = File.ReadAllBytes(filePath);
+                    var packInfo = VersionPackInfo.FromBinaryData(binaryData);
+                    var jsonData = packInfo.ToJsonData();
+                    var jsonPath = Path.ChangeExtension(filePath, "json");
+                    File.WriteAllText(jsonPath, jsonData);
+                    LEditorLog.Info($"Decrypt Version Success : {jsonPath}");
+                    AssetDatabase.Refresh();
+                    LiteEditorUtils.OpenFolder(Path.GetDirectoryName(jsonPath));
+                }
+            }
+            catch (Exception ex)
+            {
+                LEditorLog.Error(ex.Message);
+            }
         }
     }
 }

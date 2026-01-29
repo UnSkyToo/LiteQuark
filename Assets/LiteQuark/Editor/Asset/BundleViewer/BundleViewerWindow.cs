@@ -76,11 +76,6 @@ namespace LiteQuark.Editor
                 {
                     EditorGUILayout.LabelField("Exclude folders whose names contain '~' or '#', as well as assets within the Packages directory.");
                 }
-
-                if (GUILayout.Button("Decrypt Version", GUILayout.ExpandWidth(false)))
-                {
-                    BundleViewerUtils.DecryptVersionFile();
-                }
             }
             
             var searchRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(true), GUILayout.Height(EditorGUIUtility.singleLineHeight));
