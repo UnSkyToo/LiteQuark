@@ -9,6 +9,10 @@ namespace LiteQuark.Runtime
         public UnityEngine.AssetBundle Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
 
+        internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
+        internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
+        internal long FileSize => _bundleInfo?.Size ?? 0;
+
         private readonly BundleInfo _bundleInfo;
         private readonly AssetBundleProvider _provider;
         private readonly List<Action<bool>> _bundleLoaderCallbackList = new ();
