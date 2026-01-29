@@ -6,10 +6,13 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, assetPath, BundlePath);
+
             LoadBundleAsync(0, (bundleIsLoaded) =>
             {
                 if (!bundleIsLoaded)
                 {
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, false, errorMessage: "Bundle load failed");
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
@@ -17,11 +20,13 @@ namespace LiteQuark.Runtime
                 var cache = GetOrCreateAssetCache(assetPath);
                 cache.LoadAssetAsync<T>((assetIsLoaded) =>
                 {
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
+
                     if (assetIsLoaded)
                     {
                         IncRef();
                     }
-                
+                    
                     LiteUtils.SafeInvoke(callback, cache.Asset as T);
                 });
             });
@@ -29,16 +34,24 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
+
             LoadBundleAsync(0, (bundleIsLoaded) =>
             {
                 if (!bundleIsLoaded)
                 {
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, false, errorMessage: "Bundle load failed");
                     LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
                 
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
+
                 LiteRuntime.Task.LoadSceneTask(sceneName, parameters, (sceneIsLoaded) =>
                 {
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
+
                     if (sceneIsLoaded)
                     {
                         IncRef();
@@ -53,6 +66,9 @@ namespace LiteQuark.Runtime
         {
             if (IsLoaded)
             {
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, BundlePath, DependencyList, isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, true, FileSize, isCached: true);
+
                 LiteUtils.SafeInvoke(callback, true);
                 return;
             }
@@ -64,6 +80,8 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
+            
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, BundlePath, DependencyList);
             
             var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
             var acg = new AsyncCompletionGroup<UnityEngine.AssetBundle>(dependencies.Length + 1, HandleBundleLoadCompleted);
@@ -78,6 +96,8 @@ namespace LiteQuark.Runtime
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
             var isLoaded = success && OnBundleLoaded(bundle);
+            
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
             
             foreach (var loader in _bundleLoaderCallbackList)
             {

@@ -63,10 +63,7 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadSceneAsync(sceneName, parameters, (result) =>
-            {
-                LiteUtils.SafeInvoke(callback, result);
-            });
+            cache.LoadSceneAsync(sceneName, parameters, callback);
         }
     }
 }

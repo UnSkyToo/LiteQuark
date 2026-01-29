@@ -6,6 +6,9 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
+        public AssetBundleLoader BundleLoader => _bundleLoader;
+        public VersionPackInfo PackInfo => _packInfo;
+        
         private IBundleLocater _bundleLocater = null;
         private VersionPackInfo _packInfo = null;
         private AssetBundleLoader _bundleLoader = null;

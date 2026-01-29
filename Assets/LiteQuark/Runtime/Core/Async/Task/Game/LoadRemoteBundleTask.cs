@@ -67,6 +67,8 @@ namespace LiteQuark.Runtime
                 if (_retryCount > 0 && IsCanRetryError(error))
                 {
                     _retryCount--;
+                    _request?.Dispose();
+                    _request = null;
                     LiteRuntime.Timer.AddTimer(1f, StartDownload);
                 }
                 else

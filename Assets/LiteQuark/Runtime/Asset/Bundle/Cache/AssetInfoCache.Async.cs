@@ -8,6 +8,9 @@ namespace LiteQuark.Runtime
         {
             if (IsLoaded)
             {
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, true, isCached: true);
+
                 IncRef();
                 LiteUtils.SafeInvoke(callback, true);
                 return;
@@ -23,6 +26,8 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(_assetPath);
 
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath);
+
             _loadAssetTask = LiteRuntime.Task.LoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
         }
 
@@ -31,6 +36,8 @@ namespace LiteQuark.Runtime
             _loadAssetTask = null;
 
             var isLoaded = OnAssetLoaded(asset);
+            
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
             
             foreach (var loader in _assetLoaderCallbackList)
             {
