@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using LiteQuark.Runtime;
 
-namespace LiteQuark.Editor
+namespace LiteQuark.Editor.VersionViewer
 {
     public class VersionViewerWindow : EditorWindow
     {

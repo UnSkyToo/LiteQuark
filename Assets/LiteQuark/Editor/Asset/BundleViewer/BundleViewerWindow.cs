@@ -2,7 +2,7 @@
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace LiteQuark.Editor
+namespace LiteQuark.Editor.BundleViewer
 {
     internal sealed class BundleViewerWindow : EditorWindow
     {
