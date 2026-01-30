@@ -1,7 +1,7 @@
 ﻿using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace LiteQuark.Editor
+namespace LiteQuark.Editor.BundleViewer
 {
     internal class BundleViewerTreeItem : TreeViewItem
     {

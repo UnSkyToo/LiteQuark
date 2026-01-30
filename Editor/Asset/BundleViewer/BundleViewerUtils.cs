@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 
-namespace LiteQuark.Editor
+namespace LiteQuark.Editor.BundleViewer
 {
     internal static class BundleViewerUtils
     {
