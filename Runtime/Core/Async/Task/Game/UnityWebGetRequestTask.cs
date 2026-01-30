@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
         protected override void OnSuccess(UnityWebRequest request)
         {
             LiteUtils.SafeInvoke(_callback, request.downloadHandler);
-            Complete(request.downloadedBytes);
+            Complete(request.downloadHandler);
         }
     }
 }
