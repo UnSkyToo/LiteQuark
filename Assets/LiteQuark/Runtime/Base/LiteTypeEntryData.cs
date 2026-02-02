@@ -10,11 +10,9 @@ namespace LiteQuark.Runtime
         public bool Disabled;
         [SerializeField]
         public string AssemblyQualifiedName;
-        [HideInInspector] public string BaseTypeName;
         
         public LiteTypeEntryData()
         {
-            BaseTypeName = typeof(T).AssemblyQualifiedName;
         }
     }
 }

@@ -15,9 +15,9 @@ namespace LiteQuark.Editor
 
             var disabledProperty = property.FindPropertyRelative("Disabled");
             var assemblyQualifiedNameProperty = property.FindPropertyRelative("AssemblyQualifiedName");
-            
-            var baseTypeProperty = property.FindPropertyRelative("BaseTypeName");
-            var typeList = GetTypeList(baseTypeProperty.stringValue);
+
+            var baseType = GetBaseTypeFromFieldInfo();
+            var typeList = GetTypeList(baseType);
             var selectIndex = Array.FindIndex(typeList, s => s == assemblyQualifiedNameProperty.stringValue);
             
             var disabledRect = new Rect(position.x, position.y, position.height, position.height);
@@ -38,9 +38,40 @@ namespace LiteQuark.Editor
             EditorGUI.EndProperty();
         }
         
-        private string[] GetTypeList(string baseTypeName)
+        private Type GetBaseTypeFromFieldInfo()
         {
-            var baseType = Type.GetType(baseTypeName);
+            var fieldType = fieldInfo.FieldType;
+            var elementType = fieldType;
+            
+            if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                elementType = fieldType.GetGenericArguments()[0];
+            }
+            else if (fieldType.IsArray)
+            {
+                elementType = fieldType.GetElementType();
+            }
+
+            if (elementType == null)
+            {
+                return null;
+            }
+            
+            if (elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(LiteTypeEntryData<>))
+            {
+                return elementType.GetGenericArguments()[0];
+            }
+            
+            return null;
+        }
+        
+        private string[] GetTypeList(Type baseType)
+        {
+            if (baseType == null)
+            {
+                return Array.Empty<string>();
+            }
+            
             var typeList = TypeCache.GetTypesDerivedFrom(baseType);
             var nameList = new List<string>();
 
