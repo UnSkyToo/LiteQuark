@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class TaskSystem : ISystem, ITick
     {
         public int RunningTaskCount { get; private set; } = 0;

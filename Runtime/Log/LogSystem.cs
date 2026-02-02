@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class LogSystem : ISystem
     {
         private ILoggerRepository _repository = null;

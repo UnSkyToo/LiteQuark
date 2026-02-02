@@ -5,6 +5,7 @@ namespace LiteQuark.Runtime
     /// <summary>
     /// 数据持久化系统
     /// </summary>
+    [LiteHideType]
     public sealed class DataSystem : ISystem
     {
         private IDataProvider _provider;

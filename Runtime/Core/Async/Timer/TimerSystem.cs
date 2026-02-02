@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class TimerSystem : ISystem, ITick
     {
         public const int RepeatCountForever = -1;

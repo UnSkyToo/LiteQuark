@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class ObjectPoolSystem : ISystem
     {
         private readonly Dictionary<string, IBasePool> _poolCache = new ();
