@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class ActionSystem : ISystem, ITick
     {
         private readonly Action<IAction, SafeList<IAction>, float> _onTickDelegate = null;

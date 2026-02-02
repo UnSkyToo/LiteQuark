@@ -77,6 +77,11 @@ namespace LiteQuark.Editor
 
             foreach (var type in typeList)
             {
+                if (TypeUtils.GetAttribute<LiteHideTypeAttribute>(type, null) != null)
+                {
+                    continue;
+                }
+                
                 nameList.Add(type.AssemblyQualifiedName);
             }
 

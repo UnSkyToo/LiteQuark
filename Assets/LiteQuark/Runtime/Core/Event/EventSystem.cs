@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class EventSystem : ISystem
     {
         private readonly EventModule _globalEvent;

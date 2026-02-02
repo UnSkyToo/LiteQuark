@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    [LiteHideType]
     public sealed class AssetSystem : ISystem, ITick
     {
         private IAssetProvider _provider = null;
