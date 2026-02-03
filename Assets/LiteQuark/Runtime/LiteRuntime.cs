@@ -38,7 +38,7 @@ namespace LiteQuark.Runtime
             IsFocus = true;
             Launcher = launcher;
             _setting = launcher.Setting;
-            IsDebugMode = Debug.isDebugBuild && _setting.Debug.DebugMode;
+            IsDebugMode = Debug.isDebugBuild && _setting.Common.DebugMode;
             _enterBackgroundTime = 0.0f;
             _restartWhenNextFrame = false;
 
@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
             }
 
 #if UNITY_EDITOR
-            var time = deltaTime * _setting.Debug.TimeScale;
+            var time = deltaTime * _setting.Common.TimeScale;
 #else
             var time = deltaTime;
 #endif
