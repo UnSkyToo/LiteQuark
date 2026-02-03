@@ -3,8 +3,10 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class NetworkSystem : ISystem
+    public sealed class NetworkSystem : ISystem, ISystemSettingProvider<NetworkSystemSetting>
     {
+        public NetworkSystemSetting Setting { get; set; }
+        
         private int _activeRequests = 0;
         private HttpClient _httpClient;
 
@@ -26,10 +28,10 @@ namespace LiteQuark.Runtime
 
         public HttpClient Http => _httpClient;
 
-        public int MaxConcurrentRequests => LiteRuntime.Setting.Network.MaxConcurrentRequests;
-        public int DefaultTimeout => LiteRuntime.Setting.Network.DefaultTimeout;
-        public bool EnableAutoRetry => LiteRuntime.Setting.Network.EnableAutoRetry;
-        public int DefaultRetryCount => LiteRuntime.Setting.Network.DefaultRetryCount;
+        public int MaxConcurrentRequests => Setting.MaxConcurrentRequests;
+        public int DefaultTimeout => Setting.DefaultTimeout;
+        public bool EnableAutoRetry => Setting.EnableAutoRetry;
+        public int DefaultRetryCount => Setting.DefaultRetryCount;
 
         public int ActiveRequests => _activeRequests;
 

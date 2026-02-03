@@ -6,12 +6,14 @@ using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class UISystem : ISystem, ITick
+    public sealed class UISystem : ISystem, ISystemSettingProvider<UISystemSetting>, ITick
     {
+        public UISystemSetting Setting { get; set; }
+        
         private const int UIStepOrder = 100;
 
         public RectTransform CanvasRoot => _canvasRoot;
-        public Camera UICamera => LiteRuntime.Setting.UI.UICamera ?? Camera.main;
+        public Camera UICamera => Setting.UICamera ?? Camera.main;
 
         private RectTransform _canvasRoot;
         private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new Dictionary<UIDepthMode, Transform>();
@@ -20,6 +22,10 @@ namespace LiteQuark.Runtime
         private readonly List<BaseUI> _closeList = new List<BaseUI>();
 
         public UISystem()
+        {
+        }
+        
+        public UniTask<bool> Initialize()
         {
             var parent = GameObject.Find("Canvas");
             if (parent == null)
@@ -38,10 +44,7 @@ namespace LiteQuark.Runtime
                 rectTrans.sizeDelta = Vector2.zero;
                 _canvasTransform.Add(depthMode, go.transform);
             }
-        }
-        
-        public UniTask<bool> Initialize()
-        {
+            
             return UniTask.FromResult(true);
         }
 
@@ -219,10 +222,10 @@ namespace LiteQuark.Runtime
             canvas.worldCamera = UICamera;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
-            scaler.uiScaleMode = LiteRuntime.Setting.UI.ScaleMode;
-            scaler.screenMatchMode = LiteRuntime.Setting.UI.MatchMode;
-            scaler.referenceResolution = new Vector2(LiteRuntime.Setting.UI.ResolutionWidth, LiteRuntime.Setting.UI.ResolutionHeight);
-            scaler.matchWidthOrHeight = LiteRuntime.Setting.UI.MatchValue;
+            scaler.uiScaleMode = Setting.ScaleMode;
+            scaler.screenMatchMode = Setting.MatchMode;
+            scaler.referenceResolution = new Vector2(Setting.ResolutionWidth, Setting.ResolutionHeight);
+            scaler.matchWidthOrHeight = Setting.MatchValue;
             scaler.referencePixelsPerUnit = 100;
             
             UICamera.orthographic = true;
