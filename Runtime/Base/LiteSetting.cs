@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
@@ -22,12 +22,11 @@ namespace LiteQuark.Runtime
         [SerializeField] public ActionSetting Action;
         [Header("日志设置")]
         [SerializeField] public LogSetting Log;
-        [Header("界面设置")]
-        [SerializeField] public UISetting UI;
-        [Header("网络设置")]
-        [SerializeField] public NetworkSetting Network;
         [Header("数据设置")]
         [SerializeField] public DataSetting Data;
+        
+        [SerializeReference]
+        public List<ISystemSetting> SystemSettings;
 
         public LiteSetting()
         {
@@ -39,9 +38,9 @@ namespace LiteQuark.Runtime
             Asset = new AssetSetting();
             Action = new ActionSetting();
             Log = new LogSetting();
-            UI = new UISetting();
-            Network = new NetworkSetting();
             Data = new DataSetting();
+
+            SystemSettings = new List<ISystemSetting>();
         }
 
         [Serializable]
@@ -86,10 +85,10 @@ namespace LiteQuark.Runtime
         {
             [Tooltip("资源模式，可选编辑器加载或者Bundle加载")] [SerializeField]
             public AssetProviderMode AssetMode = AssetProviderMode.Editor;
-
+        
             [Tooltip("Bundle定位器，可选包内或者远端")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public BundleLocaterMode BundleLocater = BundleLocaterMode.BuiltIn;
-
+        
             [Tooltip("远程资源根目录，根据主版本和平台动态分目录\n例如:https://localhost:8000/webgl/1.0/version_1.0.txt")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public string BundleRemoteUri = "https://localhost:8000/";
             
@@ -104,10 +103,10 @@ namespace LiteQuark.Runtime
             
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EnableRetain = true;
-
+        
             [Tooltip("开启缓存后，设定资源保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
             public float AssetRetainTime = 120; // 2 min
-
+        
             [Tooltip("开启缓存后，设定Bundle保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
             public float BundleRetainTime = 300f; // 5 min
             
@@ -116,13 +115,13 @@ namespace LiteQuark.Runtime
             
             [Tooltip("编辑器模式下模拟异步加载的延迟")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor), SerializeField]
             public bool SimulateAsyncDelayInEditor = true;
-
+        
             [Tooltip("模拟异步加载的延迟时间范围，单位（帧)")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMinFrame = 1;
-
+        
             [Tooltip("模拟异步加载的延迟时间范围，单位（帧）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Editor, nameof(SimulateAsyncDelayInEditor), true)] [SerializeField] [Range(1, 60)]
             public int AsyncDelayMaxFrame = 6;
-
+        
             public AssetSetting()
             {
             }
@@ -153,41 +152,6 @@ namespace LiteQuark.Runtime
             {
             }
         }
-        
-        [Serializable]
-        public class UISetting
-        {
-            [SerializeField] public Camera UICamera;
-            [SerializeField] public CanvasScaler.ScaleMode ScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            [SerializeField] public CanvasScaler.ScreenMatchMode MatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            [SerializeField] [Range(0, 1)] public float MatchValue = 0f;
-            [SerializeField] public int ResolutionWidth = 1920;
-            [SerializeField] public int ResolutionHeight = 1080;
-
-            public UISetting()
-            {
-            }
-        }
-
-        [Serializable]
-        public class NetworkSetting
-        {
-            [Tooltip("最大并发请求数，避免同时发送过多请求造成服务器压力"), Range(1, 20), SerializeField]
-            public int MaxConcurrentRequests = 5;
-
-            [Tooltip("默认超时时间（秒）"), Range(5, 60), SerializeField]
-            public int DefaultTimeout = 10;
-
-            [Tooltip("启用自动重试机制"), SerializeField]
-            public bool EnableAutoRetry = true;
-
-            [Tooltip("默认重试次数"), ConditionalShow(nameof(EnableAutoRetry), true), Range(1, 10), SerializeField]
-            public int DefaultRetryCount = 3;
-
-            public NetworkSetting()
-            {
-            }
-        }
 
         [Serializable]
         public class DataSetting
@@ -207,6 +171,22 @@ namespace LiteQuark.Runtime
             public DataSetting()
             {
             }
+        }
+
+        public ISystemSetting GetSetting(Type settingType)
+        {
+            var setting = LiteRuntime.Setting.SystemSettings?.FirstOrDefault(s => s != null && s.GetType() == settingType);
+            if (setting == null)
+            {
+                LLog.Warning("Setting not found for {0}, using default", settingType.Name);
+                setting = Activator.CreateInstance(settingType) as ISystemSetting;
+            }
+            return setting;
+        }
+        
+        public T GetSetting<T>() where T : class, ISystemSetting, new()
+        {
+            return GetSetting(typeof(T)) as T;
         }
     }
 }

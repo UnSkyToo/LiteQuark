@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -67,6 +69,8 @@ namespace LiteQuark.Runtime
                 
                 LLog.Info("Initialize {0}", assemblyQualifiedName);
                 
+                TryInjectSetting(system);
+                
                 var result = await system.Initialize();
                 if (result)
                 {
@@ -128,6 +132,24 @@ namespace LiteQuark.Runtime
             }
 
             return systemList;
+        }
+        
+        private void TryInjectSetting(ISystem system)
+        {
+            var systemType = system.GetType();
+            
+            var settingInterface = systemType.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
+
+            if (settingInterface == null)
+            {
+                return;
+            }
+            
+            var settingType = settingInterface.GetGenericArguments()[0];
+            var setting = LiteRuntime.Setting.GetSetting(settingType);
+            var property = settingInterface.GetProperty("Setting");
+            property?.SetValue(system, setting);
         }
     }
 }
