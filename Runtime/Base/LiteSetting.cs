@@ -22,8 +22,6 @@ namespace LiteQuark.Runtime
         [SerializeField] public ActionSetting Action;
         [Header("日志设置")]
         [SerializeField] public LogSetting Log;
-        [Header("调试设置")]
-        [SerializeField] public DebugSetting Debug;
         [Header("界面设置")]
         [SerializeField] public UISetting UI;
         [Header("网络设置")]
@@ -41,7 +39,6 @@ namespace LiteQuark.Runtime
             Asset = new AssetSetting();
             Action = new ActionSetting();
             Log = new LogSetting();
-            Debug = new DebugSetting();
             UI = new UISetting();
             Network = new NetworkSetting();
             Data = new DataSetting();
@@ -61,6 +58,9 @@ namespace LiteQuark.Runtime
 
             [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")] [SerializeField]
             public bool ThrowException = false;
+            
+            [SerializeField] public bool DebugMode = true;
+            [SerializeField, Range(0f, 10f)] public float TimeScale = 1.0f;
 
             public CommonSetting()
             {
@@ -150,17 +150,6 @@ namespace LiteQuark.Runtime
             [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = true;
 
             public LogSetting()
-            {
-            }
-        }
-
-        [Serializable]
-        public class DebugSetting
-        {
-            [SerializeField] public bool DebugMode = true;
-            [SerializeField, Range(0f, 10f)] public float TimeScale = 1.0f;
-            
-            public DebugSetting()
             {
             }
         }
