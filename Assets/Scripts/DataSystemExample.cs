@@ -41,11 +41,11 @@ public class DataSystemExample : MonoBehaviour
             position = new float[] { 1.5f, 2.3f, 4.8f }
         };
 
-        LiteRuntime.Data.Save("player_data", playerData);
+        LiteRuntime.Get<DataSystem>().Save("player_data", playerData);
         Debug.Log("数据已保存");
 
         // 加载数据
-        var loadedData = LiteRuntime.Data.Load<PlayerData>("player_data");
+        var loadedData = LiteRuntime.Get<DataSystem>().Load<PlayerData>("player_data");
         if (loadedData != null)
         {
             Debug.Log($"玩家名称：{loadedData.playerName}");
@@ -68,7 +68,7 @@ public class DataSystemExample : MonoBehaviour
             fullscreen = true
         };
 
-        var settings = LiteRuntime.Data.Load("game_settings", defaultSettings);
+        var settings = LiteRuntime.Get<DataSystem>().Load("game_settings", defaultSettings);
         Debug.Log($"音乐音量：{settings.musicVolume}");
         Debug.Log($"音效音量：{settings.sfxVolume}");
     }
@@ -87,11 +87,11 @@ public class DataSystemExample : MonoBehaviour
         };
 
         // 异步保存
-        await LiteRuntime.Data.SaveAsync("async_player", playerData);
+        await LiteRuntime.Get<DataSystem>().SaveAsync("async_player", playerData);
         Debug.Log("异步保存完成");
 
         // 异步加载
-        var loadedData = await LiteRuntime.Data.LoadAsync<PlayerData>("async_player");
+        var loadedData = await LiteRuntime.Get<DataSystem>().LoadAsync<PlayerData>("async_player");
         Debug.Log($"异步加载完成：{loadedData.playerName}");
     }
 
@@ -100,7 +100,7 @@ public class DataSystemExample : MonoBehaviour
     // ============================================
     public void Example_CheckKeyExists()
     {
-        if (LiteRuntime.Data.Has("player_data"))
+        if (LiteRuntime.Get<DataSystem>().Has("player_data"))
         {
             Debug.Log("玩家数据存在");
         }
@@ -116,11 +116,11 @@ public class DataSystemExample : MonoBehaviour
     public void Example_DeleteData()
     {
         // 删除单个键
-        LiteRuntime.Data.Delete("old_data");
+        LiteRuntime.Get<DataSystem>().Delete("old_data");
         Debug.Log("旧数据已删除");
 
         // 删除所有数据（慎用！）
-        // LiteRuntime.Data.DeleteAll();
+        // LiteRuntime.Get<DataSystem>().DeleteAll();
     }
 
     // ============================================
@@ -129,8 +129,8 @@ public class DataSystemExample : MonoBehaviour
     public void Example_SaveSimpleTypes()
     {
         // 保存基础类型需要包装在类中
-        LiteRuntime.Data.Save("high_score", new { score = 99999 });
-        LiteRuntime.Data.Save("player_name", new { name = "Champion" });
+        LiteRuntime.Get<DataSystem>().Save("high_score", new { score = 99999 });
+        LiteRuntime.Get<DataSystem>().Save("player_name", new { name = "Champion" });
 
         // 或者使用Dictionary
         var userData = new System.Collections.Generic.Dictionary<string, object>
@@ -138,7 +138,7 @@ public class DataSystemExample : MonoBehaviour
             { "highScore", 99999 },
             { "lastLogin", DateTime.Now.ToString() }
         };
-        LiteRuntime.Data.Save("user_data", userData);
+        LiteRuntime.Get<DataSystem>().Save("user_data", userData);
     }
 
     // ============================================
@@ -157,13 +157,13 @@ public class DataSystemExample : MonoBehaviour
                 position = new float[] { i, i * 2, i * 3 }
             };
 
-            LiteRuntime.Data.Save($"save_slot_{i}", slotData);
+            LiteRuntime.Get<DataSystem>().Save($"save_slot_{i}", slotData);
         }
 
         Debug.Log("3个存档槽已创建");
 
         // 加载特定存档槽
-        var slot2 = LiteRuntime.Data.Load<PlayerData>("save_slot_2");
+        var slot2 = LiteRuntime.Get<DataSystem>().Load<PlayerData>("save_slot_2");
         Debug.Log($"存档槽2：{slot2.playerName}, Level {slot2.level}");
     }
 
@@ -173,10 +173,10 @@ public class DataSystemExample : MonoBehaviour
     public void Example_DataMigration()
     {
         // 检查旧版本数据
-        if (LiteRuntime.Data.Has("old_player_data"))
+        if (LiteRuntime.Get<DataSystem>().Has("old_player_data"))
         {
             // 加载旧数据
-            var oldData = LiteRuntime.Data.Load<PlayerData>("old_player_data");
+            var oldData = LiteRuntime.Get<DataSystem>().Load<PlayerData>("old_player_data");
 
             // 迁移到新格式（这里简化处理）
             var newData = new PlayerData
@@ -188,10 +188,10 @@ public class DataSystemExample : MonoBehaviour
             };
 
             // 保存新数据
-            LiteRuntime.Data.Save("player_data", newData);
+            LiteRuntime.Get<DataSystem>().Save("player_data", newData);
 
             // 删除旧数据
-            LiteRuntime.Data.Delete("old_player_data");
+            LiteRuntime.Get<DataSystem>().Delete("old_player_data");
 
             Debug.Log("数据迁移完成");
         }
@@ -205,7 +205,7 @@ public class DataSystemExample : MonoBehaviour
     void Start()
     {
         // 启动时加载
-        currentPlayerData = LiteRuntime.Data.Load("auto_save", new PlayerData
+        currentPlayerData = LiteRuntime.Get<DataSystem>().Load("auto_save", new PlayerData
         {
             playerName = "NewPlayer",
             level = 1,
@@ -219,14 +219,14 @@ public class DataSystemExample : MonoBehaviour
 
     void AutoSave()
     {
-        LiteRuntime.Data.Save("auto_save", currentPlayerData);
+        LiteRuntime.Get<DataSystem>().Save("auto_save", currentPlayerData);
         Debug.Log("自动保存完成");
     }
 
     void OnApplicationQuit()
     {
         // 退出时保存
-        LiteRuntime.Data.Save("auto_save", currentPlayerData);
+        LiteRuntime.Get<DataSystem>().Save("auto_save", currentPlayerData);
     }
 
     // ============================================
@@ -240,7 +240,7 @@ public class DataSystemExample : MonoBehaviour
         public void Initialize()
         {
             // 加载配置，如果不存在则使用默认值
-            currentSettings = LiteRuntime.Data.Load(CONFIG_KEY, new GameSettings
+            currentSettings = LiteRuntime.Get<DataSystem>().Load(CONFIG_KEY, new GameSettings
             {
                 musicVolume = 0.8f,
                 sfxVolume = 1.0f,
@@ -263,7 +263,7 @@ public class DataSystemExample : MonoBehaviour
 
         private void SaveConfig()
         {
-            LiteRuntime.Data.Save(CONFIG_KEY, currentSettings);
+            LiteRuntime.Get<DataSystem>().Save(CONFIG_KEY, currentSettings);
         }
 
         public GameSettings GetCurrentSettings()

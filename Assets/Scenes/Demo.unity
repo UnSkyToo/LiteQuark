@@ -196,7 +196,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Setting:
-    LogicList: []
+    LogicList:
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Runtime.LogRuntimeLogic, LiteQuark.Runtime,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     SystemList:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
@@ -236,18 +239,6 @@ MonoBehaviour:
       LogError: 1
       LogFatal: 1
       ShowLogViewer: 1
-    Network:
-      MaxConcurrentRequests: 5
-      DefaultTimeout: 10
-      EnableAutoRetry: 1
-      DefaultRetryCount: 3
-    Data:
-      ProviderMode: 0
-      CustomProviderType:
-        Disabled: 0
-        AssemblyQualifiedName: 
-      EnableEncryption: 1
-      EncryptionKey: LiteQuark
     SystemSettings:
     - rid: 8102467287851991047
   references:
@@ -259,9 +250,9 @@ MonoBehaviour:
         UICamera: {fileID: 2007689149}
         ScaleMode: 1
         MatchMode: 0
-        MatchValue: 0
-        ResolutionWidth: 1080
-        ResolutionHeight: 1920
+        MatchValue: 0.603
+        ResolutionWidth: 1103
+        ResolutionHeight: 1889
 --- !u!4 &1611344604
 Transform:
   m_ObjectHideFlags: 0

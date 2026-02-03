@@ -2,12 +2,10 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    /// <summary>
-    /// 数据持久化系统
-    /// </summary>
-    [LiteHideType]
-    public sealed class DataSystem : ISystem
+    public sealed class DataSystem : ISystem, ISystemSettingProvider<DataSystemSetting>
     {
+        public DataSystemSetting Setting { get; set; }
+        
         private IDataProvider _provider;
 
         public DataSystem()
@@ -16,29 +14,26 @@ namespace LiteQuark.Runtime
 
         public async UniTask<bool> Initialize()
         {
-            var setting = LiteRuntime.Setting.Data;
-
-            // Create provider based on mode
-            switch (setting.ProviderMode)
+            switch (Setting.ProviderMode)
             {
                 case DataProviderMode.PlayerPrefs:
-                    _provider = new PlayerPrefsProvider(setting.EnableEncryption, setting.EncryptionKey);
+                    _provider = new PlayerPrefsProvider(Setting.EnableEncryption, Setting.EncryptionKey);
                     break;
 
                 case DataProviderMode.JsonFile:
-                    _provider = new JsonFileProvider(setting.EnableEncryption, setting.EncryptionKey);
+                    _provider = new JsonFileProvider(Setting.EnableEncryption, Setting.EncryptionKey);
                     break;
 
                 case DataProviderMode.BinaryFile:
-                    _provider = new BinaryProvider(setting.EnableEncryption, setting.EncryptionKey);
+                    _provider = new BinaryProvider(Setting.EnableEncryption, Setting.EncryptionKey);
                     break;
 
                 case DataProviderMode.Custom:
-                    _provider = TypeUtils.CreateEntryInstance(setting.CustomProviderType);
+                    _provider = TypeUtils.CreateEntryInstance(Setting.CustomProviderType);
                     break;
                 
                 default:
-                    _provider = new PlayerPrefsProvider(setting.EnableEncryption, setting.EncryptionKey);
+                    _provider = new PlayerPrefsProvider(Setting.EnableEncryption, Setting.EncryptionKey);
                     break;
             }
 
