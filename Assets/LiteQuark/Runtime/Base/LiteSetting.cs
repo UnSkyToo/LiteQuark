@@ -203,7 +203,7 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class DataSetting
         {
-            [Tooltip("数据存储模式\nPlayerPrefs: 适合少量配置数据\nJsonFile: 适合结构化数据，可读性好\nBinaryFile: 适合大量数据，性能最好"), SerializeField]
+            [Tooltip("数据存储模式\nPlayerPrefs: 适合少量配置数据\nJsonFile: 适合结构化数据，可读性好\nBinaryFile: 适合大量数据，性能最好\nCustom: 自定义模式"), SerializeField]
             public DataProviderMode ProviderMode = DataProviderMode.PlayerPrefs;
 
             [ConditionalShow(nameof(ProviderMode), (int)DataProviderMode.Custom)]

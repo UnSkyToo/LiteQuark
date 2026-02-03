@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
             }
             else if (Input.GetKeyDown(KeyCode.F11))
             {
-                LiteRuntime.Instance.ErrorStage();
+                LiteRuntime.Instance.EnterErrorState();
             }
             else if (Input.GetKeyDown(KeyCode.F12))
             {

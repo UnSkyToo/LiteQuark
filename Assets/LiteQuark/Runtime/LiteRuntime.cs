@@ -4,25 +4,34 @@ namespace LiteQuark.Runtime
 {
     public sealed partial class LiteRuntime : Singleton<LiteRuntime>
     {
+        private enum RuntimeState : byte
+        {
+            Idle,
+            InitSystem,
+            InitLogic,
+            Running,
+            Error,
+        }
+
         public static event System.Action<FrameworkErrorCode, string> OnFrameworkError;
-        
+
         public static bool IsDebugMode { get; private set; } = false;
-        
+
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
 
         public LiteLauncher Launcher { get; private set; }
-        
+
         private LiteSetting _setting = null;
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
 
-        private StageCenter _stageCenter;
+        private RuntimeState _state = RuntimeState.Idle;
 
         private LiteRuntime()
         {
         }
-        
+
         public void Startup(LiteLauncher launcher)
         {
             IsPause = false;
@@ -33,20 +42,52 @@ namespace LiteQuark.Runtime
             _enterBackgroundTime = 0.0f;
             _restartWhenNextFrame = false;
 
-            _stageCenter = new StageCenter();
+            Application.targetFrameRate = _setting.Common.TargetFrameRate;
+            Input.multiTouchEnabled = _setting.Common.MultiTouch;
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            Random.InitState((int)System.DateTime.Now.Ticks);
+
+            StartupAsync();
+        }
+
+        private async void StartupAsync()
+        {
+            var watch = new System.Diagnostics.Stopwatch();
+
+            _state = RuntimeState.InitSystem;
+            watch.Restart();
+            if (!await SystemCenter.Instance.InitializeSystem())
+            {
+                EnterErrorState();
+                return;
+            }
+
+            LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
+
+            _state = RuntimeState.InitLogic;
+            watch.Restart();
+            if (!await LogicCenter.Instance.InitializeLogic())
+            {
+                EnterErrorState();
+                return;
+            }
+
+            LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
+
+            _state = RuntimeState.Running;
         }
 
         public void Shutdown()
         {
             OnEnterBackground();
-            
-            if (_stageCenter != null)
+
+            if (_state == RuntimeState.Running)
             {
-                _stageCenter.Dispose();
-                _stageCenter = null;
+                LogicCenter.Instance.Dispose();
             }
-            
+
             SystemCenter.Instance.Dispose();
+            _state = RuntimeState.Idle;
 
             PlayerPrefs.Save();
             Resources.UnloadUnusedAssets();
@@ -54,9 +95,11 @@ namespace LiteQuark.Runtime
             System.GC.WaitForPendingFinalizers();
         }
 
-        internal void ErrorStage()
+        internal void EnterErrorState()
         {
-            _stageCenter?.ErrorStage();
+            _state = RuntimeState.Error;
+            LLog.Error("Enter <ErrorState>, please check log.");
+            FrameworkError(FrameworkErrorCode.Startup, "System Startup error");
         }
 
         public void Tick(float deltaTime)
@@ -67,7 +110,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (IsPause)
+            if (IsPause || _state == RuntimeState.Error)
             {
                 return;
             }
@@ -77,9 +120,13 @@ namespace LiteQuark.Runtime
 #else
             var time = deltaTime;
 #endif
-            
+
             SystemCenter.Instance.Tick(deltaTime);
-            _stageCenter?.Tick(time);
+
+            if (_state == RuntimeState.Running)
+            {
+                LogicCenter.Instance.Tick(time);
+            }
         }
 
         public void Restart()
@@ -123,9 +170,10 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
+
             IsPause = true;
             IsFocus = false;
- 
+
             LLog.Info("OnEnterBackground");
             Event?.Send<EnterBackgroundEvent>();
             _enterBackgroundTime = Time.realtimeSinceStartup;
@@ -138,7 +186,7 @@ namespace LiteQuark.Runtime
         {
             return SystemCenter.Instance.GetSystem<T>();
         }
-        
+
         internal static void FrameworkError(FrameworkErrorCode code, string message)
         {
             LLog.Error("FrameworkError: {0}, {1}", code, message);
