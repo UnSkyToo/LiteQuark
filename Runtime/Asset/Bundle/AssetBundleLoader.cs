@@ -27,6 +27,11 @@ namespace LiteQuark.Runtime
         {
             _pendingTaskMap.Clear();
             _pendingTaskQueue.Clear();
+            
+            foreach (var task in _runningTasks)
+            {
+                task.LoadTask.Cancel();
+            }
             _runningTasks.Clear();
         }
 
