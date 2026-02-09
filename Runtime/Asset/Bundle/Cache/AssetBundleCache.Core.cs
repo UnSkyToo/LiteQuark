@@ -69,12 +69,14 @@ namespace LiteQuark.Runtime
             
             foreach (var dependency in _bundleInfo.DependencyList)
             {
-                var cache = _provider.GetOrCreateBundleCache(dependency);
-                if (cache.Stage == AssetCacheStage.Unloaded)
+                if (_provider.TryGetBundleCache(dependency, out var cache))
                 {
-                    continue;
+                    if (cache.Stage == AssetCacheStage.Unloaded)
+                    {
+                        continue;
+                    }
+                    cache.DecRef();
                 }
-                cache.DecRef();
             }
 
             _refCount = 0;
