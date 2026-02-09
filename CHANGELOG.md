@@ -1,15 +1,17 @@
 # Changelog
 
-## **[0.2.7] - 2026-01-07**
-- ✨ 新增 NetworkSystem 网络模块
-- 支持 GET/POST/PUT/DELETE 请求
-- 支持文件上传/下载（带进度）
-- 支持请求重试机制和并发控制
-- 提供扩展接口（INetworkChannel, IProtocolCodec）
-- ✨ 新增 DataSystem 数据持久化模块
-- 支持 PlayerPrefs / JSON文件 / 二进制文件 三种存储模式
-- 支持 AES-256 数据加密
-- 提供同步和异步API
+## **[0.3.0] - 2026-02-09**
+- 新增：NetworkSystem 网络模块
+- 新增：DataSystem 数据持久化模块
+- 新增：Load Profiler模块，资源加载分析器
+- 新增：ObjectPool增加UniTask接口版本
+- 优化：Setting配置方式，支持自定义System配置Setting
+- 优化：重构EntryData，System和Logic共享，也支持自定义的数据展示
+- 优化：打包脚本部分设置前置，放置没有勾选App阶段跳过了必要设置
+- 优化：Task增加更详细的任务名称和打印
+- 修复：编辑器模式重启切后台报错
+- 修复：资源加载中重启框架报错
+- 修复：Bundle Viewer大小计算异常
 
 ## **[0.2.6] - 2025-12-31**
 - 修复：引擎未初始化时抛出FrameworkError，逻辑层收不到
