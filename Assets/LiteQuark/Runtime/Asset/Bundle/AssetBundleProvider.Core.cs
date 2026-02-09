@@ -45,19 +45,19 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _bundleLocater = null;
-            _packInfo = null;
-            
-            _bundleLoader?.Dispose();
-            _bundleLoader = null;
-            
-            _unloadBundleList.Clear();
-            _assetIDToPathMap.Clear();
             foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Dispose();
             }
             _bundleCacheMap.Clear();
+            
+            UpdateUnloadBundleList();
+            _assetIDToPathMap.Clear();
+            
+            _bundleLoader?.Dispose();
+            _bundleLoader = null;
+            _bundleLocater = null;
+            _packInfo = null;
         }
         
         public void Tick(float deltaTime)
@@ -74,6 +74,11 @@ namespace LiteQuark.Runtime
                 }
             }
 
+            UpdateUnloadBundleList();
+        }
+
+        private void UpdateUnloadBundleList()
+        {
             if (_unloadBundleList.Count > 0)
             {
                 foreach (var bundlePath in _unloadBundleList)
