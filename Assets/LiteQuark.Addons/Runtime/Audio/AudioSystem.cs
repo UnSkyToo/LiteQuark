@@ -230,5 +230,25 @@ namespace LiteQuark.Runtime
                 chunk.Value.SetVolume(volume);
             }
         }
+
+        public void PauseAllAudio()
+        {
+            AudioListener.pause = true;
+            
+            foreach (var chunk in _audioCache)
+            {
+                chunk.Value.Pause();
+            }
+        }
+
+        public void ResumeAllAudio()
+        {
+            AudioListener.pause = false;
+            
+            foreach (var chunk in _audioCache)
+            {
+                chunk.Value.Resume();
+            }
+        }
     }
 }
