@@ -39,6 +39,11 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                OnBundleLoaded(null);
+                return;
+            }
             _retryCount = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadMaxRetries, 0);
             _timeout = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadTimeout, 0);
             StartDownload();
