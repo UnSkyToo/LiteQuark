@@ -137,6 +137,26 @@ namespace LiteQuark.Runtime
             return true;
         }
 
+        public void Pause()
+        {
+            if (!IsValid())
+            {
+                return;
+            }
+            
+            Source.Pause();
+        }
+
+        public void Resume()
+        {
+            if (!IsValid())
+            {
+                return;
+            }
+            
+            Source.UnPause();
+        }
+
         public bool SetVolume(float volume)
         {
             if (!IsValid())
