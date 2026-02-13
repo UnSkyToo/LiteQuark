@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             {
                 foreach (var chunk in _callbackList)
                 {
-                    chunk.Value?.Invoke(msg);
+                    LiteUtils.SafeInvoke(chunk.Value, msg);
                 }
             }
 
