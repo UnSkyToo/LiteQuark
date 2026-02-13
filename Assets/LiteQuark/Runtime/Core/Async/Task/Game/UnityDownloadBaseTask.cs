@@ -36,6 +36,12 @@ namespace LiteQuark.Runtime
         
         protected override void OnExecute()
         {
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                OnFailed();
+                return;
+            }
+            
             StartDownload();
         }
 
