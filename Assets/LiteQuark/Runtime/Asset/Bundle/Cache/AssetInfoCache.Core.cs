@@ -107,15 +107,14 @@ namespace LiteQuark.Runtime
 
         private bool OnAssetLoaded(UnityEngine.Object asset)
         {
-            Asset = asset;
-
             if (asset == null)
             {
-                Stage = AssetCacheStage.Unloading;
+                Stage = AssetCacheStage.Created;
                 LLog.Error("Load asset failed : {0}", _assetPath);
                 return false;
             }
 
+            Asset = asset;
             Stage = AssetCacheStage.Loaded;
             return true;
         }

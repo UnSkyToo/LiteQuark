@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
             
             IncRef();
             _assetLoaderCallbackList.Add(callback);
-            if (Stage == AssetCacheStage.Loading)
+            if (Stage != AssetCacheStage.Created)
             {
                 return;
             }

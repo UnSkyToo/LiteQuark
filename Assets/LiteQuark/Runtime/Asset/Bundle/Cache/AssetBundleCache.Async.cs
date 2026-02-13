@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
             }
             
             _bundleLoaderCallbackList.Add(callback);
-            if (Stage == AssetCacheStage.Loading)
+            if (Stage != AssetCacheStage.Created)
             {
                 return;
             }
@@ -95,7 +95,7 @@ namespace LiteQuark.Runtime
         
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
-            var isLoaded = success && OnBundleLoaded(bundle);
+            var isLoaded = OnBundleLoaded(success ? bundle : null);
             
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
             

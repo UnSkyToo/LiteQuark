@@ -168,8 +168,14 @@ namespace LiteQuark.Runtime
 
         private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
         {
+            if (bundle == null)
+            {
+                Stage = AssetCacheStage.Created;
+                LLog.Error("Load bundle failed : {0}", _bundleInfo.BundlePath);
+                return false;
+            }
+            
             Bundle = bundle;
-
             foreach (var dependency in _bundleInfo.DependencyList)
             {
                 var cache = _provider.GetOrCreateBundleCache(dependency);
@@ -178,13 +184,6 @@ namespace LiteQuark.Runtime
                     continue;
                 }
                 cache.IncRef();
-            }
-            
-            if (bundle == null)
-            {
-                Stage = AssetCacheStage.Unloading;
-                LLog.Error("Load bundle failed : {0}", _bundleInfo.BundlePath);
-                return false;
             }
             
             Stage = AssetCacheStage.Loaded;
