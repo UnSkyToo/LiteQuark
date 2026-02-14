@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
             foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
-                if (chunk.Value.IsExpired || chunk.Value.IsOrphan)
+                if (chunk.Value.IsExpired)
                 {
                     _unloadBundleList.Add(chunk.Key);
                 }
