@@ -23,23 +23,20 @@ namespace LiteQuark.Runtime
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, parent);
-                UpdateAssetIDToPathMap(instance, assetPath);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
+            InstantiateAsync(assetPath, parent, UnityEngine.Vector3.zero, UnityEngine.Quaternion.identity, callback);
         }
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
         {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
+            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
+            if (bundleInfo == null)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
+            var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
+            cache.LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
                 if (asset == null)
                 {
