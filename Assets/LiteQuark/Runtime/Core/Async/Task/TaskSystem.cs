@@ -55,22 +55,27 @@ namespace LiteQuark.Runtime
         {
             if (task.State == TaskState.Pending)
             {
-                try
+                if (RunningTaskCount < _concurrencyLimit || task.Priority >= _ignoreLimitPriority)
                 {
-                    if (RunningTaskCount < _concurrencyLimit || task.Priority >= _ignoreLimitPriority)
+                    RunningTaskCount++;
+                    PendingTaskCount--;
+                    
+                    try
                     {
-                        RunningTaskCount++;
-                        PendingTaskCount--;
                         task.Execute();
                     }
+                    catch (Exception ex)
+                    {
+                        LLog.Error("Task {0} execute failed: {1}", task.GetType().Name, ex);
+                        task.Cancel();
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    LLog.Error("Task {0} execute failed: {1}", task.GetType().Name, ex);
-                    task.Cancel();
+                    return;
                 }
             }
-            
+
             if (task.State == TaskState.InProgress)
             {
                 try
@@ -88,7 +93,7 @@ namespace LiteQuark.Runtime
             {
                 task.Dispose();
                 list.Remove(task);
-                RunningTaskCount--;
+                RunningTaskCount = Math.Max(0, RunningTaskCount - 1);
             }
         }
         
