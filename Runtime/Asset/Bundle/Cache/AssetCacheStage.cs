@@ -6,7 +6,6 @@
         Loading,
         Loaded,
         Retained,
-        Unloading,
         Unloaded,
     }
 }

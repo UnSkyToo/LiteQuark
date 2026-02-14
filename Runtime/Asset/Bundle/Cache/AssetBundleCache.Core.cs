@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
+        public bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
 
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
@@ -62,7 +63,7 @@ namespace LiteQuark.Runtime
             _assetCacheMap.Clear();
             _unloadAssetList.Clear();
             
-            if (_refCount > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
+            if (_refCount > 0 && Stage != AssetCacheStage.Retained)
             {
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
@@ -88,17 +89,12 @@ namespace LiteQuark.Runtime
             if (Stage == AssetCacheStage.Retained)
             {
                 _retainTime -= deltaTime;
-                if (_retainTime <= 0f)
-                {
-                    Stage = AssetCacheStage.Unloading;
-                }
             }
             
             foreach (var chunk in _assetCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
-
-                if (chunk.Value.Stage == AssetCacheStage.Unloading)
+                if (chunk.Value.IsExpired)
                 {
                     _unloadAssetList.Add(chunk.Key);
                 }
@@ -140,16 +136,10 @@ namespace LiteQuark.Runtime
 
             if (_refCount <= 0)
             {
-                if (LiteRuntime.Setting.Asset.EnableRetain)
-                {
-                    Stage = AssetCacheStage.Retained;
-                    _retainTime = LiteRuntime.Setting.Asset.BundleRetainTime;
-                }
-                else
-                {
-                    Stage = AssetCacheStage.Unloading;
-                    _retainTime = 0f;
-                }
+                Stage = AssetCacheStage.Retained;
+                _retainTime = LiteRuntime.Setting.Asset.EnableRetain
+                    ? LiteRuntime.Setting.Asset.BundleRetainTime
+                    : 0f;
             }
         }
 
@@ -212,7 +202,7 @@ namespace LiteQuark.Runtime
             
             foreach (var chunk in _assetCacheMap)
             {
-                if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.Stage == AssetCacheStage.Unloading)
+                if (chunk.Value.IsExpired)
                 {
                     unloadList.Add(chunk.Key);
                 }

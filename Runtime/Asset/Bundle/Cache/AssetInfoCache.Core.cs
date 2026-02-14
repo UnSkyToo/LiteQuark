@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
+        public bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
 
         private readonly string _assetPath;
         private readonly AssetBundleCache _cache;
@@ -45,7 +46,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            if (_refCount > 0 && !(Stage == AssetCacheStage.Retained || Stage == AssetCacheStage.Unloading))
+            if (_refCount > 0 && Stage != AssetCacheStage.Retained)
             {
                 LLog.Warning("Unload asset leak : {0}({1})", _assetPath, _refCount);
             }
@@ -59,10 +60,6 @@ namespace LiteQuark.Runtime
             if (Stage == AssetCacheStage.Retained)
             {
                 _retainTime -= deltaTime;
-                if (_retainTime <= 0f)
-                {
-                    Stage = AssetCacheStage.Unloading;
-                }
             }
         }
 
@@ -89,19 +86,13 @@ namespace LiteQuark.Runtime
             }
             
             _refCount--;
-            
+
             if (_refCount <= 0)
             {
-                if (LiteRuntime.Setting.Asset.EnableRetain)
-                {
-                    Stage = AssetCacheStage.Retained;
-                    _retainTime = LiteRuntime.Setting.Asset.AssetRetainTime;
-                }
-                else
-                {
-                    Stage = AssetCacheStage.Unloading;
-                    _retainTime = 0f;
-                }
+                Stage = AssetCacheStage.Retained;
+                _retainTime = LiteRuntime.Setting.Asset.EnableRetain
+                    ? LiteRuntime.Setting.Asset.AssetRetainTime
+                    : 0f;
             }
         }
 
