@@ -1,5 +1,10 @@
 # Changelog
 
+## **[0.4.0] - 2026-02-14**
+- 修复：音频加载失败时 Carrier 未释放的 BUG
+- 修复：HttpClient.SendBatch 在非主线程使用 UnityWebRequest 的报错
+- 修复：EffectObject 加载中 Stop 后未回收 GameObject 的 BUG
+
 ## **[0.3.0] - 2026-02-09**
 -- 优化：System相关设置放到自己的Package内
 
