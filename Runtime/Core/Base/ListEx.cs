@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
+    [Obsolete]
     public class ListEx<T> : IEnumerable<T>
     {
         private bool _dirty;

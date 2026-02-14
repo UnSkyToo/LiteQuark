@@ -9,8 +9,8 @@ namespace LiteQuark.Runtime
         public const int RepeatCountForever = -1;
 
         private readonly float _frameInterval = 0.01f;
-        private readonly Action<ITimer, ListEx<ITimer>, float> _onTickDelegate = null;
-        private readonly ListEx<ITimer> _timerList = new ListEx<ITimer>();
+        private readonly Action<ITimer, SafeList<ITimer>, float> _onTickDelegate = null;
+        private readonly SafeList<ITimer> _timerList = new SafeList<ITimer>();
 
         public TimerSystem()
         {
@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
             _timerList.Foreach(_onTickDelegate, _timerList, deltaTime);
         }
 
-        private void OnTimerTick(ITimer timer, ListEx<ITimer> list, float dt)
+        private void OnTimerTick(ITimer timer, SafeList<ITimer> list, float dt)
         {
             timer.Tick(dt);
 
