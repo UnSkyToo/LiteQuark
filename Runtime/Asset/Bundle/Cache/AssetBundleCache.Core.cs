@@ -46,14 +46,19 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             Unload();
-            
-            _bundleLoaderCallbackList.Clear();
             _unloadAssetList.Clear();
-
+            
             if (Bundle != null)
             {
                 Bundle.Unload(true);
                 Bundle = null;
+            }
+            
+            var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
+            _bundleLoaderCallbackList.Clear();
+            foreach (var callback in callbacks)
+            {
+                LiteUtils.SafeInvoke(callback, false);
             }
         }
         

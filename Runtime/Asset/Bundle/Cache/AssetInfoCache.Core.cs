@@ -36,8 +36,14 @@ namespace LiteQuark.Runtime
             Unload();
 
             _loadAssetTask = null;
-            _assetLoaderCallbackList.Clear();
             Asset = null;
+            
+            var callbacks = new List<Action<bool>>(_assetLoaderCallbackList);
+            _assetLoaderCallbackList.Clear();
+            foreach (var cb in callbacks)
+            {
+                LiteUtils.SafeInvoke(cb, false);
+            }
         }
 
         public void Unload()
