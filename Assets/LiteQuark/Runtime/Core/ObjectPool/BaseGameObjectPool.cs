@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         protected Transform Parent;
         protected GameObject Template;
         protected ObjectPool<GameObject> Pool;
-        protected event System.Action LoadTemplateCallback;
+        protected readonly System.Collections.Generic.List<System.Action> LoadTemplateCallbackList = new();
         
         protected BaseGameObjectPool()
         {
@@ -154,14 +154,18 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                LoadTemplateCallback += callback;
+                LoadTemplateCallbackList.Add(callback);
             }
         }
 
         protected void OnLoadTemplate(GameObject template)
         {
             Template = template;
-            LoadTemplateCallback?.Invoke();
+            foreach (var callback in LoadTemplateCallbackList)
+            {
+                LiteUtils.SafeInvoke(callback);
+            }
+            LoadTemplateCallbackList.Clear();
         }
         
         public UniTask WaitReadyAsync()
