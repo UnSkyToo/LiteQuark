@@ -88,6 +88,12 @@ namespace LiteQuark.Runtime
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
+                if (dependencyCache == null)
+                {
+                    LLog.Error("Missing dependency bundle: {0} -> {1}", BundlePath, dependency);
+                    acg.SignalSub(false);
+                    continue;
+                }
                 dependencyCache.LoadBundleAsync(priority, acg.SignalSub);
             }
             _provider.LoadBundle(_bundleInfo, priority, acg.SignalMain);
