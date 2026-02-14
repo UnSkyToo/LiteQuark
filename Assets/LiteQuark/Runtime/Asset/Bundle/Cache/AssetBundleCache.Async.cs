@@ -105,12 +105,13 @@ namespace LiteQuark.Runtime
             
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
             
-            foreach (var loader in _bundleLoaderCallbackList)
+            var callbacks = new System.Collections.Generic.List<Action<bool>>(_bundleLoaderCallbackList);
+            _bundleLoaderCallbackList.Clear();
+            
+            foreach (var loader in callbacks)
             {
                 LiteUtils.SafeInvoke(loader, isLoaded);
             }
-
-            _bundleLoaderCallbackList.Clear();
         }
     }
 }
