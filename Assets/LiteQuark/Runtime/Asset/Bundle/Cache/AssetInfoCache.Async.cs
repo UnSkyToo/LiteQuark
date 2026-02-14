@@ -38,7 +38,10 @@ namespace LiteQuark.Runtime
             
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
             
-            foreach (var loader in _assetLoaderCallbackList)
+            var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
+            _assetLoaderCallbackList.Clear();
+            
+            foreach (var loader in callbacks)
             {
                 if (isLoaded)
                 {
@@ -47,8 +50,6 @@ namespace LiteQuark.Runtime
                 
                 LiteUtils.SafeInvoke(loader, isLoaded);
             }
-            
-            _assetLoaderCallbackList.Clear();
         }
     }
 }
