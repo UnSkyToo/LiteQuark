@@ -231,10 +231,7 @@ namespace LiteQuark.Runtime
             for (var i = 0; i < requests.Length; i++)
             {
                 var index = i;
-                tasks.Add(UniTask.RunOnThreadPool(async () =>
-                {
-                    results[index] = await Send<T>(requests[index]);
-                }));
+                tasks.Add(SendAndAssign(requests[index], results, index));
 
                 if (tasks.Count >= concurrency)
                 {
@@ -249,6 +246,11 @@ namespace LiteQuark.Runtime
             }
 
             return results;
+        }
+        
+        private async UniTask SendAndAssign<T>(HttpRequest request, HttpResponse<T>[] results, int index)
+        {
+            results[index] = await Send<T>(request);
         }
 
         #endregion
