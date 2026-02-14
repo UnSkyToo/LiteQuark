@@ -75,16 +75,20 @@ namespace LiteQuark.Runtime
             {
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
-            
-            foreach (var dependency in _bundleInfo.DependencyList)
+
+            if (Bundle != null)
             {
-                if (_provider.TryGetBundleCache(dependency, out var cache))
+                foreach (var dependency in _bundleInfo.DependencyList)
                 {
-                    if (cache.Stage == AssetCacheStage.Unloaded)
+                    if (_provider.TryGetBundleCache(dependency, out var cache))
                     {
-                        continue;
+                        if (cache.Stage == AssetCacheStage.Unloaded)
+                        {
+                            continue;
+                        }
+
+                        cache.DecRef();
                     }
-                    cache.DecRef();
                 }
             }
 
