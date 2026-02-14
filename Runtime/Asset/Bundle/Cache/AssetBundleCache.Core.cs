@@ -8,8 +8,16 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
-        public bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
-
+        
+        /// <summary>
+        /// 资源是否过期了
+        /// </summary>
+        internal bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
+        /// <summary>
+        /// 资源是否为孤立资源（被加载了，但没有任何引用）
+        /// </summary>
+        internal bool IsOrphan => Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0;
+        
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
         internal long FileSize => _bundleInfo?.Size ?? 0;
