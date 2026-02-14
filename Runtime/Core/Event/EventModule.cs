@@ -15,31 +15,43 @@ namespace LiteQuark.Runtime
 
         private class EventListener<T> : EventListener where T : IEventData
         {
-            private readonly Dictionary<int, Action<T>> _callbackList = new();
+            private readonly Dictionary<int, List<Action<T>>> _callbackMap = new();
 
             public void Trigger(T msg)
             {
-                foreach (var chunk in _callbackList)
+                if (_callbackMap.Count == 0)
                 {
-                    LiteUtils.SafeInvoke(chunk.Value, msg);
+                    return;
+                }
+                
+                foreach (var callbackList in _callbackMap.Values)
+                {
+                    foreach (var callback in callbackList)
+                    {
+                        LiteUtils.SafeInvoke(callback, msg);
+                    }
                 }
             }
 
             public void Register(int tag, Action<T> callback)
             {
-                if (!_callbackList.TryAdd(tag, callback))
+                if (_callbackMap.TryGetValue(tag, out var callbackList))
                 {
-                    _callbackList[tag] += callback;
+                    callbackList.Add(callback);
+                }
+                else
+                {
+                    _callbackMap.Add(tag, new List<Action<T>> { callback });
                 }
             }
 
             public void UnRegister(int tag, Action<T> callback)
             {
-                if (_callbackList.ContainsKey(tag))
+                if (_callbackMap.TryGetValue(tag, out var callbackList))
                 {
-                    _callbackList[tag] -= callback;
+                    callbackList.Remove(callback);
 
-                    if (_callbackList[tag] == null)
+                    if (callbackList.Count == 0)
                     {
                         UnRegisterAll(tag);
                     }
@@ -48,21 +60,17 @@ namespace LiteQuark.Runtime
 
             public override void UnRegisterAll(int tag)
             {
-                _callbackList.Remove(tag);
+                _callbackMap.Remove(tag);
             }
 
 #if UNITY_EDITOR
             public override void Check()
             {
-                foreach (var chunk in _callbackList)
+                foreach (var (id, callbackList) in _callbackMap)
                 {
-                    if (chunk.Value != null)
+                    foreach (var callback in callbackList)
                     {
-                        var invocationList = chunk.Value.GetInvocationList();
-                        foreach (var invocation in invocationList)
-                        {
-                            LLog.Warning($"{chunk.Key}-{invocation.Method.ReflectedType?.Name} : {invocation.Method.Name} UnRegister");
-                        }
+                        LLog.Warning($"{id}-{callback.Method.ReflectedType?.Name} : {callback.Method.Name} UnRegister");
                     }
                 }
             }
