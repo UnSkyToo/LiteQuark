@@ -92,65 +92,85 @@ namespace LiteQuark.Runtime
             if (_state == EffectState.Created)
             {
                 _state = EffectState.Pause;
-                _go = go;
+                Setup(go);
+                Play(_info.Speed);
+            }
+            else
+            {
+                if (go != null)
+                {
+                    LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(go);
+                }
+            }
+        }
 
-                _binder = _go.GetComponent<EffectBinder>();
-                if (_binder == null)
-                {
+        private void Setup(GameObject go)
+        {
+            _go = go;
+            
+            SetupBinder(go);
+            SetupTransform(go);
+
+            if (_info.Order > 0)
+            {
+                UnityUtils.AddSortingOrder(go, _info.Order);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_info.LayerName))
+            {
+                UnityUtils.ChangeSortingLayerName(go, _info.LayerName);
+            }
+        }
+
+        private void SetupBinder(GameObject go)
+        {
+            _binder = go.GetComponent<EffectBinder>();
+            if (_binder == null)
+            {
 #if UNITY_EDITOR
-                    LLog.Warning("Effect {0} is not cached!", _info.Path);
+                LLog.Warning("Effect {0} is not cached!", _info.Path);
 #endif
-                    _binder = _go.AddComponent<EffectBinder>();
-                    _binder.UpdateInfo();
-                }
-                else if (_binder.IsEmpty())
-                {
+                _binder = go.AddComponent<EffectBinder>();
+                _binder.UpdateInfo();
+            }
+            else if (_binder.IsEmpty())
+            {
 #if UNITY_EDITOR
-                    LLog.Warning("Effect {0} is not cached!", _info.Path);
+                LLog.Warning("Effect {0} is not cached!", _info.Path);
 #endif
-                    _binder.UpdateInfo();
-                }
-                
-                if (_info.Parent != null)
+                _binder.UpdateInfo();
+            }
+        }
+
+        private void SetupTransform(GameObject go)
+        {
+            if (_info.Parent != null)
+            {
+                if ((_info.Space & EffectSpace.LocalPosition) != 0)
                 {
-                    if ((_info.Space & EffectSpace.LocalPosition) != 0)
-                    {
-                        go.transform.localPosition = _info.Position;
-                    }
-                    else
-                    {
-                        go.transform.position = _info.Position;
-                    }
-                
-                    if ((_info.Space & EffectSpace.LocalRotation) != 0)
-                    {
-                        go.transform.localRotation = _info.Rotation;
-                    }
-                    else
-                    {
-                        go.transform.rotation = _info.Rotation;
-                    }
+                    go.transform.localPosition = _info.Position;
                 }
                 else
                 {
                     go.transform.position = _info.Position;
-                    go.transform.rotation = _info.Rotation;
-                }
-                    
-                go.transform.localScale = Vector3.one * _info.Scale;
-
-                if (_info.Order > 0)
-                {
-                    UnityUtils.AddSortingOrder(_go, _info.Order);
-                }
-
-                if (!string.IsNullOrWhiteSpace(_info.LayerName))
-                {
-                    UnityUtils.ChangeSortingLayerName(_go, _info.LayerName);
                 }
                 
-                Play(_info.Speed);
+                if ((_info.Space & EffectSpace.LocalRotation) != 0)
+                {
+                    go.transform.localRotation = _info.Rotation;
+                }
+                else
+                {
+                    go.transform.rotation = _info.Rotation;
+                }
             }
+            else
+            {
+                go.transform.position = _info.Position;
+                go.transform.rotation = _info.Rotation;
+            }
+                    
+            go.transform.localScale = Vector3.one * _info.Scale;
         }
         
         public void SetSpeed(float speed)
