@@ -42,6 +42,8 @@ namespace LiteQuark.Runtime
                     if (clip == null)
                     {
                         LLog.Warning("can't play audio : {0}", clipPath);
+                        pool.Recycle(Carrier);
+                        Carrier = null;
                         callback?.Invoke(false);
                         return;
                     }
