@@ -1,14 +1,17 @@
+using System;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public sealed class EffectSystem : ISystem, ITick
     {
-        private readonly ListEx<EffectObject> _effectList = new ListEx<EffectObject>();
+        private readonly Action<EffectObject, SafeList<EffectObject>, float> _onTickDelegate = null;
+        private readonly SafeList<EffectObject> _effectList = new SafeList<EffectObject>();
         
         public EffectSystem()
         {
             _effectList.Clear();
+            _onTickDelegate = OnEffectTick;
         }
         
         public UniTask<bool> Initialize()
@@ -24,18 +27,20 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _effectList.Foreach((effect, list, dt) =>
+            _effectList.Foreach(_onTickDelegate, _effectList, deltaTime);
+        }
+        
+        private void OnEffectTick(EffectObject effect, SafeList<EffectObject> list, float dt)
+        {
+            if (effect.IsEnd)
             {
-                if (effect.IsEnd)
-                {
-                    effect.Dispose();
-                    list.Remove(effect);
-                }
-                else
-                {
-                    effect.Tick(dt);
-                }
-            }, _effectList, deltaTime);
+                effect.Dispose();
+                list.Remove(effect);
+            }
+            else
+            {
+                effect.Tick(dt);
+            }
         }
         
         public BaseObject FindEffect(ulong id)
