@@ -101,6 +101,11 @@ namespace LiteQuark.Runtime
         
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
+            if (!success && bundle != null)
+            {
+                bundle.Unload(true);
+            }
+            
             var isLoaded = OnBundleLoaded(success ? bundle : null);
             
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
