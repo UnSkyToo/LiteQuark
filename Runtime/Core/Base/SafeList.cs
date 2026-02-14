@@ -6,22 +6,20 @@ namespace LiteQuark.Runtime
 {
     public class SafeList<T> : IEnumerable<T>
     {
-        private enum OperationType { Add, Remove }
+        private enum OperationType { Add, Remove, Clear }
         
-        private int _inEach;
-
-        private readonly List<T> _values;
         private readonly Queue<(OperationType type, T item)> _ops;
+        private readonly List<T> _values;
+        private int _inEach;
         
         public int Count => _values.Count;
         public T this[int index] => _values[index];
         
         public SafeList()
         {
-            _inEach = 0;
-
-            _values = new List<T>();
             _ops = new Queue<(OperationType type, T item)>();
+            _values = new List<T>();
+            _inEach = 0;
         }
 
         public void Add(T item)
@@ -50,8 +48,15 @@ namespace LiteQuark.Runtime
 
         public void Clear()
         {
-            _values.Clear();
-            _ops.Clear();
+            if (_inEach > 0)
+            {
+                _ops.Enqueue((OperationType.Clear, default));
+            }
+            else
+            {
+                _values.Clear();
+                _ops.Clear();
+            }
         }
 
         public bool Contains(T item)
@@ -204,6 +209,9 @@ namespace LiteQuark.Runtime
                         break;
                     case OperationType.Remove:
                         _values.Remove(item);
+                        break;
+                    case OperationType.Clear:
+                        _values.Clear();
                         break;
                 }
             }
