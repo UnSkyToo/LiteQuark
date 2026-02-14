@@ -216,12 +216,14 @@ MonoBehaviour:
       ConcurrencyLimit: 22
       IgnoreLimitPriority: 2
     Asset:
-      AssetMode: 0
+      AssetMode: 1
       BundleLocater: 1
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
-      BundleDownloadTimeout: 60
-      BundleDownloadMaxRetries: 3
+      BundleDownloadRetry:
+        Timeout: 60
+        MaxRetries: 3
+        DelayTime: 1
       EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300

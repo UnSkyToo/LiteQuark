@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         private Action<VersionPackInfo> _callback;
         
         public LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
-            : base(uri, 60, 3, true)
+            : base(uri, new RetryParam(60, 3, 1f), true)
         {
             _callback = callback;
             SetPriority(TaskPriority.Urgent);
