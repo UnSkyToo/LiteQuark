@@ -5,22 +5,20 @@ namespace LiteQuark.Runtime
 {
     public class SafeDictionary<TKey, TValue>
     {
-        private enum OperationType { Add, Remove }
+        private enum OperationType { Add, Remove, Clear }
         
-        private int _inEach;
-
-        private readonly Dictionary<TKey, TValue> _values;
         private readonly Queue<(OperationType type, KeyValuePair<TKey, TValue> item)> _ops;
+        private readonly Dictionary<TKey, TValue> _values;
+        private int _inEach;
         
         public int Count => _values.Count;
         public TValue this[TKey key] => _values[key];
         
         public SafeDictionary()
         {
-            _inEach = 0;
-
-            _values = new Dictionary<TKey, TValue>();
             _ops = new Queue<(OperationType type, KeyValuePair<TKey, TValue> item)>();
+            _values = new Dictionary<TKey, TValue>();
+            _inEach = 0;
         }
 
         public void Add(TKey key, TValue value)
@@ -49,8 +47,15 @@ namespace LiteQuark.Runtime
 
         public void Clear()
         {
-            _values.Clear();
-            _ops.Clear();
+            if (_inEach > 0)
+            {
+                _ops.Enqueue((OperationType.Clear, default));
+            }
+            else
+            {
+                _values.Clear();
+                _ops.Clear();
+            }
         }
 
         public bool ContainsKey(TKey key)
@@ -191,6 +196,9 @@ namespace LiteQuark.Runtime
                         break;
                     case OperationType.Remove:
                         _values.Remove(item.Key);
+                        break;
+                    case OperationType.Clear:
+                        _values.Clear();
                         break;
                 }
             }
