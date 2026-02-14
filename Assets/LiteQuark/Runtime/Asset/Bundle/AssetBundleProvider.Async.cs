@@ -23,10 +23,15 @@ namespace LiteQuark.Runtime
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
-            InstantiateAsync(assetPath, parent, UnityEngine.Vector3.zero, UnityEngine.Quaternion.identity, callback);
+            InstantiateAsyncInternal(assetPath, (asset) => UnityEngine.Object.Instantiate(asset, parent), callback);
         }
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
+        {
+            InstantiateAsyncInternal(assetPath, (asset) => UnityEngine.Object.Instantiate(asset, position, rotation, parent), callback);
+        }
+        
+        private void InstantiateAsyncInternal(string assetPath, Func<UnityEngine.GameObject, UnityEngine.GameObject> instantiateFunc, Action<UnityEngine.GameObject> callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
@@ -43,8 +48,8 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
+
+                var instance = instantiateFunc(asset);
                 UpdateAssetIDToPathMap(instance, assetPath);
                 LiteUtils.SafeInvoke(callback, instance);
             });
