@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         private UnityWebRequest _request;
         private int _timeout;
         private int _retryCount;
+        private float _retryDelayTime;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
@@ -44,8 +45,9 @@ namespace LiteQuark.Runtime
                 OnBundleLoaded(null);
                 return;
             }
-            _retryCount = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadMaxRetries, 0);
-            _timeout = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadTimeout, 0);
+            _retryCount = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadRetry.MaxRetries, 0);
+            _timeout = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadRetry.Timeout, 0);
+            _retryDelayTime = Mathf.Max(LiteRuntime.Setting.Asset.BundleDownloadRetry.DelayTime, 0.01f);
             StartDownload();
         }
 
@@ -74,7 +76,7 @@ namespace LiteQuark.Runtime
                     _retryCount--;
                     _request?.Dispose();
                     _request = null;
-                    LiteRuntime.Timer.AddTimer(1f, StartDownload);
+                    LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
                 }
                 else
                 {

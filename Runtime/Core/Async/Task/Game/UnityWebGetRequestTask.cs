@@ -7,8 +7,8 @@ namespace LiteQuark.Runtime
     {
         private Action<DownloadHandler> _callback;
         
-        public UnityWebGetRequestTask(string uri, int timeout, int retryCount, bool forceNoCache, Action<DownloadHandler> callback)
-            : base(uri, timeout, retryCount, forceNoCache)
+        public UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<DownloadHandler> callback)
+            : base(uri, retry, forceNoCache)
         {
             _callback = callback;
         }

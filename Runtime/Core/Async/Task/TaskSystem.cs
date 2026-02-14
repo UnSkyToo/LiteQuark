@@ -155,9 +155,9 @@ namespace LiteQuark.Runtime
             return task;
         }
         
-        public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, int timeout, int retryCount, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
+        public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
         {
-            var task = new UnityWebGetRequestTask(uri, timeout, retryCount, forceNoCache, callback);
+            var task = new UnityWebGetRequestTask(uri, retry, forceNoCache, callback);
             AddTask(task);
             return task;
         }

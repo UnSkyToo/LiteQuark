@@ -10,16 +10,18 @@ namespace LiteQuark.Runtime
         
         protected readonly Uri Uri;
         private readonly int _timeout;
+        private readonly float _retryDelayTime;
         private readonly bool _forceNoCache;
         private UnityWebRequest _request;
         private int _retryCount;
         
-        protected UnityDownloadBaseTask(string uri, int timeout, int retryCount, bool forceNoCache)
+        protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
         {
             Uri = new Uri(uri);
-            _timeout = Mathf.Max(timeout, 0);
-            _retryCount = Math.Max(retryCount, 0);
+            _timeout = Mathf.Max(retry.Timeout, 0);
+            _retryCount = Math.Max(retry.MaxRetries, 0);
+            _retryDelayTime = Mathf.Max(retry.DelayTime, 0.01f);
             _forceNoCache = forceNoCache;
         }
 
@@ -82,7 +84,7 @@ namespace LiteQuark.Runtime
                     _retryCount--;
                     _request?.Dispose();
                     _request = null;
-                    LiteRuntime.Timer.AddTimer(1f, StartDownload);
+                    LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
                 }
                 else
                 {
