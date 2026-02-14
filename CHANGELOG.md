@@ -1,5 +1,36 @@
 # Changelog
 
+## **[0.4.0] - 2026-02-14**
+- 新增：AudioSystem 增加暂停和恢复接口
+- 新增：ActionSystem增加DelayCallback
+- 新增：增加 RetryParam，提供重试间隔的参数
+- 优化：简化 AssetCacheStage 状态，移除 Unloading 瞬态
+- 优化：废弃 ListEx，统一使用 SafeList
+- 优化：无网络情况下的请求直接失败，避免等待超时
+- 优化：更安全的框架启动流程，捕获异步异常
+- 优化：InstantiateAsync 不再重复注册 prefab 到 IDToPathMap
+- 修复：Bundle 加载失败后状态未重置，导致无法再次加载的 BUG
+- 修复：多播委托异常导致后续 Bundle 回调丢失的 BUG
+- 修复：回调中重新加载资源导致的迭代器修改异常
+- 修复：加载失败时 Bundle 引用计数异常增加的 BUG
+- 修复：依赖 Bundle 加载成功但主 Bundle 失败时，引用悬空的 BUG
+- 修复：依赖信息缺失时 Bundle 加载卡死的 BUG
+- 修复：未加载的 Bundle 执行 Unload 破坏依赖引用计数的 BUG
+- 修复：Asset 加载失败后 AssetInfoCache 不过期导致的内存泄漏
+- 修复：依赖加载失败时主 Bundle 的 AssetBundle 对象未释放的内存泄漏
+- 修复：DecRef 在非法状态下仍执行导致引用计数下溢的 BUG
+- 修复：Dispose 时未触发 pending 回调导致 UniTask 无法 resolve 的 BUG
+- 修复：场景未加载时卸载导致引用计数错误的 BUG
+- 修复：事件响应中抛出异常导致后续事件中断的 BUG
+- 修复：事件回调中反注册导致集合修改异常的 BUG
+- 修复：DownloadTask 重试未释放 Request 的 BUG
+- 修复：取消任务时未取消下载重试计时器的 BUG
+- 修复：ObjectPool 模板加载回调的多播问题
+- 修复：ParallelAction/SequenceAction 中错误的提前 Dispose 行为
+- 修复：SafeList 和 SafeDictionary 在 Foreach 中 Clear 导致的迭代器异常
+- 修复：Attribute 顺序错误导致 Condition 属性未生效的 BUG
+- 修复：TaskSystem 异常路径下 RunningTaskCount 不一致的 BUG
+
 ## **[0.3.0] - 2026-02-09**
 - 新增：NetworkSystem 网络模块
 - 新增：DataSystem 数据持久化模块
