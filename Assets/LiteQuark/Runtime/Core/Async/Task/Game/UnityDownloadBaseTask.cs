@@ -14,6 +14,7 @@ namespace LiteQuark.Runtime
         private readonly bool _forceNoCache;
         private UnityWebRequest _request;
         private int _retryCount;
+        private ulong _retryTimerID;
         
         protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
@@ -23,6 +24,22 @@ namespace LiteQuark.Runtime
             _retryCount = Math.Max(retry.MaxRetries, 0);
             _retryDelayTime = Mathf.Max(retry.DelayTime, 0.01f);
             _forceNoCache = forceNoCache;
+            _retryTimerID = 0;
+        }
+
+        public override void Dispose()
+        {
+            if (_retryTimerID != 0)
+            {
+                LiteRuntime.Timer.StopTimer(_retryTimerID);
+                _retryTimerID = 0;
+            }
+            
+            if (_request != null)
+            {
+                _request.Dispose();
+                _request = null;
+            }
         }
 
         public override void Cancel()
@@ -30,7 +47,7 @@ namespace LiteQuark.Runtime
             _request?.Abort();
             base.Cancel();
         }
-        
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _request?.downloadProgress ?? 0f;
@@ -49,6 +66,7 @@ namespace LiteQuark.Runtime
 
         private void StartDownload()
         {
+            _retryTimerID = 0;
             _request = UnityWebRequest.Get(Uri);
             
             if (_forceNoCache)
@@ -79,12 +97,12 @@ namespace LiteQuark.Runtime
                 var error = _request.error;
                 LLog.Error("UnityDownloadTask error : {0} - {1}\n{2}", Uri, _request.result, error);
                 
-                if (_retryCount > 0 && IsCanRetryError(error))
+                if (_retryCount > 0 && RetryParam.IsCanRetryError(error))
                 {
                     _retryCount--;
                     _request?.Dispose();
                     _request = null;
-                    LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
+                    _retryTimerID = LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
                 }
                 else
                 {
@@ -108,11 +126,6 @@ namespace LiteQuark.Runtime
         public void AddRequestHeader(string name, string value)
         {
             _request?.SetRequestHeader(name, value);
-        }
-        
-        private bool IsCanRetryError(string error)
-        {
-            return error.Contains("timeout") || error.Contains("Unknown Error") || error.Contains("connection");
         }
     }
 }

@@ -15,6 +15,7 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
+            base.Dispose();
             _callback = null;
         }
 

@@ -26,5 +26,10 @@ namespace LiteQuark.Runtime
             MaxRetries = maxRetries;
             DelayTime = delayTime;
         }
+        
+        public static bool IsCanRetryError(string error)
+        {
+            return error.Contains("timeout") || error.Contains("Unknown Error") || error.Contains("connection");
+        }
     }
 }

@@ -10,14 +10,22 @@ namespace LiteQuark.Runtime
         private int _timeout;
         private int _retryCount;
         private float _retryDelayTime;
+        private ulong _retryTimerID;
         
         public LoadRemoteBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base(bundleUri, callback)
         {
+            _retryTimerID = 0;
         }
 
         public override void Dispose()
         {
+            if (_retryTimerID != 0)
+            {
+                LiteRuntime.Timer.StopTimer(_retryTimerID);
+                _retryTimerID = 0;
+            }
+            
             if (_request != null)
             {
                 _request.Dispose();
@@ -53,6 +61,7 @@ namespace LiteQuark.Runtime
 
         private void StartDownload()
         {
+            _retryTimerID = 0;
             _request = UnityWebRequestAssetBundle.GetAssetBundle(new Uri(BundleUri));
             if (_timeout > 0)
             {
@@ -71,12 +80,12 @@ namespace LiteQuark.Runtime
                 var error = _request.error;
                 LLog.Error("Failed to download bundle : {0}\n{1}", BundleUri, error);
 
-                if (_retryCount > 0 && IsCanRetryError(error))
+                if (_retryCount > 0 && RetryParam.IsCanRetryError(error))
                 {
                     _retryCount--;
                     _request?.Dispose();
                     _request = null;
-                    LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
+                    _retryTimerID = LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
                 }
                 else
                 {
@@ -93,11 +102,6 @@ namespace LiteQuark.Runtime
             
             _request?.Dispose();
             _request = null;
-        }
-
-        private bool IsCanRetryError(string error)
-        {
-            return error.Contains("timeout") || error.Contains("Unknown Error") || error.Contains("connection");
         }
     }
 }
