@@ -142,6 +142,7 @@ namespace LiteQuark.Runtime
             if (Stage != AssetCacheStage.Loaded)
             {
                 LLog.Error("Bundle DecRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
+                return;
             }
             
             _refCount--;

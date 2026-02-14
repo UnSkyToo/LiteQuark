@@ -84,6 +84,7 @@ namespace LiteQuark.Runtime
             if (Stage != AssetCacheStage.Loaded)
             {
                 LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
+                return;
             }
             
             _refCount--;
