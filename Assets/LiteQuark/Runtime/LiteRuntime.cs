@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
@@ -47,34 +48,42 @@ namespace LiteQuark.Runtime
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int)System.DateTime.Now.Ticks);
 
-            StartupAsync();
+            StartupAsync().Forget();
         }
 
-        private async void StartupAsync()
+        private async UniTaskVoid StartupAsync()
         {
-            var watch = new System.Diagnostics.Stopwatch();
-
-            _state = RuntimeState.InitSystem;
-            watch.Restart();
-            if (!await SystemCenter.Instance.InitializeSystem())
+            try
             {
-                EnterErrorState();
-                return;
+                var watch = new System.Diagnostics.Stopwatch();
+
+                _state = RuntimeState.InitSystem;
+                watch.Restart();
+                if (!await SystemCenter.Instance.InitializeSystem())
+                {
+                    EnterErrorState();
+                    return;
+                }
+
+                LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
+
+                _state = RuntimeState.InitLogic;
+                watch.Restart();
+                if (!await LogicCenter.Instance.InitializeLogic())
+                {
+                    EnterErrorState();
+                    return;
+                }
+
+                LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
+
+                _state = RuntimeState.Running;
             }
-
-            LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
-
-            _state = RuntimeState.InitLogic;
-            watch.Restart();
-            if (!await LogicCenter.Instance.InitializeLogic())
+            catch (System.Exception ex)
             {
+                LLog.Exception(ex);
                 EnterErrorState();
-                return;
             }
-
-            LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
-
-            _state = RuntimeState.Running;
         }
 
         public void Shutdown()

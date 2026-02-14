@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
@@ -37,10 +38,10 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            ExecuteInternal();
+            ExecuteInternal().Forget();
         }
 
-        private async void ExecuteInternal()
+        private async UniTaskVoid ExecuteInternal()
         {
             while (_stream.CanRead)
             {
