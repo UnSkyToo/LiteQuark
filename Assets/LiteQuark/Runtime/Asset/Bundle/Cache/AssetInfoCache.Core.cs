@@ -8,7 +8,8 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
-        public bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
+        public bool IsExpired => (Stage == AssetCacheStage.Retained && _retainTime <= 0 ||
+                                  Stage == AssetCacheStage.Created && _refCount == 0 && _loadAssetTask == null);
 
         private readonly string _assetPath;
         private readonly AssetBundleCache _cache;
