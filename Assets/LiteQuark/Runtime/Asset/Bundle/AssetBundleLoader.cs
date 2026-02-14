@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
             if (_pendingTaskMap.TryGetValue(bundlePath, out var waitTask))
             {
                 waitTask.Priority = Mathf.Max(waitTask.Priority, priority);
-                waitTask.Callback += callback;
+                waitTask.CallbackList.Add(callback);
                 _pendingTaskQueue.UpdatePriority(waitTask);
             }
             else
@@ -69,7 +69,10 @@ namespace LiteQuark.Runtime
                     var bundle = runningTask.LoadTask.GetBundle();
                     if (_pendingTaskMap.Remove(runningTask.Path, out var pendingTask))
                     {
-                        LiteUtils.SafeInvoke(pendingTask.Callback, bundle);
+                        foreach (var callback in pendingTask.CallbackList)
+                        {
+                            LiteUtils.SafeInvoke(callback, bundle);
+                        }
                     }
                 }
             }
@@ -87,13 +90,13 @@ namespace LiteQuark.Runtime
         {
             public string Path { get; }
             public int Priority { get; set; }
-            public Action<AssetBundle> Callback { get; set; }
+            public List<Action<AssetBundle>> CallbackList { get; set; }
             
             public PendingTask(string path, int priority, Action<AssetBundle> callback)
             {
                 Path = path;
                 Priority = priority;
-                Callback = callback;
+                CallbackList = new List<Action<AssetBundle>> { callback };
             }
         }
         
