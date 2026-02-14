@@ -49,8 +49,7 @@
         {
             while (!IsEnd)
             {
-                _current?.Dispose();
-
+                // _current?.Dispose();
                 _index = GetNextIndex();
                 if (_index == -1)
                 {
