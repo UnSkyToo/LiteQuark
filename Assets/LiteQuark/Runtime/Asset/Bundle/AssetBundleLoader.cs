@@ -7,15 +7,17 @@ namespace LiteQuark.Runtime
     internal class AssetBundleLoader : ITick, IDispose
     {
         private readonly IBundleLocater _bundleLocater;
+        private readonly VersionPackInfo _packInfo;
         private readonly int _concurrencyLimit;
         
         private readonly Dictionary<string, PendingTask> _pendingTaskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
         
-        public AssetBundleLoader(IBundleLocater locater, int concurrencyLimit)
+        public AssetBundleLoader(IBundleLocater locater, VersionPackInfo packInfo, int concurrencyLimit)
         {
             _bundleLocater = locater ?? throw new ArgumentNullException(nameof(locater));
+            _packInfo = packInfo ?? throw new ArgumentNullException(nameof(packInfo));
             _concurrencyLimit = Mathf.Max(1, concurrencyLimit);
             
             _pendingTaskMap = new Dictionary<string, PendingTask>();
@@ -35,8 +37,10 @@ namespace LiteQuark.Runtime
             _runningTasks.Clear();
         }
 
-        public void LoadBundle(string bundlePath, string hash, int priority, Action<AssetBundle> callback)
+        public void LoadBundle(BundleInfo bundleInfo, int priority, Action<AssetBundle> callback)
         {
+            var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
+            
             if (string.IsNullOrEmpty(bundlePath))
             {
                 LiteUtils.SafeInvoke(callback, null);
@@ -51,7 +55,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                waitTask = new PendingTask(bundlePath, hash, priority, callback);
+                waitTask = new PendingTask(bundlePath, bundleInfo.Hash, priority, callback);
                 _pendingTaskMap.Add(bundlePath, waitTask);
                 _pendingTaskQueue.Enqueue(waitTask);
             }
