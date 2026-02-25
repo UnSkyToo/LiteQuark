@@ -14,17 +14,20 @@ namespace LiteQuark.Runtime
         public int MaxRetries = 3;
 
         [Tooltip("重试等待时间，默认1秒")] [Range(0.01f, 30f), SerializeField]
-        public float DelayTime = 1f;
+        public float RetryInterval = 1f;
         
         public RetryParam()
         {
         }
         
-        public RetryParam(int timeout, int maxRetries, float delayTime)
+        /// <param name="timeoutSec">超时参数（秒）</param>
+        /// <param name="maxRetries">最大重试次数</param>
+        /// <param name="retryIntervalSec">重试间隔（秒）</param>
+        public RetryParam(int timeoutSec, int maxRetries, float retryIntervalSec)
         {
-            Timeout = timeout;
+            Timeout = timeoutSec;
             MaxRetries = maxRetries;
-            DelayTime = delayTime;
+            RetryInterval = retryIntervalSec;
         }
         
         public static bool IsCanRetryError(string error)
