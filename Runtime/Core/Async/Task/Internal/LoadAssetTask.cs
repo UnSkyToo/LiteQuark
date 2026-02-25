@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
+    internal sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
         public override string DebugName => $"LoadAsset {_assetName}";
         
@@ -49,10 +49,14 @@ namespace LiteQuark.Runtime
         private void OnAssetRequestLoadCompleted(AsyncOperation op)
         {
             op.completed -= OnAssetRequestLoadCompleted;
-            _asset = _assetRequest.asset;
             
-            LiteUtils.SafeInvoke(_callback, _asset);
+            if (IsDone)
+            {
+                return;
+            }
+            _asset = _assetRequest.asset;
             Complete(_asset);
+            LiteUtils.SafeInvoke(_callback, _asset);
         }
     }
 }

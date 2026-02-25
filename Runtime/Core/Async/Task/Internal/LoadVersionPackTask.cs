@@ -28,26 +28,30 @@ namespace LiteQuark.Runtime
 
         protected override void OnFailed()
         {
-            LiteUtils.SafeInvoke(_callback, null);
+            base.OnFailed();
+            
             Abort();
+            LiteUtils.SafeInvoke(_callback, null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.NetError, "VersionPack download failed");
         }
 
         protected override void OnSuccess(UnityWebRequest request)
         {
+            base.OnSuccess(request);
+            
             var info = VersionPackInfo.FromBinaryData(request.downloadHandler.data);
             if (info is not { IsValid: true })
             {
                 var error = request.downloadHandler.error;
                 LLog.Error("Bundle package parse error\n{0}", error);
-                LiteUtils.SafeInvoke(_callback, null);
                 Abort();
+                LiteUtils.SafeInvoke(_callback, null);
             }
             else
             {
                 info.Initialize();
-                LiteUtils.SafeInvoke(_callback, info);
                 Complete(info);
+                LiteUtils.SafeInvoke(_callback, info);
             }
         }
     }

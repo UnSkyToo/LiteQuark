@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         
         protected readonly Uri Uri;
         private readonly int _timeout;
-        private readonly float _retryDelayTime;
+        private readonly float _retryInterval;
         private readonly bool _forceNoCache;
         private UnityWebRequest _request;
         private int _retryCount;
@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
             Uri = new Uri(uri);
             _timeout = Mathf.Max(retry.Timeout, 0);
             _retryCount = Math.Max(retry.MaxRetries, 0);
-            _retryDelayTime = Mathf.Max(retry.DelayTime, 0.01f);
+            _retryInterval = Mathf.Max(retry.RetryInterval, 0.01f);
             _forceNoCache = forceNoCache;
             _retryTimerID = 0;
         }
@@ -44,8 +44,8 @@ namespace LiteQuark.Runtime
 
         public override void Cancel()
         {
-            _request?.Abort();
             base.Cancel();
+            _request?.Abort();
         }
 
         protected override void OnTick(float deltaTime)
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
         private void StartDownload()
         {
             _retryTimerID = 0;
-            _request = UnityWebRequest.Get(Uri);
+            _request = CreateRequest();
             
             if (_forceNoCache)
             {
@@ -85,24 +85,38 @@ namespace LiteQuark.Runtime
             
             LLog.Info("GET : {0}", Uri);
         }
+        
+        protected virtual UnityWebRequest CreateRequest()
+        {
+            return UnityWebRequest.Get(Uri);
+        }
 
         private void OnRequestCompleted(AsyncOperation op)
         {
             op.completed -= OnRequestCompleted;
             
-            var downloadHandler = _request.downloadHandler;
+            if (IsDone)
+            {
+                return;
+            }
             
+            if (_request == null)
+            {
+                return;
+            }
+            
+            var downloadHandler = _request.downloadHandler;
             if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
             {
                 var error = _request.error;
-                LLog.Error("UnityDownloadTask error : {0} - {1}\n{2}", Uri, _request.result, error);
+                LLog.Error("{0} error : {1} - {2}\n{3}", GetType().Name, Uri, _request.result, error);
                 
                 if (_retryCount > 0 && RetryParam.IsCanRetryError(error))
                 {
                     _retryCount--;
                     _request?.Dispose();
                     _request = null;
-                    _retryTimerID = LiteRuntime.Timer.AddTimer(_retryDelayTime, StartDownload);
+                    _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
                 }
                 else
                 {

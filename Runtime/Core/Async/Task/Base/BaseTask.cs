@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         
         public float Progress { get; protected set; }
         public bool IsDone => State is TaskState.Completed or TaskState.Aborted;
+        public bool IsExecuted { get; private set; }
         public object Result { get; protected set; }
         public TaskState State { get; protected set; }
         public TaskPriority Priority { get; private set; } = TaskPriority.Normal;
@@ -51,6 +52,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            IsExecuted = true;
             State = TaskState.InProgress;
             Progress = 0;
             Result = null;

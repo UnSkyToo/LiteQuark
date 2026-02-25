@@ -23,7 +23,6 @@ namespace LiteQuark.Runtime
             _monoBehaviourInstance = LiteRuntime.Instance.Launcher;
             _mainThreadSynchronizationContext = SynchronizationContext.Current;
             _onTickDelegate = OnTaskTick;
-            _taskList.Clear();
             _concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
             _ignoreLimitPriority = LiteRuntime.Setting.Task.IgnoreLimitPriority;
         }
@@ -39,7 +38,11 @@ namespace LiteQuark.Runtime
         {
             _monoBehaviourInstance?.StopAllCoroutines();
             
-            _taskList.Foreach((task) => task.Dispose());
+            _taskList.Foreach((task) =>
+            {
+                task.Cancel();
+                task.Dispose();
+            });
             _taskList.Clear();
             
             RunningTaskCount = 0;
@@ -93,11 +96,19 @@ namespace LiteQuark.Runtime
             {
                 task.Dispose();
                 list.Remove(task);
-                RunningTaskCount = Math.Max(0, RunningTaskCount - 1);
+
+                if (task.IsExecuted)
+                {
+                    RunningTaskCount = Math.Max(0, RunningTaskCount - 1);
+                }
+                else
+                {
+                    PendingTaskCount = Math.Max(0, PendingTaskCount - 1);
+                }
             }
         }
         
-        public SafeList<ITask> GetTaskList()
+        internal SafeList<ITask> GetTaskList()
         {
             return _taskList;
         }
@@ -107,7 +118,7 @@ namespace LiteQuark.Runtime
             return _monoBehaviourInstance?.StartCoroutine(routine);
         }
 
-        public void StopCoroutine(IEnumerator routine)
+        public void StopCoroutine(UnityEngine.Coroutine routine)
         {
             _monoBehaviourInstance?.StopCoroutine(routine);
         }
@@ -181,9 +192,9 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        internal LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
         {
-            var task = new LoadRemoteBundleTask(bundleUri, callback);
+            var task = new LoadRemoteBundleTask(bundleUri, hash, callback);
             AddTask(task);
             return task;
         }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class LoadSceneTask : BaseTask
+    internal sealed class LoadSceneTask : BaseTask
     {
         public override string DebugName => $"LoadScene:{_sceneName}";
         
@@ -43,8 +43,8 @@ namespace LiteQuark.Runtime
             _sceneRequest = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(_sceneName, _parameters);
             if (_sceneRequest == null)
             {
-                LiteUtils.SafeInvoke(_callback, false);
                 Abort();
+                LiteUtils.SafeInvoke(_callback, false);
                 return;
             }
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
@@ -53,9 +53,15 @@ namespace LiteQuark.Runtime
         private void OnSceneRequestLoadCompleted(AsyncOperation op)
         {
             op.completed -= OnSceneRequestLoadCompleted;
+            
+            if (IsDone)
+            {
+                return;
+            }
+            
             _scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(_sceneName);
-            LiteUtils.SafeInvoke(_callback, true);
             Complete(_scene);
+            LiteUtils.SafeInvoke(_callback, true);
         }
     }
 }
