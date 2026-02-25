@@ -1,9 +1,12 @@
 # Changelog
 
-## **[0.4.0] - 2026-02-14**
+## **[0.4.0] - 2026-02-25**
 - 新增：AudioSystem 增加暂停和恢复接口
 - 新增：ActionSystem增加DelayCallback
 - 新增：增加 RetryParam，提供重试间隔的参数
+- 新增：AssetSystem增加HasAsset接口
+- 新增：AssetSystem UniTask Load接口提供Cancel机制
+- 新增：AssetSystem 增加Handle模式接口
 - 优化：简化 AssetCacheStage 状态，移除 Unloading 瞬态
 - 优化：废弃 ListEx，统一使用 SafeList
 - 优化：无网络情况下的请求直接失败，避免等待超时
