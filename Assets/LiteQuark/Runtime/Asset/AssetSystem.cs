@@ -95,6 +95,9 @@ namespace LiteQuark.Runtime
         public UniTask<T> LoadAssetAsync<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
             => CallbackToUniTask<T>((cb) => LoadAssetAsync<T>(assetPath, cb), ct,
                 (asset) => { if (asset != null) UnloadAsset(asset); });
+        
+        public AssetHandle<T> LoadAssetHandle<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
+            => new AssetHandle<T>((cb) => LoadAssetAsync<T>(assetPath, cb), ct, UnloadAsset);
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
@@ -107,6 +110,9 @@ namespace LiteQuark.Runtime
                 (cb) => InstantiateAsync(assetPath, parent, cb), ct,
                 (go) => { if (go != null) UnloadAsset(go); });
         
+        public AssetHandle<UnityEngine.GameObject> InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
+            => new AssetHandle<UnityEngine.GameObject>((cb) => InstantiateAsync(assetPath, parent, cb), ct, UnloadAsset);
+        
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
         {
             var formatPath = FormatPath(assetPath);
@@ -118,6 +124,9 @@ namespace LiteQuark.Runtime
                 (cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct,
                 (go) => { if (go != null) UnloadAsset(go); });
         
+        public AssetHandle<UnityEngine.GameObject> InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
+            => new AssetHandle<UnityEngine.GameObject>((cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct, UnloadAsset);
+        
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
@@ -127,6 +136,9 @@ namespace LiteQuark.Runtime
         
         public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
             => CallbackToUniTask<bool>((cb) => LoadSceneAsync(scenePath, parameters, cb), ct);
+        
+        public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
+            => new SceneHandle(scenePath, parameters, ct);
 
         public void UnloadAsset(string assetPath)
         {
