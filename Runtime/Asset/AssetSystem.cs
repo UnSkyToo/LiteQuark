@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -66,7 +67,13 @@ namespace LiteQuark.Runtime
                 return string.Empty;
             }
             
-            return path.TrimStart('/').ToLower();
+            return path.TrimStart('/').ToLowerInvariant();
+        }
+        
+        public bool HasAsset(string assetPath)
+        {
+            var formatPath = FormatPath(assetPath);
+            return _provider?.HasAsset(formatPath) ?? false;
         }
 
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
@@ -75,15 +82,9 @@ namespace LiteQuark.Runtime
             _provider?.PreloadAsset<T>(formatPath, callback);
         }
 
-        public UniTask<bool> PreloadAsset<T>(string assetPath) where T : UnityEngine.Object
-        {
-            var tcs = new UniTaskCompletionSource<bool>();
-            PreloadAsset<T>(assetPath, (result) =>
-            {
-                tcs.TrySetResult(result);
-            });
-            return tcs.Task;
-        }
+        public UniTask<bool> PreloadAsset<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
+            => CallbackToUniTask<bool>((cb) => PreloadAsset<T>(assetPath, cb), ct,
+                (success) => { if (success) UnloadAsset(assetPath); });
 
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
@@ -91,21 +92,9 @@ namespace LiteQuark.Runtime
             _provider?.LoadAssetAsync<T>(formatPath, callback);
         }
         
-        public UniTask<T> LoadAssetAsync<T>(string assetPath) where T : UnityEngine.Object
-        {
-            var tcs = new UniTaskCompletionSource<T>();
-            LoadAssetAsync<T>(assetPath, (asset) =>
-            {
-                tcs.TrySetResult(asset);
-            });
-            return tcs.Task;
-        }
-        
-        // public T LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
-        // {
-        //     var formatPath = FormatPath(assetPath);
-        //     return Provider_?.LoadAssetSync<T>(formatPath);
-        // }
+        public UniTask<T> LoadAssetAsync<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
+            => CallbackToUniTask<T>((cb) => LoadAssetAsync<T>(assetPath, cb), ct,
+                (asset) => { if (asset != null) UnloadAsset(asset); });
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
@@ -113,15 +102,10 @@ namespace LiteQuark.Runtime
             _provider?.InstantiateAsync(formatPath, parent, callback);
         }
         
-        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent)
-        {
-            var tcs = new UniTaskCompletionSource<UnityEngine.GameObject>();
-            InstantiateAsync(assetPath, parent, (gameObject) =>
-            {
-                tcs.TrySetResult(gameObject);
-            });
-            return tcs.Task;
-        }
+        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
+            => CallbackToUniTask<UnityEngine.GameObject>(
+                (cb) => InstantiateAsync(assetPath, parent, cb), ct,
+                (go) => { if (go != null) UnloadAsset(go); });
         
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
         {
@@ -129,21 +113,10 @@ namespace LiteQuark.Runtime
             _provider?.InstantiateAsync(formatPath, parent, position, rotation, callback);
         }
         
-        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation)
-        {
-            var tcs = new UniTaskCompletionSource<UnityEngine.GameObject>();
-            InstantiateAsync(assetPath, parent, position, rotation, (gameObject) =>
-            {
-                tcs.TrySetResult(gameObject);
-            });
-            return tcs.Task;
-        }
-        
-        // public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
-        // {
-        //     var formatPath = FormatPath(assetPath);
-        //     return Provider_?.InstantiateSync(formatPath, parent);
-        // }
+        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
+            => CallbackToUniTask<UnityEngine.GameObject>(
+                (cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct,
+                (go) => { if (go != null) UnloadAsset(go); });
         
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
@@ -152,22 +125,8 @@ namespace LiteQuark.Runtime
             _provider?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
         }
         
-        public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
-        {
-            var tcs = new UniTaskCompletionSource<bool>();
-            LoadSceneAsync(scenePath, parameters, (result) =>
-            {
-                tcs.TrySetResult(result);
-            });
-            return tcs.Task;
-        }
-        
-        // public bool LoadSceneSync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
-        // {
-        //     var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-        //     var formatPath = FormatPath(scenePath);
-        //     return Provider_?.LoadSceneSync(formatPath, sceneName, parameters) ?? false;
-        // }
+        public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
+            => CallbackToUniTask<bool>((cb) => LoadSceneAsync(scenePath, parameters, cb), ct);
 
         public void UnloadAsset(string assetPath)
         {
@@ -206,6 +165,33 @@ namespace LiteQuark.Runtime
             _provider?.UnloadUnusedAssets(maxDepth);
         }
         
+        private UniTask<T> CallbackToUniTask<T>(Action<Action<T>> invoke, CancellationToken ct, Action<T> onCancelled = null)
+        {
+            var tcs = new UniTaskCompletionSource<T>();
+
+            if (ct.IsCancellationRequested)
+            {
+                tcs.TrySetCanceled(ct);
+                return tcs.Task;
+            }
+
+            CancellationTokenRegistration ctr = default;
+            if (ct.CanBeCanceled)
+            {
+                ctr = ct.Register(() => tcs.TrySetCanceled(ct));
+            }
+
+            invoke((result) =>
+            {
+                ctr.Dispose();
+                if (!tcs.TrySetResult(result))
+                {
+                    onCancelled?.Invoke(result);
+                }
+            });
+            return tcs.Task;
+        }
+        
 #if UNITY_EDITOR
         internal VisitorInfo GetVisitorInfo()
         {
@@ -214,7 +200,7 @@ namespace LiteQuark.Runtime
                 return provider.GetVisitorInfo();
             }
 
-            return new VisitorInfo(null);
+            return new VisitorInfo(null, Array.Empty<BundleVisitorInfo>());
         }
 #endif
     }

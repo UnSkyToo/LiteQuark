@@ -12,11 +12,16 @@ namespace LiteQuark.Runtime
         /// <summary>
         /// 资源是否过期了
         /// </summary>
-        internal bool IsExpired => Stage == AssetCacheStage.Retained && _retainTime <= 0;
+        internal bool IsExpired =>
+            (Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
+            (Stage == AssetCacheStage.Created && _bundleLoaderCallbackList.Count == 0);
+        
         /// <summary>
         /// 资源是否为孤立资源（被加载了，但没有任何引用）
         /// </summary>
-        internal bool IsOrphan => Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0;
+        internal bool IsOrphan =>
+            (Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0) ||
+            (Stage == AssetCacheStage.Created && _bundleLoaderCallbackList.Count == 0);
         
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
@@ -202,8 +207,10 @@ namespace LiteQuark.Runtime
         {
             if (_assetCacheMap.TryGetValue(assetPath, out var cache))
             {
-                cache.UnloadAsset(assetPath);
-                DecRef();
+                if (cache.UnloadAsset(assetPath))
+                {
+                    DecRef();
+                }
             }
         }
 
@@ -230,31 +237,29 @@ namespace LiteQuark.Runtime
         
         public void UnloadUnusedAssets()
         {
-            var unloadList = new List<string>();
-            
             foreach (var chunk in _assetCacheMap)
             {
-                if (chunk.Value.IsExpired)
+                if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsExpired)
                 {
-                    unloadList.Add(chunk.Key);
+                    _unloadAssetList.Add(chunk.Key);
                 }
             }
 
-            if (unloadList.Count > 0)
+            if (_unloadAssetList.Count > 0)
             {
-                foreach (var assetPath in unloadList)
+                foreach (var assetPath in _unloadAssetList)
                 {
                     UnloadAssetCache(assetPath);
                 }
-                unloadList.Clear();
+                _unloadAssetList.Clear();
             }
         }
         
         private void UnloadAssetCache(string assetPath)
         {
-            if (_assetCacheMap.ContainsKey(assetPath))
+            if (_assetCacheMap.TryGetValue(assetPath, out var cache))
             {
-                _assetCacheMap[assetPath].Unload();
+                cache.Unload();
                 _assetCacheMap.Remove(assetPath);
                 DecRef();
             }

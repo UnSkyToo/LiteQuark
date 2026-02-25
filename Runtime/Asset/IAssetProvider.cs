@@ -7,6 +7,8 @@ namespace LiteQuark.Runtime
     {
         UniTask<bool> Initialize();
         string GetVersion();
+
+        bool HasAsset(string assetPath);
         
         void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object;
         

@@ -106,19 +106,19 @@ namespace LiteQuark.Editor
             }
             
             var visitorInfo = visitorInfoWrap.Value;
-            if (visitorInfo.BundleVisitorList.Count == 0)
+            if (visitorInfo.BundleVisitors.Length == 0)
             {
                 EditorGUILayout.LabelField("Empty");
                 return;
             }
 
-            foreach (var bundleInfo in visitorInfo.BundleVisitorList)
+            foreach (var bundleInfo in visitorInfo.BundleVisitors)
             {
                 EditorGUILayout.LabelField(bundleInfo.BundlePath, $"{LiteEditorUtils.GetSizeString(bundleInfo.MemorySize)} {bundleInfo.RefCount} {bundleInfo.Stage}({bundleInfo.RetainTime:0.0}s)");
 
                 using (new EditorGUI.IndentLevelScope())
                 {
-                    foreach (var assetInfo in bundleInfo.AssetVisitorList)
+                    foreach (var assetInfo in bundleInfo.AssetVisitors)
                     {
                         EditorGUILayout.LabelField(assetInfo.AssetPath, $"{LiteEditorUtils.GetSizeString(assetInfo.MemorySize)} {assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
                     }
