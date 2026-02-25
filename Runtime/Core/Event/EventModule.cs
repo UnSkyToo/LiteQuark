@@ -23,20 +23,32 @@ namespace LiteQuark.Runtime
                 {
                     return;
                 }
-                
+
+                UnityEngine.Pool.ListPool<Action<T>>.Get(out var snapshot);
                 foreach (var callbackList in _callbackMap.Values)
                 {
-                    foreach (var callback in callbackList)
-                    {
-                        LiteUtils.SafeInvoke(callback, msg);
-                    }
+                    snapshot.AddRange(callbackList);
                 }
+
+                foreach (var callback in snapshot)
+                {
+                    LiteUtils.SafeInvoke(callback, msg);
+                }
+                UnityEngine.Pool.ListPool<Action<T>>.Release(snapshot);
             }
 
             public void Register(int tag, Action<T> callback)
             {
                 if (_callbackMap.TryGetValue(tag, out var callbackList))
                 {
+                    if (callbackList.Contains(callback))
+                    {
+#if UNITY_EDITOR
+                        LLog.Warning("[EventSystem] Duplicate registration: {0}.{1}", callback.Method.ReflectedType?.Name, callback.Method.Name);
+#endif
+                        return;
+                    }
+                    
                     callbackList.Add(callback);
                 }
                 else
@@ -70,7 +82,7 @@ namespace LiteQuark.Runtime
                 {
                     foreach (var callback in callbackList)
                     {
-                        LLog.Warning($"{id}-{callback.Method.ReflectedType?.Name} : {callback.Method.Name} UnRegister");
+                        LLog.Warning("[EventSystem] {0}-{1}.{2} UnRegister", id, callback.Method.ReflectedType?.Name, callback.Method.Name);
                     }
                 }
             }
@@ -80,17 +92,24 @@ namespace LiteQuark.Runtime
         public string Name { get; }
 
         private readonly int _globalTag;
-        private readonly Dictionary<string, EventListener> _eventMap = new();
+        private readonly Dictionary<Type, EventListener> _eventMap = new();
+        private bool _disposed;
 
         public EventModule(string name)
         {
             Name = name;
             _globalTag = $"{name}_Global".GetHashCode();
-            _eventMap.Clear();
+            _disposed = false;
         }
 
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
+            
 #if UNITY_EDITOR
             foreach (var chunk in _eventMap)
             {
@@ -100,15 +119,9 @@ namespace LiteQuark.Runtime
             _eventMap.Clear();
         }
 
-        private static string GetEventName<T>() where T : IEventData
-        {
-            return typeof(T).FullName;
-        }
-
         public void Send<T>(T msg) where T : IEventData
         {
-            var eventName = GetEventName<T>();
-            if (_eventMap.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(typeof(T), out var value))
             {
                 if (value is EventListener<T> listener)
                 {
@@ -130,17 +143,22 @@ namespace LiteQuark.Runtime
 
         public void Register<T>(int tag, Action<T> callback) where T : IEventData
         {
-            var eventName = GetEventName<T>();
+            if (_disposed)
+            {
+                return;
+            }
+            
             EventListener<T> listener = null;
+            var eventType = typeof(T);
 
-            if (_eventMap.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(eventType, out var value))
             {
                 listener = value as EventListener<T>;
             }
             else
             {
                 listener = new EventListener<T>();
-                _eventMap.Add(eventName, listener);
+                _eventMap.Add(eventType, listener);
             }
 
             listener?.Register(tag, callback);
@@ -153,9 +171,7 @@ namespace LiteQuark.Runtime
 
         public void UnRegister<T>(int tag, Action<T> callback) where T : IEventData
         {
-            var eventName = GetEventName<T>();
-
-            if (_eventMap.TryGetValue(eventName, out var value))
+            if (_eventMap.TryGetValue(typeof(T), out var value))
             {
                 if (value is EventListener<T> listener)
                 {
