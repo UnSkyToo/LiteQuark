@@ -1,11 +1,9 @@
 ﻿using System;
-using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    public interface IAssetProvider : ITick, IDispose
+    public interface IAssetProvider : IInitializeAsync, ITick, IDispose
     {
-        UniTask<bool> Initialize();
         string GetVersion();
 
         bool HasAsset(string assetPath);

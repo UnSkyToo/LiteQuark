@@ -5,13 +5,8 @@ namespace LiteQuark.Runtime
     /// <summary>
     /// 数据存储提供者接口
     /// </summary>
-    public interface IDataProvider : IDispose
+    public interface IDataProvider : IInitializeAsync, IDispose
     {
-        /// <summary>
-        /// 初始化
-        /// </summary>
-        UniTask<bool> Initialize();
-
         /// <summary>
         /// 同步保存数据
         /// </summary>
