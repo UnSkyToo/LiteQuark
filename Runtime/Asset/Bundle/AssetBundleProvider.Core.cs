@@ -6,10 +6,6 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        public AssetBundleLoader BundleLoader => _bundleLoader;
-        public VersionPackInfo PackInfo => _packInfo;
-        
-        private IBundleLocater _bundleLocater = null;
         private VersionPackInfo _packInfo = null;
         private AssetBundleLoader _bundleLoader = null;
         
@@ -23,19 +19,19 @@ namespace LiteQuark.Runtime
         
         public async UniTask<bool> Initialize()
         {
-            _bundleLocater = CreateLocater();
-            if (_bundleLocater == null)
+            var bundleLocater = CreateLocater();
+            if (bundleLocater == null)
             {
                 return false;
             }
             
-            _packInfo = await _bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
+            _packInfo = await bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
             if (_packInfo == null)
             {
                 return false;
             }
 
-            _bundleLoader = new AssetBundleLoader(_bundleLocater, LiteRuntime.Setting.Asset.ConcurrencyLimit);
+            _bundleLoader = new AssetBundleLoader(bundleLocater, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
 
             _bundleCacheMap.Clear();
             _assetIDToPathMap.Clear();
@@ -56,7 +52,6 @@ namespace LiteQuark.Runtime
             
             _bundleLoader?.Dispose();
             _bundleLoader = null;
-            _bundleLocater = null;
             _packInfo = null;
         }
         
@@ -264,8 +259,7 @@ namespace LiteQuark.Runtime
         
         internal void LoadBundle(BundleInfo bundleInfo, int priority, Action<UnityEngine.AssetBundle> callback)
         {
-            var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
-            _bundleLoader.LoadBundle(bundlePath, bundleInfo.Hash, priority, callback);
+            _bundleLoader.LoadBundle(bundleInfo, priority, callback);
         }
 
         private IBundleLocater CreateLocater()
