@@ -35,6 +35,7 @@ namespace LiteQuark.Runtime
         {
             Unload();
 
+            _loadAssetTask?.Cancel();
             _loadAssetTask = null;
             Asset = null;
             
@@ -85,12 +86,12 @@ namespace LiteQuark.Runtime
             _refCount++;
         }
 
-        private void DecRef()
+        private bool DecRef()
         {
             if (Stage != AssetCacheStage.Loaded)
             {
                 LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
-                return;
+                return false;
             }
             
             _refCount--;
@@ -102,6 +103,8 @@ namespace LiteQuark.Runtime
                     ? LiteRuntime.Setting.Asset.AssetRetainTime
                     : 0f;
             }
+            
+            return true;
         }
 
         private bool OnAssetLoaded(UnityEngine.Object asset)
@@ -118,14 +121,14 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public void UnloadAsset(string assetPath)
+        public bool UnloadAsset(string assetPath)
         {
             if (_assetPath != assetPath)
             {
-                return;
+                return false;
             }
             
-            DecRef();
+            return DecRef();
         }
     }
 }

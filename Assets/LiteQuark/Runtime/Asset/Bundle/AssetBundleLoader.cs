@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
             _runningTasks.Clear();
         }
 
-        public void LoadBundle(string bundlePath, int priority, Action<AssetBundle> callback)
+        public void LoadBundle(string bundlePath, string hash, int priority, Action<AssetBundle> callback)
         {
             if (string.IsNullOrEmpty(bundlePath))
             {
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                waitTask = new PendingTask(bundlePath, priority, callback);
+                waitTask = new PendingTask(bundlePath, hash, priority, callback);
                 _pendingTaskMap.Add(bundlePath, waitTask);
                 _pendingTaskQueue.Enqueue(waitTask);
             }
@@ -80,7 +80,7 @@ namespace LiteQuark.Runtime
             while (_runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
-                var task = _bundleLocater.LoadBundle(info.Path, null);
+                var task = _bundleLocater.LoadBundle(info.Path, info.Hash, null);
                 task.SetPriority(TaskPriority.Urgent);
                 _runningTasks.Add(new RunningTask(info.Path, task));
             }
@@ -89,12 +89,14 @@ namespace LiteQuark.Runtime
         private class PendingTask
         {
             public string Path { get; }
+            public string Hash { get; }
             public int Priority { get; set; }
             public List<Action<AssetBundle>> CallbackList { get; set; }
             
-            public PendingTask(string path, int priority, Action<AssetBundle> callback)
+            public PendingTask(string path, string hash, int priority, Action<AssetBundle> callback)
             {
                 Path = path;
+                Hash = hash;
                 Priority = priority;
                 CallbackList = new List<Action<AssetBundle>> { callback };
             }
@@ -103,9 +105,9 @@ namespace LiteQuark.Runtime
         private class RunningTask
         {
             public string Path { get; }
-            public LoadBundleBaseTask LoadTask { get; }
+            public ILoadBundleTask LoadTask { get; }
 
-            public RunningTask(string path, LoadBundleBaseTask loadTask)
+            public RunningTask(string path, ILoadBundleTask loadTask)
             {
                 Path = path;
                 LoadTask = loadTask;

@@ -28,7 +28,7 @@
             return LiteRuntime.Task.LoadVersionPackTask(versionPackUri, callback);
         }
         
-        public LoadBundleBaseTask LoadBundle(string bundlePath, System.Action<UnityEngine.AssetBundle> callback)
+        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
         {
             var bundleUri = GetRuntimeFullPath(bundlePath);
             return LiteRuntime.Task.LoadLocalBundleTask(bundleUri, callback);

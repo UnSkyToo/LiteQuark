@@ -2,6 +2,8 @@
 {
     internal class BundleRemoteLocater : IBundleLocater
     {
+        public bool DisableUnityWebCache { get; set; } = false;
+        
         private readonly string _remoteUri;
         
         public BundleRemoteLocater(string remoteUri)
@@ -16,11 +18,11 @@
             versionPackUri = $"{versionPackUri}?t={AppUtils.GetVersion()}";
             return LiteRuntime.Task.LoadVersionPackTask(versionPackUri, callback);
         }
-
-        public LoadBundleBaseTask LoadBundle(string bundlePath, System.Action<UnityEngine.AssetBundle> callback)
+        
+        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
         {
             var bundleUri = PathUtils.ConcatPath(_remoteUri, bundlePath);
-            return LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, callback);
+            return LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash, callback);
         }
     }
 }

@@ -50,8 +50,8 @@ namespace LiteQuark.Runtime
                 chunk.Value.Dispose();
             }
             _bundleCacheMap.Clear();
+            _unloadBundleList.Clear();
             
-            UpdateUnloadBundleList();
             _assetIDToPathMap.Clear();
             
             _bundleLoader?.Dispose();
@@ -116,6 +116,11 @@ namespace LiteQuark.Runtime
             return cache;
         }
         
+        public bool HasAsset(string assetPath)
+        {
+            return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
+        }
+        
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
             LoadAssetAsync<T>(assetPath, (asset) =>
@@ -170,12 +175,17 @@ namespace LiteQuark.Runtime
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
             {
+                LiteUtils.SafeInvoke(callback);
                 return;
             }
             
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.UnloadSceneAsync(scenePath, sceneName, callback);
+            }
+            else
+            {
+                LiteUtils.SafeInvoke(callback);
             }
         }
 
@@ -185,7 +195,6 @@ namespace LiteQuark.Runtime
             while (depth > 0)
             {
                 depth--;
-                var unloadList = new List<string>();
 
                 foreach (var chunk in _bundleCacheMap)
                 {
@@ -193,18 +202,18 @@ namespace LiteQuark.Runtime
 
                     if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsOrphan)
                     {
-                        unloadList.Add(chunk.Key);
+                        _unloadBundleList.Add(chunk.Key);
                     }
                 }
 
-                if (unloadList.Count > 0)
+                if (_unloadBundleList.Count > 0)
                 {
-                    foreach (var bundlePath in unloadList)
+                    foreach (var bundlePath in _unloadBundleList)
                     {
                         UnloadBundleCache(bundlePath);
                     }
 
-                    unloadList.Clear();
+                    _unloadBundleList.Clear();
                 }
                 else
                 {
@@ -215,13 +224,12 @@ namespace LiteQuark.Runtime
             UnityEngine.Resources.UnloadUnusedAssets();
             GC.Collect();
         }
-        
+
         private void UnloadBundleCache(string bundlePath)
         {
-            if (_bundleCacheMap.ContainsKey(bundlePath))
+            if (_bundleCacheMap.TryGetValue(bundlePath, out var cache))
             {
-                // BundleCacheMap_[bundlePath].Unload(false);
-                _bundleCacheMap[bundlePath].Dispose();
+                cache.Dispose();
                 _bundleCacheMap.Remove(bundlePath);
             }
         }
@@ -257,8 +265,7 @@ namespace LiteQuark.Runtime
         internal void LoadBundle(BundleInfo bundleInfo, int priority, Action<UnityEngine.AssetBundle> callback)
         {
             var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
-            // return _bundleLocater.LoadBundle(bundlePath, callback);
-            _bundleLoader.LoadBundle(bundlePath, priority, callback);
+            _bundleLoader.LoadBundle(bundlePath, bundleInfo.Hash, priority, callback);
         }
 
         private IBundleLocater CreateLocater()
@@ -274,7 +281,10 @@ namespace LiteQuark.Runtime
                     return new BundleRemoteLocater(PathUtils.ConcatPath(
                         LiteRuntime.Setting.Asset.BundleRemoteUri,
                         AppUtils.GetCurrentPlatformName(),
-                        AppUtils.GetMainVersion()));
+                        AppUtils.GetMainVersion()))
+                    {
+                        DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
+                    };
                 default:
                     throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
             }

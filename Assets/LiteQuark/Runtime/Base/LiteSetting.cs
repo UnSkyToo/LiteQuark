@@ -95,6 +95,9 @@ namespace LiteQuark.Runtime
             [Tooltip("远程资源下载重试设置")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public RetryParam BundleDownloadRetry;
             
+            [Tooltip("是否屏蔽Unity Web Cache机制")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
+            public bool DisableUnityWebCache = false;
+            
             [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EnableRetain = true;
         

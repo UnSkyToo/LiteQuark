@@ -27,6 +27,11 @@ namespace LiteQuark.Runtime
         {
             return AppUtils.GetVersion();
         }
+        
+        public bool HasAsset(string assetPath)
+        {
+            return Resources.Load(assetPath) != null;
+        }
 
         public void PreloadAsset<T>(string assetPath, System.Action<bool> callback) where T : Object
         {
@@ -42,6 +47,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = Object.Instantiate(asset, parent);
                 callback?.Invoke(instance);
             });
@@ -51,6 +62,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = Object.Instantiate(asset, position, rotation, parent);
                 callback?.Invoke(instance);
             });

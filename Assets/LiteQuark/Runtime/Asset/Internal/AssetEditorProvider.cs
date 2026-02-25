@@ -60,6 +60,12 @@ namespace LiteQuark.Runtime
                 LiteRuntime.Timer.NextFrame(() => { callback?.Invoke(value); });
             }
         }
+        
+        public bool HasAsset(string assetPath)
+        {
+            var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
+            return AssetDatabase.GetMainAssetTypeAtPath(fullPath) != null;
+        }
 
         public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
         {
@@ -86,6 +92,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = UnityEngine.Object.Instantiate(asset, parent);
                 callback?.Invoke(instance);
             });
@@ -95,6 +107,12 @@ namespace LiteQuark.Runtime
         {
             LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
             {
+                if (asset == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+                
                 var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
                 callback?.Invoke(instance);
             });
@@ -103,6 +121,11 @@ namespace LiteQuark.Runtime
         public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
         {
             var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
+            if (asset == null)
+            {
+                return null;
+            }
+            
             var instance = UnityEngine.Object.Instantiate(asset, parent);
             return instance;
         }

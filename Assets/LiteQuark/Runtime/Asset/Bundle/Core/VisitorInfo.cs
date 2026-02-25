@@ -1,21 +1,14 @@
-﻿using System.Collections.Generic;
-
-namespace LiteQuark.Runtime
+﻿namespace LiteQuark.Runtime
 {
     internal readonly struct VisitorInfo
     {
         public string Tag { get; }
-        public List<BundleVisitorInfo> BundleVisitorList { get; }
+        public BundleVisitorInfo[] BundleVisitors { get; }
 
-        public VisitorInfo(string  tag)
+        public VisitorInfo(string tag, BundleVisitorInfo[] bundleVisitors)
         {
             Tag = tag;
-            BundleVisitorList = new List<BundleVisitorInfo>();
-        }
-        
-        public void AddBundleVisitor(BundleVisitorInfo info)
-        {
-            BundleVisitorList.Add(info);
+            BundleVisitors = bundleVisitors;
         }
     }
     
@@ -26,23 +19,16 @@ namespace LiteQuark.Runtime
         public int RefCount { get; }
         public string Stage { get; }
         public float RetainTime { get; }
-        
-        public List<AssetVisitorInfo> AssetVisitorList { get; }
+        public AssetVisitorInfo[] AssetVisitors { get; }
 
-        public BundleVisitorInfo(string bundlePath, long memorySize, int refCount, string stage, float retainTime)
+        public BundleVisitorInfo(string bundlePath, long memorySize, int refCount, string stage, float retainTime, AssetVisitorInfo[] assetVisitors)
         {
             BundlePath = bundlePath;
             MemorySize = memorySize;
             RefCount = refCount;
             Stage = stage;
             RetainTime = retainTime;
-
-            AssetVisitorList = new List<AssetVisitorInfo>();
-        }
-
-        public void AddAssetVisitor(AssetVisitorInfo info)
-        {
-            AssetVisitorList.Add(info);
+            AssetVisitors = assetVisitors;
         }
     }
     
