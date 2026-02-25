@@ -105,6 +105,11 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
+            if (Source.clip?.loadState != AudioDataLoadState.Loaded)
+            {
+                return false;
+            }
+
             if (Delay > 0)
             {
                 Source.PlayDelayed(Delay);
