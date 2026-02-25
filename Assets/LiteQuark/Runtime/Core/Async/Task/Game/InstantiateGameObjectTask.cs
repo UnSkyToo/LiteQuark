@@ -35,13 +35,14 @@ namespace LiteQuark.Runtime
 
         public override void Cancel()
         {
+            base.Cancel();
+            
             if (_task != null)
             {
                 _task.Cancel();
                 _task.WaitForCompletion();
                 _task = null;
             }
-            base.Cancel();
         }
 
         protected override void OnExecute()
@@ -62,13 +63,13 @@ namespace LiteQuark.Runtime
                     result[i] = asyncOperation.Result[i] as GameObject;
                 }
                 
-                LiteUtils.SafeInvoke(_callback, result);
                 Complete(result);
+                LiteUtils.SafeInvoke(_callback, result);
             }
             else
             {
-                LiteUtils.SafeInvoke(_callback, Array.Empty<GameObject>());
                 Abort();
+                LiteUtils.SafeInvoke(_callback, Array.Empty<GameObject>());
             }
         }
     }

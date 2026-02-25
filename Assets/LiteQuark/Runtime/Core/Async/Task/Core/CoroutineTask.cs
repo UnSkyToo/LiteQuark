@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     public sealed class CoroutineTask : BaseTask
     {
         private readonly IEnumerator _item;
+        private Coroutine _coroutine;
         private Action _callback;
 
         public CoroutineTask(IEnumerator item, Action callback)
@@ -19,10 +21,21 @@ namespace LiteQuark.Runtime
         {
             _callback = null;
         }
+        
+        public override void Cancel()
+        {
+            base.Cancel();
+            
+            if (_coroutine != null)
+            {
+                LiteRuntime.Task.StopCoroutine(_coroutine);
+                _coroutine = null;
+            }
+        }
 
         protected override void OnExecute()
         {
-            LiteRuntime.Task.StartCoroutine(ExecuteInternal());
+            _coroutine = LiteRuntime.Task.StartCoroutine(ExecuteInternal());
         }
 
         private IEnumerator ExecuteInternal()

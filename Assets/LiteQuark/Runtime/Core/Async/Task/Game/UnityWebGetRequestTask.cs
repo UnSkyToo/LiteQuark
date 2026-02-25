@@ -21,14 +21,19 @@ namespace LiteQuark.Runtime
 
         protected override void OnFailed()
         {
-            LiteUtils.SafeInvoke(_callback, null);
+            base.OnFailed();
+            
             Abort();
+            LiteUtils.SafeInvoke(_callback, null);
         }
 
         protected override void OnSuccess(UnityWebRequest request)
         {
-            LiteUtils.SafeInvoke(_callback, request.downloadHandler);
-            Complete(request.downloadHandler);
+            base.OnSuccess(request);
+            
+            var handler = request.downloadHandler;
+            Complete(handler);
+            LiteUtils.SafeInvoke(_callback, handler);
         }
     }
 }

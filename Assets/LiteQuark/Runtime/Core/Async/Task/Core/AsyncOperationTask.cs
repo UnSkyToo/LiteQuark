@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
     public sealed class AsyncOperationTask : BaseTask
     {
         private readonly AsyncOperation _asyncOperation;
+        private Coroutine _coroutine;
         private Action _callback;
         
         public AsyncOperationTask(AsyncOperation asyncOperation, Action callback)
@@ -20,10 +21,21 @@ namespace LiteQuark.Runtime
         {
             _callback = null;
         }
+        
+        public override void Cancel()
+        {
+            base.Cancel();
+            
+            if (_coroutine != null)
+            {
+                LiteRuntime.Task.StopCoroutine(_coroutine);
+                _coroutine = null;
+            }
+        }
 
         protected override void OnExecute()
         {
-            LiteRuntime.Task.StartCoroutine(ExecuteInternal());
+            _coroutine = LiteRuntime.Task.StartCoroutine(ExecuteInternal());
         }
         
         private IEnumerator ExecuteInternal()
