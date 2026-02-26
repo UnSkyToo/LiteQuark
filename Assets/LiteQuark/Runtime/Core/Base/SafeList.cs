@@ -50,6 +50,7 @@ namespace LiteQuark.Runtime
         {
             if (_inEach > 0)
             {
+                _ops.Clear();
                 _ops.Enqueue((OperationType.Clear, default));
             }
             else
@@ -67,9 +68,9 @@ namespace LiteQuark.Runtime
         public void Foreach(Action<T> func)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item);
@@ -78,15 +79,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
 
         public void Foreach<P>(Action<T, P> func, P param)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param);
@@ -95,15 +97,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
 
         public void Foreach<P1, P2>(Action<T, P1, P2> func, P1 param1, P2 param2)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2);
@@ -112,15 +115,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
         
         public void Foreach<P1, P2, P3>(Action<T, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2, param3);
@@ -129,6 +133,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
         
@@ -138,9 +143,9 @@ namespace LiteQuark.Runtime
         public T ForeachReturn(Func<T, bool> func)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     if (func?.Invoke(item) == true)
@@ -152,6 +157,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
             return default;
         }
@@ -162,9 +168,9 @@ namespace LiteQuark.Runtime
         public T ForeachReturn<P>(Func<T, P, bool> func, P param)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     if (func?.Invoke(item, param) == true)
@@ -176,18 +182,27 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
             return default;
         }
         
         public void Sort(IComparer<T> comparer)
         {
+            if (_inEach > 0)
+            {
+                throw new InvalidOperationException("Cannot sort SafeList during iteration.");
+            }
             Flush();
             _values.Sort(comparer);
         }
 
         public void Sort(Comparison<T> comparison)
         {
+            if (_inEach > 0)
+            {
+                throw new InvalidOperationException("Cannot sort SafeList during iteration.");
+            }
             Flush();
             _values.Sort(comparison);
         }
@@ -221,10 +236,18 @@ namespace LiteQuark.Runtime
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             Flush();
-            
-            for (var index = 0; index < _values.Count; ++index)
+            _inEach++;
+            try
             {
-                yield return _values[index];
+                for (var index = 0; index < _values.Count; ++index)
+                {
+                    yield return _values[index];
+                }
+            }
+            finally
+            {
+                _inEach--;
+                Flush();
             }
         }
 
@@ -232,10 +255,18 @@ namespace LiteQuark.Runtime
         IEnumerator IEnumerable.GetEnumerator()
         {
             Flush();
-            
-            for (var index = 0; index < _values.Count; ++index)
+            _inEach++;
+            try
             {
-                yield return _values[index];
+                for (var index = 0; index < _values.Count; ++index)
+                {
+                    yield return _values[index];
+                }
+            }
+            finally
+            {
+                _inEach--;
+                Flush();
             }
         }
     }
