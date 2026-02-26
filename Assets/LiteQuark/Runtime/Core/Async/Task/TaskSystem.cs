@@ -38,7 +38,7 @@ namespace LiteQuark.Runtime
         {
             _monoBehaviourInstance?.StopAllCoroutines();
             
-            _taskList.Foreach((task) =>
+            _taskList.Foreach(static (task) =>
             {
                 task.Cancel();
                 task.Dispose();

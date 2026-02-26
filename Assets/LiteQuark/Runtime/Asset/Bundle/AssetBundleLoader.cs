@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             _concurrencyLimit = Mathf.Max(1, concurrencyLimit);
             
             _pendingTaskMap = new Dictionary<string, PendingTask>();
-            _pendingTaskQueue = new PriorityQueue<PendingTask>((x, y) => x.Priority.CompareTo(y.Priority));
+            _pendingTaskQueue = new PriorityQueue<PendingTask>(static (x, y) => x.Priority.CompareTo(y.Priority));
             _runningTasks = new List<RunningTask>();
         }
 
