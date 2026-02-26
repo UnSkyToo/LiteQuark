@@ -31,6 +31,7 @@ namespace LiteQuark.Runtime
     {
         Unknown,
         Startup,
-        NetError,
+        LoadVersionPack,
+        LoadRemoteBundle,
     }
 }
