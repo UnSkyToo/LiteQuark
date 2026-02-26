@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                LiteRuntime.Task.InstantiateGoTask(Template, Parent, count, (list) =>
+                LiteRuntime.Task.AddInstantiateGoTask(Template, Parent, count, (list) =>
                 {
                     foreach (var go in list)
                     {

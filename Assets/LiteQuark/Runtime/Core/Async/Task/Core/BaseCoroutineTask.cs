@@ -22,6 +22,7 @@ namespace LiteQuark.Runtime
                 _coroutine = null;
             }
         }
+        
         protected override void OnExecute()
         {
             _coroutine = LiteRuntime.Task.StartCoroutine(ExecuteInternal());

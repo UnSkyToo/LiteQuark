@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
 
         public void LoadAssetAsync<T>(string assetPath, System.Action<T> callback) where T : Object
         {
-            LiteRuntime.Task.LoadResourceTask(assetPath, callback);
+            LiteRuntime.Task.AddLoadResourceTask(assetPath, callback);
         }
 
         public void InstantiateAsync(string assetPath, Transform parent, System.Action<GameObject> callback)
@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            LiteRuntime.Task.LoadSceneTask(sceneName, parameters, callback);
+            LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, callback);
         }
 
         public void UnloadAsset(string assetPath)

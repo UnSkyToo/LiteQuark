@@ -16,13 +16,13 @@
         {
             var versionPackUri = PathUtils.ConcatPath(_remoteUri, versionFileName);
             versionPackUri = $"{versionPackUri}?t={AppUtils.GetVersion()}";
-            return LiteRuntime.Task.LoadVersionPackTask(versionPackUri, callback);
+            return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, callback);
         }
         
         public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
         {
             var bundleUri = PathUtils.ConcatPath(_remoteUri, bundlePath);
-            return LiteRuntime.Task.LoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash, callback);
+            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash, callback);
         }
     }
 }

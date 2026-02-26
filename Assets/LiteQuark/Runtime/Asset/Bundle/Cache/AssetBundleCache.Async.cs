@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
                 
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
 
-                LiteRuntime.Task.LoadSceneTask(sceneName, parameters, (sceneIsLoaded) =>
+                LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, (sceneIsLoaded) =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");

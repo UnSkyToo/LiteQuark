@@ -164,56 +164,56 @@ namespace LiteQuark.Runtime
             return task;
         }
         
-        public InstantiateGameObjectTask InstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
+        public InstantiateGameObjectTask AddInstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
             var task = new InstantiateGameObjectTask(template, parent, count, callback);
             AddTask(task);
             return task;
         }
         
-        public UnityWebGetRequestTask UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
+        public UnityWebGetRequestTask AddUnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
         {
             var task = new UnityWebGetRequestTask(uri, retry, forceNoCache, callback);
             AddTask(task);
             return task;
         }
         
-        internal LoadVersionPackTask LoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
+        internal LoadVersionPackTask AddLoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
         {
             var task = new LoadVersionPackTask(uri, callback);
             AddTask(task);
             return task;
         }
 
-        internal LoadLocalBundleTask LoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
             AddTask(task);
             return task;
         }
 
-        internal LoadRemoteBundleTask LoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
+        internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, hash, callback);
             AddTask(task);
             return task;
         }
 
-        internal LoadAssetTask<T> LoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
+        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, assetName, callback);
             AddTask(task);
             return task;
         }
 
-        internal LoadSceneTask LoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        internal LoadSceneTask AddLoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
             var task = new LoadSceneTask(sceneName, parameters, callback);
             AddTask(task);
             return task;
         }
         
-        internal LoadResourceTask<T> LoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
+        internal LoadResourceTask<T> AddLoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
         {
             var task = new LoadResourceTask<T>(assetName, callback);
             AddTask(task);
