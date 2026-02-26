@@ -101,9 +101,9 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public virtual void Alloc(System.Action<GameObject> calllback)
+        public virtual void Alloc(System.Action<GameObject> callback)
         {
-            Alloc(null, calllback);
+            Alloc(null, callback);
         }
 
         public virtual void Alloc(Transform parent, System.Action<GameObject> callback)
