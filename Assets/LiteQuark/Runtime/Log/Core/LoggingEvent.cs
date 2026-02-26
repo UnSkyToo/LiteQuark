@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         public DateTime TimeStamp { get; }
         
         public LoggingEvent(string loggerName, LogLevel level, string message, Exception exception)
-            : this(loggerName, level, message, exception, new StackTrace().ToString(), Thread.CurrentThread.Name, DateTime.Now)
+            : this(loggerName, level, message, exception, level != LogLevel.Info ? new StackTrace().ToString() : string.Empty, Thread.CurrentThread.Name, DateTime.Now)
         {
         }
 
