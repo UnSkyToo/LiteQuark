@@ -49,6 +49,7 @@ namespace LiteQuark.Runtime
         {
             if (_inEach > 0)
             {
+                _ops.Clear();
                 _ops.Enqueue((OperationType.Clear, default));
             }
             else
@@ -66,9 +67,9 @@ namespace LiteQuark.Runtime
         public void Foreach(Action<KeyValuePair<TKey, TValue>> func)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item);
@@ -77,15 +78,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
 
         public void Foreach<P>(Action<KeyValuePair<TKey, TValue>, P> func, P param)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param);
@@ -94,15 +96,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
 
         public void Foreach<P1, P2>(Action<KeyValuePair<TKey, TValue>, P1, P2> func, P1 param1, P2 param2)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2);
@@ -111,15 +114,16 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
         
         public void Foreach<P1, P2, P3>(Action<KeyValuePair<TKey, TValue>, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     func?.Invoke(item, param1, param2, param3);
@@ -128,6 +132,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
         }
         
@@ -137,9 +142,9 @@ namespace LiteQuark.Runtime
         public KeyValuePair<TKey, TValue> ForeachReturn(Func<KeyValuePair<TKey, TValue>, bool> func)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     if (func?.Invoke(item) == true)
@@ -151,6 +156,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
             return default;
         }
@@ -161,9 +167,9 @@ namespace LiteQuark.Runtime
         public KeyValuePair<TKey, TValue> ForeachReturn<P>(Func<KeyValuePair<TKey, TValue>, P, bool> func, P param)
         {
             Flush();
+            _inEach++;
             try
             {
-                _inEach++;
                 foreach (var item in _values)
                 {
                     if (func?.Invoke(item, param) == true)
@@ -175,6 +181,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _inEach--;
+                Flush();
             }
             return default;
         }
