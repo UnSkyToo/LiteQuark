@@ -137,7 +137,7 @@ namespace LiteQuark.Runtime
             fieldInfo.SetValue(instance, fieldValue);
         }
         
-        public static PropertyInfo GetPropertyInfo(object instance, string propertyName, BindingFlags flags = DefaultStaticFlags)
+        public static PropertyInfo GetPropertyInfo(object instance, string propertyName, BindingFlags flags = DefaultInstanceFlags)
         {
             if (instance == null)
             {
@@ -148,7 +148,7 @@ namespace LiteQuark.Runtime
             return GetPropertyInfo(type, propertyName, flags);
         }
         
-        public static PropertyInfo GetPropertyInfo(Type type, string propertyName, BindingFlags flags = DefaultInstanceFlags)
+        public static PropertyInfo GetPropertyInfo(Type type, string propertyName, BindingFlags flags = DefaultStaticFlags)
         {
             return type.GetProperty(propertyName, flags);
         }

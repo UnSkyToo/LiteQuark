@@ -15,8 +15,8 @@ namespace LiteBattle.Runtime
 
             Entity_ = paramList[0] as LiteEntity;
             var value = paramList[1] as string;
-            FindComponent<TextMeshProUGUI>().text = value;
-            FindComponent<TextMeshProUGUI>().color = Color.red;
+            GetComponent<TextMeshProUGUI>().text = value;
+            GetComponent<TextMeshProUGUI>().color = Color.red;
 
             var worldPos = Entity_.GetModule<LiteEntityBehaveModule>().GetInternalGo().transform.position + Vector3.up * 2f;
             RT.anchoredPosition = UIUtils.WorldPointToCanvasPoint(worldPos, LiteCameraManager.Instance.MainCamera, RT.parent, LiteRuntime.Get<UISystem>().UICamera);

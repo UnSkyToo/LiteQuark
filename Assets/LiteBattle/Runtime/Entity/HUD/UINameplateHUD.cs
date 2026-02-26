@@ -31,7 +31,7 @@ namespace LiteBattle.Runtime
             var curHp = Entity_.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.CurHp);
             var maxHp = Math.Max(1, Entity_.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.MaxHp));
             var curHpPercent = curHp / maxHp;
-            FindComponent<Slider>("HpBar").value = Mathf.Clamp01((float)curHpPercent);
+            GetComponent<Slider>("HpBar").value = Mathf.Clamp01((float)curHpPercent);
         }
     }
 }
