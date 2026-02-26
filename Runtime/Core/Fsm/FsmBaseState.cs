@@ -25,7 +25,7 @@
         {
         }
 
-        public virtual bool GotoCheck(int targetID)
+        public virtual bool CanChangeTo(int targetID)
         {
             return true;
         }
