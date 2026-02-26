@@ -106,30 +106,6 @@
             _callback?.Invoke(_param1, _param2, _param3);
         }
     }
-    
-    public class DelayCallbackAction<T1, T2, T3, T4> : DelayCallbackBaseAction
-    {
-        private readonly System.Action<T1, T2, T3, T4> _callback = null;
-        private readonly T1 _param1 = default;
-        private readonly T2 _param2 = default;
-        private readonly T3 _param3 = default;
-        private readonly T4 _param4 = default;
-        
-        public DelayCallbackAction(float waitTime, System.Action<T1, T2, T3, T4> callback, T1 param1, T2 param2, T3 param3, T4 param4)
-            : base(waitTime)
-        {
-            _callback = callback;
-            _param1 = param1;
-            _param2 = param2;
-            _param3 = param3;
-            _param4 = param4;
-        }
-
-        protected override void OnCallback()
-        {
-            _callback?.Invoke(_param1, _param2, _param3, _param4);
-        }
-    }
 
     public static partial class ActionBuilderExtend
     {
@@ -154,12 +130,6 @@
         public static ActionBuilder DelayCallback<T1, T2, T3>(this ActionBuilder builder, float waitTime, System.Action<T1, T2, T3> callback, T1 param1, T2 param2, T3 param3)
         {
             builder.Add(new DelayCallbackAction<T1, T2, T3>(waitTime, callback, param1, param2, param3));
-            return builder;
-        }
-        
-        public static ActionBuilder DelayCallback<T1, T2, T3, T4>(this ActionBuilder builder, float waitTime, System.Action<T1, T2, T3, T4> callback, T1 param1, T2 param2, T3 param3, T4 param4)
-        {
-            builder.Add(new DelayCallbackAction<T1, T2, T3, T4>(waitTime, callback, param1, param2, param3, param4));
             return builder;
         }
     }
