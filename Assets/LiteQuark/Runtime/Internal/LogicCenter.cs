@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -24,12 +25,17 @@ namespace LiteQuark.Runtime
             }
         }
         
-        internal async UniTask<bool> InitializeLogic()
+        internal async UniTask<bool> InitializeLogic(CancellationToken ct = default)
         {
             _logicList.Clear();
             
             foreach (var logicEntry in LiteRuntime.Setting.LogicList)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+
                 if (logicEntry.Disabled)
                 {
                     continue;
@@ -40,6 +46,15 @@ namespace LiteQuark.Runtime
                 var logic = TypeUtils.CreateEntryInstance(logicEntry);
                 
                 var result = await logic.Initialize();
+                if (ct.IsCancellationRequested)
+                {
+                    if (result)
+                    {
+                        logic.Dispose();
+                    }
+                    return false;
+                }
+
                 if (result)
                 {
                     _logicList.Add(logic);
