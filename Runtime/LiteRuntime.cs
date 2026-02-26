@@ -147,16 +147,16 @@ namespace LiteQuark.Runtime
             }
 
 #if UNITY_EDITOR
-            var time = deltaTime * _setting.Common.TimeScale;
+            var scaledDeltaTime = deltaTime * _setting.Common.TimeScale;
 #else
-            var time = deltaTime;
+            var scaledDeltaTime = deltaTime;
 #endif
 
-            SystemCenter.Instance.Tick(deltaTime);
+            SystemCenter.Instance.Tick(scaledDeltaTime);
 
             if (_state == RuntimeState.Running)
             {
-                LogicCenter.Instance.Tick(time);
+                LogicCenter.Instance.Tick(scaledDeltaTime);
             }
         }
 
