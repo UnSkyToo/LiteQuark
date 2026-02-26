@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
         
         private ulong CreateTimer(float interval, float delayTime, Action onTick, Action onComplete, int repeatCount = 1, bool isUnscaled = false)
         {
-            var  timer = new NormalTimer(interval, delayTime, repeatCount, onTick, onComplete, isUnscaled);
+            var timer = new NormalTimer(interval, delayTime, repeatCount, onTick, onComplete, isUnscaled);
             _timerList.Add(timer);
             return timer.ID;
         }
@@ -98,7 +98,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
             
-            return _timerList.ForeachReturn((timer, targetId) => timer.ID == targetId, id);
+            return _timerList.ForeachReturn(static (timer, targetId) => timer.ID == targetId, id);
         }
 
         public void StopTimer(ulong id)

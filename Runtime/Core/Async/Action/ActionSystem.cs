@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _actionList.Foreach((action) => action.Dispose());
+            _actionList.Foreach(static (action) => action.Dispose());
             _actionList.Clear();
         }
 
@@ -76,7 +76,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
             
-            return _actionList.ForeachReturn((action, targetId) => action.ID == targetId, id);
+            return _actionList.ForeachReturn(static (action, targetId) => action.ID == targetId, id);
         }
 
         public void StopAction(ulong id)

@@ -64,7 +64,7 @@ namespace LiteQuark.Runtime
                 var systemType = System.Type.GetType(assemblyQualifiedName);
                 if (systemType == null)
                 {
-                    throw new System.Exception($"can't not find system class type : {assemblyQualifiedName}");
+                    throw new System.Exception($"cannot find system class type : {assemblyQualifiedName}");
                 }
                 
                 if (System.Activator.CreateInstance(systemType) is not ISystem system)
@@ -127,7 +127,7 @@ namespace LiteQuark.Runtime
         private List<string> GetAllSystemList()
         {
             var systemList = new List<string>(LiteConst.InternalSystem.Keys);
-            systemList.Sort((x, y) => LiteConst.InternalSystem[y].CompareTo(LiteConst.InternalSystem[x]));
+            systemList.Sort(static (x, y) => LiteConst.InternalSystem[y].CompareTo(LiteConst.InternalSystem[x]));
 
             foreach (var systemEntry in LiteRuntime.Setting.SystemList)
             {
@@ -153,7 +153,7 @@ namespace LiteQuark.Runtime
             var systemType = system.GetType();
             
             var settingInterface = systemType.GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
+                .FirstOrDefault(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
 
             if (settingInterface == null)
             {

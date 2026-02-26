@@ -244,7 +244,7 @@ namespace LiteQuark.Runtime
             T result = null;
             if (attrs != null)
             {
-                result = (T)Array.Find(attrs, t => t is T);
+                result = (T)Array.Find(attrs, static t => t is T);
             }
 
             if (result == null)
@@ -286,7 +286,7 @@ namespace LiteQuark.Runtime
         
         public static void PrioritySort(List<Type> sortList)
         {
-            sortList.Sort((a, b) =>
+            sortList.Sort(static (a, b) =>
             {
                 var priorityA = GetPriorityFromType(a);
                 var priorityB = GetPriorityFromType(b);
@@ -314,7 +314,7 @@ namespace LiteQuark.Runtime
         
         public static void PrioritySort<T>(List<T> sortList) where T : MemberInfo
         {
-            sortList.Sort((a, b) =>
+            sortList.Sort(static (a, b) =>
             {
                 var priorityA = GetPriorityFromType(a);
                 var priorityB = GetPriorityFromType(b);

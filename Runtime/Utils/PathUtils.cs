@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         private static readonly string InvalidFlatChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
         public static string ToFlatPath(string path)
         {
-            return InvalidFlatChars.Aggregate(path, (current, ch) => current.Replace(ch, '_'));
+            return InvalidFlatChars.Aggregate(path, static (current, ch) => current.Replace(ch, '_'));
         }
 
         public static string ConcatPath(string path1, string path2)
