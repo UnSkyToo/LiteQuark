@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
                     particle.Play();
                 }
 
-                callback?.Invoke(go);
+                LiteUtils.SafeInvoke(callback, go);
             });
         }
     }
