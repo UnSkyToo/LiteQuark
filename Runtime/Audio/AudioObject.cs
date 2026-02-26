@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
                 Carrier = go;
                 if (Carrier == null)
                 {
-                    callback?.Invoke(false);
+                    LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
 
@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
                         LLog.Warning("can't play audio : {0}", clipPath);
                         pool.Recycle(Carrier);
                         Carrier = null;
-                        callback?.Invoke(false);
+                        LiteUtils.SafeInvoke(callback, false);
                         return;
                     }
                     
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
                     Carrier.name = DebugName;
                     Delay = delay;
                     IsLoaded = true;
-                    callback?.Invoke(true);
+                    LiteUtils.SafeInvoke(callback, true);
                 });
             });
         }

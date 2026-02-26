@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
                     {
                         if (!IsLoop)
                         {
-                            _info.CompleteCallback?.Invoke();
+                            LiteUtils.SafeInvoke(_info.CompleteCallback);
                             Stop();
                         }
                     }

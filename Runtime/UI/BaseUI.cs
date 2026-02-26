@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
             LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
             {
                 _loadSpriteList.Add(sprite);
-                callback?.Invoke(sprite);
+                LiteUtils.SafeInvoke(callback, sprite);
             });
         }
         
