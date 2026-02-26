@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                Abort();
+                Cancel();
                 LiteUtils.SafeInvoke(_callback, Array.Empty<GameObject>());
             }
         }

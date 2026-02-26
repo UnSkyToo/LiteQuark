@@ -42,7 +42,7 @@ namespace LiteQuark.Runtime
             base.OnFailed();
 
             _bundle = null;
-            Abort();
+            Cancel();
             LiteUtils.SafeInvoke(_callback, null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }

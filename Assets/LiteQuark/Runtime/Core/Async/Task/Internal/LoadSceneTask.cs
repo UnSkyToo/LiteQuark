@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
             _sceneRequest = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(_sceneName, _parameters);
             if (_sceneRequest == null)
             {
-                Abort();
+                Cancel();
                 LiteUtils.SafeInvoke(_callback, false);
                 return;
             }
