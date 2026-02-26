@@ -1,5 +1,9 @@
 # Changelog
 
+## **[0.4.1] - 2026-02-26**
+- 优化：AudioObject/EffectObject/BaseUI 回调统一使用 SafeInvoke 异常保护
+- 优化：BaseUI 的 FindComponent 重命名为 GetComponent，迁移至 UnityUtils
+
 ## **[0.4.0] - 2026-02-25**
 - 修复：音频加载失败时 Carrier 未释放的 BUG
 - 修复：编辑器下播放Bundle音频报错的BUG
