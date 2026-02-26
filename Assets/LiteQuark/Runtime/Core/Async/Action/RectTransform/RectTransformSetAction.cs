@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
             }
 
             RT.anchoredPosition = _position;
-            IsEnd = true;
+            IsDone = true;
         }
     }
 

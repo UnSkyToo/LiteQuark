@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _originScale = TS.localScale;
             _targetScale = _isRelative ? _originScale + _scale : _scale;
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 TS.localScale = _targetScale;
-                IsEnd = true;
+                IsDone = true;
             }
         }
     }

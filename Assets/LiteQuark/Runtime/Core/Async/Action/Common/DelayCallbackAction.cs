@@ -15,7 +15,7 @@
         public override void Execute()
         {
             _currentTime = _waitTime;
-            IsEnd = _currentTime <= 0f;
+            IsDone = _currentTime <= 0f;
         }
 
         public override void Tick(float deltaTime)
@@ -23,7 +23,7 @@
             _currentTime -= deltaTime;
             if (_currentTime <= 0f)
             {
-                IsEnd = true;
+                IsDone = true;
                 OnCallback();
             }
         }

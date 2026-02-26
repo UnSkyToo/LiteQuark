@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                if (action.IsEnd)
+                if (action.IsDone)
                 {
                     LiteUtils.SafeInvoke(action.FinalCallback, action);
                     action.Dispose();
@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
         public bool IsEnd(ulong id)
         {
             var action = FindAction(id);
-            return action == null || action.IsEnd;
+            return action == null || action.IsDone;
         }
 
         public SafeList<IAction> GetActionList()
@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
         public void StopAction(ulong id)
         {
             var action = FindAction(id);
-            if (action == null || action.IsEnd)
+            if (action == null || action.IsDone)
             {
                 return;
             }
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
         {
             if (isSafety || LiteRuntime.Setting.Action.SafetyMode)
             {
-                action.MarkSafety();
+                action.MarkAsSafe();
             }
             
             _actionList.Add(action);

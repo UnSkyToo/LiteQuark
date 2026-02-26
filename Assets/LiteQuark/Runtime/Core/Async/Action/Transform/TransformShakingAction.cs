@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _stepTime = 0;
             _degree = Random.Range(0f, 360f);
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
             if (_currentTime >= _totalTime)
             {
                 TS.localPosition = _position;
-                IsEnd = true;
+                IsDone = true;
             }
         }
 

@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public abstract class BaseTimer : BaseObject, ITimer
     {
         public ulong ID => UniqueID;
-        public bool IsEnd => _repeatCount == 0;
+        public bool IsDone => _repeatCount == 0;
 
         public override string DebugName => $"Timer<{_interval} - {_repeatCount}>";
 
@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            if (_isPaused || IsEnd)
+            if (_isPaused || IsDone)
             {
                 return;
             }
@@ -63,7 +63,7 @@ namespace LiteQuark.Runtime
 
         public void Cancel()
         {
-            if (IsEnd)
+            if (IsDone)
             {
                 return;
             }

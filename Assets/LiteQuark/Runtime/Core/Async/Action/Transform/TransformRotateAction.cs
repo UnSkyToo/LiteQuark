@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _originRotation = TS.localRotation;
             _targetRotation = _rotation;
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 SetValue(_targetRotation);
-                IsEnd = true;
+                IsDone = true;
             }
         }
         
@@ -99,7 +99,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _anglePerSecond = _totalAngle / _totalTime;
             _accumulateAngle = 0f;
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -124,7 +124,7 @@ namespace LiteQuark.Runtime
             
             if (_currentTime >= _totalTime)
             {
-                IsEnd = true;
+                IsDone = true;
             }
         }
 
@@ -173,7 +173,7 @@ namespace LiteQuark.Runtime
                 if (Vector3.Distance(TS.localPosition, _targetPosition) < 0.1f)
                 {
                     TS.localPosition = _targetPosition;
-                    IsEnd = true;
+                    IsDone = true;
                 }
             }
             else
@@ -181,11 +181,11 @@ namespace LiteQuark.Runtime
                 if (Vector3.Distance(TS.position, _targetPosition) < 0.1f)
                 {
                     TS.position = _targetPosition;
-                    IsEnd = true;
+                    IsDone = true;
                 }
             }
 
-            if (!IsEnd)
+            if (!IsDone)
             {
                 base.Tick(deltaTime);
             }

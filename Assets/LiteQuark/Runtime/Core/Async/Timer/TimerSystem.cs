@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
         {
             timer.Tick(dt);
 
-            if (timer.IsEnd)
+            if (timer.IsDone)
             {
                 list.Remove(timer);
             }
@@ -90,7 +90,7 @@ namespace LiteQuark.Runtime
         public void StopTimer(ulong id)
         {
             var timer = FindTimer(id);
-            if (timer == null || timer.IsEnd)
+            if (timer == null || timer.IsDone)
             {
                 return;
             }

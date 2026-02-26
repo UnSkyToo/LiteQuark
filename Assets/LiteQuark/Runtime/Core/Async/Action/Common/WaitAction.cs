@@ -17,14 +17,14 @@
             _currentTime -= deltaTime;
             if (_currentTime <= 0f)
             {
-                IsEnd = true;
+                IsDone = true;
             }
         }
 
         public override void Execute()
         {
             _currentTime = _waitTime;
-            IsEnd = _currentTime <= 0f;
+            IsDone = _currentTime <= 0f;
         }
     }
 
@@ -45,14 +45,14 @@
             _currentFrame--;
             if (_currentFrame <= 0)
             {
-                IsEnd = true;
+                IsDone = true;
             }
         }
 
         public override void Execute()
         {
             _currentFrame = _waitFrame;
-            IsEnd = _currentFrame <= 0;
+            IsDone = _currentFrame <= 0;
         }
     }
 
@@ -69,12 +69,12 @@
 
         public override void Execute()
         {
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
         {
-            IsEnd = _conditionFunc?.Invoke() ?? true;
+            IsDone = _conditionFunc?.Invoke() ?? true;
         }
     }
     

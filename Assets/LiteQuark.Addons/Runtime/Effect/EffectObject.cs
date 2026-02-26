@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
         public bool IsLoop => _info.IsLoop || (_binder?.IsLoop ?? false);
         public float LifeTime => _info.LifeTime > 0f ? _info.LifeTime : _binder?.LifeTime ?? 0f;
         public bool IsValid => _state is > EffectState.Created and < EffectState.Finished;
-        public bool IsEnd => _state == EffectState.Finished;
+        public bool IsDone => _state == EffectState.Finished;
 
         public EffectObject(EffectCreateInfo info)
         {

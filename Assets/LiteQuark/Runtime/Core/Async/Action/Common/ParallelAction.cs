@@ -2,7 +2,7 @@
 {
     public class ParallelAction : CompositeAction
     {
-        public override string DebugName => $"<Parallel - {Tag}>({Count})";
+        public override string DebugName => $"<Parallel - {Tag}>({SubActionCount})";
         
         private int _currentCount;
         
@@ -14,7 +14,7 @@
 
         public override void Execute()
         {
-            IsEnd = Count == 0;
+            IsDone = SubActionCount == 0;
             _currentCount = 0;
             
             ExecuteSubActions();
@@ -24,9 +24,9 @@
         {
             var endCount = 0;
 
-            for (var index = 0; index < Count; ++index)
+            for (var index = 0; index < SubActionCount; ++index)
             {
-                if (SubActions[index].IsEnd)
+                if (SubActions[index].IsDone)
                 {
                     endCount++;
                     continue;
@@ -34,14 +34,13 @@
                 
                 SubActions[index].Tick(deltaTime);
 
-                if (SubActions[index].IsEnd)
+                if (SubActions[index].IsDone)
                 {
-                    // SubActions[index].Dispose();
                     endCount++;
                 }
             }
             
-            if (endCount == Count)
+            if (endCount == SubActionCount)
             {
                 _currentCount++;
                 if (RepeatCount < 0 || _currentCount < RepeatCount)
@@ -50,7 +49,7 @@
                 }
                 else
                 {
-                    IsEnd = true;
+                    IsDone = true;
                 }
             }
         }
