@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath);
 
-            _loadAssetTask = LiteRuntime.Task.LoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
+            _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
         }
 
         private void HandleAssetLoadCompleted(UnityEngine.Object asset)
