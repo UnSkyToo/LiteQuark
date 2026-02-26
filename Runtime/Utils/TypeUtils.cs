@@ -101,12 +101,12 @@ namespace LiteQuark.Runtime
         
         public static bool IsListType(Type type)
         {
-            return type.IsGenericType && type.GenericTypeArguments.Length == 1;
+            return type.IsGenericType && typeof(System.Collections.IList).IsAssignableFrom(type);
         }
         
         public static bool IsDictionaryType(Type type)
         {
-            return type.IsGenericType && type.GenericTypeArguments.Length == 2;
+            return type.IsGenericType && typeof(System.Collections.IDictionary).IsAssignableFrom(type);
         }
         
         public static Type GetElementType(Type type)
@@ -225,15 +225,15 @@ namespace LiteQuark.Runtime
                 return default;
             }
 
-            var logicType = System.Type.GetType(entryData.AssemblyQualifiedName);
+            var logicType = Type.GetType(entryData.AssemblyQualifiedName);
             if (logicType == null)
             {
-                throw new System.Exception($"Can't not find class type : {entryData.AssemblyQualifiedName}");
+                throw new Exception($"Cannot find class type : {entryData.AssemblyQualifiedName}");
             }
 
-            if (System.Activator.CreateInstance(logicType) is not T instanceType)
+            if (Activator.CreateInstance(logicType) is not T instanceType)
             {
-                throw new System.Exception($"Incorrect {typeof(T)} type : {logicType.AssemblyQualifiedName}");
+                throw new Exception($"Incorrect {typeof(T)} type : {logicType.AssemblyQualifiedName}");
             }
 
             return instanceType;

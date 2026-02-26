@@ -104,10 +104,7 @@ namespace LiteQuark.Runtime
             var array = new HashSet<T>(array1);
             foreach (var item in array2)
             {
-                if (!array.Contains(item))
-                {
-                    array.Add(item);
-                }
+                array.Add(item);
             }
 
             return array.ToArray();

@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -6,6 +6,60 @@ namespace LiteQuark.Runtime
 {
     public static class UnityUtils
     {
+        public static Transform FindChild(GameObject parent, string path)
+        {
+            return FindChild(parent.transform, path);
+        }
+
+        public static Transform FindChild(Transform parent, string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return parent;
+            }
+
+            return parent.Find(path);
+        }
+
+        public static Component GetComponent(GameObject parent, string path, Type type)
+        {
+            return GetComponent(parent.transform, path, type);
+        }
+
+        public static Component GetComponent(Transform parent, string path, Type type)
+        {
+            var child = FindChild(parent, path);
+
+            if (child != null)
+            {
+                return child.GetComponent(type);
+            }
+
+            return null;
+        }
+
+        public static T GetComponent<T>(GameObject parent, string path) where T : Component
+        {
+            return GetComponent<T>(parent.transform, path);
+        }
+
+        public static T GetComponent<T>(Transform parent, string path) where T : Component
+        {
+            var child = FindChild(parent, path);
+
+            if (child != null)
+            {
+                return child.GetComponent<T>();
+            }
+
+            return null;
+        }
+        
+        public static T GetComponentUpper<T>(GameObject parent) where T : Component
+        {
+            return GetComponentUpper<T>(parent.transform);
+        }
+        
         public static T GetComponentUpper<T>(Transform parent) where T : Component
         {
             while (parent != null)
@@ -59,8 +113,22 @@ namespace LiteQuark.Runtime
         {
             var go = new GameObject(name);
             go.hideFlags = HideFlags.NotEditable;
-            Object.DontDestroyOnLoad(go);
+            UnityEngine.Object.DontDestroyOnLoad(go);
             return go;
+        }
+        
+        public static void SetActive(GameObject parent, string path, bool value)
+        {
+            SetActive(parent.transform, path, value);
+        }
+
+        public static void SetActive(Transform parent, string path, bool value)
+        {
+            var child = FindChild(parent, path);
+            if (child != null)
+            {
+                child.gameObject.SetActive(value);
+            }
         }
 
         public static void SetParent(Transform parent, GameObject child)
@@ -176,6 +244,36 @@ namespace LiteQuark.Runtime
     
     public static class UnityUtilsExtend
     {
+        public static Transform FindChild(this GameObject parent, string path)
+        {
+            return UnityUtils.FindChild(parent, path);
+        }
+
+        public static Transform FindChild(this Transform parent, string path)
+        {
+            return UnityUtils.FindChild(parent, path);
+        }
+
+        public static Component GetComponent(this GameObject parent, string path, Type type)
+        {
+            return UnityUtils.GetComponent(parent, path, type);
+        }
+
+        public static Component GetComponent(this Transform parent, string path, Type type)
+        {
+            return UnityUtils.GetComponent(parent, path, type);
+        }
+
+        public static T GetComponent<T>(this GameObject parent, string path) where T : Component
+        {
+            return UnityUtils.GetComponent<T>(parent, path);
+        }
+
+        public static T GetComponent<T>(this Transform parent, string path) where T : Component
+        {
+            return UnityUtils.GetComponent<T>(parent, path);
+        }
+        
         public static T GetComponentUpper<T>(this Transform parent) where T : Component
         {
             return UnityUtils.GetComponentUpper<T>(parent);
@@ -189,6 +287,24 @@ namespace LiteQuark.Runtime
         public static T GetOrAddComponent<T>(this Transform go) where T : Component
         {
             return UnityUtils.GetOrAddComponent<T>(go);
+        }
+        
+        public static void SetActive(this GameObject parent, string path, bool value)
+        {
+            UnityUtils.SetActive(parent, path, value);
+        }
+
+        public static void SetActive(this Transform transform, bool value)
+        {
+            if (transform != null)
+            {
+                transform.gameObject.SetActive(value);
+            }
+        }
+
+        public static void SetActive(this Transform parent, string path, bool value)
+        {
+            UnityUtils.SetActive(parent, path, value);
         }
         
         public static UniTask<AsyncOperation>.Awaiter GetAwaiter(this AsyncOperation asyncOperation)
