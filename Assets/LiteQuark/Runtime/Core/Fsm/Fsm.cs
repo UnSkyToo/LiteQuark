@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
         {
             if (CurrentState != null)
             {
-                if (!CurrentState.GotoCheck(id))
+                if (!CurrentState.CanChangeTo(id))
                 {
                     return false;
                 }

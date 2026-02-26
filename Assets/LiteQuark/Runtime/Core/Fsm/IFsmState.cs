@@ -8,6 +8,6 @@
         void Enter(params object[] args);
         void Leave();
         
-        bool GotoCheck(int targetID);
+        bool CanChangeTo(int targetID);
     }
 }

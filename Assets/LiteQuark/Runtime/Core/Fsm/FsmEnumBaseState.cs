@@ -12,13 +12,13 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public override bool GotoCheck(int targetID)
+        public override bool CanChangeTo(int targetID)
         {
             var state = (T)Enum.ToObject(typeof(T), targetID);
-            return GotoCheck(state);
+            return CanChangeTo(state);
         }
 
-        public virtual bool GotoCheck(T state)
+        public virtual bool CanChangeTo(T state)
         {
             return true;
         }
