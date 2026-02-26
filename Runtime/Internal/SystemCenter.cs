@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -45,7 +46,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal async UniTask<bool> InitializeSystem()
+        internal async UniTask<bool> InitializeSystem(CancellationToken ct = default)
         {
             _addList.Clear();
             _systemList.Clear();
@@ -55,6 +56,11 @@ namespace LiteQuark.Runtime
             
             foreach (var assemblyQualifiedName in systemList)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+                
                 var systemType = System.Type.GetType(assemblyQualifiedName);
                 if (systemType == null)
                 {
@@ -71,6 +77,15 @@ namespace LiteQuark.Runtime
                 TryInjectSetting(system);
                 
                 var result = await system.Initialize();
+                if (ct.IsCancellationRequested)
+                {
+                    if (result)
+                    {
+                        system.Dispose();
+                    }
+                    return false;
+                }
+
                 if (result)
                 {
                     _addList.Add(system);

@@ -1,4 +1,5 @@
-﻿using Cysharp.Threading.Tasks;
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -26,6 +27,7 @@ namespace LiteQuark.Runtime
         private LiteSetting _setting = null;
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
+        private CancellationTokenSource _startupCts = null;
 
         private RuntimeState _state = RuntimeState.Idle;
 
@@ -48,10 +50,11 @@ namespace LiteQuark.Runtime
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int)System.DateTime.Now.Ticks);
 
-            StartupAsync().Forget();
+            _startupCts = new CancellationTokenSource();
+            StartupAsync(_startupCts.Token).Forget();
         }
 
-        private async UniTaskVoid StartupAsync()
+        private async UniTaskVoid StartupAsync(CancellationToken ct)
         {
             try
             {
@@ -59,25 +62,40 @@ namespace LiteQuark.Runtime
 
                 _state = RuntimeState.InitSystem;
                 watch.Restart();
-                if (!await SystemCenter.Instance.InitializeSystem())
+                if (!await SystemCenter.Instance.InitializeSystem(ct))
                 {
-                    EnterErrorState();
+                    if (!ct.IsCancellationRequested)
+                    {
+                        EnterErrorState();
+                    }
                     return;
                 }
 
                 LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
 
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 _state = RuntimeState.InitLogic;
                 watch.Restart();
-                if (!await LogicCenter.Instance.InitializeLogic())
+                if (!await LogicCenter.Instance.InitializeLogic(ct))
                 {
-                    EnterErrorState();
+                    if (!ct.IsCancellationRequested)
+                    {
+                        EnterErrorState();
+                    }
                     return;
                 }
 
                 LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
 
                 _state = RuntimeState.Running;
+            }
+            catch (System.OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Shutdown triggered during startup, silently exit
             }
             catch (System.Exception ex)
             {
@@ -88,13 +106,17 @@ namespace LiteQuark.Runtime
 
         public void Shutdown()
         {
-            OnEnterBackground();
-
-            if (_state == RuntimeState.Running)
+            if (_state == RuntimeState.Idle)
             {
-                LogicCenter.Instance.Dispose();
+                return;
             }
 
+            _startupCts?.Cancel();
+            _startupCts?.Dispose();
+            _startupCts = null;
+
+            OnEnterBackground();
+            LogicCenter.Instance.Dispose();
             SystemCenter.Instance.Dispose();
             _state = RuntimeState.Idle;
 
