@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
                 var attr = field.GetCustomAttribute<UIComponentAttribute>(false);
                 if (attr != null)
                 {
-                    var componentValue = ui.FindComponent(attr.Path, field.FieldType);
+                    var componentValue = ui.GetComponent(attr.Path, field.FieldType);
                     if (componentValue == null)
                     {
                         LLog.Warning("can't bind component : {0}", attr.Path);
@@ -97,7 +97,7 @@ namespace LiteQuark.Runtime
                 {
                     try
                     {
-                        ui.FindComponent<Button>(attr.Path).onClick.AddListener(Delegate.CreateDelegate(typeof(UnityAction), ui, method) as UnityAction);
+                        ui.GetComponent<Button>(attr.Path).onClick.AddListener(Delegate.CreateDelegate(typeof(UnityAction), ui, method) as UnityAction);
                     }
                     catch (Exception ex)
                     {
@@ -117,7 +117,7 @@ namespace LiteQuark.Runtime
                 {
                     try
                     {
-                        ui.FindComponent<Button>(attr.Path).onClick.RemoveAllListeners();
+                        ui.GetComponent<Button>(attr.Path).onClick.RemoveAllListeners();
                     }
                     catch (Exception ex)
                     {

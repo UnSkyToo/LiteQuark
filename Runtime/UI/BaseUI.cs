@@ -93,32 +93,32 @@ namespace LiteQuark.Runtime
 
         public Transform FindChild(string path)
         {
-            return UIUtils.FindChild(Go, path);
+            return UnityUtils.FindChild(Go, path);
         }
 
-        public Component FindComponent(string path, Type type)
+        public Component GetComponent(string path, Type type)
         {
-            return UIUtils.FindComponent(Go, path, type);
+            return UnityUtils.GetComponent(Go, path, type);
         }
         
-        public Component FindComponent(Type type)
+        public Component GetComponent(Type type)
         {
             return Go.GetComponent(type);
         }
         
-        public T FindComponent<T>(string path) where T : Component
+        public T GetComponent<T>(string path) where T : Component
         {
-            return UIUtils.FindComponent<T>(Go, path);
+            return UnityUtils.GetComponent<T>(Go, path);
         }
         
-        public T FindComponent<T>() where T : Component
+        public T GetComponent<T>() where T : Component
         {
             return Go.GetComponent<T>();
         }
 
         public void SetActive(string path, bool value)
         {
-            UIUtils.SetActive(Go, path, value);
+            UnityUtils.SetActive(Go, path, value);
         }
         
         public void LoadSprite(string resPath, Action<Sprite> callback)
