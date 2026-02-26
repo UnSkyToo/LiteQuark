@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
 
-            _parent.Action(Flush());
+            _parent.Add(Flush());
             return _parent;
         }
 
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
                 return null;
             }
 
-            _parent.Action(Flush());
+            _parent.Add(Flush());
             return _parent;
         }
         
@@ -93,7 +93,7 @@ namespace LiteQuark.Runtime
 
     public static partial class ActionBuilderExtend
     {
-        public static ActionBuilder Action(this ActionBuilder builder, IAction action)
+        public static ActionBuilder Add(this ActionBuilder builder, IAction action)
         {
             builder.Add(action);
             return builder;

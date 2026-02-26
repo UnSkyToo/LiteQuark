@@ -3,7 +3,7 @@
     public abstract class BaseAction : BaseObject, IAction
     {
         public ulong ID => UniqueID;
-        public bool IsEnd { get; protected set; }
+        public bool IsDone { get; protected set; }
         public bool IsSafety { get; private set; } = false;
         public System.Action<IAction> FinalCallback { get; private set; } = null;
         
@@ -15,14 +15,14 @@
         {
         }
 
-        public virtual void MarkSafety()
+        public virtual void MarkAsSafe()
         {
             IsSafety = true;
         }
 
         public virtual void Stop()
         {
-            IsEnd = true;
+            IsDone = true;
         }
 
         public virtual void Tick(float deltaTime)

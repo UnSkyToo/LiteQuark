@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
                 return true;
             }
 
-            IsEnd = true;
+            IsDone = true;
             return false;
         }
     }

@@ -55,7 +55,7 @@ namespace LiteQuark.Editor
                 if (action is CompositeAction compositeAction)
                 {
                     _idFoldout.TryAdd(action.ID, false);
-                    if (!compositeAction.IsEnd)
+                    if (!compositeAction.IsDone)
                     {
                         using (new ColorScope(Color.green))
                         {
@@ -77,7 +77,7 @@ namespace LiteQuark.Editor
                 }
                 else if (action is BaseAction baseAction)
                 {
-                    if (!baseAction.IsEnd)
+                    if (!baseAction.IsDone)
                     {
                         using (new ColorScope(Color.green))
                         {

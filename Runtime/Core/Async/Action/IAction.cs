@@ -3,10 +3,10 @@
     public interface IAction : ITick, IDispose
     {
         ulong ID { get; }
-        bool IsEnd { get; }
+        bool IsDone { get; }
         System.Action<IAction> FinalCallback { get; }
 
-        void MarkSafety();
+        void MarkAsSafe();
         void Stop();
         void Execute();
         

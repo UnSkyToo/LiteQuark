@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
                 TS.position = _position;
             }
 
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
             }
             
             TS.localScale = _scale;
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -90,7 +90,7 @@ namespace LiteQuark.Runtime
                 TS.rotation = _rotation;
             }
 
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -118,7 +118,7 @@ namespace LiteQuark.Runtime
             }
             
             TS.RotateAround(_center, _axis, _angle);
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -144,7 +144,7 @@ namespace LiteQuark.Runtime
             }
             
             _alphaBox.SetAlpha(_alpha);
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -168,7 +168,7 @@ namespace LiteQuark.Runtime
             }
             
             TS.gameObject.SetActive(_value);
-            IsEnd = true;
+            IsDone = true;
         }
     }
     
@@ -194,7 +194,7 @@ namespace LiteQuark.Runtime
             }
             
             TS.SetParent(_parent, _worldStay);
-            IsEnd = true;
+            IsDone = true;
         }
     }
 

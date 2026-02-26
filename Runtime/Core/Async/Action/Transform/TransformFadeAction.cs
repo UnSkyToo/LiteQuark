@@ -33,7 +33,7 @@ namespace LiteQuark.Runtime
             
             _currentTime = 0f;
             _alphaBox.SetAlpha(_beginAlpha);
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
             if (step >= 1f)
             {
                 _alphaBox.SetAlpha(_endAlpha);
-                IsEnd = true;
+                IsDone = true;
             }
         }
     }

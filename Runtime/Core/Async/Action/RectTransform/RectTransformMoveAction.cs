@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _originPos = GetValue();
             _targetPos = _isRelative ? _originPos + _position : _position;
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 SetValue(_targetPos);
-                IsEnd = true;
+                IsDone = true;
             }
         }
 

@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 _setter.Invoke(_endValue);
-                IsEnd = true;
+                IsDone = true;
             }
         }
 
@@ -47,13 +47,13 @@ namespace LiteQuark.Runtime
         {
             if (_getter == null || _setter == null)
             {
-                IsEnd = true;
+                IsDone = true;
                 return;
             }
             
             _currentTime = 0;
             _startValue = _getter.Invoke();
-            IsEnd = false;
+            IsDone = false;
         }
     }
 

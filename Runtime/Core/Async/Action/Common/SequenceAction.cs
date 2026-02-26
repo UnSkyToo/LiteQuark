@@ -2,7 +2,7 @@
 {
     public class SequenceAction : CompositeAction
     {
-        public override string DebugName => $"<Sequence - {Tag}>({_index}/{Count})";
+        public override string DebugName => $"<Sequence - {Tag}>({_index}/{SubActionCount})";
 
         private int _currentCount;
         private IAction _current;
@@ -18,10 +18,10 @@
 
         public override void Execute()
         {
-            IsEnd = Count == 0;
+            IsDone = SubActionCount == 0;
             _currentCount = 0;
             
-            ActiveNextAction();
+            ActivateNextAction();
         }
 
         public override void Tick(float deltaTime)
@@ -31,30 +31,29 @@
                 return;
             }
             
-            if (_current.IsEnd)
+            if (_current.IsDone)
             {
-                ActiveNextAction();
+                ActivateNextAction();
             }
             else
             {
                 _current.Tick(deltaTime);
-                if (_current.IsEnd)
+                if (_current.IsDone)
                 {
-                    ActiveNextAction();
+                    ActivateNextAction();
                 }
             }
         }
 
-        private void ActiveNextAction()
+        private void ActivateNextAction()
         {
-            while (!IsEnd)
+            while (!IsDone)
             {
-                // _current?.Dispose();
                 _index = GetNextIndex();
                 if (_index == -1)
                 {
                     _current = null;
-                    IsEnd = true;
+                    IsDone = true;
                 }
                 else
                 {
@@ -65,7 +64,7 @@
                 {
                     _current.Execute();
 
-                    if (_current.IsEnd)
+                    if (_current.IsDone)
                     {
                         continue;
                     }
@@ -79,7 +78,7 @@
         {
             _index++;
             
-            if (_index >= Count)
+            if (_index >= SubActionCount)
             {
                 _currentCount++;
                 if (RepeatCount < 0 || _currentCount < RepeatCount)

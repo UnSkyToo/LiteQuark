@@ -13,7 +13,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke();
         }
     }
@@ -51,7 +51,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param);
         }
     }
@@ -71,7 +71,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param);
         }
     }
@@ -93,7 +93,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2);
         }
     }
@@ -115,7 +115,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2);
         }
     }
@@ -139,7 +139,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2, _param3);
         }
     }
@@ -163,7 +163,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2, _param3);
         }
     }
@@ -189,7 +189,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2, _param3, _param4);
         }
     }
@@ -215,7 +215,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             _callback?.Invoke(_param1, _param2, _param3, _param4);
         }
     }

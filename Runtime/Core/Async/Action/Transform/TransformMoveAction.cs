@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
             _currentTime = 0;
             _originPos = GetValue();
             _targetPos = _isRelative ? _originPos + _position : _position;
-            IsEnd = false;
+            IsDone = false;
         }
 
         public override void Tick(float deltaTime)
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             if (step >= 1)
             {
                 SetValue(_targetPos);
-                IsEnd = true;
+                IsDone = true;
             }
         }
 
@@ -109,7 +109,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            IsEnd = Mathf.Approximately(_moveSpeed, 0f);
+            IsDone = Mathf.Approximately(_moveSpeed, 0f);
             _pathIndex = 0;
             MoveToNextPath();
         }
@@ -138,7 +138,7 @@ namespace LiteQuark.Runtime
                 SetValue(_targetPos);
                 MoveToNextPath();
 
-                if (!IsEnd && remainTime > 0)
+                if (!IsDone && remainTime > 0)
                 {
                     ProcessMove(remainTime);
                 }
@@ -166,7 +166,7 @@ namespace LiteQuark.Runtime
         {
             if (_pathIndex + 1 >= _paths.Length)
             {
-                IsEnd = true;
+                IsDone = true;
                 return;
             }
 
