@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
 
         ~LogAppenderBase()
         {
-            if (!_isClosed)
+            if (_isClosed)
             {
                 return;
             }
