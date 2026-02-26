@@ -14,7 +14,7 @@
         public override void Execute()
         {
             IsDone = true;
-            _callback?.Invoke();
+            LiteUtils.SafeInvoke(_callback);
         }
     }
     
@@ -34,7 +34,7 @@
         public override void Execute()
         {
             IsDone = true;
-            _callback?.Invoke(_param);
+            LiteUtils.SafeInvoke(_callback, _param);
         }
     }
     
@@ -56,7 +56,7 @@
         public override void Execute()
         {
             IsDone = true;
-            _callback?.Invoke(_param1, _param2);
+            LiteUtils.SafeInvoke(_callback, _param1, _param2);
         }
     }
     
@@ -80,7 +80,7 @@
         public override void Execute()
         {
             IsDone = true;
-            _callback?.Invoke(_param1, _param2, _param3);
+            LiteUtils.SafeInvoke(_callback, _param1, _param2, _param3);
         }
     }
 

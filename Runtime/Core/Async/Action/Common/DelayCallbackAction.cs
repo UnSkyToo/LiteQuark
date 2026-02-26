@@ -43,7 +43,7 @@
 
         protected override void OnCallback()
         {
-            _callback?.Invoke();
+            LiteUtils.SafeInvoke(_callback);
         }
     }
 
@@ -61,7 +61,7 @@
 
         protected override void OnCallback()
         {
-            _callback?.Invoke(_param);
+            LiteUtils.SafeInvoke(_callback, _param);
         }
     }
 
@@ -81,7 +81,7 @@
 
         protected override void OnCallback()
         {
-            _callback?.Invoke(_param1, _param2);
+            LiteUtils.SafeInvoke(_callback, _param1, _param2);
         }
     }
 
@@ -103,7 +103,7 @@
 
         protected override void OnCallback()
         {
-            _callback?.Invoke(_param1, _param2, _param3);
+            LiteUtils.SafeInvoke(_callback, _param1, _param2, _param3);
         }
     }
 

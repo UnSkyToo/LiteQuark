@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
             {
                 if (Template == null)
                 {
-                    callback?.Invoke(this);
+                    LiteUtils.SafeInvoke(callback, this);
                     return;
                 }
 
@@ -96,7 +96,7 @@ namespace LiteQuark.Runtime
                         }
                     }
 
-                    callback?.Invoke(this);
+                    LiteUtils.SafeInvoke(callback, this);
                 });
             });
         }
@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
                     go.transform.SetParent(parent, false);
                 }
 
-                callback?.Invoke(go);
+                LiteUtils.SafeInvoke(callback, go);
             });
         }
 
@@ -150,7 +150,7 @@ namespace LiteQuark.Runtime
         {
             if (Template != null)
             {
-                callback?.Invoke();
+                LiteUtils.SafeInvoke(callback);
             }
             else
             {

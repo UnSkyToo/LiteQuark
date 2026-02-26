@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
                     go.SetActive(true);
                 }
 
-                callback?.Invoke(go);
+                LiteUtils.SafeInvoke(callback, go);
             });
         }
     }

@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
 
         public void PreloadAsset<T>(string assetPath, System.Action<bool> callback) where T : Object
         {
-            callback?.Invoke(true);
+            LiteUtils.SafeInvoke(callback, true);
         }
 
         public void LoadAssetAsync<T>(string assetPath, System.Action<T> callback) where T : Object
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 var instance = Object.Instantiate(asset, parent);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 var instance = Object.Instantiate(asset, position, rotation, parent);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 
@@ -78,7 +78,7 @@ namespace LiteQuark.Runtime
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
             if (SceneManager.GetSceneByPath(fullPath).isLoaded)
             {
-                callback?.Invoke(true);
+                LiteUtils.SafeInvoke(callback, true);
                 return;
             }
             
@@ -110,13 +110,13 @@ namespace LiteQuark.Runtime
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)
             {
-                callback?.Invoke();
+                LiteUtils.SafeInvoke(callback);
                 return;
             }
             
             op.completed += (result) =>
             {
-                callback?.Invoke();
+                LiteUtils.SafeInvoke(callback);
             };
         }
 

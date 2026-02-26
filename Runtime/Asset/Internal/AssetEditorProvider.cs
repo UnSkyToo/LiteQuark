@@ -52,12 +52,12 @@ namespace LiteQuark.Runtime
             {
                 LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), () =>
                 {
-                    callback?.Invoke(value);
+                    LiteUtils.SafeInvoke(callback, value);
                 });
             }
             else
             {
-                LiteRuntime.Timer.NextFrame(() => { callback?.Invoke(value); });
+                LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value); });
             }
         }
         
@@ -99,7 +99,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 var instance = UnityEngine.Object.Instantiate(asset, parent);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
         
@@ -114,7 +114,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
-                callback?.Invoke(instance);
+                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 
@@ -171,13 +171,13 @@ namespace LiteQuark.Runtime
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)
             {
-                callback?.Invoke();
+                LiteUtils.SafeInvoke(callback);
                 return;
             }
             
             op.completed += (result) =>
             {
-                callback?.Invoke();
+                LiteUtils.SafeInvoke(callback);
             };
         }
 
