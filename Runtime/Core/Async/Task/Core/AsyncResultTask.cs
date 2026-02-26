@@ -1,13 +1,11 @@
 using System;
 using System.Collections;
-using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class AsyncResultTask : BaseTask
+    public sealed class AsyncResultTask : BaseCoroutineTask
     {
         private readonly IAsyncResult _asyncResult;
-        private Coroutine _coroutine;
         private Action _callback;
 
         public AsyncResultTask(IAsyncResult asyncResult, Action callback)
@@ -22,23 +20,7 @@ namespace LiteQuark.Runtime
             _callback = null;
         }
         
-        public override void Cancel()
-        {
-            base.Cancel();
-            
-            if (_coroutine != null)
-            {
-                LiteRuntime.Task.StopCoroutine(_coroutine);
-                _coroutine = null;
-            }
-        }
-
-        protected override void OnExecute()
-        {
-            _coroutine = LiteRuntime.Task.StartCoroutine(ExecuteInternal());
-        }
-        
-        private IEnumerator ExecuteInternal()
+        protected override IEnumerator ExecuteInternal()
         {
             while (State == TaskState.InProgress)
             {
