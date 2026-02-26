@@ -12,7 +12,7 @@
         "url": "https://github.com/UnSkyToo/"
     },
     "dependencies": {
-        "com.lite.litequark": "0.4.0"
+        "com.lite.litequark": "0.4.1"
       },
     
     "license": "MIT"
