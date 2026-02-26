@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         public override string DebugName => GetType().Name;
         
         public float Progress { get; protected set; }
-        public bool IsDone => State is TaskState.Completed or TaskState.Aborted;
+        public bool IsDone => State is TaskState.Completed or TaskState.Cancelled;
         public bool IsExecuted { get; private set; }
         public object Result { get; protected set; }
         public TaskState State { get; protected set; }
@@ -80,19 +80,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        protected void Abort()
+        public virtual void Cancel()
         {
             if (!IsDone)
             {
-                State = TaskState.Aborted;
+                State = TaskState.Cancelled;
                 Result = null;
                 _tcs?.TrySetResult(null);
             }
-        }
-
-        public virtual void Cancel()
-        {
-            Abort();
         }
 
         protected abstract void OnExecute();

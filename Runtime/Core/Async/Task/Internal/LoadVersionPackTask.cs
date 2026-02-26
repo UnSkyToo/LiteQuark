@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
             
-            Abort();
+            Cancel();
             LiteUtils.SafeInvoke(_callback, null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, "VersionPack download failed");
         }
@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
             {
                 var error = request.downloadHandler.error;
                 LLog.Error("Bundle package parse error\n{0}", error);
-                Abort();
+                Cancel();
                 LiteUtils.SafeInvoke(_callback, null);
             }
             else

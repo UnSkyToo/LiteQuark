@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
             
-            Abort();
+            Cancel();
             LiteUtils.SafeInvoke(_callback, null);
         }
 

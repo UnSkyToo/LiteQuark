@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                Abort();
+                Cancel();
             }
         }
     }
