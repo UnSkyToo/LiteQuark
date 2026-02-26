@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
         public const int RepeatCountForever = -1;
 
         private readonly float _frameInterval = 0.01f;
-        private readonly Action<ITimer, SafeList<ITimer>, float> _onTickDelegate = null;
+        private readonly Action<ITimer, SafeList<ITimer>, float, float> _onTickDelegate = null;
         private readonly SafeList<ITimer> _timerList = new SafeList<ITimer>();
 
         public TimerSystem()
@@ -30,12 +30,12 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _timerList.Foreach(_onTickDelegate, _timerList, deltaTime);
+            _timerList.Foreach(_onTickDelegate, _timerList, deltaTime, UnityEngine.Time.unscaledDeltaTime);
         }
-
-        private void OnTimerTick(ITimer timer, SafeList<ITimer> list, float dt)
+        
+        private void OnTimerTick(ITimer timer, SafeList<ITimer> list, float dt, float unscaledDt)
         {
-            timer.Tick(dt);
+            timer.Tick(timer.IsUnscaled ? unscaledDt : dt);
 
             if (timer.IsDone)
             {
@@ -46,7 +46,8 @@ namespace LiteQuark.Runtime
         public ulong AddTimer(float interval, Action onTick, float totalTime)
         {
             interval = MathF.Max(interval, 0.0001f);
-            return AddTimer(interval, onTick, (int)(totalTime / interval));
+            var repeatCount = (int)MathF.Round(totalTime / interval);
+            return CreateTimer(interval, 0f, onTick, null, repeatCount);
         }
         
         public ulong AddTimer(float interval, Action onTick, int repeatCount = 1, float delayTime = 0f)
@@ -57,7 +58,20 @@ namespace LiteQuark.Runtime
         public ulong AddTimer(float interval, Action onTick, Action onComplete, float totalTime)
         {
             interval = MathF.Max(interval, 0.0001f);
-            return CreateTimer(interval, 0f, onTick, onComplete, (int)(totalTime / interval));
+            var repeatCount = (int)MathF.Round(totalTime / interval);
+            return CreateTimer(interval, 0f, onTick, onComplete, repeatCount);
+        }
+        
+        public ulong AddUnscaledTimer(float interval, Action onTick, int repeatCount = 1, float delayTime = 0f)
+        {
+            return CreateTimer(interval, delayTime, onTick, null, repeatCount, true);
+        }
+        
+        public ulong AddUnscaledTimer(float interval, Action onTick, Action onComplete, float totalTime)
+        {
+            interval = MathF.Max(interval, 0.0001f);
+            var repeatCount = (int)MathF.Round(totalTime / interval);
+            return CreateTimer(interval, 0f, onTick, onComplete, repeatCount, true);
         }
 
         public ulong AddTimerWithFrame(int frameCount, Action onTick, int repeatCount = 1, float delayTime = 0f)
@@ -70,11 +84,11 @@ namespace LiteQuark.Runtime
             return AddTimer(0, onTick, 1);
         }
         
-        private ulong CreateTimer(float interval, float delayTime, Action onTick, Action onComplete, int repeatCount = 1)
+        private ulong CreateTimer(float interval, float delayTime, Action onTick, Action onComplete, int repeatCount = 1, bool isUnscaled = false)
         {
-            var newTimer = new NormalTimer(interval, delayTime, repeatCount, onTick, onComplete);
-            _timerList.Add(newTimer);
-            return newTimer.ID;
+            var  timer = new NormalTimer(interval, delayTime, repeatCount, onTick, onComplete, isUnscaled);
+            _timerList.Add(timer);
+            return timer.ID;
         }
         
         public ITimer FindTimer(ulong id)
@@ -95,6 +109,11 @@ namespace LiteQuark.Runtime
                 return;
             }
             timer.Cancel();
+        }
+
+        public void CancelAll()
+        {
+            _timerList.Foreach(static timer => timer.Cancel());
         }
     }
 }
