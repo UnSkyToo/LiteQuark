@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
             _bundle = null;
             Abort();
             LiteUtils.SafeInvoke(_callback, null);
-            LiteRuntime.FrameworkError(FrameworkErrorCode.NetError, "Bundle download failed");
+            LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }
         
         protected override void OnSuccess(UnityWebRequest request)
