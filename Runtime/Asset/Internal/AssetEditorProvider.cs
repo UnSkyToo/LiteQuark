@@ -140,7 +140,7 @@ namespace LiteQuark.Runtime
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
             if (SceneManager.GetSceneByPath(fullPath).isLoaded)
             {
-                return false;
+                return true;
             }
             
             return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters).isLoaded;
