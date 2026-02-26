@@ -1,5 +1,32 @@
 # Changelog
 
+## **[0.4.1] - 2026-02-26**
+- 新增：Timer 支持 Unscaled 模式，不受 TimeScale 影响
+- 新增：TimerSystem 增加 CancelAll 接口
+- 新增：LiteUtils.SafeInvoke 增加多参数重载，统一全框架回调异常保护
+- 优化：重构 Timer 模块，支持单帧多次触发（MaxTicksPerFrame 上限），修复延迟溢出时间丢失
+- 优化：Timer 的 totalTime 计算改用 Round 替代截断，提高精度
+- 优化：提取 BaseCoroutineTask 基类，消除 CoroutineTask/AsyncOperationTask/AsyncResultTask 重复代码
+- 优化：SafeList/SafeDictionary 迭代结束立即 Flush 延迟操作；Clear 先清空队列再入队
+- 优化：SafeList 的 GetEnumerator 增加迭代保护；Sort 在迭代中抛出异常
+- 优化：启动流程贯穿 CancellationToken，Shutdown 可安全取消进行中的初始化
+- 优化：Shutdown 增加 Idle 状态守卫，防止重复关闭
+- 优化：移除多余的 CallbackFuncAction 和 4 参数 Callback/DelayCallback 变体
+- 优化：Utils 模块重组，通用方法从 UIUtils 迁移至 UnityUtils；删除 JsonUtils 死代码
+- 优化：全框架 callback?.Invoke 统一替换为 SafeInvoke
+- 优化：内部类统一 sealed 声明；static lambda 消除闭包分配
+- 优化：TaskSystem 接口命名统一（Add 前缀）；Fsm 命名优化（CanChangeTo）
+- 优化：统一 IsEnd → IsDone、MarkSafety → MarkAsSafe 等命名
+- 修复：System 未受 Setting.TimeScale 影响的 BUG
+- 修复：LogAppender 析构函数条件写反，导致未关闭的 Appender 跳过清理
+- 修复：场景已加载时 EditorProvider 返回 false，与其他 Provider 结果不一致的 BUG
+- 修复：TypeUtils.IsListType/IsDictionaryType 仅按泛型参数数量判断导致误判的 BUG
+- 修复：ReflectionUtils.GetPropertyInfo 两个重载默认 BindingFlags 互换的 BUG
+- 修复：PositionGameObjectPool 继承 BaseGameObjectPool 导致无模板加载的 BUG
+- 修复：LogErrorHandler 方法体为空，日志系统自身错误被静默吞掉
+- 修复：LoggingEvent Info 级别不必要的 StackTrace 开销
+- 修复：Task 移除 Abort 概念，统一为 Cancel
+
 ## **[0.4.0] - 2026-02-25**
 - 新增：AudioSystem 增加暂停和恢复接口
 - 新增：ActionSystem增加DelayCallback
