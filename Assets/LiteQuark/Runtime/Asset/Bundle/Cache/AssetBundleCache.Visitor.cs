@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    internal partial class AssetBundleCache : ITick, IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDispose
     {
         internal BundleVisitorInfo GetVisitorInfo()
         {
