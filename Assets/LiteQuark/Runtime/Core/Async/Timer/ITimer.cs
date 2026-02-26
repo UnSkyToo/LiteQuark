@@ -4,10 +4,10 @@
     {
         ulong ID { get; }
         bool IsDone { get; }
+        bool IsUnscaled { get; }
         
-        public void Pause();
-        public void Resume();
-        
-        public void Cancel();
+        void Pause();
+        void Resume();
+        void Cancel();
     }
 }
