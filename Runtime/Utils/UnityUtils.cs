@@ -274,6 +274,11 @@ namespace LiteQuark.Runtime
             return UnityUtils.GetComponent<T>(parent, path);
         }
         
+        public static T GetComponentUpper<T>(this GameObject parent) where T : Component
+        {
+            return UnityUtils.GetComponentUpper<T>(parent);
+        }
+        
         public static T GetComponentUpper<T>(this Transform parent) where T : Component
         {
             return UnityUtils.GetComponentUpper<T>(parent);
