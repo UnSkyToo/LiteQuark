@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
         
         private void OnEffectTick(EffectObject effect, SafeList<EffectObject> list, float dt)
         {
-            if (effect.IsEnd)
+            if (effect.IsDone)
             {
                 effect.Dispose();
                 list.Remove(effect);

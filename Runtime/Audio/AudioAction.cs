@@ -19,7 +19,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             LiteRuntime.Get<AudioSystem>().PlaySound(_path, _isLoop, _limit, _volume);
         }
     }
@@ -37,7 +37,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             LiteRuntime.Get<AudioSystem>().MuteAllSound(_isMute);
         }
     }
@@ -61,7 +61,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             LiteRuntime.Get<AudioSystem>().PlayMusic(_path, _isLoop, _volume, _isOnly);
         }
     }
@@ -79,7 +79,7 @@
 
         public override void Execute()
         {
-            IsEnd = true;
+            IsDone = true;
             LiteRuntime.Get<AudioSystem>().MuteAllMusic(_isMute);
         }
     }
