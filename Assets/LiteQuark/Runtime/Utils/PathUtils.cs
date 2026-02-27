@@ -20,6 +20,16 @@ namespace LiteQuark.Runtime
             return unifyPath.TrimEnd(DirectorySeparatorChar);
         }
 
+        public static string FormatAssetPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+            
+            return UnifyPath(path).TrimStart(DirectorySeparatorChar).ToLowerInvariant();
+        }
+
         private static readonly string InvalidFlatChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
         public static string ToFlatPath(string path)
         {
