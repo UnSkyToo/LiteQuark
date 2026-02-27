@@ -113,6 +113,8 @@ namespace LiteQuark.Runtime
             return _taskList;
         }
 
+        internal int ConcurrencyLimit => _concurrencyLimit;
+
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
         {
             return _monoBehaviourInstance?.StartCoroutine(routine);

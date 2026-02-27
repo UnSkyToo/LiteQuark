@@ -62,5 +62,10 @@ namespace LiteQuark.Runtime
         {
             _globalEvent.UnRegisterAll(tag);
         }
+
+        internal System.Collections.Generic.Dictionary<Type, int> GetEventDebugInfo()
+        {
+            return _globalEvent.GetEventDebugInfo();
+        }
     }
 }

@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
 
         public ulong ID => UniqueID;
         public bool IsDone => _repeatCount == 0;
+        public bool IsPaused => _isPaused;
         public bool IsUnscaled { get; private set; }
 
         public override string DebugName => $"Timer<{_interval} - {_repeatCount}>";

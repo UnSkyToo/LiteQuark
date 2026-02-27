@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
         private abstract class EventListener
         {
             public abstract void UnRegisterAll(int tag);
+            public abstract int GetListenerCount();
 #if UNITY_EDITOR
             public abstract void Check();
 #endif
@@ -73,6 +74,16 @@ namespace LiteQuark.Runtime
             public override void UnRegisterAll(int tag)
             {
                 _callbackMap.Remove(tag);
+            }
+
+            public override int GetListenerCount()
+            {
+                var count = 0;
+                foreach (var callbackList in _callbackMap.Values)
+                {
+                    count += callbackList.Count;
+                }
+                return count;
             }
 
 #if UNITY_EDITOR
@@ -186,6 +197,16 @@ namespace LiteQuark.Runtime
             {
                 chunk.Value.UnRegisterAll(tag);
             }
+        }
+
+        internal Dictionary<Type, int> GetEventDebugInfo()
+        {
+            var info = new Dictionary<Type, int>();
+            foreach (var (type, listener) in _eventMap)
+            {
+                info[type] = listener.GetListenerCount();
+            }
+            return info;
         }
     }
 }
