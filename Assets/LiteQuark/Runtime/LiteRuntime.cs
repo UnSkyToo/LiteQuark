@@ -152,8 +152,10 @@ namespace LiteQuark.Runtime
             var scaledDeltaTime = deltaTime;
 #endif
 
-            SystemCenter.Instance.Tick(scaledDeltaTime);
+            LiteTime.UnscaledDeltaTime = Time.unscaledDeltaTime;
+            LiteTime.DeltaTime = scaledDeltaTime;
 
+            SystemCenter.Instance.Tick(scaledDeltaTime);
             if (_state == RuntimeState.Running)
             {
                 LogicCenter.Instance.Tick(scaledDeltaTime);

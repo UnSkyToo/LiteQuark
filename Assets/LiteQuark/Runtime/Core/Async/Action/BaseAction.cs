@@ -3,7 +3,8 @@
     public abstract class BaseAction : BaseObject, IAction
     {
         public ulong ID => UniqueID;
-        public bool IsDone { get; protected set; }
+        public bool IsDone { get; protected set; } = false;
+        public bool IsUnscaled { get; private set; } = false;
         public bool IsSafety { get; private set; } = false;
         public System.Action<IAction> FinalCallback { get; private set; } = null;
         
@@ -36,6 +37,12 @@
         public IAction SetFinalCallback(System.Action<IAction> callback)
         {
             FinalCallback = callback;
+            return this;
+        }
+        
+        public IAction SetUnscaled(bool isUnscaled)
+        {
+            IsUnscaled = isUnscaled;
             return this;
         }
     }

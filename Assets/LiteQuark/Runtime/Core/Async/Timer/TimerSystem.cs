@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _timerList.Foreach(_onTickDelegate, _timerList, deltaTime, UnityEngine.Time.unscaledDeltaTime);
+            _timerList.Foreach(_onTickDelegate, _timerList, deltaTime, LiteTime.UnscaledDeltaTime);
         }
         
         private void OnTimerTick(ITimer timer, SafeList<ITimer> list, float dt, float unscaledDt)

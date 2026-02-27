@@ -15,6 +15,8 @@ namespace LiteQuark.Runtime
         private readonly int _repeatCount;
         private readonly List<IAction> _actionList;
         private ActionBuilder _parent;
+        private System.Action<IAction> _finalCallback;
+        private bool _isUnscaled;
 
         private ActionBuilder(BuildType buildType, string tag, int repeatCount = 1)
         {
@@ -23,6 +25,8 @@ namespace LiteQuark.Runtime
             _repeatCount = repeatCount;
             _actionList = new List<IAction>();
             _parent = null;
+            _finalCallback = null;
+            _isUnscaled = false;
         }
         
         public static ActionBuilder Sequence(string tag = "unknown", int repeatCount = 1)
@@ -71,17 +75,43 @@ namespace LiteQuark.Runtime
             return _parent;
         }
         
+        public ActionBuilder SetFinalCallback(System.Action<IAction> callback)
+        {
+            _finalCallback = callback;
+            return this;
+        }
+        
+        public ActionBuilder SetUnscaled(bool isUnscaled = true)
+        {
+            _isUnscaled = isUnscaled;
+            return this;
+        }
+
         public IAction Flush()
         {
+            IAction action = null;
+
             switch (_buildType)
             {
                 case BuildType.Sequence:
-                    return new SequenceAction(_tag, _repeatCount, _actionList.ToArray());
+                    action = new SequenceAction(_tag, _repeatCount, _actionList.ToArray());
+                    break;
                 case BuildType.Parallel:
-                    return new ParallelAction(_tag, _repeatCount, _actionList.ToArray());
+                    action = new ParallelAction(_tag, _repeatCount, _actionList.ToArray());
+                    break;
             }
 
-            return null;
+            if (_finalCallback != null)
+            {
+                action?.SetFinalCallback(_finalCallback);
+            }
+
+            if (_isUnscaled)
+            {
+                action?.SetUnscaled(_isUnscaled);
+            }
+
+            return action;
         }
         
         public ActionBuilder Add(IAction action)
