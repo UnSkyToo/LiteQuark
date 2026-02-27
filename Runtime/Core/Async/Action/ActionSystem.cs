@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class ActionSystem : ISystem, ITick
     {
-        private readonly Action<IAction, SafeList<IAction>, float> _onTickDelegate = null;
+        private readonly Action<IAction, SafeList<IAction>, float, float> _onTickDelegate = null;
         private readonly SafeList<IAction> _actionList = new SafeList<IAction>();
         
         public ActionSystem()
@@ -28,10 +28,10 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _actionList.Foreach(_onTickDelegate, _actionList, deltaTime);
+            _actionList.Foreach(_onTickDelegate, _actionList, deltaTime, LiteTime.UnscaledDeltaTime);
         }
 
-        private void OnActionTick(IAction action, SafeList<IAction> list, float dt)
+        private void OnActionTick(IAction action, SafeList<IAction> list, float dt, float unscaledDt)
         {
             try
             {
@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    action.Tick(dt);
+                    action.Tick(action.IsUnscaled ? unscaledDt : dt);
                 }
             }
             catch
@@ -87,7 +87,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             action.Stop();
-            OnActionTick(action, _actionList, 0);
+            OnActionTick(action, _actionList, 0, 0);
         }
 
         public ulong AddAction(IAction action, bool isSafety = false)
