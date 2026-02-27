@@ -21,6 +21,7 @@ namespace LiteQuark.Runtime
             _logCache = new Dictionary<string, ILog>();
             _commonLogger = GetLogger("Default");
 
+            UnityEngine.Debug.unityLogger.logEnabled = true;
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
             if (logEnable)
@@ -29,13 +30,13 @@ namespace LiteQuark.Runtime
                 _repository.EnableLevel(LogLevel.Warn, setting.LogWarn);
                 _repository.EnableLevel(LogLevel.Error, setting.LogError);
                 _repository.EnableLevel(LogLevel.Fatal, setting.LogFatal);
-                UnityEngine.Debug.unityLogger.logEnabled = true;
             }
             else
             {
-                _repository.EnableLevel(LogLevel.All, false);
-                UnityEngine.Debug.LogWarning("DebugMode is false, disable all log!");
-                UnityEngine.Debug.unityLogger.logEnabled = false;
+                _repository.EnableLevel(LogLevel.Info, false);
+                _repository.EnableLevel(LogLevel.Warn, false);
+                _repository.EnableLevel(LogLevel.Error, true);
+                _repository.EnableLevel(LogLevel.Fatal, true);
             }
 
             return UniTask.FromResult(true);
