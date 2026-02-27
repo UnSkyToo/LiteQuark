@@ -62,12 +62,7 @@ namespace LiteQuark.Runtime
 
         private string FormatPath(string path)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return string.Empty;
-            }
-            
-            return path.TrimStart('/').ToLowerInvariant();
+            return PathUtils.FormatAssetPath(path);
         }
         
         public bool HasAsset(string assetPath)

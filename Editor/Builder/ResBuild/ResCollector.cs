@@ -116,7 +116,7 @@ namespace LiteQuark.Editor
                 
                 foreach (var assetPath in assetPathList)
                 {
-                    assetList.Add(PathUtils.GetRelativeAssetRootPath(assetPath).ToLower());
+                    assetList.Add(PathUtils.FormatAssetPath(PathUtils.GetRelativeAssetRootPath(assetPath)));
                     
                     foreach (var dep in GetDependencyList(assetPath))
                     {
@@ -155,7 +155,7 @@ namespace LiteQuark.Editor
                 {
                     if (PathUtils.PathIsFile(dependencyPath))
                     {
-                        CreateBundleInfo(dependencyPath, new[] { PathUtils.GetRelativeAssetRootPath(dependencyPath).ToLower() });
+                        CreateBundleInfo(dependencyPath, new[] { PathUtils.FormatAssetPath(PathUtils.GetRelativeAssetRootPath(dependencyPath)) });
                     }
                     result.Add(path);
                 }
@@ -175,7 +175,7 @@ namespace LiteQuark.Editor
             }
 
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
-            bundlePath = bundlePath.ToLower();
+            bundlePath = PathUtils.FormatAssetPath(bundlePath);
             
             return $"{bundlePath}{LiteConst.BundleFileExt}";
         }

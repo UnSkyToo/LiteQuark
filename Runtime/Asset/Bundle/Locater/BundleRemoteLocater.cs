@@ -8,7 +8,7 @@
         
         public BundleRemoteLocater(string remoteUri)
         {
-            _remoteUri = remoteUri.ToLower();
+            _remoteUri = remoteUri;
             LLog.Info("BundleRemoteUri: {0}", _remoteUri);
         }
 

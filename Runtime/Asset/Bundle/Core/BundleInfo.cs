@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
         public BundleInfo(int bundleID, string bundlePath, string[] assetList, string[] dependencyList)
         {
             BundleID = bundleID;
-            BundlePath = bundlePath.ToLower();
+            BundlePath = PathUtils.FormatAssetPath(bundlePath);
             AssetList = assetList;
             DependencyList = dependencyList ?? Array.Empty<string>();
         }
