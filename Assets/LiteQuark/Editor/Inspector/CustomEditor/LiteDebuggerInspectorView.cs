@@ -21,6 +21,8 @@ namespace LiteQuark.Editor
             DrawFoldout("Action", DrawAction);
             DrawFoldout("Asset", DrawAsset);
             DrawFoldout("Task", DrawTask);
+            DrawFoldout("Timer", DrawTimer);
+            DrawFoldout("Event", DrawEvent);
             DrawFoldout("ObjectPool", DrawObjectPool);
         }
 
@@ -135,7 +137,7 @@ namespace LiteQuark.Editor
             }
             else
             {
-                EditorGUILayout.LabelField($"Tasks:{LiteRuntime.Task.RunningTaskCount}/{LiteRuntime.Task.PendingTaskCount}");
+                EditorGUILayout.LabelField($"Running: {LiteRuntime.Task.RunningTaskCount}/{LiteRuntime.Task.ConcurrencyLimit} | Pending: {LiteRuntime.Task.PendingTaskCount}");
                 taskList.Foreach(DrawOneTask, EditorGUI.indentLevel);
             }
         }
@@ -154,6 +156,79 @@ namespace LiteQuark.Editor
                     taskName = task.GetType().Name;
                 }
                 EditorGUILayout.LabelField($"{taskName} {task.Progress*100:0.0}% {task.State}");
+            }
+        }
+
+        private void DrawTimer()
+        {
+            var timerList = LiteRuntime.Timer?.GetTimerList();
+            if (timerList == null || timerList.Count == 0)
+            {
+                EditorGUILayout.LabelField("Empty");
+                return;
+            }
+
+            EditorGUILayout.LabelField($"Count: {timerList.Count}");
+            timerList.Foreach(DrawOneTimer, EditorGUI.indentLevel);
+        }
+
+        private void DrawOneTimer(ITimer timer, int indent)
+        {
+            using (new IndentLevelScope(indent))
+            {
+                var timerName = string.Empty;
+                if (timer is BaseObject baseObj)
+                {
+                    timerName = baseObj.DebugName;
+                }
+                else
+                {
+                    timerName = $"Timer {timer.ID}";
+                }
+
+                if (timer.IsPaused)
+                {
+                    timerName += " [Paused]";
+                }
+                if (timer.IsUnscaled)
+                {
+                    timerName += " [Unscaled]";
+                }
+
+                if (timer.IsPaused)
+                {
+                    using (new ColorScope(Color.yellow))
+                    {
+                        EditorGUILayout.LabelField(timerName);
+                    }
+                }
+                else if (!timer.IsDone)
+                {
+                    using (new ColorScope(Color.green))
+                    {
+                        EditorGUILayout.LabelField(timerName);
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.LabelField(timerName);
+                }
+            }
+        }
+
+        private void DrawEvent()
+        {
+            var eventInfo = LiteRuntime.Event?.GetEventDebugInfo();
+            if (eventInfo == null || eventInfo.Count == 0)
+            {
+                EditorGUILayout.LabelField("Empty");
+                return;
+            }
+
+            EditorGUILayout.LabelField($"Types: {eventInfo.Count}");
+            foreach (var (type, count) in eventInfo)
+            {
+                EditorGUILayout.LabelField($"{type.Name}  Listeners: {count}");
             }
         }
 

@@ -115,5 +115,10 @@ namespace LiteQuark.Runtime
         {
             _timerList.Foreach(static timer => timer.Cancel());
         }
+
+        internal SafeList<ITimer> GetTimerList()
+        {
+            return _timerList;
+        }
     }
 }
