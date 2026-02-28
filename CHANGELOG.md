@@ -1,5 +1,8 @@
 # Changelog
 
+## **[0.4.2] - 2026-02-28**
+- 修复：正确的核心库依赖版本
+
 ## **[0.4.1] - 2026-02-26**
 - 优化：AudioObject/EffectObject/BaseUI 回调统一使用 SafeInvoke 异常保护
 - 优化：BaseUI 的 FindComponent 重命名为 GetComponent，迁移至 UnityUtils
