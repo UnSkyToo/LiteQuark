@@ -1,5 +1,13 @@
 # Changelog
 
+## **[0.4.2] - 2026-02-28**
+- 新增：Action 增加 UnscaledTime 支持
+- 新增：Debugger 面板补全 Timer 和 Event 调试信息，Task 显示并发占用情况
+- 新增：ResCollectorSetting 增加清理无效目录的功能
+- 优化：统一 AssetPath 的处理
+- 优化：报错后不再立即暂停框架，改为连续异常熔断机制；EnterErrorState 支持传入 FrameworkErrorCode
+- 修复：Release 下所有日志都关闭的 BUG，保留 Error 和 Fatal 级别
+
 ## **[0.4.1] - 2026-02-26**
 - 新增：Timer 支持 Unscaled 模式，不受 TimeScale 影响
 - 新增：TimerSystem 增加 CancelAll 接口

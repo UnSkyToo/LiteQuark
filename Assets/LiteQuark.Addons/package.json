@@ -1,6 +1,6 @@
 {
     "name": "com.lite.litequark.addons",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "displayName": "LiteQuark.Addons",
     "description": "LiteQuark addons systems",
     "unity": "2022.1",
@@ -12,7 +12,7 @@
         "url": "https://github.com/UnSkyToo/"
     },
     "dependencies": {
-        "com.lite.litequark": "0.4.1"
+        "com.lite.litequark": "0.4.2"
       },
     
     "license": "MIT"
