@@ -66,7 +66,7 @@ namespace LiteQuark.Runtime
                 {
                     if (!ct.IsCancellationRequested)
                     {
-                        EnterErrorState();
+                        EnterErrorState(FrameworkErrorCode.Startup);
                     }
                     return;
                 }
@@ -84,7 +84,7 @@ namespace LiteQuark.Runtime
                 {
                     if (!ct.IsCancellationRequested)
                     {
-                        EnterErrorState();
+                        EnterErrorState(FrameworkErrorCode.Startup);
                     }
                     return;
                 }
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
             catch (System.Exception ex)
             {
                 LLog.Exception(ex);
-                EnterErrorState();
+                EnterErrorState(FrameworkErrorCode.Startup);
             }
         }
 
@@ -126,11 +126,11 @@ namespace LiteQuark.Runtime
             System.GC.WaitForPendingFinalizers();
         }
 
-        internal void EnterErrorState()
+        internal void EnterErrorState(FrameworkErrorCode code)
         {
             _state = RuntimeState.Error;
             LLog.Error("Enter <ErrorState>, please check log.");
-            FrameworkError(FrameworkErrorCode.Startup, "System Startup error");
+            FrameworkError(code, "Framework error");
         }
 
         public void Tick(float deltaTime)
@@ -141,7 +141,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (IsPause || _state == RuntimeState.Error)
+            if (IsPause)
             {
                 return;
             }

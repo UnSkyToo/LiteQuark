@@ -8,6 +8,9 @@ namespace LiteQuark.Runtime
     {
         [SerializeField] public LiteSetting Setting;
         
+        private const int MaxConsecutiveErrors = 30;
+        private int _consecutiveErrors = 0;
+        
         private void Awake()
         {
             try
@@ -33,10 +36,17 @@ namespace LiteQuark.Runtime
             try
             {
                 LiteRuntime.Instance.Tick(Time.deltaTime);
+                _consecutiveErrors = 0;
             }
             catch (Exception ex)
             {
-                LiteRuntime.Instance.IsPause = true;
+                _consecutiveErrors++;
+                if (_consecutiveErrors >= MaxConsecutiveErrors)
+                {
+                    LLog.Error("Too many consecutive errors, entering error state.");
+                    LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
+                    return;
+                }
                 
                 if (Setting.Common.ThrowException)
                 {
@@ -59,7 +69,7 @@ namespace LiteQuark.Runtime
             }
             else if (Input.GetKeyDown(KeyCode.F11))
             {
-                LiteRuntime.Instance.EnterErrorState();
+                LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
             }
             else if (Input.GetKeyDown(KeyCode.F12))
             {
