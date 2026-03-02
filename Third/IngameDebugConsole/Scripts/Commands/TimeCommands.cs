@@ -1,4 +1,4 @@
-﻿#if IDG_ENABLE_HELPER_COMMANDS
+#if IDG_ENABLE_HELPER_COMMANDS
 using UnityEngine;
 
 namespace IngameDebugConsole.Commands

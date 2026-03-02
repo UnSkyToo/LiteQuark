@@ -1,4 +1,4 @@
-﻿#region Header
+#region Header
 /**
  * JsonReader.cs
  *   Stream-like access to JSON text.

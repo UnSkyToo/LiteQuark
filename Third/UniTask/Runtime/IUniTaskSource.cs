@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS1591
+#pragma warning disable CS1591
 #pragma warning disable CS0108
 
 #if (UNITASK_NETCORE && !NETSTANDARD2_0) || UNITY_2022_3_OR_NEWER

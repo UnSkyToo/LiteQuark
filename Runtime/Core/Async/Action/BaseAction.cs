@@ -1,4 +1,4 @@
-﻿namespace LiteQuark.Runtime
+namespace LiteQuark.Runtime
 {
     public abstract class BaseAction : BaseObject, IAction
     {

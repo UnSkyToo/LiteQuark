@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR || UNITY_STANDALONE
+#if UNITY_EDITOR || UNITY_STANDALONE
 // Unity's Text component doesn't render <b> tag correctly on mobile devices
 #define USE_BOLD_COMMAND_SIGNATURES
 #endif

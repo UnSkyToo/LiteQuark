@@ -1,4 +1,4 @@
-﻿namespace LiteQuark.Runtime
+namespace LiteQuark.Runtime
 {
     public sealed class UnityConsoleLogAppender : LogAppenderBase
     {

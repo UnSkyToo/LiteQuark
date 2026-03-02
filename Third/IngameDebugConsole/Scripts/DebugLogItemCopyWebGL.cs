@@ -1,4 +1,4 @@
-﻿#if !UNITY_EDITOR && UNITY_WEBGL
+#if !UNITY_EDITOR && UNITY_WEBGL
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
