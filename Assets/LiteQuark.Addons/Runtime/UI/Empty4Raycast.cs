@@ -1,4 +1,4 @@
-﻿namespace UnityEngine.UI
+namespace UnityEngine.UI
 {
     [RequireComponent(typeof(CanvasRenderer))]
     public class Empty4Raycast : MaskableGraphic

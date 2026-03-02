@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 
 namespace LiteQuark.Editor.BundleViewer

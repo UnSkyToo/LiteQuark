@@ -1,4 +1,4 @@
-﻿#region Header
+#region Header
 /**
  * JsonMapper.cs
  *   JSON to .Net object and object to JSON conversions.

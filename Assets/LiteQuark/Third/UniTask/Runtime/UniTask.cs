@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable CS0436
 
 #if UNITASK_NETCORE || UNITY_2022_3_OR_NEWER

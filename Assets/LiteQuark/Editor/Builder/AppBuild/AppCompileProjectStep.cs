@@ -1,4 +1,4 @@
-﻿namespace LiteQuark.Editor
+namespace LiteQuark.Editor
 {
     /// <summary>
     /// Compile project

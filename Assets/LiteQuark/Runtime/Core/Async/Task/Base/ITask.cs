@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime

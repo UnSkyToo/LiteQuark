@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.Build.Reporting;

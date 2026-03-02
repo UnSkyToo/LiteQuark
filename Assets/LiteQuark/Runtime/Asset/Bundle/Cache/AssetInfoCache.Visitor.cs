@@ -1,4 +1,4 @@
-﻿namespace LiteQuark.Runtime
+namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : ITick, IDispose
     {

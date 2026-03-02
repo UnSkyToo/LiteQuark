@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
