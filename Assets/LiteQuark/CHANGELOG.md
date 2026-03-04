@@ -1,5 +1,8 @@
 # Changelog
 
+## **[0.4.3] - 2026-03-04**
+- 修复：Uri大小写导致的版本文件无法获取
+
 ## **[0.4.2] - 2026-02-28**
 - 新增：Action 增加 UnscaledTime 支持
 - 新增：Debugger 面板补全 Timer 和 Event 调试信息，Task 显示并发占用情况
