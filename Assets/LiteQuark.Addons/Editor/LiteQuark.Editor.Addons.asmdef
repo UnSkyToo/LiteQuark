@@ -3,15 +3,19 @@
     "rootNamespace": "LiteQuark.Editor",
     "references": [
         "GUID:70cc8e28ad336ff488b406869409d3f1",
-        "GUID:93ab4d80b1d4ab64abd1db7a9d4de780"
+        "GUID:93ab4d80b1d4ab64abd1db7a9d4de780",
+        "GUID:5058424d4219fbf4a894472663d51cfd"
     ],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "ExcelDataReader.dll",
+        "ExcelDataReader.DataSet.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

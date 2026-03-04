@@ -1,0 +1,29 @@
+namespace LiteQuark.Editor
+{
+    internal enum ConfigFieldType
+    {
+        Int,
+        Long,
+        Float,
+        Double,
+        Bool,
+        String,
+        Vector2,
+        Vector3,
+        Vector4,
+        Color,
+        Enum,
+        IntArray,
+        LongArray,
+        FloatArray,
+        DoubleArray,
+        BoolArray,
+        StringArray,
+        IntArray2D,
+        LongArray2D,
+        FloatArray2D,
+        DoubleArray2D,
+        StringArray2D,
+        IntArray3D,
+    }
+}
