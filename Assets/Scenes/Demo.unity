@@ -195,7 +195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 720617ee455f4ab1a59ef3674019ad90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Setting:
+  DebugSetting:
     LogicList:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Runtime.LogRuntimeLogic, LiteQuark.Runtime,
@@ -213,17 +213,18 @@ MonoBehaviour:
       DebugMode: 1
       TimeScale: 1
     Task:
-      ConcurrencyLimit: 22
+      ConcurrencyLimit: 20
       IgnoreLimitPriority: 2
     Asset:
-      AssetMode: 1
-      BundleLocater: 1
+      AssetMode: 0
+      BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
       BundleDownloadRetry:
         Timeout: 60
         MaxRetries: 3
-        DelayTime: 1
+        RetryInterval: 1
+      DisableUnityWebCache: 0
       EnableRetain: 1
       AssetRetainTime: 120
       BundleRetainTime: 300
@@ -242,19 +243,78 @@ MonoBehaviour:
       LogFatal: 1
       ShowLogViewer: 1
     SystemSettings:
-    - rid: 8102467287851991047
+    - rid: 4730454262242344960
+  ReleaseSetting:
+    LogicList:
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Runtime.LogRuntimeLogic, LiteQuark.Runtime,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    SystemList:
+    - Disabled: 0
+      AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    Common:
+      TargetFrameRate: 60
+      MultiTouch: 0
+      AutoRestartInBackground: 0
+      BackgroundLimitTime: 90
+      ThrowException: 0
+      DebugMode: 1
+      TimeScale: 1
+    Task:
+      ConcurrencyLimit: 20
+      IgnoreLimitPriority: 2
+    Asset:
+      AssetMode: 0
+      BundleLocater: 0
+      BundleRemoteUri: https://localhost:8000/
+      ConcurrencyLimit: 5
+      BundleDownloadRetry:
+        Timeout: 60
+        MaxRetries: 3
+        RetryInterval: 1
+      DisableUnityWebCache: 0
+      EnableRetain: 1
+      AssetRetainTime: 120
+      BundleRetainTime: 300
+      EditorForceStreamingAssets: 1
+      SimulateAsyncDelayInEditor: 1
+      AsyncDelayMinFrame: 1
+      AsyncDelayMaxFrame: 6
+    Action:
+      SafetyMode: 0
+    Log:
+      SimpleLog: 1
+      ReceiveLog: 1
+      LogInfo: 1
+      LogWarn: 1
+      LogError: 1
+      LogFatal: 1
+      ShowLogViewer: 1
+    SystemSettings:
+    - rid: 4730454262242344961
+  _simulateReleaseBuild: 0
   references:
     version: 2
     RefIds:
-    - rid: 8102467287851991047
+    - rid: 4730454262242344960
       type: {class: UISystemSetting, ns: LiteQuark.Runtime, asm: LiteQuark.Runtime.Addons}
       data:
         UICamera: {fileID: 2007689149}
         ScaleMode: 1
         MatchMode: 0
-        MatchValue: 0.603
-        ResolutionWidth: 1103
-        ResolutionHeight: 1889
+        MatchValue: 0
+        ResolutionWidth: 1080
+        ResolutionHeight: 1920
+    - rid: 4730454262242344961
+      type: {class: UISystemSetting, ns: LiteQuark.Runtime, asm: LiteQuark.Runtime.Addons}
+      data:
+        UICamera: {fileID: 2007689149}
+        ScaleMode: 1
+        MatchMode: 0
+        MatchValue: 0
+        ResolutionWidth: 1080
+        ResolutionHeight: 1920
 --- !u!4 &1611344604
 Transform:
   m_ObjectHideFlags: 0

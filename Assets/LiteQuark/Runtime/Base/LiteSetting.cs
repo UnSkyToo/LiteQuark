@@ -153,7 +153,7 @@ namespace LiteQuark.Runtime
 
         public ISystemSetting GetSetting(Type settingType)
         {
-            var setting = LiteRuntime.Setting.SystemSettings?.FirstOrDefault(s => s != null && s.GetType() == settingType);
+            var setting = SystemSettings?.FirstOrDefault(s => s != null && s.GetType() == settingType);
             if (setting == null)
             {
                 LLog.Warning("Setting not found for {0}, using default", settingType.Name);

@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public sealed partial class LiteRuntime : Singleton<LiteRuntime>
     {
-        private enum RuntimeState : byte
+        internal enum RuntimeState : byte
         {
             Idle,
             InitSystem,
@@ -30,17 +30,18 @@ namespace LiteQuark.Runtime
         private CancellationTokenSource _startupCts = null;
 
         private RuntimeState _state = RuntimeState.Idle;
+        internal RuntimeState State => _state;
 
         private LiteRuntime()
         {
         }
 
-        public void Startup(LiteLauncher launcher)
+        public void Startup(LiteLauncher launcher, LiteSetting setting)
         {
             IsPause = false;
             IsFocus = true;
             Launcher = launcher;
-            _setting = launcher.Setting;
+            _setting = setting;
             IsDebugMode = Debug.isDebugBuild && _setting.Common.DebugMode;
             _enterBackgroundTime = 0.0f;
             _restartWhenNextFrame = false;
@@ -172,7 +173,7 @@ namespace LiteQuark.Runtime
             _restartWhenNextFrame = false;
             Debug.ClearDeveloperConsole();
             Shutdown();
-            Startup(Launcher);
+            Startup(Launcher, _setting);
         }
 
         public void OnEnterForeground()

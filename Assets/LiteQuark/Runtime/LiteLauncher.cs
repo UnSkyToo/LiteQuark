@@ -6,21 +6,30 @@ namespace LiteQuark.Runtime
     [DefaultExecutionOrder(9999)]
     public class LiteLauncher : MonoBehaviour
     {
-        [SerializeField] public LiteSetting Setting;
-        
+        [SerializeField] public LiteSetting DebugSetting = new LiteSetting();
+        [SerializeField] public LiteSetting ReleaseSetting = new LiteSetting();
+        [SerializeField] private bool _simulateReleaseBuild;
+
         private const int MaxConsecutiveErrors = 30;
         private int _consecutiveErrors = 0;
-        
+        private LiteSetting _setting;
+
         private void Awake()
         {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            _setting = _simulateReleaseBuild ? ReleaseSetting : DebugSetting;
+#else
+            _setting = ReleaseSetting;
+#endif
+
             try
             {
                 DontDestroyOnLoad(this);
-                LiteRuntime.Instance.Startup(this);
+                LiteRuntime.Instance.Startup(this, _setting);
             }
             catch (Exception ex)
             {
-                if (Setting.Common.ThrowException)
+                if (_setting.Common.ThrowException)
                 {
                     throw;
                 }
@@ -48,7 +57,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
                 
-                if (Setting.Common.ThrowException)
+                if (_setting.Common.ThrowException)
                 {
                     throw;
                 }
@@ -86,7 +95,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                if (Setting.Common.ThrowException)
+                if (_setting.Common.ThrowException)
                 {
                     throw;
                 }
