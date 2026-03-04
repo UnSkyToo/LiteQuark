@@ -274,7 +274,7 @@ namespace LiteQuark.Runtime
                 case BundleLocaterMode.Remote:
                     return new BundleRemoteLocater(PathUtils.ConcatPath(
                         LiteRuntime.Setting.Asset.BundleRemoteUri,
-                        AppUtils.GetCurrentPlatformName(),
+                        AppUtils.GetCurrentPlatformName().ToLowerInvariant(),
                         AppUtils.GetMainVersion()))
                     {
                         DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
