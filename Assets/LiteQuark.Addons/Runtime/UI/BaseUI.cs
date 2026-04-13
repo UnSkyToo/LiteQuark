@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         protected BaseUI()
             : base()
         {
-            _eventTag = GetType().Name.GetHashCode();
+            _eventTag = (int)UniqueID;
         }
 
         public void BindGo(GameObject go)
