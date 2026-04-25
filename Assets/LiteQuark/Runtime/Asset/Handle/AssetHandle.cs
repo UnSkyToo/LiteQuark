@@ -4,9 +4,12 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    /// <summary>
+    /// Handle for a loaded asset reference. Dispose releases the reference acquired by this handle.
+    /// </summary>
     public class AssetHandle<T> : IAssetHandle<T> where T : UnityEngine.Object
     {
-        private readonly Action<T> _releaseAction;
+        private readonly Action _releaseAction;
         private readonly UniTaskCompletionSource<T> _tcs = new();
         private CancellationTokenRegistration _ctr;
         private T _result;
@@ -17,7 +20,7 @@ namespace LiteQuark.Runtime
         public UniTask<T> Task => _tcs.Task;
         public UniTask<T>.Awaiter GetAwaiter() => Task.GetAwaiter();
         
-        internal AssetHandle(Action<Action<T>> invoke, CancellationToken ct, Action<T> releaseAction)
+        internal AssetHandle(Action<Action<T>> invoke, CancellationToken ct, Action releaseAction)
         {
             _releaseAction = releaseAction;
             
@@ -46,10 +49,15 @@ namespace LiteQuark.Runtime
             {
                 if (_result != null)
                 {
-                    _releaseAction?.Invoke(_result);
-                    _result = default;
+                    ReleaseResult();
                 }
             }
+        }
+
+        private void ReleaseResult()
+        {
+            _releaseAction?.Invoke();
+            _result = default;
         }
         
         public void Dispose()
@@ -70,8 +78,7 @@ namespace LiteQuark.Runtime
             
             if (_result != null)
             {
-                _releaseAction?.Invoke(_result);
-                _result = default;
+                ReleaseResult();
             }
         }
     }
