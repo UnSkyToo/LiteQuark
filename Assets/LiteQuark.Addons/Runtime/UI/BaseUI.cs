@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -17,8 +18,9 @@ namespace LiteQuark.Runtime
 
         public int SortingOrder { get; private set; }
 
-        private readonly List<Sprite> _loadSpriteList = new List<Sprite>();
+        private readonly List<AssetHandle<Sprite>> _loadSpriteHandleList = new List<AssetHandle<Sprite>>();
         private readonly int _eventTag;
+        private GameObjectHandle _goHandle;
 
         protected BaseUI()
             : base()
@@ -26,11 +28,20 @@ namespace LiteQuark.Runtime
             _eventTag = (int)UniqueID;
         }
 
-        public void BindGo(GameObject go)
+        public void BindGo(GameObjectHandle handle)
         {
-            Go = go;
+            _goHandle = handle;
+            Go = handle?.Result;
             RT = Go.GetComponent<RectTransform>();
             SortingOrder = Go.GetComponent<Canvas>().sortingOrder;
+        }
+
+        public void ReleaseGo()
+        {
+            _goHandle?.Dispose();
+            _goHandle = null;
+            Go = null;
+            RT = null;
         }
 
         public void Open(params object[] paramList)
@@ -123,11 +134,21 @@ namespace LiteQuark.Runtime
         
         public void LoadSprite(string resPath, Action<Sprite> callback)
         {
-            LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
+            var handle = LiteRuntime.Asset.LoadAssetHandle<Sprite>(resPath);
+            _loadSpriteHandleList.Add(handle);
+            LoadSpriteAsync(handle, callback).Forget();
+        }
+
+        private async UniTaskVoid LoadSpriteAsync(AssetHandle<Sprite> handle, Action<Sprite> callback)
+        {
+            try
             {
-                _loadSpriteList.Add(sprite);
+                var sprite = await handle.Task;
                 LiteUtils.SafeInvoke(callback, sprite);
-            });
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
         
         public void ReplaceSprite(string path, string resPath)
@@ -153,11 +174,11 @@ namespace LiteQuark.Runtime
 
         private void UnloadSprites()
         {
-            foreach (var sprite in _loadSpriteList)
+            foreach (var handle in _loadSpriteHandleList)
             {
-                LiteRuntime.Asset.UnloadAsset(sprite);
+                handle.Dispose();
             }
-            _loadSpriteList.Clear();
+            _loadSpriteHandleList.Clear();
         }
 
         /// <summary>

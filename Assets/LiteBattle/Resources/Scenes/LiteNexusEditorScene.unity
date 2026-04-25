@@ -550,16 +550,21 @@ MonoBehaviour:
       AutoRestartInBackground: 0
       BackgroundLimitTime: 90
       ThrowException: 0
+      DebugMode: 1
+      TimeScale: 1
     Task:
       ConcurrencyLimit: 20
       IgnoreLimitPriority: 2
     Asset:
-      AssetMode: 0
-      BundleLocater: 1
+      AssetMode: 1
+      BundleLocater: 0
       BundleRemoteUri: http://127.0.0.1:8000/
       ConcurrencyLimit: 5
-      BundleDownloadTimeout: 60
-      BundleDownloadMaxRetries: 3
+      BundleDownloadRetry:
+        Timeout: 60
+        MaxRetries: 3
+        RetryInterval: 1
+      DisableUnityWebCache: 0
       EnableRetain: 0
       AssetRetainTime: 120
       BundleRetainTime: 300
@@ -577,31 +582,20 @@ MonoBehaviour:
       LogError: 1
       LogFatal: 1
       ShowLogViewer: 1
-    Debug:
-      DebugMode: 1
-      TimeScale: 1
-    UI:
-      UICamera: {fileID: 697437525}
-      ScaleMode: 1
-      MatchMode: 0
-      MatchValue: 1
-      ResolutionWidth: 1080
-      ResolutionHeight: 1920
-    Network:
-      MaxConcurrentRequests: 5
-      DefaultTimeout: 10
-      EnableAutoRetry: 1
-      DefaultRetryCount: 3
-    Data:
-      ProviderMode: 0
-      CustomProviderType:
-        Disabled: 0
-        AssemblyQualifiedName: LiteQuark.Runtime.JsonFileProvider, LiteQuark.Runtime,
-          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-        BaseTypeName: LiteQuark.Runtime.IDataProvider, LiteQuark.Runtime, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-      EnableEncryption: 1
-      EncryptionKey: LiteQuark
+    SystemSettings:
+    - rid: 5815724397945421824
+  references:
+    version: 2
+    RefIds:
+    - rid: 5815724397945421824
+      type: {class: UISystemSetting, ns: LiteQuark.Runtime, asm: LiteQuark.Runtime.Addons}
+      data:
+        UICamera: {fileID: 697437525}
+        ScaleMode: 1
+        MatchMode: 0
+        MatchValue: 0
+        ResolutionWidth: 1920
+        ResolutionHeight: 1080
 --- !u!114 &321517262
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -72,40 +72,37 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
+        public async UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
         {
             if (config.IsMutex)
             {
                 var existUI = FindUI<T>();
                 if (existUI != null)
                 {
-                    return UniTask.FromResult(existUI);
+                    return existUI;
                 }
             }
 
-            var tcs = new UniTaskCompletionSource<T>();
             var ui = Activator.CreateInstance<T>();
             ui.Config = config;
             ui.System = this;
             ui.State = UIState.Opening;
             var parent = GetUIParent(config.DepthMode);
-            LiteRuntime.Asset.InstantiateAsync(config.PrefabPath, parent, (instance) =>
+            var handle = LiteRuntime.Asset.InstantiateHandle(config.PrefabPath, parent);
+            var instance = await handle.Task;
+            if (instance == null)
             {
-                if (instance == null)
-                {
-                    ui.State = UIState.Error;
-                    LLog.Error("Load ui prefab error : {0}", config.PrefabPath);
-                    tcs.TrySetResult(null);
-                    return;
-                }
+                handle.Dispose();
+                ui.State = UIState.Error;
+                LLog.Error("Load ui prefab error : {0}", config.PrefabPath);
+                return null;
+            }
                 
-                SetupUI(ui, instance);
-                ui.State = UIState.Opened;
-                _openList.Add(ui);
-                ui.Open(paramList);
-                tcs.TrySetResult(ui);
-            });
-            return tcs.Task;
+            SetupUI(ui, instance, handle);
+            ui.State = UIState.Opened;
+            _openList.Add(ui);
+            ui.Open(paramList);
+            return ui;
         }
 
         private void HandleOpenList()
@@ -143,7 +140,7 @@ namespace LiteQuark.Runtime
         {
             ui.State = UIState.Closed;
             UIBinder.AutoUnbind(ui);
-            LiteRuntime.Asset.UnloadAsset(ui.Go);
+            ui.ReleaseGo();
         }
 
         public void CloseAllUI()
@@ -172,7 +169,7 @@ namespace LiteQuark.Runtime
             return _uiList.Find((ui) => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
         }
 
-        private void SetupUI(BaseUI ui, GameObject instance)
+        private void SetupUI(BaseUI ui, GameObject instance, GameObjectHandle handle)
         {
             var parent = GetUIParent(ui.Config.DepthMode);
             
@@ -193,7 +190,7 @@ namespace LiteQuark.Runtime
             var raycaster = instance.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
             
-            ui.BindGo(instance);
+            ui.BindGo(handle);
             UIBinder.AutoBind(ui);
         }
 

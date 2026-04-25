@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -8,6 +10,7 @@ namespace LiteQuark.Runtime
     public class ActiveGameObjectPool : BaseGameObjectPool
     {
         public override string Name => PathUtils.GetFileName(Key);
+        private AssetHandle<GameObject> _templateHandle;
 
         public ActiveGameObjectPool()
             : base()
@@ -18,16 +21,26 @@ namespace LiteQuark.Runtime
         {
             base.Initialize(key, args);
 
-            LiteRuntime.Asset.LoadAssetAsync<GameObject>(Key, OnLoadTemplate);
+            _templateHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>(Key);
+            LoadTemplateAsync(_templateHandle).Forget();
+        }
+
+        private async UniTaskVoid LoadTemplateAsync(AssetHandle<GameObject> handle)
+        {
+            try
+            {
+                OnLoadTemplate(await handle.Task);
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         public override void Dispose()
         {
-            if (Template != null)
-            {
-                LiteRuntime.Asset.UnloadAsset(Template);
-                Template = null;
-            }
+            _templateHandle?.Dispose();
+            _templateHandle = null;
+            Template = null;
             
             base.Dispose();
         }

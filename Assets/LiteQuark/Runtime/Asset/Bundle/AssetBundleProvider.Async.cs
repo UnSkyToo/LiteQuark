@@ -16,42 +16,7 @@ namespace LiteQuark.Runtime
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
             cache.LoadAssetAsync<T>(assetPath, (asset) =>
             {
-                UpdateAssetIDToPathMap(asset, assetPath);
                 LiteUtils.SafeInvoke(callback, asset);
-            });
-        }
-
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
-        {
-            InstantiateAsyncInternal(assetPath, (asset) => UnityEngine.Object.Instantiate(asset, parent), callback);
-        }
-
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
-        {
-            InstantiateAsyncInternal(assetPath, (asset) => UnityEngine.Object.Instantiate(asset, position, rotation, parent), callback);
-        }
-        
-        private void InstantiateAsyncInternal(string assetPath, Func<UnityEngine.GameObject, UnityEngine.GameObject> instantiateFunc, Action<UnityEngine.GameObject> callback)
-        {
-            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
-            if (bundleInfo == null)
-            {
-                LiteUtils.SafeInvoke(callback, null);
-                return;
-            }
-
-            var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-
-                var instance = instantiateFunc(asset);
-                UpdateAssetIDToPathMap(instance, assetPath);
-                LiteUtils.SafeInvoke(callback, instance);
             });
         }
 

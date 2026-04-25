@@ -67,11 +67,6 @@ namespace LiteQuark.Runtime
             return AssetDatabase.GetMainAssetTypeAtPath(fullPath) != null;
         }
 
-        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
-        {
-            SimulateAsync(callback, true);
-        }
-
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             SimulateAsync(callback, LoadAssetSync<T>(assetPath));
@@ -86,48 +81,6 @@ namespace LiteQuark.Runtime
                 LLog.Error("Can't load asset : {0}", fullPath);
             }
             return asset;
-        }
-
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
-        {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-        
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
-        {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-
-        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
-        {
-            var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
-            if (asset == null)
-            {
-                return null;
-            }
-            
-            var instance = UnityEngine.Object.Instantiate(asset, parent);
-            return instance;
         }
         
         public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback)
@@ -148,22 +101,6 @@ namespace LiteQuark.Runtime
 
         public void UnloadAsset(string assetPath)
         {
-        }
-
-        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
-        {
-            if (asset == null)
-            {
-                return;
-            }
-            
-            if (asset is UnityEngine.GameObject go)
-            {
-                if (go.scene.isLoaded)
-                {
-                    UnityEngine.Object.Destroy(asset);
-                }
-            }
         }
 
         public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)

@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -10,6 +12,7 @@ namespace LiteQuark.Runtime
         public bool IsLoaded { get; private set; }
         public AudioSource Source { get; private set; }
         public GameObject Carrier { get; private set; }
+        private AssetHandle<AudioClip> _clipHandle;
 
         public override string DebugName => $"AudioClip_{Source?.clip?.name}";
 
@@ -23,7 +26,7 @@ namespace LiteQuark.Runtime
 
         public void Load(EmptyGameObjectPool pool, Transform parent, string clipPath, bool isLoop, float volume, float delay, System.Action<bool> callback)
         {
-            if (IsLoaded)
+            if (IsLoaded || _clipHandle != null)
             {
                 return;
             }
@@ -37,40 +40,62 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                LiteRuntime.Asset.LoadAssetAsync<AudioClip>(clipPath, (clip) =>
+                _clipHandle = LiteRuntime.Asset.LoadAssetHandle<AudioClip>(clipPath);
+                LoadClipAsync(pool, _clipHandle, clipPath, isLoop, volume, delay, callback).Forget();
+            });
+        }
+
+        private async UniTaskVoid LoadClipAsync(EmptyGameObjectPool pool, AssetHandle<AudioClip> handle,
+            string clipPath, bool isLoop, float volume, float delay, System.Action<bool> callback)
+        {
+            try
+            {
+                var clip = await handle.Task;
+                if (clip == null)
                 {
-                    if (clip == null)
+                    LLog.Warning("can't play audio : {0}", clipPath);
+                    handle.Dispose();
+                    if (_clipHandle == handle)
                     {
-                        LLog.Warning("can't play audio : {0}", clipPath);
+                        _clipHandle = null;
+                    }
+                    if (Carrier != null)
+                    {
                         pool.Recycle(Carrier);
                         Carrier = null;
-                        LiteUtils.SafeInvoke(callback, false);
-                        return;
                     }
+                    LiteUtils.SafeInvoke(callback, false);
+                    return;
+                }
                     
-                    Source = Carrier.GetOrAddComponent<AudioSource>();
-                    Source.clip = clip;
-                    Source.volume = Mathf.Clamp01(volume);
-                    Source.loop = isLoop;
-                    Source.pitch = 1.0f;
-                    Carrier.name = DebugName;
-                    Delay = delay;
-                    IsLoaded = true;
-                    LiteUtils.SafeInvoke(callback, true);
-                });
-            });
+                Source = Carrier.GetOrAddComponent<AudioSource>();
+                Source.clip = clip;
+                Source.volume = Mathf.Clamp01(volume);
+                Source.loop = isLoop;
+                Source.pitch = 1.0f;
+                Carrier.name = DebugName;
+                Delay = delay;
+                IsLoaded = true;
+                LiteUtils.SafeInvoke(callback, true);
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         public void Unload(EmptyGameObjectPool pool)
         {
-            if (!IsLoaded)
+            if (!IsLoaded && _clipHandle == null && Carrier == null)
             {
                 return;
             }
 
-            if (Source != null && Source.clip != null)
+            _clipHandle?.Dispose();
+            _clipHandle = null;
+
+            if (Source != null)
             {
-                LiteRuntime.Asset.UnloadAsset(Source.clip);
+                Source.clip = null;
                 Source = null;
             }
 

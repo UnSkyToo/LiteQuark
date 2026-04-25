@@ -42,10 +42,10 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
             }
 
-            InstantiateAsync(ct).Forget();
+            RunAsync(ct).Forget();
         }
 
-        private async UniTaskVoid InstantiateAsync(CancellationToken ct)
+        private async UniTaskVoid RunAsync(CancellationToken ct)
         {
             try
             {

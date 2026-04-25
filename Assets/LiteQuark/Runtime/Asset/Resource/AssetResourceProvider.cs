@@ -33,44 +33,9 @@ namespace LiteQuark.Runtime
             return Resources.Load(assetPath) != null;
         }
 
-        public void PreloadAsset<T>(string assetPath, System.Action<bool> callback) where T : Object
-        {
-            LiteUtils.SafeInvoke(callback, true);
-        }
-
         public void LoadAssetAsync<T>(string assetPath, System.Action<T> callback) where T : Object
         {
             LiteRuntime.Task.AddLoadResourceTask(assetPath, callback);
-        }
-
-        public void InstantiateAsync(string assetPath, Transform parent, System.Action<GameObject> callback)
-        {
-            LoadAssetAsync<GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = Object.Instantiate(asset, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-
-        public void InstantiateAsync(string assetPath, Transform parent, Vector3 position, Quaternion rotation, System.Action<GameObject> callback)
-        {
-            LoadAssetAsync<GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = Object.Instantiate(asset, position, rotation, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
         }
 
         public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, System.Action<bool> callback)
@@ -87,22 +52,6 @@ namespace LiteQuark.Runtime
 
         public void UnloadAsset(string assetPath)
         {
-        }
-
-        public void UnloadAsset<T>(T asset) where T : Object
-        {
-            if (asset == null)
-            {
-                return;
-            }
-
-            if (asset is GameObject go)
-            {
-                if (go.scene.isLoaded)
-                {
-                    Object.Destroy(asset);
-                }
-            }
         }
 
         public void UnloadSceneAsync(string scenePath, string sceneName, System.Action callback)

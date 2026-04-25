@@ -71,26 +71,6 @@ namespace LiteQuark.Runtime
             return _provider?.HasAsset(formatPath) ?? false;
         }
 
-        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
-        {
-            var formatPath = FormatPath(assetPath);
-            _provider?.PreloadAsset<T>(formatPath, callback);
-        }
-
-        public UniTask<bool> PreloadAsset<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
-            => CallbackToUniTask<bool>((cb) => PreloadAsset<T>(assetPath, cb), ct,
-                (success) => { if (success) UnloadAsset(assetPath); });
-
-        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
-        {
-            var formatPath = FormatPath(assetPath);
-            _provider?.LoadAssetAsync<T>(formatPath, callback);
-        }
-        
-        public UniTask<T> LoadAssetAsync<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
-            => CallbackToUniTask<T>((cb) => LoadAssetAsync<T>(assetPath, cb), ct,
-                (asset) => { if (asset != null) UnloadAsset(asset); });
-        
         public AssetHandle<T> LoadAssetHandle<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
@@ -98,75 +78,29 @@ namespace LiteQuark.Runtime
                 () => _provider?.UnloadAsset(formatPath));
         }
 
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
-        {
-            var formatPath = FormatPath(assetPath);
-            _provider?.InstantiateAsync(formatPath, parent, callback);
-        }
-        
-        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
-            => CallbackToUniTask<UnityEngine.GameObject>(
-                (cb) => InstantiateAsync(assetPath, parent, cb), ct,
-                (go) => { if (go != null) UnloadAsset(go); });
-        
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
                 (asset) => UnityEngine.Object.Instantiate(asset, parent), ct);
-        
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
-        {
-            var formatPath = FormatPath(assetPath);
-            _provider?.InstantiateAsync(formatPath, parent, position, rotation, callback);
-        }
-        
-        public UniTask<UnityEngine.GameObject> InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
-            => CallbackToUniTask<UnityEngine.GameObject>(
-                (cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct,
-                (go) => { if (go != null) UnloadAsset(go); });
-        
+
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
                 (asset) => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
         
-        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        internal void LoadSceneAsyncInternal(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
             _provider?.LoadSceneAsync(formatPath, sceneName, parameters, callback);
         }
-        
-        public UniTask<bool> LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
-            => CallbackToUniTask<bool>((cb) => LoadSceneAsync(scenePath, parameters, cb), ct);
-        
+
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
             => new SceneHandle(scenePath, parameters, ct);
-
-        public void UnloadAsset(string assetPath)
-        {
-            var formatPath = FormatPath(assetPath);
-            _provider?.UnloadAsset(formatPath);
-        }
-
-        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
-        {
-            _provider?.UnloadAsset(asset);
-        }
         
-        public void UnloadSceneAsync(string scenePath, Action callback)
+        internal void UnloadSceneAsyncInternal(string scenePath, Action callback)
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
             _provider?.UnloadSceneAsync(formatPath, sceneName, callback);
-        }
-        
-        public UniTask UnloadSceneAsync(string scenePath)
-        {
-            var tcs = new UniTaskCompletionSource();
-            UnloadSceneAsync(scenePath, () =>
-            {
-                tcs.TrySetResult();
-            });
-            return tcs.Task;
         }
 
         /// <summary>
@@ -176,33 +110,6 @@ namespace LiteQuark.Runtime
         public void UnloadUnusedAssets(int maxDepth = 5)
         {
             _provider?.UnloadUnusedAssets(maxDepth);
-        }
-        
-        private UniTask<T> CallbackToUniTask<T>(Action<Action<T>> invoke, CancellationToken ct, Action<T> onCancelled = null)
-        {
-            var tcs = new UniTaskCompletionSource<T>();
-
-            if (ct.IsCancellationRequested)
-            {
-                tcs.TrySetCanceled(ct);
-                return tcs.Task;
-            }
-
-            CancellationTokenRegistration ctr = default;
-            if (ct.CanBeCanceled)
-            {
-                ctr = ct.Register(() => tcs.TrySetCanceled(ct));
-            }
-
-            invoke((result) =>
-            {
-                ctr.Dispose();
-                if (!tcs.TrySetResult(result))
-                {
-                    onCancelled?.Invoke(result);
-                }
-            });
-            return tcs.Task;
         }
         
 #if UNITY_EDITOR

@@ -118,27 +118,5 @@ namespace LiteQuark.Runtime
             ReplaceSprite(parent.transform, path, sprite);
         }
 
-        public static void ReplaceSprite(Transform parent, string path, string resPath)
-        {
-            LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
-            {
-                ReplaceSprite(parent, path, sprite);
-            });
-        }
-
-        public static void ReplaceSprite(GameObject parent, string path, string resPath)
-        {
-            ReplaceSprite(parent.transform, path, resPath);
-        }
-
-        public static void ReplaceSprite(Transform ts, string resPath)
-        {
-            ReplaceSprite(ts, null, resPath);
-        }
-
-        public static void ReplaceSprite(GameObject go, string resPath)
-        {
-            ReplaceSprite(go.transform, null, resPath);
-        }
     }
 }

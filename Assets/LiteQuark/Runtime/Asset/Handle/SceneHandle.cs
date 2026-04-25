@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
             }
 
-            LiteRuntime.Asset.LoadSceneAsync(scenePath, parameters, OnSceneLoaded);
+            LiteRuntime.Asset.LoadSceneAsyncInternal(scenePath, parameters, OnSceneLoaded);
         }
 
         private void OnSceneLoaded(bool success)
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             {
                 if (success)
                 {
-                    LiteRuntime.Asset.UnloadSceneAsync(_scenePath);
+                    LiteRuntime.Asset.UnloadSceneAsyncInternal(_scenePath, null);
                     _isLoaded = false;
                 }
             }
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
 
             if (_isLoaded)
             {
-                LiteRuntime.Asset.UnloadSceneAsync(_scenePath);
+                LiteRuntime.Asset.UnloadSceneAsyncInternal(_scenePath, null);
                 _isLoaded = false;
             }
         }
