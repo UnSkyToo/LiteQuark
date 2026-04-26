@@ -45,7 +45,7 @@ namespace LiteQuark.Editor
 #elif UNITY_IOS
             if (int.TryParse(PlayerSettings.iOS.buildNumber, out var buildCode))
             {
-                AppCfg_.BuildCode = buildCode;
+                _appCfg.BuildCode = buildCode;
             }
 #endif
             _customCfg = new CustomBuildConfig();

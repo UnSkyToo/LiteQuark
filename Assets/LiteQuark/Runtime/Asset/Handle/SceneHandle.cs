@@ -4,6 +4,9 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
+    /// <summary>
+    /// Handle for a loaded scene. Dispose unloads the scene owned by this handle.
+    /// </summary>
     public class SceneHandle : IAssetHandle<bool>
     {
         private readonly string _scenePath;

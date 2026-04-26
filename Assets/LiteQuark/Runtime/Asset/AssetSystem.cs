@@ -92,7 +92,11 @@ namespace LiteQuark.Runtime
                 (asset) => { if (asset != null) UnloadAsset(asset); });
         
         public AssetHandle<T> LoadAssetHandle<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
-            => new AssetHandle<T>((cb) => LoadAssetAsync<T>(assetPath, cb), ct, UnloadAsset);
+        {
+            var formatPath = FormatPath(assetPath);
+            return new AssetHandle<T>((cb) => _provider?.LoadAssetAsync<T>(formatPath, cb), ct,
+                () => _provider?.UnloadAsset(formatPath));
+        }
 
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
         {
@@ -105,8 +109,9 @@ namespace LiteQuark.Runtime
                 (cb) => InstantiateAsync(assetPath, parent, cb), ct,
                 (go) => { if (go != null) UnloadAsset(go); });
         
-        public AssetHandle<UnityEngine.GameObject> InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
-            => new AssetHandle<UnityEngine.GameObject>((cb) => InstantiateAsync(assetPath, parent, cb), ct, UnloadAsset);
+        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
+            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
+                (asset) => UnityEngine.Object.Instantiate(asset, parent), ct);
         
         public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
         {
@@ -119,8 +124,9 @@ namespace LiteQuark.Runtime
                 (cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct,
                 (go) => { if (go != null) UnloadAsset(go); });
         
-        public AssetHandle<UnityEngine.GameObject> InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
-            => new AssetHandle<UnityEngine.GameObject>((cb) => InstantiateAsync(assetPath, parent, position, rotation, cb), ct, UnloadAsset);
+        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
+            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
+                (asset) => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
         
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
         {
