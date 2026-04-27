@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         public bool IsDone { get; private set; }
         public bool Result => _isLoaded;
         public UniTask<bool> Task => _tcs.Task;
-        public UniTask<bool>.Awaiter GetAwaiter() => Task.GetAwaiter();
+        public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
         internal SceneHandle(string scenePath, LoadSceneParameters parameters, CancellationToken ct)
         {

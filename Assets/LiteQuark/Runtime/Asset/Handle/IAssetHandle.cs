@@ -1,5 +1,3 @@
-using Cysharp.Threading.Tasks;
-
 namespace LiteQuark.Runtime
 {
     /// <summary>
@@ -9,7 +7,5 @@ namespace LiteQuark.Runtime
     {
         public bool IsDone { get; }
         public T Result { get; }
-        public UniTask<T> Task { get; }
-        public UniTask<T>.Awaiter GetAwaiter();
     }
 }

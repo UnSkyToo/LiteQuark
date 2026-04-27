@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
         public bool IsDone { get; private set; }
         public T Result => _result;
         public UniTask<T> Task => _tcs.Task;
-        public UniTask<T>.Awaiter GetAwaiter() => Task.GetAwaiter();
+        public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
         
         internal AssetHandle(Action<Action<T>> invoke, CancellationToken ct, Action releaseAction)
         {
