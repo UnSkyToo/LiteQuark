@@ -1,6 +1,6 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
     /// </summary>
     public class SceneHandle : IAssetHandle<bool>
     {
-        private readonly string _scenePath;
+        private readonly Action _releaseAction;
         private readonly UniTaskCompletionSource<bool> _tcs = new();
         private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
@@ -20,9 +20,9 @@ namespace LiteQuark.Runtime
         public UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal SceneHandle(string scenePath, LoadSceneParameters parameters, CancellationToken ct)
+        internal SceneHandle(Action<Action<bool>> invoke, CancellationToken ct, Action releaseAction)
         {
-            _scenePath = scenePath;
+            _releaseAction = releaseAction;
 
             if (ct.IsCancellationRequested)
             {
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
             }
 
-            LiteRuntime.Asset.LoadSceneAsync(scenePath, parameters, OnSceneLoaded);
+            invoke(OnSceneLoaded);
         }
 
         private void OnSceneLoaded(bool success)
@@ -49,8 +49,7 @@ namespace LiteQuark.Runtime
             {
                 if (success)
                 {
-                    LiteRuntime.Asset.UnloadSceneAsync(_scenePath);
-                    _isLoaded = false;
+                    ReleaseScene();
                 }
             }
         }
@@ -69,9 +68,14 @@ namespace LiteQuark.Runtime
 
             if (_isLoaded)
             {
-                LiteRuntime.Asset.UnloadSceneAsync(_scenePath);
-                _isLoaded = false;
+                ReleaseScene();
             }
+        }
+
+        private void ReleaseScene()
+        {
+            _releaseAction?.Invoke();
+            _isLoaded = false;
         }
     }
 }

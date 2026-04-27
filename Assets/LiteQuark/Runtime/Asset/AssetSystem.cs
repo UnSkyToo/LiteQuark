@@ -139,7 +139,8 @@ namespace LiteQuark.Runtime
             => CallbackToUniTask<bool>((cb) => LoadSceneAsync(scenePath, parameters, cb), ct);
         
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
-            => new SceneHandle(scenePath, parameters, ct);
+            => new SceneHandle((cb) => LoadSceneAsync(scenePath, parameters, cb), ct,
+                () => UnloadSceneAsync(scenePath).Forget());
 
         public void UnloadAsset(string assetPath)
         {
