@@ -1,325 +1,125 @@
 # AssetSystem 资源管理系统
 
-AssetSystem 是 LiteQuark 框架的资源加载和管理模块，提供了统一的资源加载接口和多种加载模式。
+AssetSystem 是 LiteQuark 的资源加载与生命周期管理模块。对外推荐使用 Handle API：加载得到 Handle，资源通过 `handle.Result` 访问，释放统一调用 `Dispose()`。
 
-## 功能特性
+## 核心原则
 
-### ✅ 核心功能
-- **三种加载模式**：Editor模式（开发）/ Bundle模式（生产）/ Resource模式
-- **场景管理**：支持同步/异步场景加载
-- **资源预加载**：批量预加载资源
-- **Retention缓存**：自动管理资源生命周期，减少重复加载
-- **远程Bundle**：支持从服务器下载AssetBundle
+- `LoadAssetHandle<T>` / `InstantiateHandle` / `LoadSceneHandle` 是主 API。
+- `await handle` 只表示等待加载完成，不返回资源本体。
+- 持有资源就持有 Handle；释放资源就释放 Handle。
+- `LoadAssetAsync<T>`、`InstantiateAsync`、callback 版本和 `UnloadAsset(Object)` 仅作为兼容 API 保留，后续会逐步移除。
 
-### ✅ 设计特点
-- **模式切换**：一键切换加载模式，无需修改代码
-- **异步优先**：基于UniTask的异步加载
-- **并发控制**：限制同时加载资源数量
-- **自动卸载**：Retention机制自动管理资源释放
+## 加载模式
 
----
+| 模式 | 适用场景 | 说明 |
+| --- | --- | --- |
+| Editor | 编辑器开发 | 直接从 Assets 加载，便于迭代 |
+| Bundle | 生产环境 | AssetBundle 加载，支持内置包和远程包 |
+| Resource | 小型项目 | 使用 Resources 目录加载 |
 
-## 快速开始
+在 `LiteSetting.Asset` 中配置 `AssetMode`、`BundleLocater`、远程地址、并发数和 Retention 时间。
 
-### 1. 配置资源设置
+## 推荐 API
 
-在 LiteSetting 中配置：
+### 加载资源
 
 ```csharp
-资源设置:
-├── 资源模式: Editor / Bundle / Resource
-├── Bundle定位器: BuiltIn / Remote
-├── 远程资源根目录: https://cdn.example.com/
-├── 并发加载数量限制: 5
-├── 开启资源缓存模式: ✓
-├── 资源保留时间: 120秒
-└── Bundle保留时间: 300秒
+using var handle = LiteRuntime.Asset.LoadAssetHandle<Texture2D>("UI/Icon");
+await handle;
+
+var icon = handle.Result;
 ```
 
-### 2. 加载资源
+需要跨作用域持有资源时，把 Handle 保存到拥有者字段，并在 `Dispose` / `OnDestroy` / 关闭界面时释放。
 
 ```csharp
-// 异步加载预制体
-LiteRuntime.Asset.LoadAssetAsync<GameObject>("Prefabs/Player", prefab =>
+private AssetHandle<GameObject> _prefabHandle;
+
+public async UniTask Load()
 {
-    var instance = Instantiate(prefab);
-});
+    _prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
+    await _prefabHandle;
+    var prefab = _prefabHandle.Result;
+}
 
-// 异步实例化（自动加载+实例化）
-LiteRuntime.Asset.InstantiateAsync("Prefabs/Enemy", transform, instance =>
+public void Dispose()
 {
-    // 使用实例化的GameObject
-});
-
-// 加载场景
-LiteRuntime.Asset.LoadSceneAsync("Scenes/Battle", "Battle", UnityEngine.SceneManagement.LoadSceneMode.Additive, progress =>
-{
-    Debug.Log($"加载进度：{progress}%");
-});
-```
-
----
-
-## 加载模式对比
-
-| 模式 | 适用场景 | 特点 |
-|------|---------|------|
-| **Editor** | 开发调试 | 直接从Assets目录加载，快速迭代 |
-| **Bundle** | 生产环境 | AssetBundle加载，支持热更新 |
-| **Resource** | 小型项目 | 使用Resources目录，无需打包 |
-
----
-
-## API 文档
-
-### 资源加载
-
-#### LoadAssetAsync<T>
-```csharp
-public void LoadAssetAsync<T>(string path, Action<T> callback) where T : Object
-```
-
-**参数：**
-- `path` - 资源路径（相对于Assets目录）
-- `callback` - 加载完成回调
-
-**示例：**
-```csharp
-// 加载预制体
-LiteRuntime.Asset.LoadAssetAsync<GameObject>("Prefabs/Player", prefab =>
-{
-    var player = Instantiate(prefab);
-});
-
-// 加载材质
-LiteRuntime.Asset.LoadAssetAsync<Material>("Materials/PlayerMat", mat =>
-{
-    renderer.material = mat;
-});
-```
-
-#### InstantiateAsync
-```csharp
-public void InstantiateAsync(string path, Transform parent, Action<GameObject> callback)
-```
-
-一步到位：加载预制体并实例化。
-
-**示例：**
-```csharp
-LiteRuntime.Asset.InstantiateAsync("Prefabs/Bullet", firePoint, bullet =>
-{
-    bullet.GetComponent<Bullet>().Fire(direction);
-});
-```
-
----
-
-### 场景加载
-
-#### LoadSceneAsync
-```csharp
-public void LoadSceneAsync(string path, string sceneName, LoadSceneMode mode, Action<float> progressCallback = null)
-```
-
-**示例：**
-```csharp
-// 加载关卡场景
-LiteRuntime.Asset.LoadSceneAsync(
-    "Scenes/Level01",
-    "Level01",
-    LoadSceneMode.Single,
-    progress => loadingBar.value = progress
-);
-```
-
----
-
-### 资源预加载
-
-#### PreloadAssets
-```csharp
-public void PreloadAssets(string[] paths, Action onComplete = null)
-```
-
-批量预加载资源。
-
-**示例：**
-```csharp
-string[] assetsToPreload = new[]
-{
-    "Prefabs/Player",
-    "Prefabs/Enemy",
-    "UI/MainMenu"
-};
-
-LiteRuntime.Asset.PreloadAssets(assetsToPreload, () =>
-{
-    Debug.Log("预加载完成");
-    StartGame();
-});
-```
-
----
-
-### 资源卸载
-
-#### UnloadAsset
-```csharp
-public void UnloadAsset(string path)
-```
-
-卸载指定资源（进入Retention缓存）。
-
-**示例：**
-```csharp
-LiteRuntime.Asset.UnloadAsset("Prefabs/OldEnemy");
-```
-
----
-
-## 使用场景
-
-### 1. 动态加载UI
-
-```csharp
-public class UIManager
-{
-    public void OpenShop()
-    {
-        LiteRuntime.Asset.InstantiateAsync("UI/ShopPanel", canvas.transform, panel =>
-        {
-            var shopUI = panel.GetComponent<ShopUI>();
-            shopUI.Initialize();
-        });
-    }
+    _prefabHandle?.Dispose();
+    _prefabHandle = null;
 }
 ```
 
-### 2. 关卡资源管理
+### 实例化 GameObject
 
 ```csharp
-public class LevelManager
-{
-    public async UniTask LoadLevel(int levelId)
-    {
-        // 预加载关卡资源
-        string[] levelAssets = new[]
-        {
-            $"Prefabs/Level{levelId}/Enemies",
-            $"Prefabs/Level{levelId}/Props",
-            $"Textures/Level{levelId}/Skybox"
-        };
+var handle = LiteRuntime.Asset.InstantiateHandle("Prefabs/Enemy", parent);
+await handle;
 
-        await PreloadAssetsAsync(levelAssets);
+var enemy = handle.Result;
 
-        // 加载场景
-        await LoadSceneAsync($"Scenes/Level{levelId}", $"Level{levelId}");
-
-        Debug.Log("关卡加载完成");
-    }
-}
+// 不再需要实例时：
+handle.Dispose();
 ```
 
-### 3. Retention缓存机制
+`GameObjectHandle.Dispose()` 会销毁实例，并释放内部持有的 prefab Handle。
+
+### 加载场景
 
 ```csharp
-// 系统会自动管理资源生命周期
-// 卸载的资源会保留在缓存中一段时间（默认120秒）
-// 如果在此期间再次加载，直接从缓存返回（无需重新加载）
+var parameters = new LoadSceneParameters(LoadSceneMode.Additive);
+var handle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle", parameters);
+await handle;
 
-// 第一次加载
-LiteRuntime.Asset.LoadAssetAsync<GameObject>("Prefabs/Boss", boss1 => { });
+if (!handle.Result)
+{
+    LLog.Error("load scene failed");
+}
 
-// 使用完毕后卸载
+// 离开场景时：
+handle.Dispose();
+```
+
+`SceneHandle.Dispose()` 会卸载该 Handle 持有的场景。
+
+## 兼容 API
+
+以下 API 暂时保留，但已标记为兼容/过渡入口：
+
+```csharp
+LiteRuntime.Asset.LoadAssetAsync<T>(path, callback);
+await LiteRuntime.Asset.LoadAssetAsync<T>(path);
+LiteRuntime.Asset.InstantiateAsync(path, parent, callback);
+await LiteRuntime.Asset.InstantiateAsync(path, parent);
+await LiteRuntime.Asset.LoadSceneAsync(path, parameters);
+LiteRuntime.Asset.UnloadAsset(assetObject);
+```
+
+新代码不要使用这些入口。它们会隐藏资源所有权，容易让调用方忘记释放。若确实只需要资源结果，可以显式使用 `await handle.Task`，但需要自己确保生命周期不会泄漏。
+
+## 预加载与路径释放
+
+`PreloadAsset<T>` 仍可用于按路径预热资源：
+
+```csharp
+await LiteRuntime.Asset.PreloadAsset<GameObject>("Prefabs/Boss");
 LiteRuntime.Asset.UnloadAsset("Prefabs/Boss");
-
-// 120秒内再次加载 -> 直接从缓存返回（极快）
-LiteRuntime.Asset.LoadAssetAsync<GameObject>("Prefabs/Boss", boss2 => { });
 ```
 
----
+路径释放是唯一推荐的显式卸载方式；依赖资源对象反查路径的 `UnloadAsset(Object)` 会被移除。
 
-## Bundle模式配置
+## Retention 缓存
 
-### 1. Bundle打包（Editor）
-
-使用Unity的AssetBundle打包工具或第三方工具打包资源。
-
-### 2. 配置远程地址
+资源释放后会进入 Retention 缓存，在配置的保留时间内再次加载可以复用缓存。可在场景切换或内存压力较高时主动调用：
 
 ```csharp
-LiteSetting.Asset:
-├── 资源模式: Bundle
-├── Bundle定位器: Remote
-└── 远程资源根目录: https://cdn.example.com/bundles/
+LiteRuntime.Asset.UnloadUnusedAssets(maxDepth: 5);
 ```
 
-### 3. 版本管理
+`maxDepth` 控制依赖资源递归释放深度，例如 `A -> B -> C`，传入 `2` 时最多释放到 `B`。
 
-Bundle模式会自动从远程下载版本文件（version.txt），并根据版本号下载更新的Bundle。
+## 实践建议
 
----
-
-## 配置说明
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| AssetMode | Enum | Editor | 资源加载模式 |
-| BundleLocater | Enum | BuiltIn | Bundle定位器（包内/远程） |
-| BundleRemoteUri | string | - | 远程资源根目录 |
-| ConcurrencyLimit | int | 5 | 并发加载数量限制 |
-| BundleDownloadTimeout | int | 60 | 下载超时时间（秒） |
-| BundleDownloadMaxRetries | int | 3 | 下载重试次数 |
-| EnableRetain | bool | true | 是否启用Retention缓存 |
-| AssetRetainTime | float | 120 | 资源保留时间（秒） |
-| BundleRetainTime | float | 300 | Bundle保留时间（秒） |
-
----
-
-## 最佳实践
-
-### 1. 使用异步加载
-
-```csharp
-// ✅ 推荐：异步加载（不阻塞主线程）
-LiteRuntime.Asset.LoadAssetAsync<GameObject>("Prefabs/Player", prefab => { });
-
-// ❌ 避免：同步加载（阻塞主线程）
-```
-
-### 2. 预加载关键资源
-
-```csharp
-void Start()
-{
-    // 在loading界面预加载游戏关键资源
-    string[] criticalAssets = new[]
-    {
-        "Prefabs/Player",
-        "Prefabs/MainCamera",
-        "UI/HUD"
-    };
-
-    LiteRuntime.Asset.PreloadAssets(criticalAssets, OnPreloadComplete);
-}
-```
-
-### 3. 及时卸载不用的资源
-
-```csharp
-public class LevelCleanup
-{
-    public void OnLevelEnd()
-    {
-        // 卸载关卡特定资源
-        LiteRuntime.Asset.UnloadAsset("Prefabs/Level01/Boss");
-        LiteRuntime.Asset.UnloadAsset("Prefabs/Level01/Props");
-
-        // 系统会自动进入Retention缓存
-        // 如果后续不再使用，会在保留时间后自动释放
-    }
-}
-```
-
----
+- UI、音频、对象池等拥有长期资源的对象应保存 Handle 字段。
+- 临时读取配置或数据文件时使用 `using var handle`。
+- 不要把 `handle.Result` 存成唯一生命周期依据；资源所有权在 Handle 上。
+- 新增资源、脚本或目录时提交对应 `.meta` 文件。

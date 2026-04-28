@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -9,6 +11,8 @@ namespace LiteQuark.Runtime
     {
         public override string Name => PathUtils.GetFileName(Key);
 
+        private AssetHandle<GameObject> _templateHandle;
+
         public ActiveGameObjectPool()
             : base()
         {
@@ -18,14 +22,41 @@ namespace LiteQuark.Runtime
         {
             base.Initialize(key, args);
 
-            LiteRuntime.Asset.LoadAssetAsync<GameObject>(Key, OnLoadTemplate);
+            _templateHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>(Key);
+            LoadTemplateAsync(_templateHandle).Forget();
+        }
+
+        private async UniTaskVoid LoadTemplateAsync(AssetHandle<GameObject> handle)
+        {
+            try
+            {
+                await handle;
+                if (_templateHandle == handle)
+                {
+                    OnLoadTemplate(handle.Result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (_templateHandle == handle)
+                {
+                    _templateHandle = null;
+                }
+
+                handle.Dispose();
+                LLog.Error("Load pool template error: {0}", ex.Message);
+            }
         }
 
         public override void Dispose()
         {
-            if (Template != null)
+            if (_templateHandle != null)
             {
-                LiteRuntime.Asset.UnloadAsset(Template);
+                _templateHandle.Dispose();
+                _templateHandle = null;
                 Template = null;
             }
             

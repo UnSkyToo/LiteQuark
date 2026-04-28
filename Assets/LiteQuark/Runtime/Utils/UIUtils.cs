@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -120,10 +122,25 @@ namespace LiteQuark.Runtime
 
         public static void ReplaceSprite(Transform parent, string path, string resPath)
         {
-            LiteRuntime.Asset.LoadAssetAsync<Sprite>(resPath, (sprite) =>
+            var handle = LiteRuntime.Asset.LoadAssetHandle<Sprite>(resPath);
+            ReplaceSpriteAsync(parent, path, handle).Forget();
+        }
+
+        private static async UniTaskVoid ReplaceSpriteAsync(Transform parent, string path, AssetHandle<Sprite> handle)
+        {
+            try
             {
-                ReplaceSprite(parent, path, sprite);
-            });
+                await handle;
+                ReplaceSprite(parent, path, handle.Result);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                handle.Dispose();
+                LLog.Error("Replace sprite error: {0}", ex.Message);
+            }
         }
 
         public static void ReplaceSprite(GameObject parent, string path, string resPath)

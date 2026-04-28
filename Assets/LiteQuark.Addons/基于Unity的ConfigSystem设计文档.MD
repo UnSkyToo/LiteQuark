@@ -228,7 +228,7 @@
 
 ### 7.1 资源加载约束
 - 导出的数据必须位于：`Assets/StandaloneAssets/Configs/`
-- 使用 `LiteRuntime.Asset.LoadAssetAsync` 读取
+- 使用 `LiteRuntime.Asset.LoadAssetHandle<T>` 读取，并由 `ConfigSystem` 负责释放 Handle
 
 ### 7.2 接口定义（建议）
 ```csharp

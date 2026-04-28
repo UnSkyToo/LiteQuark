@@ -22,6 +22,7 @@ namespace LiteBattle.Runtime
         public string DatabasePath = "Assets/StandaloneAssets/NexusDatabase";
         
         private static LiteNexusConfig Instance_;
+        private static AssetHandle<LiteNexusConfig> ConfigHandle_;
         public static LiteNexusConfig Instance
         {
             get
@@ -37,8 +38,8 @@ namespace LiteBattle.Runtime
 
                     Instance_ = AssetDatabase.LoadAssetAtPath<LiteNexusConfig>(configPath);
 #else
-                    var task = LiteRuntime.Asset.LoadAssetAsync<LiteNexusConfig>(ConfigName);
-                    Instance_ = task.GetAwaiter().GetResult();
+                    ConfigHandle_ = LiteRuntime.Asset.LoadAssetHandle<LiteNexusConfig>(ConfigName);
+                    Instance_ = ConfigHandle_.Task.GetAwaiter().GetResult();
 #endif
                 }
                 

@@ -10,6 +10,7 @@ namespace LiteBattle.Runtime
     {
         private readonly Dictionary<string, LiteUnitConfig> UnitConfigMap_ = new();
         private readonly Dictionary<string, Dictionary<string, LiteStateConfig>> StateConfigMap_ = new();
+        private readonly List<AssetHandle<LiteUnitConfig>> UnitConfigHandleList_ = new();
 
         private LiteNexusDataManager()
         {
@@ -28,27 +29,46 @@ namespace LiteBattle.Runtime
         private async UniTask<bool> Load()
         {
             var jsonPath = PathUtils.GetRelativeAssetRootPath(LiteNexusConfig.Instance.GetDatabaseJsonPath());
-            var text = await LiteRuntime.Asset.LoadAssetAsync<TextAsset>(jsonPath);
+            using var jsonHandle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(jsonPath);
+            await jsonHandle;
+            var text = jsonHandle.Result;
+            if (text == null)
+            {
+                LLog.Error($"can't load nexus database : {jsonPath}");
+                return false;
+            }
+
             var json = text.text;
             var database = LitJson.JsonMapper.ToObject<LiteNexusDatabase>(json);
             foreach (var unitConfigPath in database.UnitList)
             {
-                var unitConfig = await LiteRuntime.Asset.LoadAssetAsync<LiteUnitConfig>(unitConfigPath);
+                var unitConfigHandle = LiteRuntime.Asset.LoadAssetHandle<LiteUnitConfig>(unitConfigPath);
+                await unitConfigHandle;
+                var unitConfig = unitConfigHandle.Result;
+                if (unitConfig == null)
+                {
+                    unitConfigHandle.Dispose();
+                    LLog.Error($"can't load unit config : {unitConfigPath}");
+                    continue;
+                }
+
                 UnitConfigMap_.Add(unitConfig.StateGroup, unitConfig);
+                UnitConfigHandleList_.Add(unitConfigHandle);
                 
                 var group = await LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
                 StateConfigMap_.Add(unitConfig.StateGroup, group);
             }
-            LiteRuntime.Asset.UnloadAsset(jsonPath);
             return true;
         }
 
         private void Unload()
         {
-            foreach (var chunk in UnitConfigMap_)
+            foreach (var handle in UnitConfigHandleList_)
             {
-                LiteRuntime.Asset.UnloadAsset(chunk.Value);
+                handle.Dispose();
             }
+            UnitConfigHandleList_.Clear();
+
             UnitConfigMap_.Clear();
             StateConfigMap_.Clear();
         }
@@ -65,7 +85,9 @@ namespace LiteBattle.Runtime
             
             foreach (var filePath in stateList)
             {
-                var timelineAsset = await LiteRuntime.Asset.LoadAssetAsync<TimelineAsset>(filePath);
+                using var timelineHandle = LiteRuntime.Asset.LoadAssetHandle<TimelineAsset>(filePath);
+                await timelineHandle;
+                var timelineAsset = timelineHandle.Result;
                 if (timelineAsset == null)
                 {
                     LLog.Error($"can't load timeline asset : {filePath}");
@@ -78,8 +100,6 @@ namespace LiteBattle.Runtime
                     // LiteLog.Info($"load state : {timelineAsset.name}");
                     group.Add(timelineAsset.name, state);
                 }
-                
-                LiteRuntime.Asset.UnloadAsset(timelineAsset);
             }
 
             return group;

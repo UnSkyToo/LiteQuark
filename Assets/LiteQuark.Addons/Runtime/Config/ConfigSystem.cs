@@ -102,7 +102,9 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                var textAsset = await LiteRuntime.Asset.LoadAssetAsync<TextAsset>(reg.AssetPath);
+                using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(reg.AssetPath);
+                await handle;
+                var textAsset = handle.Result;
                 if (textAsset == null)
                 {
                     LLog.Error("ConfigSystem: failed to load asset {0}", reg.AssetPath);
@@ -111,8 +113,6 @@ namespace LiteQuark.Runtime
 
                 var table = reg.ParseFunc(textAsset.text);
                 _tableMap[reg.DataType] = table;
-
-                LiteRuntime.Asset.UnloadAsset(textAsset);
             }
             catch (Exception ex)
             {
