@@ -67,11 +67,6 @@ namespace LiteQuark.Runtime
             return AssetDatabase.GetMainAssetTypeAtPath(fullPath) != null;
         }
 
-        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
-        {
-            SimulateAsync(callback, true);
-        }
-
         public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
         {
             SimulateAsync(callback, LoadAssetSync<T>(assetPath));

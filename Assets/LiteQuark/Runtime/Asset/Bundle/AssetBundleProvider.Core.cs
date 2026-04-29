@@ -112,14 +112,6 @@ namespace LiteQuark.Runtime
             return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
         }
         
-        public void PreloadAsset<T>(string assetPath, Action<bool> callback) where T : UnityEngine.Object
-        {
-            LoadAssetAsync<T>(assetPath, (asset) =>
-            {
-                LiteUtils.SafeInvoke(callback, asset != null);
-            });
-        }
-        
         public void ReleaseAssetReference(string assetPath)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);

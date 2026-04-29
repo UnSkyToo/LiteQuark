@@ -33,11 +33,6 @@ namespace LiteQuark.Runtime
             return Resources.Load(assetPath) != null;
         }
 
-        public void PreloadAsset<T>(string assetPath, System.Action<bool> callback) where T : Object
-        {
-            LiteUtils.SafeInvoke(callback, true);
-        }
-
         public void LoadAssetAsync<T>(string assetPath, System.Action<T> callback) where T : Object
         {
             LiteRuntime.Task.AddLoadResourceTask(assetPath, callback);

@@ -87,6 +87,7 @@ handle.Dispose();
 
 ```csharp
 LiteRuntime.Asset.LoadAssetHandle<T>(path);
+LiteRuntime.Asset.PreloadAssetHandle<T>(paths);
 LiteRuntime.Asset.InstantiateHandle(path, parent);
 LiteRuntime.Asset.LoadSceneHandle(path, parameters);
 LiteRuntime.Asset.UnloadUnusedAssets(maxDepth);
@@ -96,7 +97,23 @@ LiteRuntime.Asset.UnloadUnusedAssets(maxDepth);
 
 ## 预加载
 
-`PreloadAsset<T>` 暂不对外提供。预加载需要和普通资源一样表达所有权，后续应设计 `PreloadHandle` 或批量 Handle，让预加载资源通过 `Dispose()` 统一释放。
+批量预加载使用 `PreloadAssetHandle<T>`。它只负责加载并持有一组资源引用，不暴露资源本体；需要使用资源时仍通过 `LoadAssetHandle<T>` 获取自己的 Handle。
+
+```csharp
+var paths = new[] { "UI/IconA", "UI/IconB" };
+using var preload = LiteRuntime.Asset.PreloadAssetHandle<Sprite>(paths);
+await preload;
+
+if (!preload.Result)
+{
+    foreach (var path in preload.FailedPaths)
+    {
+        LLog.Error("preload failed: {0}", path);
+    }
+}
+```
+
+`PreloadHandle<T>.Dispose()` 会释放所有已持有的内部资源引用。同批次重复路径会被去重。
 
 ## Retention 缓存
 

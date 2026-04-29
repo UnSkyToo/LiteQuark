@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
@@ -76,6 +77,27 @@ namespace LiteQuark.Runtime
             var formatPath = FormatPath(assetPath);
             return new AssetHandle<T>((cb) => _provider?.LoadAssetAsync<T>(formatPath, cb), ct,
                 () => ReleaseAssetReference(formatPath));
+        }
+
+        public PreloadHandle<T> PreloadAssetHandle<T>(IEnumerable<string> assetPaths, CancellationToken ct = default) where T : UnityEngine.Object
+        {
+            if (assetPaths == null)
+            {
+                throw new ArgumentNullException(nameof(assetPaths));
+            }
+
+            var formatPaths = new List<string>();
+            var pathSet = new HashSet<string>();
+            foreach (var assetPath in assetPaths)
+            {
+                var formatPath = FormatPath(assetPath);
+                if (pathSet.Add(formatPath))
+                {
+                    formatPaths.Add(formatPath);
+                }
+            }
+
+            return new PreloadHandle<T>(formatPaths, LoadAssetHandle<T>, ct);
         }
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
