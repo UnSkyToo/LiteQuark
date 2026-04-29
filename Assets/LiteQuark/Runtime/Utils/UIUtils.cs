@@ -7,9 +7,6 @@ namespace LiteQuark.Runtime
 {
     public static class UIUtils
     {
-        private const string ReplaceSpritePathObsoleteMessage =
-            "Use ReplaceSpriteHandle(...) and dispose the returned handle when the sprite is no longer used.";
-
         public static Vector2 ScreenPointToCanvasPoint(RectTransform parent, Vector2 screenPoint, Camera uiCamera)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPoint, uiCamera, out var localPoint);
@@ -126,7 +123,7 @@ namespace LiteQuark.Runtime
         public static AssetHandle<Sprite> ReplaceSpriteHandle(Transform parent, string path, string resPath)
         {
             var handle = LiteRuntime.Asset.LoadAssetHandle<Sprite>(resPath);
-            ReplaceSpriteAsync(parent, path, handle, false).Forget();
+            ReplaceSpriteAsync(parent, path, handle).Forget();
             return handle;
         }
 
@@ -145,20 +142,7 @@ namespace LiteQuark.Runtime
             return ReplaceSpriteHandle(go.transform, null, resPath);
         }
 
-        [Obsolete(ReplaceSpritePathObsoleteMessage, false)]
-        public static void ReplaceSprite(Transform parent, string path, string resPath)
-        {
-            ReplaceSpriteLegacy(parent, path, resPath);
-        }
-
-        private static void ReplaceSpriteLegacy(Transform parent, string path, string resPath)
-        {
-            var handle = LiteRuntime.Asset.LoadAssetHandle<Sprite>(resPath);
-            ReplaceSpriteAsync(parent, path, handle, true).Forget();
-        }
-
-        private static async UniTaskVoid ReplaceSpriteAsync(Transform parent, string path, AssetHandle<Sprite> handle,
-            bool disposeOnCompleted)
+        private static async UniTaskVoid ReplaceSpriteAsync(Transform parent, string path, AssetHandle<Sprite> handle)
         {
             try
             {
@@ -172,31 +156,6 @@ namespace LiteQuark.Runtime
             {
                 LLog.Error("Replace sprite error: {0}", ex.Message);
             }
-            finally
-            {
-                if (disposeOnCompleted)
-                {
-                    handle.Dispose();
-                }
-            }
-        }
-
-        [Obsolete(ReplaceSpritePathObsoleteMessage, false)]
-        public static void ReplaceSprite(GameObject parent, string path, string resPath)
-        {
-            ReplaceSpriteLegacy(parent.transform, path, resPath);
-        }
-
-        [Obsolete(ReplaceSpritePathObsoleteMessage, false)]
-        public static void ReplaceSprite(Transform ts, string resPath)
-        {
-            ReplaceSpriteLegacy(ts, null, resPath);
-        }
-
-        [Obsolete(ReplaceSpritePathObsoleteMessage, false)]
-        public static void ReplaceSprite(GameObject go, string resPath)
-        {
-            ReplaceSpriteLegacy(go.transform, null, resPath);
         }
     }
 }

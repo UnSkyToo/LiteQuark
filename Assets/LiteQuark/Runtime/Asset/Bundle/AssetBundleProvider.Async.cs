@@ -16,7 +16,6 @@ namespace LiteQuark.Runtime
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
             cache.LoadAssetAsync<T>(assetPath, (asset) =>
             {
-                TrackAssetObjectForLegacyUnload(asset, assetPath);
                 LiteUtils.SafeInvoke(callback, asset);
             });
         }
@@ -50,7 +49,6 @@ namespace LiteQuark.Runtime
                 }
 
                 var instance = instantiateFunc(asset);
-                TrackAssetObjectForLegacyUnload(instance, assetPath);
                 LiteUtils.SafeInvoke(callback, instance);
             });
         }

@@ -150,23 +150,6 @@ namespace LiteQuark.Runtime
         {
         }
 
-        [Obsolete(IAssetProvider.UnloadAssetObjectObsoleteMessage, false)]
-        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
-        {
-            if (asset == null)
-            {
-                return;
-            }
-            
-            if (asset is UnityEngine.GameObject go)
-            {
-                if (go.scene.isLoaded)
-                {
-                    UnityEngine.Object.Destroy(asset);
-                }
-            }
-        }
-
         public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
         {
             var op = SceneManager.UnloadSceneAsync(sceneName);

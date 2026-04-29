@@ -10,7 +10,6 @@ namespace LiteQuark.Runtime
         private AssetBundleLoader _bundleLoader = null;
         
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
-        private readonly Dictionary<int, LegacyAssetObjectRef> _legacyAssetObjectRefMap = new();
         private readonly List<string> _unloadBundleList = new();
         
         public AssetBundleProvider()
@@ -34,7 +33,6 @@ namespace LiteQuark.Runtime
             _bundleLoader = new AssetBundleLoader(bundleLocater, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
 
             _bundleCacheMap.Clear();
-            _legacyAssetObjectRefMap.Clear();
             _unloadBundleList.Clear();
             return true;
         }
@@ -47,8 +45,6 @@ namespace LiteQuark.Runtime
             }
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
-            
-            _legacyAssetObjectRefMap.Clear();
             
             _bundleLoader?.Dispose();
             _bundleLoader = null;
@@ -137,34 +133,6 @@ namespace LiteQuark.Runtime
                 cache.UnloadAsset(assetPath);
             }
         }
-        
-        [Obsolete(IAssetProvider.UnloadAssetObjectObsoleteMessage, false)]
-        public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
-        {
-            if (asset == null)
-            {
-                return;
-            }
-
-            var instanceID = asset.GetInstanceID();
-            if (_legacyAssetObjectRefMap.TryGetValue(instanceID, out var objectRef))
-            {
-                UnloadAsset(objectRef.AssetPath);
-                objectRef.Count--;
-                if (objectRef.Count <= 0)
-                {
-                    _legacyAssetObjectRefMap.Remove(instanceID);
-                }
-            }
-
-            if (asset is UnityEngine.GameObject go)
-            {
-                if (go.scene.isLoaded)
-                {
-                    UnityEngine.Object.Destroy(asset);
-                }
-            }
-        }
 
         public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
         {
@@ -227,34 +195,6 @@ namespace LiteQuark.Runtime
             {
                 cache.Dispose();
                 _bundleCacheMap.Remove(bundlePath);
-            }
-        }
-        
-        private class LegacyAssetObjectRef
-        {
-            internal string AssetPath { get; }
-            internal int Count { get; set; }
-
-            public LegacyAssetObjectRef(string assetPath)
-            {
-                AssetPath = assetPath;
-                Count = 1;
-            }
-        }
-
-        private void TrackAssetObjectForLegacyUnload(UnityEngine.Object asset, string assetPath)
-        {
-            if (asset != null)
-            {
-                var instanceID = asset.GetInstanceID();
-                if (_legacyAssetObjectRefMap.TryGetValue(instanceID, out var data))
-                {
-                    data.Count++;
-                }
-                else
-                {
-                    _legacyAssetObjectRefMap.Add(instanceID, new LegacyAssetObjectRef(assetPath));
-                }
             }
         }
         

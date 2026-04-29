@@ -7,7 +7,7 @@ AssetSystem 是 LiteQuark 的资源加载与生命周期管理模块。对外推
 - `LoadAssetHandle<T>` / `InstantiateHandle` / `LoadSceneHandle` 是主 API。
 - `await handle` 只表示等待加载完成，不返回资源本体。
 - 持有资源就持有 Handle；释放资源就释放 Handle。
-- `LoadAssetAsync<T>`、`InstantiateAsync`、callback 版本和 `UnloadAsset(Object)` 仅作为兼容 API 保留，后续会逐步移除。
+- 对外不再提供 `LoadAssetAsync<T>`、`InstantiateAsync`、callback 加载入口、`UnloadAsset(Object)` 或手动场景卸载入口。
 
 ## 加载模式
 
@@ -81,31 +81,23 @@ handle.Dispose();
 
 `SceneHandle.Dispose()` 会卸载该 Handle 持有的场景。
 
-## 兼容 API
+## 公共 API 边界
 
-以下 API 暂时保留，但已标记为兼容/过渡入口：
-
-```csharp
-LiteRuntime.Asset.LoadAssetAsync<T>(path, callback);
-await LiteRuntime.Asset.LoadAssetAsync<T>(path);
-LiteRuntime.Asset.InstantiateAsync(path, parent, callback);
-await LiteRuntime.Asset.InstantiateAsync(path, parent);
-await LiteRuntime.Asset.LoadSceneAsync(path, parameters);
-LiteRuntime.Asset.UnloadAsset(assetObject);
-```
-
-新代码不要使用这些入口。它们会隐藏资源所有权，容易让调用方忘记释放。若确实只需要资源结果，可以显式使用 `await handle.Task`，但需要自己确保生命周期不会泄漏。
-
-## 预加载与路径释放
-
-`PreloadAsset<T>` 仍可用于按路径预热资源：
+当前对外保留的资源生命周期 API：
 
 ```csharp
-await LiteRuntime.Asset.PreloadAsset<GameObject>("Prefabs/Boss");
-LiteRuntime.Asset.UnloadAsset("Prefabs/Boss");
+LiteRuntime.Asset.LoadAssetHandle<T>(path);
+LiteRuntime.Asset.InstantiateHandle(path, parent);
+LiteRuntime.Asset.LoadSceneHandle(path, parameters);
+LiteRuntime.Asset.UnloadAsset(path);
+LiteRuntime.Asset.UnloadUnusedAssets(maxDepth);
 ```
 
-路径释放是唯一推荐的显式卸载方式；依赖资源对象反查路径的 `UnloadAsset(Object)` 会被移除。
+内部 provider 仍使用 callback 适配底层加载流程，但 callback 不再作为 public API 暴露。
+
+## 预加载
+
+`PreloadAsset<T>` 暂不对外提供。预加载需要和普通资源一样表达所有权，后续应设计 `PreloadHandle` 或批量 Handle，让预加载资源通过 `Dispose()` 统一释放。
 
 ## Retention 缓存
 
