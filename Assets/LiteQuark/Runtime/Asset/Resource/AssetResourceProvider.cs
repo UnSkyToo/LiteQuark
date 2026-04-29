@@ -38,36 +38,6 @@ namespace LiteQuark.Runtime
             LiteRuntime.Task.AddLoadResourceTask(assetPath, callback);
         }
 
-        public void InstantiateAsync(string assetPath, Transform parent, System.Action<GameObject> callback)
-        {
-            LoadAssetAsync<GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = Object.Instantiate(asset, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-
-        public void InstantiateAsync(string assetPath, Transform parent, Vector3 position, Quaternion rotation, System.Action<GameObject> callback)
-        {
-            LoadAssetAsync<GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = Object.Instantiate(asset, position, rotation, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-
         public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, System.Action<bool> callback)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);

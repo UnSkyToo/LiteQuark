@@ -83,48 +83,6 @@ namespace LiteQuark.Runtime
             return asset;
         }
 
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, Action<UnityEngine.GameObject> callback)
-        {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-        
-        public void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback)
-        {
-            LoadAssetAsync<UnityEngine.GameObject>(assetPath, (asset) =>
-            {
-                if (asset == null)
-                {
-                    LiteUtils.SafeInvoke(callback, null);
-                    return;
-                }
-                
-                var instance = UnityEngine.Object.Instantiate(asset, position, rotation, parent);
-                LiteUtils.SafeInvoke(callback, instance);
-            });
-        }
-
-        public UnityEngine.GameObject InstantiateSync(string assetPath, UnityEngine.Transform parent)
-        {
-            var asset = LoadAssetSync<UnityEngine.GameObject>(assetPath);
-            if (asset == null)
-            {
-                return null;
-            }
-            
-            var instance = UnityEngine.Object.Instantiate(asset, parent);
-            return instance;
-        }
-        
         public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback)
         {
             SimulateAsync(callback, LoadSceneSync(scenePath, sceneName, parameters));
