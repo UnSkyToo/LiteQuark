@@ -21,13 +21,14 @@ namespace LiteQuark.Runtime
                 cache.LoadAssetAsync<T>((assetIsLoaded) =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
+                    var asset = assetIsLoaded ? cache.Asset as T : null;
 
                     if (assetIsLoaded)
                     {
                         IncRef();
                     }
                     
-                    LiteUtils.SafeInvoke(callback, cache.Asset as T);
+                    LiteUtils.SafeInvoke(callback, asset);
                 });
             });
         }

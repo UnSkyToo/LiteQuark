@@ -8,15 +8,19 @@ namespace LiteQuark.Runtime
         {
             if (IsLoaded)
             {
+                var requestSucceeded = TryAcquireReference<T>();
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, true, isCached: true);
-
-                IncRef();
-                LiteUtils.SafeInvoke(callback, true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, requestSucceeded,
+                    errorMessage: requestSucceeded ? null : "Asset type mismatch", isCached: true);
+                LiteUtils.SafeInvoke(callback, requestSucceeded);
                 return;
             }
-            
-            _assetLoaderCallbackList.Add(callback);
+
+            _assetLoaderCallbackList.Add((isLoaded) =>
+            {
+                var requestSucceeded = isLoaded && TryAcquireReference<T>();
+                LiteUtils.SafeInvoke(callback, requestSucceeded);
+            });
             if (Stage != AssetCacheStage.Created)
             {
                 return;
@@ -43,13 +47,23 @@ namespace LiteQuark.Runtime
             
             foreach (var loader in callbacks)
             {
-                if (isLoaded)
-                {
-                    IncRef();
-                }
-                
                 LiteUtils.SafeInvoke(loader, isLoaded);
             }
+        }
+
+        private bool TryAcquireReference<T>() where T : UnityEngine.Object
+        {
+            if (Asset is T)
+            {
+                IncRef();
+                return true;
+            }
+
+            if (Asset != null)
+            {
+                LLog.Error("Asset type mismatch : {0}, expected {1}, actual {2}", _assetPath, typeof(T).Name, Asset.GetType().Name);
+            }
+            return false;
         }
     }
 }

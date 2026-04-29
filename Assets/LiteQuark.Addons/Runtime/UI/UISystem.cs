@@ -104,12 +104,14 @@ namespace LiteQuark.Runtime
                 
                 SetupUI(ui, instance, handle);
                 ui.State = UIState.Opened;
-                _openList.Add(ui);
                 ui.Open(paramList);
+                _openList.Add(ui);
                 return ui;
             }
             catch (Exception ex)
             {
+                _openList.Remove(ui);
+                ui.ReleaseGo();
                 handle.Dispose();
                 ui.State = UIState.Error;
                 LLog.Error("Load ui prefab error : {0}, {1}", config.PrefabPath, ex.Message);
