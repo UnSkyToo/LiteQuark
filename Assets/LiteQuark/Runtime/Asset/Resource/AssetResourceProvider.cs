@@ -89,6 +89,7 @@ namespace LiteQuark.Runtime
         {
         }
 
+        [System.Obsolete(IAssetProvider.UnloadAssetObjectObsoleteMessage, false)]
         public void UnloadAsset<T>(T asset) where T : Object
         {
             if (asset == null)

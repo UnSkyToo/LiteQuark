@@ -121,5 +121,6 @@ LiteRuntime.Asset.UnloadUnusedAssets(maxDepth: 5);
 
 - UI、音频、对象池等拥有长期资源的对象应保存 Handle 字段。
 - 临时读取配置或数据文件时使用 `using var handle`。
+- 静态工具如果会加载资源，应返回 Handle；例如 `UIUtils.ReplaceSpriteHandle(...)`。
 - 不要把 `handle.Result` 存成唯一生命周期依据；资源所有权在 Handle 上。
 - 新增资源、脚本或目录时提交对应 `.meta` 文件。

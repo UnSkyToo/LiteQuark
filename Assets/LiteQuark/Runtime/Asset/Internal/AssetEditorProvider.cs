@@ -150,6 +150,7 @@ namespace LiteQuark.Runtime
         {
         }
 
+        [Obsolete(IAssetProvider.UnloadAssetObjectObsoleteMessage, false)]
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
             if (asset == null)

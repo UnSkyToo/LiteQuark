@@ -559,7 +559,7 @@ MonoBehaviour:
       ConcurrencyLimit: 20
       IgnoreLimitPriority: 2
     Asset:
-      AssetMode: 0
+      AssetMode: 1
       BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5

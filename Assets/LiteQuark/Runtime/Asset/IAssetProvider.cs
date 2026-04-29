@@ -4,6 +4,9 @@ namespace LiteQuark.Runtime
 {
     public interface IAssetProvider : IInitializeAsync, ITick, IDispose
     {
+        public const string UnloadAssetObjectObsoleteMessage =
+            "Object-based unload is a legacy compatibility path. Use UnloadAsset(assetPath) or the owning handle.Dispose().";
+
         string GetVersion();
 
         bool HasAsset(string assetPath);
@@ -16,6 +19,7 @@ namespace LiteQuark.Runtime
         void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback);
         
         void UnloadAsset(string assetPath);
+        [Obsolete(UnloadAssetObjectObsoleteMessage, false)]
         void UnloadAsset<T>(T asset) where T : UnityEngine.Object;
         void UnloadSceneAsync(string scenePath, string sceneName, Action callback);
         void UnloadUnusedAssets(int maxDepth);

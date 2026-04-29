@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         private const string LoadSceneAsyncObsoleteMessage =
             "Use LoadSceneHandle(path, parameters) instead. Await the handle, read handle.Result, and Dispose the handle to unload the scene.";
         private const string UnloadAssetObjectObsoleteMessage =
-            "Use the owning handle.Dispose() or UnloadAsset(assetPath). Object-based unload will be removed.";
+            IAssetProvider.UnloadAssetObjectObsoleteMessage;
 
         private IAssetProvider _provider = null;
 
@@ -199,7 +199,9 @@ namespace LiteQuark.Runtime
         [Obsolete(UnloadAssetObjectObsoleteMessage, false)]
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
+#pragma warning disable 0618
             _provider?.UnloadAsset(asset);
+#pragma warning restore 0618
         }
         
         public void UnloadSceneAsync(string scenePath, Action callback)

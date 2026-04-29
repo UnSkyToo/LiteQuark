@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private AssetBundleLoader _bundleLoader = null;
         
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
-        private readonly Dictionary<int, AssetIDToPathData> _assetIDToPathMap = new();
+        private readonly Dictionary<int, LegacyAssetObjectRef> _legacyAssetObjectRefMap = new();
         private readonly List<string> _unloadBundleList = new();
         
         public AssetBundleProvider()
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             _bundleLoader = new AssetBundleLoader(bundleLocater, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
 
             _bundleCacheMap.Clear();
-            _assetIDToPathMap.Clear();
+            _legacyAssetObjectRefMap.Clear();
             _unloadBundleList.Clear();
             return true;
         }
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
             
-            _assetIDToPathMap.Clear();
+            _legacyAssetObjectRefMap.Clear();
             
             _bundleLoader?.Dispose();
             _bundleLoader = null;
@@ -138,6 +138,7 @@ namespace LiteQuark.Runtime
             }
         }
         
+        [Obsolete(IAssetProvider.UnloadAssetObjectObsoleteMessage, false)]
         public void UnloadAsset<T>(T asset) where T : UnityEngine.Object
         {
             if (asset == null)
@@ -146,13 +147,13 @@ namespace LiteQuark.Runtime
             }
 
             var instanceID = asset.GetInstanceID();
-            if (_assetIDToPathMap.TryGetValue(instanceID, out var pathCache))
+            if (_legacyAssetObjectRefMap.TryGetValue(instanceID, out var objectRef))
             {
-                UnloadAsset(pathCache.AssetPath);
-                pathCache.Count--;
-                if (pathCache.Count <= 0)
+                UnloadAsset(objectRef.AssetPath);
+                objectRef.Count--;
+                if (objectRef.Count <= 0)
                 {
-                    _assetIDToPathMap.Remove(instanceID);
+                    _legacyAssetObjectRefMap.Remove(instanceID);
                 }
             }
 
@@ -229,30 +230,30 @@ namespace LiteQuark.Runtime
             }
         }
         
-        private class AssetIDToPathData
+        private class LegacyAssetObjectRef
         {
             internal string AssetPath { get; }
             internal int Count { get; set; }
 
-            public AssetIDToPathData(string assetPath)
+            public LegacyAssetObjectRef(string assetPath)
             {
                 AssetPath = assetPath;
                 Count = 1;
             }
         }
 
-        private void UpdateAssetIDToPathMap(UnityEngine.Object asset, string assetPath)
+        private void TrackAssetObjectForLegacyUnload(UnityEngine.Object asset, string assetPath)
         {
             if (asset != null)
             {
                 var instanceID = asset.GetInstanceID();
-                if (_assetIDToPathMap.TryGetValue(instanceID, out var data))
+                if (_legacyAssetObjectRefMap.TryGetValue(instanceID, out var data))
                 {
                     data.Count++;
                 }
                 else
                 {
-                    _assetIDToPathMap.Add(instanceID, new AssetIDToPathData(assetPath));
+                    _legacyAssetObjectRefMap.Add(instanceID, new LegacyAssetObjectRef(assetPath));
                 }
             }
         }
