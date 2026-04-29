@@ -146,11 +146,11 @@ namespace LiteQuark.Runtime
             return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters).isLoaded;
         }
 
-        public void UnloadAsset(string assetPath)
+        public void ReleaseAssetReference(string assetPath)
         {
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
         {
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)

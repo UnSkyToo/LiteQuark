@@ -203,19 +203,21 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public void UnloadAsset(string assetPath)
+        public void ReleaseAssetReference(string assetPath)
         {
             if (_assetCacheMap.TryGetValue(assetPath, out var cache))
             {
-                if (cache.UnloadAsset(assetPath))
+                if (cache.ReleaseReference())
                 {
                     DecRef();
                 }
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
         {
+            DecRef();
+
             var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
             if (!scene.isLoaded)
             {
@@ -223,7 +225,6 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            DecRef();
             var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(sceneName);
             if (op != null)
             {

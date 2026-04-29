@@ -120,7 +120,7 @@ namespace LiteQuark.Runtime
             });
         }
         
-        public void UnloadAsset(string assetPath)
+        public void ReleaseAssetReference(string assetPath)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
@@ -130,11 +130,11 @@ namespace LiteQuark.Runtime
 
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
-                cache.UnloadAsset(assetPath);
+                cache.ReleaseAssetReference(assetPath);
             }
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
@@ -145,7 +145,7 @@ namespace LiteQuark.Runtime
             
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
-                cache.UnloadSceneAsync(scenePath, sceneName, callback);
+                cache.ReleaseSceneReferenceAsync(scenePath, sceneName, callback);
             }
             else
             {

@@ -85,11 +85,11 @@ namespace LiteQuark.Runtime
             LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, callback);
         }
 
-        public void UnloadAsset(string assetPath)
+        public void ReleaseAssetReference(string assetPath)
         {
         }
 
-        public void UnloadSceneAsync(string scenePath, string sceneName, System.Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, System.Action callback)
         {
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)

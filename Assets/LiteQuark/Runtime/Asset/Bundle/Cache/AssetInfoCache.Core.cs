@@ -121,13 +121,8 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public bool UnloadAsset(string assetPath)
+        public bool ReleaseReference()
         {
-            if (_assetPath != assetPath)
-            {
-                return false;
-            }
-            
             return DecRef();
         }
     }

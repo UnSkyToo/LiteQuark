@@ -15,8 +15,8 @@ namespace LiteQuark.Runtime
         void InstantiateAsync(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, Action<UnityEngine.GameObject> callback);
         void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback);
         
-        void UnloadAsset(string assetPath);
-        void UnloadSceneAsync(string scenePath, string sceneName, Action callback);
+        void ReleaseAssetReference(string assetPath);
+        void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback);
         void UnloadUnusedAssets(int maxDepth);
     }
 }

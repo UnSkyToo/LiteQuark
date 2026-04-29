@@ -7,7 +7,7 @@ AssetSystem 是 LiteQuark 的资源加载与生命周期管理模块。对外推
 - `LoadAssetHandle<T>` / `InstantiateHandle` / `LoadSceneHandle` 是主 API。
 - `await handle` 只表示等待加载完成，不返回资源本体。
 - 持有资源就持有 Handle；释放资源就释放 Handle。
-- 对外不再提供 `LoadAssetAsync<T>`、`InstantiateAsync`、callback 加载入口、`UnloadAsset(Object)` 或手动场景卸载入口。
+- 对外不再提供 `LoadAssetAsync<T>`、`InstantiateAsync`、callback 加载入口、path/object 手动释放入口或手动场景卸载入口。
 
 ## 加载模式
 
@@ -89,11 +89,10 @@ handle.Dispose();
 LiteRuntime.Asset.LoadAssetHandle<T>(path);
 LiteRuntime.Asset.InstantiateHandle(path, parent);
 LiteRuntime.Asset.LoadSceneHandle(path, parameters);
-LiteRuntime.Asset.UnloadAsset(path);
 LiteRuntime.Asset.UnloadUnusedAssets(maxDepth);
 ```
 
-内部 provider 仍使用 callback 适配底层加载流程，但 callback 不再作为 public API 暴露。
+内部 provider 仍使用 callback 适配底层加载流程，但 callback 不再作为 public API 暴露。引用释放只能通过 `Dispose()`，path 级接口只保留在 Handle 内部用于释放一次引用。
 
 ## 预加载
 

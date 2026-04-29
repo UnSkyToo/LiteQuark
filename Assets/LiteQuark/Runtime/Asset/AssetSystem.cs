@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
         {
             var formatPath = FormatPath(assetPath);
             return new AssetHandle<T>((cb) => _provider?.LoadAssetAsync<T>(formatPath, cb), ct,
-                () => _provider?.UnloadAsset(formatPath));
+                () => ReleaseAssetReference(formatPath));
         }
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
@@ -95,19 +95,18 @@ namespace LiteQuark.Runtime
 
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
             => new SceneHandle((cb) => LoadSceneInternal(scenePath, parameters, cb), ct,
-                () => UnloadSceneInternal(scenePath, null));
+                () => ReleaseSceneReferenceAsync(scenePath, null));
 
-        public void UnloadAsset(string assetPath)
+        private void ReleaseAssetReference(string assetPath)
         {
-            var formatPath = FormatPath(assetPath);
-            _provider?.UnloadAsset(formatPath);
+            _provider?.ReleaseAssetReference(assetPath);
         }
 
-        private void UnloadSceneInternal(string scenePath, Action callback)
+        private void ReleaseSceneReferenceAsync(string scenePath, Action callback)
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             var formatPath = FormatPath(scenePath);
-            _provider?.UnloadSceneAsync(formatPath, sceneName, callback);
+            _provider?.ReleaseSceneReferenceAsync(formatPath, sceneName, callback);
         }
 
         /// <summary>
