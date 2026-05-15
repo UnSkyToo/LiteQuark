@@ -208,7 +208,7 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadSceneTask AddLoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        internal LoadSceneTask AddLoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
         {
             var task = new LoadSceneTask(sceneName, parameters, callback);
             AddTask(task);

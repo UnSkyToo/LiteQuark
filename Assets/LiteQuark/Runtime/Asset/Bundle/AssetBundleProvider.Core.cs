@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.Scene scene, Action callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
@@ -137,7 +137,7 @@ namespace LiteQuark.Runtime
             
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
-                cache.ReleaseSceneReferenceAsync(scenePath, sceneName, callback);
+                cache.ReleaseSceneReferenceAsync(scene, callback);
             }
             else
             {

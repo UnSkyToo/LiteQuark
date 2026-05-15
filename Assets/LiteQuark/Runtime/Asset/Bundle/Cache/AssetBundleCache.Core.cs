@@ -214,18 +214,17 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(UnityEngine.SceneManagement.Scene scene, Action callback)
         {
             DecRef();
 
-            var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
-            if (!scene.isLoaded)
+            if (!scene.IsValid() || !scene.isLoaded)
             {
                 LiteUtils.SafeInvoke(callback);
                 return;
             }
             
-            var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(sceneName);
+            var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
             if (op != null)
             {
                 LiteRuntime.Task.AddTask(op, callback);

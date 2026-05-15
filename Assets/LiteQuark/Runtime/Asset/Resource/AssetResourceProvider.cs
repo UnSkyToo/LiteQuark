@@ -38,12 +38,13 @@ namespace LiteQuark.Runtime
             LiteRuntime.Task.AddLoadResourceTask(assetPath, callback);
         }
 
-        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, System.Action<bool> callback)
+        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, System.Action<bool, Scene> callback)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
-            if (SceneManager.GetSceneByPath(fullPath).isLoaded)
+            var scene = SceneManager.GetSceneByPath(fullPath);
+            if (scene.isLoaded)
             {
-                LiteUtils.SafeInvoke(callback, true);
+                LiteUtils.SafeInvoke(callback, true, scene);
                 return;
             }
             
@@ -54,9 +55,15 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, System.Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Scene scene, System.Action callback)
         {
-            var op = SceneManager.UnloadSceneAsync(sceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                LiteUtils.SafeInvoke(callback);
+                return;
+            }
+
+            var op = SceneManager.UnloadSceneAsync(scene);
             if (op == null)
             {
                 LiteUtils.SafeInvoke(callback);

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -9,18 +10,19 @@ namespace LiteQuark.Runtime
     /// </summary>
     public class SceneHandle : IAssetHandle<bool>
     {
-        private readonly Action _releaseAction;
+        private readonly Action<Scene> _releaseAction;
         private readonly UniTaskCompletionSource<bool> _tcs = new();
         private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
         private bool _isLoaded;
+        private Scene _scene;
 
         public bool IsDone { get; private set; }
         public bool Result => _isLoaded;
         public UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal SceneHandle(Action<Action<bool>> invoke, CancellationToken ct, Action releaseAction)
+        internal SceneHandle(Action<Action<bool, Scene>> invoke, CancellationToken ct, Action<Scene> releaseAction)
         {
             _releaseAction = releaseAction;
 
@@ -39,9 +41,11 @@ namespace LiteQuark.Runtime
             invoke(OnSceneLoaded);
         }
 
-        private void OnSceneLoaded(bool success)
+        private void OnSceneLoaded(bool success, Scene scene)
         {
             _ctr.Dispose();
+            _scene = scene;
+            success = success && scene.IsValid() && scene.isLoaded;
             _isLoaded = success;
             IsDone = true;
 
@@ -74,7 +78,7 @@ namespace LiteQuark.Runtime
 
         private void ReleaseScene()
         {
-            _releaseAction?.Invoke();
+            _releaseAction?.Invoke(_scene);
             _isLoaded = false;
         }
     }

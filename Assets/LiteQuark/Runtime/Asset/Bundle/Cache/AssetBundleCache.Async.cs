@@ -1,4 +1,5 @@
 using System;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -33,7 +34,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<bool, Scene> callback)
         {
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
 
@@ -42,13 +43,13 @@ namespace LiteQuark.Runtime
                 if (!bundleIsLoaded)
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, false, errorMessage: "Bundle load failed");
-                    LiteUtils.SafeInvoke(callback, false);
+                    LiteUtils.SafeInvoke(callback, false, default);
                     return;
                 }
                 
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
 
-                LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, (sceneIsLoaded) =>
+                LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, (sceneIsLoaded, scene) =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
@@ -58,7 +59,7 @@ namespace LiteQuark.Runtime
                         IncRef();
                     }
 
-                    LiteUtils.SafeInvoke(callback, sceneIsLoaded);
+                    LiteUtils.SafeInvoke(callback, sceneIsLoaded, scene);
                 });
             });
         }

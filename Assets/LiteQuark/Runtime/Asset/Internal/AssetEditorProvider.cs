@@ -60,6 +60,21 @@ namespace LiteQuark.Runtime
                 LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value); });
             }
         }
+
+        private void SimulateAsync<T1, T2>(Action<T1, T2> callback, T1 value1, T2 value2)
+        {
+            if (_simulateAsyncDelayInEditor)
+            {
+                LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), () =>
+                {
+                    LiteUtils.SafeInvoke(callback, value1, value2);
+                });
+            }
+            else
+            {
+                LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value1, value2); });
+            }
+        }
         
         public bool HasAsset(string assetPath)
         {
@@ -83,29 +98,37 @@ namespace LiteQuark.Runtime
             return asset;
         }
 
-        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool> callback)
+        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool, Scene> callback)
         {
-            SimulateAsync(callback, LoadSceneSync(scenePath, sceneName, parameters));
+            var scene = LoadSceneSync(scenePath, sceneName, parameters);
+            SimulateAsync(callback, scene.IsValid() && scene.isLoaded, scene);
         }
         
-        public bool LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
+        public Scene LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
-            if (SceneManager.GetSceneByPath(fullPath).isLoaded)
+            var scene = SceneManager.GetSceneByPath(fullPath);
+            if (scene.isLoaded)
             {
-                return true;
+                return scene;
             }
             
-            return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters).isLoaded;
+            return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters);
         }
 
         public void ReleaseAssetReference(string assetPath)
         {
         }
 
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Action callback)
+        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Scene scene, Action callback)
         {
-            var op = SceneManager.UnloadSceneAsync(sceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                LiteUtils.SafeInvoke(callback);
+                return;
+            }
+
+            var op = SceneManager.UnloadSceneAsync(scene);
             if (op == null)
             {
                 LiteUtils.SafeInvoke(callback);

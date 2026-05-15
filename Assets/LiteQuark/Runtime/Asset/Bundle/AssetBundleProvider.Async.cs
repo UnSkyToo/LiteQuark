@@ -20,12 +20,12 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool> callback)
+        public void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
             if (bundleInfo == null)
             {
-                LiteUtils.SafeInvoke(callback, false);
+                LiteUtils.SafeInvoke(callback, false, default);
                 return;
             }
 
