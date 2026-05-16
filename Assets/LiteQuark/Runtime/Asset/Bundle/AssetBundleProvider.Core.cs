@@ -30,6 +30,16 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
+            var cycles = AssetBundleDependencyValidator.FindUniqueCycles(_packInfo);
+            if (cycles.Count > 0)
+            {
+                var message = $"AssetBundle dependency cycle detected:{Environment.NewLine}{AssetBundleDependencyValidator.FormatCycles(cycles)}";
+                LLog.Error(message);
+                LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, message);
+                _packInfo = null;
+                return false;
+            }
+
             _bundleLoader = new AssetBundleLoader(bundleLocater, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
 
             _bundleCacheMap.Clear();

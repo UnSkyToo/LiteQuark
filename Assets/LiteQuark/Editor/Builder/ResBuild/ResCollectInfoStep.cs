@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using LiteQuark.Runtime;
 using UnityEditor;
 
@@ -25,12 +24,6 @@ namespace LiteQuark.Editor
             for (var i = 0; i < versionPack.BundleList.Length; i++)
             {
                 var bundleInfo = versionPack.BundleList[i];
-                if (bundleInfo.DependencyList.Contains(bundleInfo.BundlePath))
-                {
-                    LEditorLog.Error($"loop reference : {bundleInfo.BundlePath}");
-                    continue;
-                }
-                
                 var bundlePath = versionPack.GetBundleFileBuildPath(bundleInfo);
                 var assetPaths = new string[bundleInfo.AssetList.Length];
 

@@ -35,13 +35,12 @@ namespace LiteQuark.Editor
                 CollectBundleInfo(LiteConst.AssetRootPath);
                 _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, flatMode, _bundleInfoCache.Values.ToArray());
                 
-                var checkResult = ResDependencyChecker.FindUniqueCycles(_packInfo);
-                if (checkResult.Count > 0)
+                var cycles = AssetBundleDependencyValidator.FindUniqueCycles(_packInfo);
+                if (cycles.Count > 0)
                 {
-                    foreach (var cycle in checkResult)
-                    {
-                        LEditorLog.Error("发现循环依赖: " + string.Join(" -> ", cycle));
-                    }
+                    var message = $"发现循环依赖:{Environment.NewLine}{AssetBundleDependencyValidator.FormatCycles(cycles)}";
+                    LEditorLog.Error(message);
+                    throw new InvalidOperationException(message);
                 }
             }
             return _packInfo;
