@@ -214,13 +214,6 @@ namespace LiteQuark.Runtime
             AddTask(task);
             return task;
         }
-        
-        internal LoadResourceTask<T> AddLoadResourceTask<T>(string assetName, Action<T> callback) where T : UnityEngine.Object
-        {
-            var task = new LoadResourceTask<T>(assetName, callback);
-            AddTask(task);
-            return task;
-        }
 
         public void PostMainThreadTask(SendOrPostCallback callback, object state)
         {

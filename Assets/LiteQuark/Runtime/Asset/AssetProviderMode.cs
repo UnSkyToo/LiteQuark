@@ -4,6 +4,5 @@ namespace LiteQuark.Runtime
     {
         Editor = 0,
         Bundle = 1,
-        Resource = 2,
     }
 }

@@ -14,10 +14,9 @@ AssetSystem 是 LiteQuark 的资源加载与生命周期管理模块。对外推
 | 模式 | 适用场景 | 说明 |
 | --- | --- | --- |
 | Editor | 编辑器开发 | 直接从 Assets 加载，便于迭代 |
-| Bundle | 生产环境 | AssetBundle 加载，支持内置包和远程包 |
-| Resource | 小型项目 | 使用 Resources 目录加载 |
+| Bundle | 运行时环境 | AssetBundle 加载，支持内置包和远程包 |
 
-在 `LiteSetting.Asset` 中配置 `AssetMode`、`BundleLocater`、远程地址、并发数和 Retention 时间。
+在 `LiteSetting.Asset` 中配置 `AssetMode`、`BundleLocater`、远程地址、并发数和 Retention 时间。需要资源随包发布时使用 `BundleLocaterMode.BuiltIn`，不要再通过 `Resources` 目录接入 AssetSystem。
 
 ## 推荐 API
 

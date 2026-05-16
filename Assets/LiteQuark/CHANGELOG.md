@@ -1,5 +1,10 @@
 # Changelog
 
+## **[Unreleased]**
+- 破坏：AssetSystem 移除 Resource 模式，运行时资源统一使用 Bundle；包内资源使用 `BundleLocaterMode.BuiltIn`
+- 破坏：移除 Resource Provider 及内部 `LoadResourceTask` 适配入口
+- 文档：主 README 的 AssetSystem 示例同步为 Handle API、`Dispose()` 和 `UnloadUnusedAssets`
+
 ## **[0.4.3] - 2026-03-04**
 - 修复：Uri大小写导致的版本文件无法获取
 

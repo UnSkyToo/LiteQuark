@@ -31,9 +31,6 @@ namespace LiteQuark.Runtime
                 case AssetProviderMode.Bundle:
                     _provider = new AssetBundleProvider();
                     break;
-                case AssetProviderMode.Resource:
-                    _provider = new AssetResourceProvider();
-                    break;
                 default:
                     throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");
             }

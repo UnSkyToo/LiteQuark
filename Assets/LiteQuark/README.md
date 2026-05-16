@@ -47,7 +47,9 @@ public class GameBootstrap : MonoBehaviour
 LiteRuntime.Event.Emit(new PlayerLevelUpEvent { Level = 10 });
 
 // 资源系统
-var prefab = await LiteRuntime.Asset.LoadAsync<GameObject>("Prefabs/Player");
+using var prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
+await prefabHandle;
+var prefab = prefabHandle.Result;
 
 // 网络系统
 var response = await LiteRuntime.Http.GetAsync("https://api.example.com/data");
@@ -162,7 +164,10 @@ LiteSetting.Task.ConcurrencyLimit = 20;
 LiteSetting.Task.IgnoreLimitPriority = TaskPriority.High;
 
 // 资源配置
-LiteSetting.Asset.DefaultCacheStrategy = CacheStrategy.Retention;
+LiteSetting.Asset.AssetMode = AssetProviderMode.Bundle;
+LiteSetting.Asset.BundleLocater = BundleLocaterMode.BuiltIn;
+LiteSetting.Asset.ConcurrencyLimit = 5;
+LiteSetting.Asset.EnableRetain = true;
 ```
 
 ---
@@ -195,12 +200,15 @@ void OnCoinChanged(CoinChangedEvent evt)
 ### 2. 异步资源加载
 
 ```csharp
-// 异步加载资源
-var prefab = await LiteRuntime.Asset.LoadAsync<GameObject>("Prefabs/Player");
-var player = Instantiate(prefab);
+// 异步加载资源，Handle 负责生命周期
+using var prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
+await prefabHandle;
+var player = Instantiate(prefabHandle.Result);
 
-// 批量加载
-var textures = await LiteRuntime.Asset.LoadAllAsync<Texture2D>("Textures/UI");
+// 批量预加载，后续仍通过 LoadAssetHandle 获取具体资源
+var texturePaths = new[] { "Textures/UI/IconA", "Textures/UI/IconB" };
+using var preload = LiteRuntime.Asset.PreloadAssetHandle<Texture2D>(texturePaths);
+await preload;
 ```
 
 ### 3. 使用对象池
@@ -300,18 +308,18 @@ LiteRuntime.ObjectPool.ReleaseList(enemies); // 自动清空
 ### 2. 资源卸载
 
 ```csharp
-// 及时卸载不用的资源
-LiteRuntime.Asset.UnloadAsync("Prefabs/LargeScene");
+// 释放资源引用
+handle.Dispose();
 
-// 场景切换时清理
-LiteRuntime.Asset.UnloadAll();
+// 场景切换或内存压力较高时清理 Retention 缓存
+LiteRuntime.Asset.UnloadUnusedAssets(maxDepth: 5);
 ```
 
 ### 3. 控制并发请求数
 
 ```csharp
 // 限制同时加载的资源数量
-LiteSetting.Asset.MaxConcurrentLoads = 5;
+LiteSetting.Asset.ConcurrencyLimit = 5;
 
 // 限制网络并发请求
 LiteSetting.Network.MaxConcurrentRequests = 10;
@@ -320,15 +328,16 @@ LiteSetting.Network.MaxConcurrentRequests = 10;
 ### 4. 分帧加载
 
 ```csharp
-IEnumerator LoadResourcesInBatches(string[] paths)
+async UniTask LoadResourcesInBatches(string[] paths, CancellationToken ct = default)
 {
     foreach (var path in paths)
     {
-        var resource = await LiteRuntime.Asset.LoadAsync<GameObject>(path);
-        ProcessResource(resource);
+        using var handle = LiteRuntime.Asset.LoadAssetHandle<GameObject>(path, ct);
+        await handle;
+        ProcessResource(handle.Result);
 
         // 每加载一个资源后等待一帧
-        yield return null;
+        await UniTask.Yield(ct);
     }
 }
 ```
@@ -407,10 +416,20 @@ A: 通过 `LiteRuntime` 静态类访问所有系统服务：
 ```csharp
 public class GameManager // 非 MonoBehaviour
 {
-    public void Initialize()
+    private AssetHandle<GameConfig> _configHandle;
+
+    public async UniTask Initialize()
     {
         LiteRuntime.Event.Emit(new GameStartEvent());
-        var config = await LiteRuntime.Asset.LoadAsync<GameConfig>("Config/game");
+        _configHandle = LiteRuntime.Asset.LoadAssetHandle<GameConfig>("Config/game");
+        await _configHandle;
+        var config = _configHandle.Result;
+    }
+
+    public void Dispose()
+    {
+        _configHandle?.Dispose();
+        _configHandle = null;
     }
 }
 ```
@@ -424,19 +443,24 @@ A: 通过 `Priority` 属性控制，数字越小越早初始化。参考 `LiteCo
 A: 使用 TaskSystem 的协程功能：
 
 ```csharp
-LiteRuntime.Task.AddTask(LoadSceneCoroutine("NewScene"));
+LiteRuntime.Task.AddTask(LoadSceneCoroutine("Scenes/NewScene"));
 
-IEnumerator LoadSceneCoroutine(string sceneName)
+IEnumerator LoadSceneCoroutine(string scenePath)
 {
     // 显示加载界面
     ShowLoadingScreen();
 
-    // 卸载旧场景资源
-    yield return LiteRuntime.Asset.UnloadAllAsync();
+    using var handle = LiteRuntime.Asset.LoadSceneHandle(
+        scenePath,
+        new LoadSceneParameters(LoadSceneMode.Single)
+    );
 
-    // 加载新场景
-    var asyncOp = SceneManager.LoadSceneAsync(sceneName);
-    yield return asyncOp;
+    yield return handle.Task.ToCoroutine();
+
+    if (!handle.Result)
+    {
+        LLog.Error("load scene failed: {0}", scenePath);
+    }
 
     // 隐藏加载界面
     HideLoadingScreen();
