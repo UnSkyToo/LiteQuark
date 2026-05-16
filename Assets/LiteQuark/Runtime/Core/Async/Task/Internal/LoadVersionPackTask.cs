@@ -38,21 +38,40 @@ namespace LiteQuark.Runtime
         protected override void OnSuccess(UnityWebRequest request)
         {
             base.OnSuccess(request);
-            
-            var info = VersionPackInfo.FromBinaryData(request.downloadHandler.data);
-            if (info is not { IsValid: true })
+
+            try
             {
-                var error = request.downloadHandler.error;
-                LLog.Error("Bundle package parse error\n{0}", error);
-                Cancel();
-                LiteUtils.SafeInvoke(_callback, null);
-            }
-            else
-            {
+                var info = VersionPackInfo.FromBinaryData(request.downloadHandler.data);
+                if (info is not { IsValid: true })
+                {
+                    FailVersionPack("VersionPack is invalid");
+                    return;
+                }
+
                 info.Initialize();
                 Complete(info);
                 LiteUtils.SafeInvoke(_callback, info);
             }
+            catch (Exception ex)
+            {
+                FailVersionPack("VersionPack parse failed", ex);
+            }
+        }
+
+        private void FailVersionPack(string message, Exception ex = null)
+        {
+            if (ex != null)
+            {
+                LLog.Exception(ex, message);
+            }
+            else
+            {
+                LLog.Error(message);
+            }
+
+            Cancel();
+            LiteUtils.SafeInvoke(_callback, null);
+            LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, message);
         }
     }
 }
