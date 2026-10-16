@@ -1,34 +1,29 @@
-# Repository Guidelines
+# Repository guidance
 
-## Project Structure & Module Organization
+## Project map
 
-This is a Unity project targeting Unity `2022.3.62f3`. Core framework code lives in `Assets/LiteQuark`, split into `Runtime`, `Editor`, and `Third` folders with matching `.asmdef` assemblies. Optional modules live in `Assets/LiteQuark.Addons`, also split into `Runtime` and `Editor`. Battle/demo tooling and sample resources live in `Assets/LiteBattle`. Unity package metadata is in `Packages`, project configuration is in `ProjectSettings`, and generated local folders such as `Library`, `Temp`, `Logs`, and `obj` should not be edited manually.
+- Use the Unity version in `ProjectSettings/ProjectVersion.txt` (currently `2022.3.62f3`). Open the repository root as the Unity project.
+- `Assets/LiteQuark`: core runtime, editor tools, bundled third-party libraries. `Assets/LiteQuark.Addons`: optional systems. `Assets/LiteBattle`: battle runtime and authoring tools. `Assets/Scripts`: examples.
+- For setup, builds and publishing, use [README.md](README.md). For lifecycle or registration, use the [framework guide](Assets/LiteQuark/README.md). For resource ownership, use the [asset guide](Assets/LiteQuark/Runtime/Asset/README.md). Read other module guides as the task requires.
 
-## Build, Test, and Development Commands
+## Change constraints
 
-- Open locally with Unity Hub or the Unity Editor version listed in `ProjectSettings/ProjectVersion.txt`.
-- `./publish.sh`: creates and tags a subtree branch from `Assets/LiteQuark`.
-- `./publish.addons.sh`: creates and tags a subtree branch from `Assets/LiteQuark.Addons`.
-- `git status --short`: check generated Unity changes before committing, especially `.meta` files.
+- Follow nearby C# style: four spaces, braces on separate lines, PascalCase types/methods/properties, camelCase locals, and the existing private-field convention. Preserve module namespaces.
+- Keep runtime/editor assembly boundaries intact. Editor APIs in runtime source require `UNITY_EDITOR` guards; editor tools belong in Editor assemblies.
+- Preserve Unity asset GUIDs. Include matching `.meta` files for added, moved, or renamed assets and folders.
+- Do not hand-edit generated `Library`, `Temp`, `Logs`, `obj`, `.csproj`, or `.sln` files. Keep third-party code, license notices and imported assets unchanged unless relevant to the task.
+- Asset ownership is Handle-based: retain the Handle while its resource is in use and release through `Dispose()`. Update consumers and documentation when changing public APIs or serialized configuration.
+- Keep package manifest and lockfile changes consistent; verify the source and revision of Git dependencies before updating them. Check package versions and the Addons core dependency for releases; avoid incidental upgrades.
 
-For CI or local batch checks, prefer Unity batchmode commands such as:
+## Validation
 
-```bash
-Unity -batchmode -projectPath . -quit
-```
+- Documentation-only edits: check referenced APIs, local links and `git diff --check`; a Unity launch is unnecessary.
+- Runtime, assembly-definition or serialized-asset changes: run a Unity editor compile. Exercise affected behavior; include screenshots or recordings for editor UI changes when possible.
+- No project test assembly currently exists. Add Unity Test Framework EditMode/PlayMode tests with a test `.asmdef` when regression coverage is warranted.
+- Local compilation and relevant checks are part of the change. Fix resulting failures and repeat affected checks; broaden validation for concrete concerns. Report checks that could not run.
 
-## Coding Style & Naming Conventions
+## Delivery
 
-Use C# conventions already present in the repo: namespaces under `LiteQuark.Runtime`, `LiteQuark.Editor`, or module-specific equivalents; PascalCase for types, methods, and public properties; camelCase for parameters and locals; `_camelCase` for private fields where existing code uses that style. Keep braces on their own lines and use four-space indentation. Runtime code must stay out of `Editor` folders and editor-only APIs must remain in `Editor` assemblies. Commit Unity `.meta` files whenever assets, scripts, or folders are added, moved, or renamed.
-
-## Testing Guidelines
-
-No dedicated test assembly is currently present. When adding tests, use Unity Test Framework and place EditMode or PlayMode tests under an appropriate `Tests` folder with a matching test `.asmdef`. Name test classes after the unit under test, for example `LiteRuntimeTests`, and name test methods by behavior. At minimum, run a Unity editor compile after changing assembly definitions, runtime modules, or serialized assets.
-
-## Commit & Pull Request Guidelines
-
-Recent commits use bracketed change types such as `[F]` for fixes, `[U]` for updates, `[A]` for additions, and `[M]` for merges, often followed by a concise Chinese summary. Follow that pattern, for example `[F] 修复资源加载句柄释放异常`. Pull requests should describe the affected module, summarize behavior changes, list Unity validation performed, and include screenshots or recordings for editor UI changes.
-
-## Security & Configuration Tips
-
-Do not commit machine-specific Unity caches or credentials. Keep dependency changes in `Packages/manifest.json` and `Packages/packages-lock.json` together, and verify git-sourced packages before updating them.
+- Review `git status --short` for incidental Unity changes. Do not commit caches or credentials.
+- Commit messages use `[F]`, `[U]`, `[A]`, `[D]`, or `[M]` plus a concise summary, usually Chinese. PRs describe the affected module, behavior change and actual validation.
+- `publish.sh`, `publish.addons.sh` and their `.cmd` variants create subtree branches, tag versions and push to `origin` with `--tags`. Run them as part of a requested release, never as validation.

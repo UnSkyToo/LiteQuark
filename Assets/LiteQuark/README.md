@@ -1,488 +1,89 @@
 # LiteQuark Framework
 
-**LiteQuark** 是一个轻量级、高性能的 Unity 游戏开发框架，提供了完整的系统架构和开箱即用的核心功能模块。
+LiteQuark 将系统服务（`ISystem`）与业务逻辑（`ILogic`）分开管理，通过 `LiteRuntime` 访问已初始化的服务。本文描述当前源码；发布历史见 [CHANGELOG](CHANGELOG.md)。
 
-## 核心特性
+## 接入与启动
 
-### 架构设计
-- **System/Logic 分离**：清晰的系统层和业务逻辑层分离
-- **生命周期管理**：统一的 Stage/Pipeline 生命周期（Boot → InitSystem → InitLogic → Main）
-- **服务定位模式**：通过 `LiteRuntime.Get<T>()` 访问所有系统服务
-- **零配置启动**：系统自动注册和初始化
-
-### 核心功能
-- **事件驱动架构**：类型安全的事件系统，支持全局和独立模块
-- **资源管理**：AssetBundle 管理，Retention 缓存策略
-- **异步编程**：基于 UniTask 的现代异步模式
-- **网络通讯**：完整的 HTTP 客户端，支持文件上传/下载
-- **数据持久化**：多种存储方式（PlayerPrefs/JSON/Binary），支持加密
-- **对象池**：GameObject 和集合对象池，减少 GC 压力
-- **UI 管理**：完整的 UI 生命周期和层级管理
-- **音频管理**：音效/音乐分类管理，音量控制
-
----
-
-## 快速开始
-
-### 1. 创建引导场景
+1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
+2. 在 Launcher 的 `LogicList` 中添加业务类，在 `SystemList` 中添加需要的扩展系统。分别配置 DebugSetting 和 ReleaseSetting。
+3. 业务类实现 `Initialize()`、`Tick()`、`Dispose()`；系统初始化完成后才开始初始化业务。
 
 ```csharp
-using LiteQuark.Runtime;
-using UnityEngine;
-
-public class GameBootstrap : MonoBehaviour
-{
-    void Awake()
-    {
-        // 框架会自动初始化所有系统
-        DontDestroyOnLoad(gameObject);
-    }
-}
-```
-
-### 2. 访问系统服务
-
-```csharp
-// 事件系统
-LiteRuntime.Event.Emit(new PlayerLevelUpEvent { Level = 10 });
-
-// 资源系统
-using var prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
-await prefabHandle;
-var prefab = prefabHandle.Result;
-
-// 网络系统
-var response = await LiteRuntime.Http.GetAsync("https://api.example.com/data");
-
-// 数据系统
-LiteRuntime.Data.Save("playerName", "Alice");
-
-// 定时器
-LiteRuntime.Timer.AddTimer(1.0f, () => Debug.Log("1秒后执行"));
-
-// 对象池
-var bullet = LiteRuntime.ObjectPool.Get("Bullet", "Prefabs/Bullet");
-```
-
----
-
-## 系统模块
-
-### 核心系统
-
-| 系统 | 说明 | 文档 |
-|-----|------|------|
-| **EventSystem** | 类型安全的事件系统，支持全局和独立模块 | [README](Runtime/Core/Event/README.md) |
-| **AssetSystem** | 资源加载管理，支持 AssetBundle 和 Retention 缓存 | [README](Runtime/Asset/README.md) |
-| **NetworkSystem** | HTTP 网络通讯，支持文件上传/下载和重试机制 | [README](Runtime/Network/README.md) |
-| **DataSystem** | 数据持久化，支持多种存储方式和加密 | [README](Runtime/Data/README.md) |
-| **TaskSystem** | 异步任务管理，协程和并发控制 | [README](Runtime/Core/Async/Task/README.md) |
-| **TimerSystem** | 定时器系统，支持时间和帧定时器 | [README](Runtime/Core/Async/Timer/README.md) |
-| **ActionSystem** | 动画和缓动系统，支持链式调用 | [README](Runtime/Core/Async/Action/README.md) |
-| **ObjectPoolSystem** | 对象池系统，GameObject 和集合复用 | [README](Runtime/Core/ObjectPool/README.md) |
-
-### 扩展模块 (Addons)
-
-| 模块 | 说明 | 文档 |
-|-----|------|------|
-| **UISystem** | UI 生命周期管理，Canvas 层级管理，安全区适配 | [Addons/UI/README.md](../LiteQuark.Addons/Runtime/UI/README.md) |
-| **AudioSystem** | 音频管理系统，音效/音乐分类，音量控制 | [Addons/Audio/README.md](../LiteQuark.Addons/Runtime/Audio/README.md) |
-
----
-
-## 框架架构
-
-### 生命周期阶段
-
-```
-Boot (引导阶段)
-  ↓
-InitSystem (系统初始化)
-  ↓
-InitLogic (业务逻辑初始化)
-  ↓
-Main (主循环)
-```
-
-### 系统优先级
-
-系统按照优先级顺序初始化（数字越小越早初始化）：
-
-```csharp
-EventSystem     = 99900  // 事件系统（最先）
-ObjectPool      = 99800  // 对象池
-Asset           = 99700  // 资源管理
-Network         = 99500  // 网络通讯
-Timer           = 99400  // 定时器
-Task            = 99300  // 任务系统
-Action          = 99200  // 动画系统
-Data            = 99100  // 数据持久化
-```
-
-### 目录结构
-
-```
-Assets/LiteQuark/
-├── Runtime/
-│   ├── Base/               # 基础类（LiteRuntime, LiteSetting, LiteConst）
-│   ├── Core/
-│   │   ├── Event/          # 事件系统
-│   │   ├── Async/
-│   │   │   ├── Task/       # 任务系统
-│   │   │   ├── Timer/      # 定时器系统
-│   │   │   └── Action/     # 动画系统
-│   │   └── ObjectPool/     # 对象池系统
-│   ├── Asset/              # 资源系统
-│   ├── Network/            # 网络系统
-│   └── Data/               # 数据系统
-│
-Assets/LiteQuark.Addons/
-├── Runtime/
-│   ├── UI/                 # UI 系统
-│   └── Audio/              # 音频系统
-```
-
----
-
-## 配置系统
-
-框架通过 `LiteSetting` 类进行配置：
-
-```csharp
-// 网络配置
-LiteSetting.Network.MaxConcurrentRequests = 10;
-LiteSetting.Network.DefaultTimeout = 30;
-LiteSetting.Network.EnableAutoRetry = true;
-
-// 数据持久化配置
-LiteSetting.Data.ProviderMode = DataProviderMode.JsonFile;
-LiteSetting.Data.EnableEncryption = true;
-LiteSetting.Data.EncryptionKey = "your-secret-key";
-
-// 任务系统配置
-LiteSetting.Task.ConcurrencyLimit = 20;
-LiteSetting.Task.IgnoreLimitPriority = TaskPriority.High;
-
-// 资源配置
-LiteSetting.Asset.AssetMode = AssetProviderMode.Bundle;
-LiteSetting.Asset.BundleLocater = BundleLocaterMode.BuiltIn;
-LiteSetting.Asset.ConcurrencyLimit = 5;
-LiteSetting.Asset.EnableRetain = true;
-```
-
----
-
-## 最佳实践
-
-### 1. 事件驱动设计
-
-使用事件系统解耦模块：
-
-```csharp
-// 定义事件
-public struct CoinChangedEvent : IEventData
-{
-    public int TotalCoins;
-}
-
-// 发送事件
-LiteRuntime.Event.Emit(new CoinChangedEvent { TotalCoins = 100 });
-
-// 监听事件
-LiteRuntime.Event.Register<CoinChangedEvent>(OnCoinChanged);
-
-void OnCoinChanged(CoinChangedEvent evt)
-{
-    UpdateCoinDisplay(evt.TotalCoins);
-}
-```
-
-### 2. 异步资源加载
-
-```csharp
-// 异步加载资源，Handle 负责生命周期
-using var prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
-await prefabHandle;
-var player = Instantiate(prefabHandle.Result);
-
-// 批量预加载，后续仍通过 LoadAssetHandle 获取具体资源
-var texturePaths = new[] { "Textures/UI/IconA", "Textures/UI/IconB" };
-using var preload = LiteRuntime.Asset.PreloadAssetHandle<Texture2D>(texturePaths);
-await preload;
-```
-
-### 3. 使用对象池
-
-```csharp
-// 获取对象
-var bullet = LiteRuntime.ObjectPool.Get("Bullet", "Prefabs/Bullet");
-bullet.SetActive(true);
-
-// 回收对象
-LiteRuntime.ObjectPool.Release("Bullet", bullet);
-```
-
-### 4. 定时器管理
-
-```csharp
-// 保存定时器 ID 以便停止
-private ulong timerId;
-
-void StartTimer()
-{
-    timerId = LiteRuntime.Timer.AddTimer(1.0f, OnTick, TimerSystem.RepeatCountForever);
-}
-
-void StopTimer()
-{
-    LiteRuntime.Timer.StopTimer(timerId);
-}
-
-void OnDestroy()
-{
-    // 销毁时清理定时器
-    if (timerId != 0)
-    {
-        LiteRuntime.Timer.StopTimer(timerId);
-    }
-}
-```
-
-### 5. HTTP 网络请求
-
-```csharp
-// GET 请求
-var response = await LiteRuntime.Http.GetAsync("https://api.example.com/user/123");
-if (response.IsSuccess)
-{
-    var userData = LitJson.JsonMapper.ToObject<UserData>(response.Text);
-}
-
-// POST 请求
-var postData = new { username = "player1", score = 1000 };
-var response = await LiteRuntime.Http.PostAsync(
-    "https://api.example.com/score",
-    LitJson.JsonMapper.ToJson(postData)
-);
-
-// 文件下载（带进度）
-await LiteRuntime.Http.DownloadFileAsync(
-    "https://cdn.example.com/update.zip",
-    "C:/Downloads/update.zip",
-    progress => Debug.Log($"下载进度：{progress * 100}%")
-);
-```
-
-### 6. 数据持久化
-
-```csharp
-// 保存数据
-LiteRuntime.Data.Save("playerLevel", 10);
-LiteRuntime.Data.Save("playerName", "Alice");
-
-// 读取数据
-int level = LiteRuntime.Data.Load<int>("playerLevel", defaultValue: 1);
-string name = LiteRuntime.Data.Load<string>("playerName", "Guest");
-
-// 异步保存复杂对象
-var playerData = new PlayerData { Level = 10, Coins = 500 };
-await LiteRuntime.Data.SaveAsync("playerData", playerData);
-
-// 异步加载
-var data = await LiteRuntime.Data.LoadAsync<PlayerData>("playerData");
-```
-
----
-
-## 性能优化
-
-### 1. 使用对象池减少 GC
-
-```csharp
-// 频繁创建的对象使用对象池
-var enemies = LiteRuntime.ObjectPool.GetList<Enemy>();
-// ... 使用 ...
-LiteRuntime.ObjectPool.ReleaseList(enemies); // 自动清空
-```
-
-### 2. 资源卸载
-
-```csharp
-// 释放资源引用
-handle.Dispose();
-
-// 场景切换或内存压力较高时清理 Retention 缓存
-LiteRuntime.Asset.UnloadUnusedAssets(maxDepth: 5);
-```
-
-### 3. 控制并发请求数
-
-```csharp
-// 限制同时加载的资源数量
-LiteSetting.Asset.ConcurrencyLimit = 5;
-
-// 限制网络并发请求
-LiteSetting.Network.MaxConcurrentRequests = 10;
-```
-
-### 4. 分帧加载
-
-```csharp
-async UniTask LoadResourcesInBatches(string[] paths, CancellationToken ct = default)
-{
-    foreach (var path in paths)
-    {
-        using var handle = LiteRuntime.Asset.LoadAssetHandle<GameObject>(path, ct);
-        await handle;
-        ProcessResource(handle.Result);
-
-        // 每加载一个资源后等待一帧
-        await UniTask.Yield(ct);
-    }
-}
-```
-
----
-
-## 依赖项
-
-- **Unity 2022.3+**
-- **UniTask** - 异步编程库
-- **LitJson** - JSON 序列化
-
----
-
-## 扩展开发
-
-### 创建自定义系统
-
-```csharp
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 
-public class CustomSystem : BaseSystem
+public sealed class GameLogic : ILogic
 {
-    public override int Priority => 99000; // 设置优先级
-
-    protected override void OnInit()
+    public UniTask<bool> Initialize()
     {
-        // 系统初始化
-        Debug.Log("CustomSystem initialized");
+        LLog.Info("Game logic initialized");
+        return UniTask.FromResult(true);
     }
 
-    protected override void OnUpdate(float deltaTime)
+    public void Tick(float deltaTime)
     {
-        // 每帧更新
-    }
-
-    protected override void OnDestroy()
-    {
-        // 清理资源
-    }
-}
-```
-
-### 注册自定义系统
-
-```csharp
-// 在 LiteConst.cs 中注册
-public static class LiteConst
-{
-    public static readonly Dictionary<Type, int> SystemPriority = new()
-    {
-        // ... 其他系统 ...
-        { typeof(CustomSystem), 99000 }
-    };
-}
-```
-
----
-
-## 示例项目
-
-查看 `Assets/Scripts/` 目录下的示例代码：
-
-- **NetworkSystemExample.cs** - 网络系统使用示例
-- **DataSystemExample.cs** - 数据持久化示例
-- **DemoLogic.cs** - 完整的游戏逻辑示例
-
----
-
-## 常见问题
-
-### Q: 如何在非 MonoBehaviour 类中使用框架？
-
-A: 通过 `LiteRuntime` 静态类访问所有系统服务：
-
-```csharp
-public class GameManager // 非 MonoBehaviour
-{
-    private AssetHandle<GameConfig> _configHandle;
-
-    public async UniTask Initialize()
-    {
-        LiteRuntime.Event.Emit(new GameStartEvent());
-        _configHandle = LiteRuntime.Asset.LoadAssetHandle<GameConfig>("Config/game");
-        await _configHandle;
-        var config = _configHandle.Result;
     }
 
     public void Dispose()
     {
-        _configHandle?.Dispose();
-        _configHandle = null;
     }
 }
 ```
 
-### Q: 系统初始化顺序如何控制？
+开发构建和编辑器默认使用 DebugSetting，普通构建使用 ReleaseSetting；编辑器可通过 `_simulateReleaseBuild` 模拟 Release 设置。仅创建调用 `DontDestroyOnLoad` 的组件不会启动框架。
 
-A: 通过 `Priority` 属性控制，数字越小越早初始化。参考 `LiteConst.SystemPriority`。
+## 生命周期与注册
 
-### Q: 如何处理场景切换？
+`Idle → InitSystem → InitLogic → Running`，初始化失败进入 `Error`；关闭后回到 `Idle`。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。启动过程异步执行，业务对服务的访问应放在 `ILogic.Initialize()` 或之后。
 
-A: 使用 TaskSystem 的协程功能：
+内置系统按 [LiteConst.InternalSystem](Runtime/Base/LiteConst.cs) 的优先级从大到小初始化：
 
-```csharp
-LiteRuntime.Task.AddTask(LoadSceneCoroutine("Scenes/NewScene"));
+`Log → Event → Timer → Task → Asset → ObjectPool → Action`
 
-IEnumerator LoadSceneCoroutine(string scenePath)
-{
-    // 显示加载界面
-    ShowLoadingScreen();
+扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放。当前没有 `BaseSystem` 或 Stage/Pipeline 注册机制。
 
-    using var handle = LiteRuntime.Asset.LoadSceneHandle(
-        scenePath,
-        new LoadSceneParameters(LoadSceneMode.Single)
-    );
+| 扩展点 | 约定 |
+| --- | --- |
+| `ISystem` | `UniTask<bool> Initialize()`、`Dispose()`；逐帧更新时同时实现 `ITick` |
+| `ILogic` | `UniTask<bool> Initialize()`、`Tick(float)`、`Dispose()` |
+| `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |
+| 配置类 | 实现 `ISystemSetting`，使用可序列化类型和无参构造函数 |
 
-    yield return handle.Task.ToCoroutine();
+扩展系统加入 `LiteSetting.SystemList`，对应配置放入 `SystemSettings`。缺少配置时框架创建默认实例并记录警告。更改启动配置应在初始化前完成；修改列表不会动态注册系统。
 
-    if (!handle.Result)
-    {
-        LLog.Error("load scene failed: {0}", scenePath);
-    }
-
-    // 隐藏加载界面
-    HideLoadingScreen();
-}
-```
-
-### Q: 如何处理网络请求失败？
-
-A: 使用内置的重试机制：
+## 服务与模块
 
 ```csharp
-LiteSetting.Network.EnableAutoRetry = true;
-LiteSetting.Network.DefaultRetryCount = 3;
-
-var response = await LiteRuntime.Http.GetAsync("https://api.example.com/data");
-if (!response.IsSuccess)
-{
-    Debug.LogError($"请求失败：{response.Error}");
-}
+var events = LiteRuntime.Event;
+var assets = LiteRuntime.Asset;
+var timers = LiteRuntime.Timer;
+// 泛型入口适用于所有已注册系统；未注册时返回 null。
+var tasks = LiteRuntime.Get<TaskSystem>();
 ```
 
----
+| 核心模块 | 说明 |
+| --- | --- |
+| [Asset](Runtime/Asset/README.md) | Editor / AssetBundle 加载、Handle 所有权、缓存与预加载 |
+| [Event](Runtime/Core/Event/README.md) | 类型化事件、Tag 注销、独立事件模块 |
+| [Task](Runtime/Core/Async/Task/README.md) | 协程、回调任务、并发限制、主线程投递 |
+| [Timer](Runtime/Core/Async/Timer/README.md) | 时间回调、重复执行、暂停与取消 |
+| [Action](Runtime/Core/Async/Action/README.md) | Transform 补间、序列/并行、条件等待 |
+| [ObjectPool](Runtime/Core/ObjectPool/README.md) | GameObject、集合复用及预生成 |
+| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置 |
+
+UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons` 包，不会自动注册。安装并注册后使用 `LiteRuntime.Get<UISystem>()` 等泛型入口；网络入口为 `LiteRuntime.Get<NetworkSystem>().Http`。
+
+## 资源与构建
+
+资源根目录为 `Assets/StandaloneAssets`。例如实际文件 `Assets/StandaloneAssets/Prefabs/Player.prefab` 的加载路径是 `Prefabs/Player.prefab`，包含扩展名。路径会统一斜杠和大小写。
+
+Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发布前通过 `Lite > Builder` 生成资源包和版本文件，使用 BuiltIn 或 Remote 定位模式。资源的加载、实例化和卸载统一由 Handle 管理，详见 [Asset 指南](Runtime/Asset/README.md)。
+
+## 依赖与版本
+
+源码工程使用 Unity `2022.3.62f3`；包版本与声明的最低 Unity 版本见 [package.json](package.json)。核心随包包含 UniTask、LitJson 和 IngameDebugConsole。Runtime 与 Editor 分属独立程序集。
+
+LiteQuark 使用 MIT 许可证；第三方组件保留各自的许可证。
 
 ## 许可证
 
@@ -509,12 +110,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
-
-## 联系方式
-
-- **Issues**: 在 GitHub 提交问题反馈
-- **文档**: 查看各模块的 README 文档
-
----
-
-**LiteQuark** - 轻量、高效、易用的 Unity 游戏框架

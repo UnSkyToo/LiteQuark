@@ -1,374 +1,55 @@
-# ActionSystem 动画补间系统
+# ActionSystem 动作与补间
 
-ActionSystem 是 LiteQuark 框架的动画和补间（Tween）模块，提供了丰富的动画效果和灵活的组合方式。
+`LiteRuntime.Action` 每帧驱动 `IAction`，支持序列、并行、Transform 补间、数值补间和等待。通过 `ActionBuilder` 组织动作，然后用 `AddBuilder` 启动。
 
-## 功能特性
+## 最小示例
 
-### ✅ 核心功能
-- **Transform动画**：位置、旋转、缩放补间
-- **RectTransform动画**：UI专用动画（锚点、尺寸等）
-- **组合动画**：序列（Sequence）和并行（Parallel）
-- **缓动函数**：多种easing函数（Linear, EaseIn, EaseOut等）
-- **回调支持**：开始、更新、完成回调
-
-### ✅ 设计特点
-- **零GC**：对象池管理，无GC压力
-- **链式调用**：流畅的API设计
-- **高性能**：基于Unity Update驱动
-- **安全模式**：防止对已销毁对象执行动画
-
----
-
-## 快速开始
-
-### 1. 基础位移动画
+以下方法在框架初始化后调用，目标由业务传入：
 
 ```csharp
 using LiteQuark.Runtime;
+using UnityEngine;
 
-// 移动到目标位置（1秒，EaseOut缓动）
-LiteRuntime.Action.Execute(
-    LiteAction.MoveTo(transform, new Vector3(10, 0, 0), 1.0f, EasingFunction.EasingType.EaseOut)
-);
-```
-
-### 2. 组合动画
-
-```csharp
-// 序列动画：先移动，再旋转，最后缩放
-var sequence = LiteAction.Sequence(
-    LiteAction.MoveTo(transform, Vector3.up * 5, 1.0f),
-    LiteAction.RotateTo(transform, Quaternion.Euler(0, 180, 0), 0.5f),
-    LiteAction.ScaleTo(transform, Vector3.one * 2, 0.5f)
-);
-
-LiteRuntime.Action.Execute(sequence);
-```
-
----
-
-## Transform动画API
-
-### MoveTo
-```csharp
-public static IAction MoveTo(Transform transform, Vector3 targetPos, float duration, EasingType easing = EasingType.Linear)
-```
-
-移动到目标位置。
-
-**示例：**
-```csharp
-// 平滑移动到(10, 0, 0)
-LiteRuntime.Action.Execute(
-    LiteAction.MoveTo(transform, new Vector3(10, 0, 0), 2.0f, EasingType.EaseInOut)
-);
-```
-
-### MoveBy
-```csharp
-public static IAction MoveBy(Transform transform, Vector3 deltaPos, float duration, EasingType easing = EasingType.Linear)
-```
-
-相对移动。
-
-**示例：**
-```csharp
-// 向上移动5个单位
-LiteRuntime.Action.Execute(
-    LiteAction.MoveBy(transform, Vector3.up * 5, 1.0f)
-);
-```
-
-### RotateTo / RotateBy
-```csharp
-// 旋转到目标角度
-LiteAction.RotateTo(transform, Quaternion.Euler(0, 180, 0), 1.0f);
-
-// 相对旋转
-LiteAction.RotateBy(transform, Vector3.up * 90, 1.0f);
-```
-
-### ScaleTo / ScaleBy
-```csharp
-// 缩放到目标大小
-LiteAction.ScaleTo(transform, Vector3.one * 2, 1.0f);
-
-// 相对缩放
-LiteAction.ScaleBy(transform, Vector3.one * 0.5f, 1.0f);
-```
-
----
-
-## UI动画API（RectTransform）
-
-### AnchorTo
-```csharp
-public static IAction AnchorTo(RectTransform rectTransform, Vector2 targetAnchor, float duration)
-```
-
-UI锚点动画。
-
-**示例：**
-```csharp
-// UI从左侧滑入
-var rectTransform = GetComponent<RectTransform>();
-LiteRuntime.Action.Execute(
-    LiteAction.AnchorTo(rectTransform, new Vector2(0, 0.5f), 0.5f)
-);
-```
-
-### SizeDeltaTo
-```csharp
-public static IAction SizeDeltaTo(RectTransform rectTransform, Vector2 targetSize, float duration)
-```
-
-UI尺寸动画。
-
----
-
-## 组合动画
-
-### Sequence（序列）
-```csharp
-public static IAction Sequence(params IAction[] actions)
-```
-
-按顺序执行动画。
-
-**示例：**
-```csharp
-// 跳跃动画：上升 -> 停留 -> 下落
-var jumpSequence = LiteAction.Sequence(
-    LiteAction.MoveBy(transform, Vector3.up * 3, 0.5f, EasingType.EaseOut),
-    LiteAction.Wait(0.2f),
-    LiteAction.MoveBy(transform, Vector3.down * 3, 0.5f, EasingType.EaseIn)
-);
-
-LiteRuntime.Action.Execute(jumpSequence);
-```
-
-### Parallel（并行）
-```csharp
-public static IAction Parallel(params IAction[] actions)
-```
-
-同时执行多个动画。
-
-**示例：**
-```csharp
-// 同时移动和缩放
-var parallelAnim = LiteAction.Parallel(
-    LiteAction.MoveTo(transform, new Vector3(10, 0, 0), 1.0f),
-    LiteAction.ScaleTo(transform, Vector3.one * 2, 1.0f)
-);
-
-LiteRuntime.Action.Execute(parallelAnim);
-```
-
----
-
-## 工具动画
-
-### Wait
-```csharp
-public static IAction Wait(float duration)
-```
-
-等待指定时间。
-
-**示例：**
-```csharp
-var sequence = LiteAction.Sequence(
-    LiteAction.MoveTo(transform, Vector3.forward * 10, 1.0f),
-    LiteAction.Wait(1.0f), // 等待1秒
-    LiteAction.MoveTo(transform, Vector3.zero, 1.0f)
-);
-```
-
-### CallFunc
-```csharp
-public static IAction CallFunc(Action callback)
-```
-
-执行回调函数。
-
-**示例：**
-```csharp
-var sequence = LiteAction.Sequence(
-    LiteAction.MoveTo(transform, targetPos, 1.0f),
-    LiteAction.CallFunc(() => Debug.Log("到达目标！")),
-    LiteAction.ScaleTo(transform, Vector3.zero, 0.5f)
-);
-```
-
----
-
-## 使用场景
-
-### 1. UI动画
-
-```csharp
-public class UIPanel : MonoBehaviour
+public static class MotionExample
 {
-    void Start()
+    public static ulong Start(Transform target)
     {
-        var rectTransform = GetComponent<RectTransform>();
+        var builder = ActionBuilder.Sequence("MoveAndScale")
+            .TransformLocalMove(target, new Vector3(2f, 0f, 0f), 0.5f)
+            .BeginParallel("Finish")
+                .TransformScale(target, Vector3.one * 1.2f, 0.2f)
+                .WaitTime(0.2f)
+            .EndParallel()
+            .Callback(() => LLog.Info("Sequence reached its end"));
 
-        // 淡入 + 缩放动画
-        var openAnim = LiteAction.Parallel(
-            LiteAction.ScaleTo(transform, Vector3.one, 0.3f, EasingType.EaseOut),
-            LiteAction.AlphaTo(canvasGroup, 1.0f, 0.3f)
-        );
-
-        LiteRuntime.Action.Execute(openAnim);
-    }
-
-    public void Close()
-    {
-        // 淡出动画
-        var closeAnim = LiteAction.Sequence(
-            LiteAction.ScaleTo(transform, Vector3.zero, 0.2f, EasingType.EaseIn),
-            LiteAction.CallFunc(() => Destroy(gameObject))
-        );
-
-        LiteRuntime.Action.Execute(closeAnim);
+        return LiteRuntime.Action.AddBuilder(builder, isSafety: true);
     }
 }
 ```
 
-### 2. 角色动画
+保存返回的 ID，结束拥有者生命周期时调用 `StopAction(id)`。已有 `IAction` 可通过 `AddAction(action)` 启动；`FindAction(id)`、`IsEnd(id)` 和 `IsIdle()` 可查询状态。
 
-```csharp
-public class Character : MonoBehaviour
-{
-    public void Jump()
-    {
-        var jumpAnim = LiteAction.Sequence(
-            // 上升
-            LiteAction.MoveBy(transform, Vector3.up * 3, 0.4f, EasingType.EaseOut),
-            // 下落
-            LiteAction.MoveBy(transform, Vector3.down * 3, 0.4f, EasingType.EaseIn),
-            // 着地回调
-            LiteAction.CallFunc(OnLanded)
-        );
+## Builder 接口
 
-        LiteRuntime.Action.Execute(jumpAnim);
-    }
+| 类别 | 接口 |
+| --- | --- |
+| 组合 | `Sequence`、`Parallel`；嵌套使用 `BeginSequence` / `EndSequence`、`BeginParallel` / `EndParallel` |
+| 位置 | `TransformLocalMove`、`TransformWorldMove`，以及对应的 `MovePath` |
+| 旋转/缩放 | `TransformRotate`、`TransformLocalRotateAround`、`TransformWorldRotateAround`、`TransformScale` |
+| 透明度/震动 | `TransformFade`、`TransformFadeIn`、`TransformFadeOut`、`TransformShaking` |
+| UI 位置 | `RectTransformMove`、`RectTransformSetPosition` |
+| 数值 | `ValueFromTo`，支持 float、int、Color |
+| 等待/回调 | `WaitTime`、`WaitFrame`、`WaitUntil`、`Callback`、`DelayCallback` |
+| 设置 | `SetFinalCallback`、`SetUnscaled`，以及 `TransformSet*` 扩展 |
 
-    void OnLanded()
-    {
-        Debug.Log("着地！");
-    }
-}
-```
+具体参数和 `EaseKind` 以对应源码为准。当前没有 `MoveTo`、`AnchorTo`、`SizeDeltaTo` 或 `ActionSystem.Execute` 这组接口。
 
-### 3. 道具收集动画
+## 生命周期
 
-```csharp
-public class Coin : MonoBehaviour
-{
-    public void Collect(Transform target)
-    {
-        var collectAnim = LiteAction.Parallel(
-            // 飞向目标
-            LiteAction.MoveTo(transform, target.position, 0.5f, EasingType.EaseIn),
-            // 旋转
-            LiteAction.RotateBy(transform, Vector3.up * 360, 0.5f),
-            // 缩小
-            LiteAction.ScaleTo(transform, Vector3.zero, 0.5f)
-        );
+- Builder 默认执行一次，组合动作的 `repeatCount < 0` 表示循环。循环体需要有等待或耗时动作，避免纯即时回调序列无限同步执行。
+- `SetUnscaled()` 应设置在提交的最外层 Builder 上，使整个组合使用未缩放时间。框架整体暂停时仍停止更新。
+- `AddBuilder(..., isSafety: true)` 或 `LiteRuntime.Setting.Action.SafetyMode` 会向子动作传播安全标记；Transform 动作借此检查目标是否仍存在。它不代替业务资源清理。
+- `SetFinalCallback` 应设置在提交给 ActionSystem 的最外层动作上：自然结束或手动 `StopAction` 时调用，系统关闭时直接 Dispose 不调用。嵌套子动作的 FinalCallback 不会被组合动作自动触发；需要“自然走到末尾”的逻辑时，将 `Callback` 放在对应序列尾部。
+- ActionSystem 负责结束后的 `Dispose()`；不要把同一动作实例重复提交为多个独立任务。
 
-        var sequence = LiteAction.Sequence(
-            collectAnim,
-            LiteAction.CallFunc(() =>
-            {
-                OnCollected();
-                Destroy(gameObject);
-            })
-        );
-
-        LiteRuntime.Action.Execute(sequence);
-    }
-}
-```
-
----
-
-## 缓动函数
-
-支持多种缓动类型：
-
-```csharp
-public enum EasingType
-{
-    Linear,          // 线性
-    EaseIn,          // 缓慢开始
-    EaseOut,         // 缓慢结束
-    EaseInOut,       // 两端缓慢
-    EaseInQuad,      // 二次方缓入
-    EaseOutQuad,     // 二次方缓出
-    EaseInOutQuad,   // 二次方缓入缓出
-    // ... 更多缓动类型
-}
-```
-
-**选择建议：**
-- **Linear**: 匀速运动
-- **EaseOut**: UI出现（快速开始，缓慢停止）
-- **EaseIn**: UI消失（缓慢开始，快速结束）
-- **EaseInOut**: 平滑动画（两端缓慢）
-
----
-
-## 最佳实践
-
-### 1. 保存动画引用以便停止
-
-```csharp
-private ulong currentActionId;
-
-void PlayAnimation()
-{
-    var anim = LiteAction.MoveTo(transform, targetPos, 2.0f);
-    currentActionId = LiteRuntime.Action.Execute(anim);
-}
-
-void StopAnimation()
-{
-    LiteRuntime.Action.Stop(currentActionId);
-}
-```
-
-### 2. 使用序列简化逻辑
-
-```csharp
-// ❌ 不好：嵌套回调
-LiteRuntime.Action.Execute(
-    LiteAction.MoveTo(transform, pos1, 1.0f)
-).OnComplete(() => {
-    LiteRuntime.Action.Execute(
-        LiteAction.MoveTo(transform, pos2, 1.0f)
-    ).OnComplete(() => {
-        // 深层嵌套...
-    });
-});
-
-// ✅ 好：使用Sequence
-var sequence = LiteAction.Sequence(
-    LiteAction.MoveTo(transform, pos1, 1.0f),
-    LiteAction.MoveTo(transform, pos2, 1.0f),
-    LiteAction.CallFunc(OnComplete)
-);
-LiteRuntime.Action.Execute(sequence);
-```
-
-### 3. 启用安全模式
-
-```csharp
-// 在LiteSetting中启用SafetyMode
-// 防止对已销毁的对象执行动画
-LiteSetting.Action.SafetyMode = true;
-```
-
----
-
+实现见 [ActionSystem.cs](ActionSystem.cs)、[ActionBuilder.cs](ActionBuilder.cs) 及同目录扩展类。动作创建包含对象和集合分配，没有零 GC 保证。

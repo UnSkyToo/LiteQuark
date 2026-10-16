@@ -1,271 +1,72 @@
-# UISystem UI管理系统 (Addon)
+# UISystem 界面
 
-UISystem 是 LiteQuark.Addons 的UI管理模块，提供了完整的UI生命周期管理和层级管理功能。
+UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并在 `SystemSettings` 配置 `UISystemSetting`。使用 `LiteRuntime.Get<UISystem>()` 访问。
 
-## 功能特性
+需要可用的 UI Camera（配置为空时回退到 `Camera.main`）。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
 
-### ✅ 核心功能
-- **UI生命周期管理**：OnOpen / OnClose / OnUpdate
-- **Canvas层级管理**：自动管理UI层级深度
-- **Mutex UI**：独占模式，同时只能打开一个
-- **安全区适配**：自动适配刘海屏
-- **事件自动清理**：销毁时自动注销事件监听器
-- **Sprite资源管理**：统一加载和卸载
+## 定义与打开
 
-### ✅ 设计特点
-- **状态管理**：Opening → Opened → Closing → Closed
-- **资源自动释放**：关闭UI时自动卸载资源
-- **类型安全**：泛型支持，编译时类型检查
-
----
-
-## 快速开始
-
-### 1. 创建UI类
+界面逻辑继承 `BaseUI`，不是挂载到 prefab 的 MonoBehaviour：
 
 ```csharp
 using LiteQuark.Runtime;
 
-public class ShopUI : BaseUI
+public sealed class MenuUI : BaseUI
 {
-    public override string DebugName => "ShopUI";
-
-    protected override void OnOpen(params object[] args)
+    protected override void OnOpen(params object[] paramList)
     {
-        // UI打开时调用
-        Debug.Log("商店打开");
-
-        // 接收传入参数
-        if (args.Length > 0)
-        {
-            int coinCount = (int)args[0];
-            UpdateCoinDisplay(coinCount);
-        }
-
-        // 注册事件（自动清理）
-        RegisterEvent<CoinChangedEvent>(OnCoinChanged);
+        LLog.Info("Menu opened");
     }
 
     protected override void OnClose()
     {
-        // UI关闭时调用
-        Debug.Log("商店关闭");
-        // 事件会自动注销，无需手动处理
     }
 
     protected override void OnUpdate(float deltaTime)
     {
-        // 每帧更新（可选）
-    }
-
-    private void OnCoinChanged(CoinChangedEvent evt)
-    {
-        UpdateCoinDisplay(evt.TotalCoins);
     }
 }
 ```
 
-### 2. 打开/关闭UI
+在异步方法中打开，实际路径替换为 UI prefab：
 
 ```csharp
-// 打开UI
-var config = new UIConfig("UI/ShopPanel", UIDepthMode.Normal, isMutex: false);
-var shopUI = await LiteRuntime.Get<UISystem>().OpenUI<ShopUI>(config, coinCount);
-
-// 关闭UI
-shopUI.Close();
-```
-
----
-
-## API 文档
-
-### OpenUI<T>
-```csharp
-public async UniTask<T> OpenUI<T>(UIConfig config, params object[] args) where T : BaseUI
-```
-
-打开UI。
-
-**参数：**
-- `config` - UI配置
-- `args` - 传递给OnOpen的参数
-
-**示例：**
-```csharp
-var config = new UIConfig("UI/SettingsPanel", UIDepthMode.Top);
-var settingsUI = await LiteRuntime.Get<UISystem>().OpenUI<SettingsUI>(config);
-```
-
-### UIConfig
-```csharp
-public class UIConfig
+var uiSystem = LiteRuntime.Get<UISystem>();
+var config = new UIConfig("UI/Menu.prefab", UIDepthMode.Normal,
+    isMutex: true, autoAdapt: true);
+var menu = await uiSystem.OpenUI<MenuUI>(config);
+if (menu == null)
 {
-    public string Path;              // UI预制体路径
-    public UIDepthMode DepthMode;    // 层级模式
-    public bool IsMutex;             // 是否独占
-    public bool EnableSafeArea;      // 是否启用安全区
+    LLog.Error("Menu load failed");
+    return;
 }
+// 需要关闭时：
+uiSystem.CloseUI(menu);
 ```
 
-**UIDepthMode：**
-- `Bottom` - 底层（背景）
-- `Normal` - 普通层（主UI）
-- `Top` - 顶层（弹窗）
-- `System` - 系统层（加载界面、提示）
+`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 返回加载完成后的 UI 或 null；`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。
 
----
+## 层级与查找
 
-## 使用场景
+| UIDepthMode | 基础排序值 |
+| --- | ---: |
+| Scene | 0 |
+| Background | 2000 |
+| Bottom | 5000 |
+| Normal | 10000 |
+| Top | 15000 |
 
-### 1. 主菜单UI
+非 Scene 层同层实例按创建时的子节点数量递增排序。当前没有 `System` 层。
 
-```csharp
-public class MainMenuUI : BaseUI
-{
-    public override string DebugName => "MainMenu";
+`FindUI<T>()` 返回已纳入活动列表的对应类型界面；`CloseUI<T>()` 关闭找到的一个实例，`CloseAllUI()` 关闭活动列表内界面。`isMutex` 复用找到的同类型界面，不会关闭其他类型；它不是并发打开锁，连续/同时打开仍需调用者协调。
 
-    [SerializeField] private Button playButton;
-    [SerializeField] private Button settingsButton;
+## BaseUI 与生命周期
 
-    protected override void OnOpen(params object[] args)
-    {
-        playButton.onClick.AddListener(OnPlayClicked);
-        settingsButton.onClick.AddListener(OnSettingsClicked);
-    }
+- 状态包括 Opening、Opened、Closing、Closed 和 Error。
+- `RegisterEvent<T>(callback)` 使用每个 UI 实例自己的 Tag；关闭时自动注销。额外通过全局 EventSystem 注册的监听需自行清理。
+- `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。公共 API 没有返回 UniTask 的 `LoadSpriteAsync`。
+- `GetComponent<T>(path)`、`FindChild(path)`、`SetActive(path, value)` 操作 prefab 子节点。
+- `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。
+- `OnClose()` 清理业务创建的计时器、动作和其他资源。通过 UISystem 关闭界面，不要只销毁 `Go`。
 
-    protected override void OnClose()
-    {
-        playButton.onClick.RemoveListener(OnPlayClicked);
-        settingsButton.onClick.RemoveListener(OnSettingsClicked);
-    }
-
-    void OnPlayClicked()
-    {
-        // 开始游戏
-        StartGame();
-    }
-
-    async void OnSettingsClicked()
-    {
-        // 打开设置UI
-        var config = new UIConfig("UI/SettingsPanel", UIDepthMode.Top);
-        await LiteRuntime.Get<UISystem>().OpenUI<SettingsUI>(config);
-    }
-}
-```
-
-### 2. 独占弹窗（Mutex UI）
-
-```csharp
-public class DialogUI : BaseUI
-{
-    public override string DebugName => "Dialog";
-
-    protected override void OnOpen(params object[] args)
-    {
-        string title = (string)args[0];
-        string message = (string)args[1];
-
-        titleText.text = title;
-        messageText.text = message;
-    }
-}
-
-// 使用（同时只能打开一个）
-public static async void ShowDialog(string title, string message)
-{
-    var config = new UIConfig("UI/DialogPanel", UIDepthMode.Top, isMutex: true);
-    await LiteRuntime.Get<UISystem>().OpenUI<DialogUI>(config, title, message);
-}
-```
-
-### 3. 安全区适配
-
-```csharp
-// 启用安全区适配（自动适配刘海屏）
-var config = new UIConfig("UI/GameHUD", UIDepthMode.Normal)
-{
-    EnableSafeArea = true
-};
-await LiteRuntime.Get<UISystem>().OpenUI<GameHUD>(config);
-```
-
----
-
-## BaseUI方法
-
-### RegisterEvent<T>
-```csharp
-protected void RegisterEvent<T>(Action<T> callback) where T : IEventData
-```
-
-注册事件监听器（自动清理）。
-
-**示例：**
-```csharp
-protected override void OnOpen(params object[] args)
-{
-    RegisterEvent<PlayerLevelUpEvent>(OnPlayerLevelUp);
-    RegisterEvent<CoinChangedEvent>(OnCoinChanged);
-    // OnClose时自动注销
-}
-```
-
-### LoadSpriteAsync
-```csharp
-protected async UniTask<Sprite> LoadSpriteAsync(string path)
-```
-
-加载Sprite资源（统一管理）。
-
-**示例：**
-```csharp
-var iconSprite = await LoadSpriteAsync("UI/Icons/sword_icon");
-iconImage.sprite = iconSprite;
-// UI关闭时自动卸载
-```
-
----
-
-## 最佳实践
-
-### 1. UI层级规划
-
-```csharp
-// 背景UI
-var bg = new UIConfig("UI/Background", UIDepthMode.Bottom);
-
-// 主UI
-var main = new UIConfig("UI/MainPanel", UIDepthMode.Normal);
-
-// 弹窗
-var popup = new UIConfig("UI/RewardPopup", UIDepthMode.Top);
-
-// 加载界面
-var loading = new UIConfig("UI/LoadingScreen", UIDepthMode.System);
-```
-
-### 2. 使用Mutex避免重复打开
-
-```csharp
-// 设置界面（独占）
-var config = new UIConfig("UI/Settings", UIDepthMode.Top, isMutex: true);
-// 多次调用只会打开一个实例
-```
-
-### 3. 参数传递
-
-```csharp
-protected override void OnOpen(params object[] args)
-{
-    if (args.Length > 0)
-    {
-        var itemId = (int)args[0];
-        var count = (int)args[1];
-        ShowItem(itemId, count);
-    }
-}
-```
-
----
+默认参考分辨率为 1920×1080；实际效果由 `UISystemSetting` 和场景中保存的值决定。实现见 [UISystem.cs](UISystem.cs)、[BaseUI.cs](BaseUI.cs) 和 [UIConfig.cs](UIConfig.cs)。

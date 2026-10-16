@@ -1,5 +1,11 @@
 # Changelog
 
+## **[Unreleased]**
+- 新增：ConfigSystem 配置表模块及 Excel 配置工具，支持 JSON/C# 导出
+- 优化：UI、音频与配置加载使用 Handle 管理资源生命周期
+- 修复：关闭某个 UI 实例时误注销同类型其他实例的事件监听
+- 文档：精简扩展模块指南，统一为 `LiteRuntime.Get<T>()` 访问，并澄清 HTTP 重试、存档格式和模块生命周期
+
 ## **[0.4.3] - 2026-03-03**
 - 修复：部分音效在WebGL平台因为state原因无法播放的BUG
 
@@ -17,7 +23,7 @@
 - 修复：EffectObject 加载中 Stop 后未回收 GameObject 的 BUG
 
 ## **[0.3.0] - 2026-02-09**
--- 优化：System相关设置放到自己的Package内
+- 优化：System相关设置放到自己的Package内
 
 ## **[0.2.1] - 2026-01-07**
 - 新增：音效系统增加音量设置接口

@@ -1,133 +1,90 @@
-# AssetSystem 资源管理系统
+# AssetSystem 资源管理
 
-AssetSystem 是 LiteQuark 的资源加载与生命周期管理模块。对外推荐使用 Handle API：加载得到 Handle，资源通过 `handle.Result` 访问，释放统一调用 `Dispose()`。
+通过 `LiteRuntime.Asset` 访问。加载、预加载、实例化和场景所有权统一使用 Handle；`await handle` 只等待完成，结果从 `handle.Result` 读取。底层加载失败可能返回 `null` / `false`，取消会使等待抛出 `OperationCanceledException`。
 
-## 核心原则
+## 路径与模式
 
-- `LoadAssetHandle<T>` / `InstantiateHandle` / `LoadSceneHandle` 是主 API。
-- `await handle` 只表示等待加载完成，不返回资源本体。
-- 持有资源就持有 Handle；释放资源就释放 Handle。
-- 对外不再提供 `LoadAssetAsync<T>`、`InstantiateAsync`、callback 加载入口、path/object 手动释放入口或手动场景卸载入口。
+资源放在 `Assets/StandaloneAssets`，调用时使用相对该目录的完整文件路径，例如 `Prefabs/Player.prefab`。路径统一为小写和 `/`，不会自动补扩展名。
 
-## 加载模式
+在 Launcher 的 Asset 设置中配置：
 
-| 模式 | 适用场景 | 说明 |
-| --- | --- | --- |
-| Editor | 编辑器开发 | 直接从 Assets 加载，便于迭代 |
-| Bundle | 运行时环境 | AssetBundle 加载，支持内置包和远程包 |
+| 配置 | 含义 |
+| --- | --- |
+| `AssetMode` | `Editor` 直接访问项目资源；`Bundle` 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
+| `BundleLocater` | `BuiltIn` 优先读取 persistentDataPath/LiteQuark，再回退到 StreamingAssets/LiteQuark；`Remote` 使用远端资源包 |
+| `BundleRemoteUri` | 远程基础地址；运行时拼接小写平台名和版本号前两段（如 `0.4`）目录 |
+| `ConcurrencyLimit` | Bundle 加载并发，默认 5 |
+| `EnableRetain` | 启用保留缓存，默认 true |
+| `AssetRetainTime` / `BundleRetainTime` | 默认 120 / 300 秒 |
 
-在 `LiteSetting.Asset` 中配置 `AssetMode`、`BundleLocater`、远程地址、并发数和 Retention 时间。需要资源随包发布时使用 `BundleLocaterMode.BuiltIn`，不要再通过 `Resources` 目录接入 AssetSystem。
+发布前使用 `Lite > Builder` 生成 Bundle 和版本文件；资源随包发布时放入对应 StreamingAssets。在编辑器中测试 BuiltIn 模式时，`EditorForceStreamingAssets` 默认为 true，会强制从 StreamingAssets 读取。Bundle 初始化会检测依赖环，检测失败或版本文件加载失败时不会完成系统初始化。Resource 模式已移除。
 
-## 推荐 API
+## 加载与所有权
 
-### 加载资源
+示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 和 `UnityEngine`；含 `await` 的片段放在异步方法中。示例路径需替换为项目实际资源。
 
 ```csharp
-using var handle = LiteRuntime.Asset.LoadAssetHandle<Texture2D>("UI/Icon");
+using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>("Config/game.json");
 await handle;
-
-var icon = handle.Result;
-```
-
-需要跨作用域持有资源时，把 Handle 保存到拥有者字段，并在 `Dispose` / `OnDestroy` / 关闭界面时释放。
-
-```csharp
-private AssetHandle<GameObject> _prefabHandle;
-
-public async UniTask Load()
+if (handle.Result != null)
 {
-    _prefabHandle = LiteRuntime.Asset.LoadAssetHandle<GameObject>("Prefabs/Player");
-    await _prefabHandle;
-    var prefab = _prefabHandle.Result;
-}
-
-public void Dispose()
-{
-    _prefabHandle?.Dispose();
-    _prefabHandle = null;
+    var json = handle.Result.text;
+    // 在 Handle 有效期内解析或复制所需数据。
 }
 ```
 
-### 实例化 GameObject
+资源要继续用于渲染、音频或实例时，将 Handle 保存在拥有者字段，在 `Dispose()`、`OnDestroy()` 或关闭界面时释放。不能在 `using` 结束后仅保留资源引用；手动从 prefab 实例化时也必须维持 prefab Handle 的寿命。
 
 ```csharp
-var handle = LiteRuntime.Asset.InstantiateHandle("Prefabs/Enemy", parent);
+var handle = LiteRuntime.Asset.InstantiateHandle("Prefabs/Enemy.prefab", parent: null);
 await handle;
-
-var enemy = handle.Result;
-
-// 不再需要实例时：
+var enemy = handle.Result; // 加载失败时为 null
+// 使用实例；实际业务应保存 handle，直到实例不再需要。
 handle.Dispose();
 ```
 
-`GameObjectHandle.Dispose()` 会销毁实例，并释放内部持有的 prefab Handle。
+`GameObjectHandle.Dispose()` 销毁实例并释放内部 prefab 引用。不要另行销毁实例后遗忘 Handle。
 
-### 加载场景
+## 场景与预加载
 
 ```csharp
-var parameters = new LoadSceneParameters(LoadSceneMode.Additive);
-var handle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle", parameters);
-await handle;
-
-if (!handle.Result)
+var parameters = new UnityEngine.SceneManagement.LoadSceneParameters(
+    UnityEngine.SceneManagement.LoadSceneMode.Additive);
+var sceneHandle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle.unity", parameters);
+await sceneHandle;
+if (!sceneHandle.Result)
 {
-    LLog.Error("load scene failed");
+    LLog.Error("Scene load failed");
 }
-
-// 离开场景时：
-handle.Dispose();
+// 离开该场景时调用；持有期间不要提前释放。
+sceneHandle.Dispose();
 ```
 
-`SceneHandle.Dispose()` 会卸载该 Handle 持有的场景。
-
-## 公共 API 边界
-
-当前对外保留的资源生命周期 API：
+`SceneHandle.Result` 是成功标记；Handle 内部记录实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同名场景的并发加载会被拒绝。
 
 ```csharp
-LiteRuntime.Asset.LoadAssetHandle<T>(path);
-LiteRuntime.Asset.PreloadAssetHandle<T>(paths);
-LiteRuntime.Asset.InstantiateHandle(path, parent);
-LiteRuntime.Asset.LoadSceneHandle(path, parameters);
-LiteRuntime.Asset.UnloadUnusedAssets(maxDepth);
-```
-
-内部 provider 仍使用 callback 适配底层加载流程，但 callback 不再作为 public API 暴露。引用释放只能通过 `Dispose()`，path 级接口只保留在 Handle 内部用于释放一次引用。
-
-## 预加载
-
-批量预加载使用 `PreloadAssetHandle<T>`。它只负责加载并持有一组资源引用，不暴露资源本体；需要使用资源时仍通过 `LoadAssetHandle<T>` 获取自己的 Handle。
-
-```csharp
-var paths = new[] { "UI/IconA", "UI/IconB" };
+var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
 using var preload = LiteRuntime.Asset.PreloadAssetHandle<Sprite>(paths);
 await preload;
-
 if (!preload.Result)
 {
     foreach (var path in preload.FailedPaths)
     {
-        LLog.Error("preload failed: {0}", path);
+        LLog.Error("Preload failed: {0}", path);
     }
 }
+// 将 preload 保留到预加载资源不再需要；使用资源时另取自己的 AssetHandle。
 ```
 
-`PreloadHandle<T>.Dispose()` 会释放所有已持有的内部资源引用。同批次重复路径会被去重。
+预加载会对规范化后的路径去重，提供 `TotalCount`、`LoadedCount`、`FailedCount` 和 `FailedPaths`。它持有批量资源引用，不直接提供资源对象；释放它会释放内部 Handle。
 
-## Retention 缓存
+## 释放与迁移
 
-资源释放后会进入 Retention 缓存，在配置的保留时间内再次加载可以复用缓存。可在场景切换或内存压力较高时主动调用：
+- 每个加载请求持有自己的 Handle，重复 `Dispose()` 不会重复释放该 Handle 的引用。
+- `UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 也由调用者保管，在图片不再使用时释放；不要忽略返回值。
+- 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；迟到的加载结果由 Handle 清理。用 `try/finally` 或 `using` 保证退出时释放。
+- Bundle 中无引用资源可进入 Retention 缓存，保留时间由配置控制；仍被引用的资源不会因缓存清理而主动失去所有权。
+- `UnloadUnusedAssets(maxDepth: 5)` 最多执行指定轮数的缓存清理，以处理依赖释放；它不是精确的依赖图层数限制。实现还调用 Unity 的未使用资源清理和 GC，不宜逐帧执行。
+- 旧的 AssetSystem 回调加载、非 Handle 加载、按路径/对象释放、手动场景卸载接口已移除。实例化改用 `InstantiateHandle`，批量预加载改用 `PreloadAssetHandle<T>`。
 
-```csharp
-LiteRuntime.Asset.UnloadUnusedAssets(maxDepth: 5);
-```
-
-`maxDepth` 控制依赖资源递归释放深度，例如 `A -> B -> C`，传入 `2` 时最多释放到 `B`。
-
-## 实践建议
-
-- UI、音频、对象池等拥有长期资源的对象应保存 Handle 字段。
-- 临时读取配置或数据文件时使用 `using var handle`。
-- 静态工具如果会加载资源，应返回 Handle；例如 `UIUtils.ReplaceSpriteHandle(...)`。
-- 不要把 `handle.Result` 存成唯一生命周期依据；资源所有权在 Handle 上。
-- 新增资源、脚本或目录时提交对应 `.meta` 文件。
+完整签名见 [AssetSystem.cs](AssetSystem.cs)，所有权实现见 [Handle](Handle)。

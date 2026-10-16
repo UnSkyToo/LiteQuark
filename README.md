@@ -1,111 +1,66 @@
 # LiteQuark
 
-**LiteQuark** is a lightweight Unity framework designed to streamline development workflows and enhance productivity for game developers. This framework provides core utilities, components, and modular systems, making it easier to manage complex game logic and structure within Unity projects.
+LiteQuark is a Unity framework with a core package, optional systems, and a battle example with Timeline authoring tools. This repository is a complete Unity project; open its root in Unity Hub.
 
-## Features
+## Setup
 
-- **Modular Architecture**: A simple and extendable system for structuring your Unity project.
-- **Utility Components**: Ready-to-use components to speed up common game development tasks.
-- **Customizable Systems**: Pre-built systems that are easy to customize to meet the unique needs of your game.
-- **Lightweight**: Minimal performance overhead, designed to be used with small to mid-sized games.
-  
-## Getting Started
+Use the editor version in [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt), currently **2022.3.62f3**. Package versions and declared minimum Unity versions are recorded separately in each `package.json`; those declarations are not a compatibility test of older editors.
 
-### Prerequisites
+1. Clone the repository outside another project's `Assets` directory and open it with the matching editor.
+2. Open [Demo.unity](Assets/Scenes/Demo.unity), the only enabled scene in Build Settings.
+3. Inspect the `Launcher` object's Debug/Release settings. The checked-in scene enables `LogRuntimeLogic` and the optional `UISystem`; it does **not** register the battle `DemoLogic`.
+4. Follow the [framework guide](Assets/LiteQuark/README.md) to register your own `ILogic` and systems. Put loadable assets under `Assets/StandaloneAssets`.
 
-To get started with LiteQuark, you need:
+To integrate into an existing project, copy `Assets/LiteQuark` and optionally `Assets/LiteQuark.Addons`, including their `.meta` files, or use the published package branches in Package Manager:
 
-- Unity version 2020.3 or higher.
-- Basic knowledge of Unity and C# programming.
-
-### Installation
-
-#### With Source Code
-
-1. Clone this repository into your Unity project’s `Assets` folder.
-
-   ```bash
-   git clone https://github.com/UnSkyToo/LiteQuark.git
-   ```
-
-2. Import the cloned assets into your Unity project.
-
-3. After importing, you will find the LiteQuark folder within your project’s Assets directory.
-
-#### With Package
-
-1. Open Window > Package Manager.
-
-2. Click '+' and select 'Add Package from git URL'.
-
-3. use lastest version with URL https://github.com/UnSkyToo/LiteQuark.git#LiteQuark
-   
-4. or specify a version with URL https://github.com/UnSkyToo/LiteQuark.git#0.1.0
-
-### Usage
-
-Once the framework is added to your project:
-
-1. Browse the available utilities and components in the **LiteQuark** folder.
-2. You can integrate pre-built systems into your game or customize them to suit your needs.
-3. Extend the framework by adding your own components and scripts, following the modular structure of LiteQuark.
-
-### Example
-
-Here’s a simple example of how to use one of the included systems:
-
-``` bash
-1. Create Empty GameObject and attach LiteLauncher
-2. Create GameLogic.cs and implement ILogic interface
-3. add your logic in LiteLauncher Inspector
-4. use LiteRuntime to access all modules
-5. Create a StandaloneAssets folder, it's the main assets folder.
+```text
+https://github.com/UnSkyToo/LiteQuark.git#LiteQuark
+https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons
 ```
 
-```csharp
-using System;
-using LiteQuark.Runtime;
+Branches track their published contents, which may differ from this checkout. For reproducible integration, select a verified release tag or commit. Both local packages currently declare `0.4.3`; Addons still declares a core dependency of `0.4.2`. Check that pairing before publishing or installing a release.
 
-public class GameLogic : ILogic
-{
-    public bool Startup()
-    {
-        LiteRuntime.Audio.PlayMusic("xxxx.ogg", true, 0.5f); // Play music with Audio Module
-        return true;
-    }
+## Modules and documentation
 
-    public void Shutdown()
-    {
-    }
+| Location | Purpose / guide |
+| --- | --- |
+| `Assets/LiteQuark/Runtime` | [Lifecycle](Assets/LiteQuark/README.md), [assets](Assets/LiteQuark/Runtime/Asset/README.md), [events](Assets/LiteQuark/Runtime/Core/Event/README.md), [tasks](Assets/LiteQuark/Runtime/Core/Async/Task/README.md), [timers](Assets/LiteQuark/Runtime/Core/Async/Timer/README.md), [actions](Assets/LiteQuark/Runtime/Core/Async/Action/README.md), [object pools](Assets/LiteQuark/Runtime/Core/ObjectPool/README.md), logging and utilities |
+| `Assets/LiteQuark/Editor` | Build tools, Bundle Viewer, load profiler, inspectors and debugger |
+| `Assets/LiteQuark.Addons` | [UI](Assets/LiteQuark.Addons/Runtime/UI/README.md), [audio](Assets/LiteQuark.Addons/Runtime/Audio/README.md), [effects](Assets/LiteQuark.Addons/Runtime/Effect/README.md), [HTTP](Assets/LiteQuark.Addons/Runtime/Network/README.md), [persistence](Assets/LiteQuark.Addons/Runtime/Data/README.md), configuration tables |
+| `Assets/LiteBattle` | Entities, input, movement, state machines, Timeline events, battle editor/preview tools |
+| `Assets/Scripts` | Battle, network and persistence examples; these are not automated tests |
+| `Assets/StandaloneAssets` | Bundle source assets and demo content |
 
-    public void Tick(float deltaTime)
-    {
-    }
-}
+Core bundles UniTask, LitJson and IngameDebugConsole. Unity package dependencies are recorded in [manifest.json](Packages/manifest.json) and [packages-lock.json](Packages/packages-lock.json).
+
+For configuration tables, open `Lite > Config Tool` to parse Excel sheets and export JSON/C# definitions. Add the optional `ConfigSystem` to the Launcher. In business initialization, register tables with `RegisterTable<T>(path, parseFunc)` or the generated `ConfigSystemGenerated.Register(system)`, then await `Load<T>()` / `LoadAll()` before using `GetData<T>(id)`. `LoadAllOnInitialize` only loads tables registered before system initialization; it does not discover exported tables automatically. See [ConfigSystem.cs](Assets/LiteQuark.Addons/Runtime/Config/ConfigSystem.cs).
+
+The battle entry is [DemoLogic.cs](Assets/Scripts/DemoLogic.cs), which starts `LiteNexusEngine`. The authoring window is `Lite > Nexus Engine > Editor Window`. Battle scene/configuration setup is separate from the default launcher scene.
+
+## Validation and builds
+
+For a local compile, use the matching Unity executable. In PowerShell, set `$unityEditor` to its absolute path, then run from the repository root:
+
+```powershell
+& $unityEditor -batchmode -projectPath . -quit -logFile Logs/compile.log
 ```
 
-## Documentation
+Use an editor session already open on this project, or close it before starting batchmode on the same checkout. Check the exit status and log for compilation errors. Unity Test Framework is present through package dependencies, but there is currently no dedicated test assembly or checked-in CI workflow.
 
-Full documentation for LiteQuark is still in progress. In the meantime, feel free to explore the source code and check out the comments for more insights into the framework’s structure and usage.
+Open `Lite > Builder` for application/resource builds. The command-line entry is `LiteQuark.Editor.ProjectBuilderCommandLine.Build`; for example, to build Android resources and copy them to StreamingAssets:
 
-## Contributing
+```powershell
+& $unityEditor -batchmode -projectPath . -executeMethod LiteQuark.Editor.ProjectBuilderCommandLine.Build -target Android -enableRes true -enableApp false -copyToStreaming true -appVersion 0.4.3 -logFile Logs/build.log
+```
 
-Contributions to LiteQuark are welcome! If you want to improve the framework, feel free to:
+Install the target's Unity build support first. The entry point exits the editor itself. With `-copyToStreaming true`, it deletes and replaces `Assets/StreamingAssets/LiteQuark` with the generated resources; keep unrelated files outside that directory. Build preparation can also change project settings, so review the diff afterward. See [command-line options](Assets/LiteQuark/Editor/Builder/ProjectBuilderCommandLine.cs) for application, resource and custom build flags. Inspection tools are `Lite > Asset > Bundle Viewer` and `Lite > Asset > Profiler`.
 
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Submit a pull request once your changes are ready.
+## Publishing and contributing
 
-### Development Guidelines
+`publish.sh` / `publish.cmd` publish the core subtree; `publish.addons.sh` / `publish.addons.cmd` publish Addons. They prompt for a version, create a subtree branch and tag (`<version>` or `addons/<version>`), then push the branch **and all local tags** to `origin`. These are publishing commands. Align package metadata, dependencies and changelogs before running them.
 
-- Keep the code modular and maintainable.
-- Ensure that your changes do not negatively impact performance.
-- Write clean, readable, and well-documented code.
+See [AGENTS.md](AGENTS.md) for conventions and [core](Assets/LiteQuark/CHANGELOG.md) / [Addons](Assets/LiteQuark.Addons/CHANGELOG.md) changelogs for release history. This checkout includes unreleased Handle API changes; released-version notes describe their own versions.
 
-## License
+LiteQuark is distributed under the [MIT license](LICENSE). Bundled libraries, fonts and demo assets retain their own license and attribution notices.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For questions, suggestions, or feedback, feel free to open an issue in this repository or contact me at [unskytoo@gmail.com](mailto:unskytoo@gmail.com).
+For questions and bug reports, use [GitHub Issues](https://github.com/UnSkyToo/LiteQuark/issues) or contact [unskytoo@gmail.com](mailto:unskytoo@gmail.com).

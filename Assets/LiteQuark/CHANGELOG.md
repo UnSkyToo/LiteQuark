@@ -1,9 +1,15 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：AssetSystem 对外统一为 Handle API，移除旧的回调加载、非 Handle 加载及按路径/对象释放接口；使用 `Dispose()` 管理所有权
+- 新增：`PreloadAssetHandle<T>` 批量预加载，提供成功状态、计数和失败路径；移除旧预加载接口
+- 优化：SceneHandle 保存实际 Scene 实例并按实例卸载；`await handle` 仅等待完成，结果从 `Result` 读取
+- 修复：资源类型不匹配时的引用泄漏，收紧 Asset/Bundle 引用计数语义
+- 新增：Bundle 初始化时检测循环依赖，发现环时报告错误并终止初始化
+- 修复：VersionPack 解析异常导致的错误状态
 - 破坏：AssetSystem 移除 Resource 模式，运行时资源统一使用 Bundle；包内资源使用 `BundleLocaterMode.BuiltIn`
 - 破坏：移除 Resource Provider 及内部 `LoadResourceTask` 适配入口
-- 文档：主 README 的 AssetSystem 示例同步为 Handle API、`Dispose()` 和 `UnloadUnusedAssets`
+- 文档：精简接入和模块指南，更新系统注册、Handle、任务调度、计时与补间 API；已发布版本的历史记录保持原意
 
 ## **[0.4.3] - 2026-03-04**
 - 修复：Uri大小写导致的版本文件无法获取
