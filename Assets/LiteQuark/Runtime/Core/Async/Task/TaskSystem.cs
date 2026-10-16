@@ -201,7 +201,7 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback) where T : UnityEngine.Object
+        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<T> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, assetName, callback);
             AddTask(task);

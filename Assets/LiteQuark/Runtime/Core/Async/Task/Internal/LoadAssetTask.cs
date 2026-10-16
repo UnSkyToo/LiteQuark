@@ -9,11 +9,11 @@ namespace LiteQuark.Runtime
         
         private readonly AssetBundle _bundle;
         private readonly string _assetName;
-        private Action<UnityEngine.Object> _callback;
+        private Action<T> _callback;
         private AssetBundleRequest _assetRequest;
-        private UnityEngine.Object _asset;
+        private T _asset;
 
-        public LoadAssetTask(AssetBundle bundle, string assetName, Action<UnityEngine.Object> callback)
+        public LoadAssetTask(AssetBundle bundle, string assetName, Action<T> callback)
             : base()
         {
             _bundle = bundle;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             _asset = null;
         }
         
-        public UnityEngine.Object GetAsset()
+        public T GetAsset()
         {
             return _asset;
         }
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            _asset = _assetRequest.asset;
+            _asset = _assetRequest.asset as T;
             Complete(_asset);
             LiteUtils.SafeInvoke(_callback, _asset);
         }
