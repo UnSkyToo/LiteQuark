@@ -8,31 +8,31 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
-        
+
         /// <summary>
         /// 资源是否过期了
         /// </summary>
         internal bool IsExpired =>
             (Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
-            (Stage == AssetCacheStage.Created && _bundleLoaderCallbackList.Count == 0);
-        
+            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0);
+
         /// <summary>
         /// 资源是否为孤立资源（被加载了，但没有任何引用）
         /// </summary>
         internal bool IsOrphan =>
             (Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0) ||
-            (Stage == AssetCacheStage.Created && _bundleLoaderCallbackList.Count == 0);
-        
+            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0);
+
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
         internal long FileSize => _bundleInfo?.Size ?? 0;
 
         private readonly BundleInfo _bundleInfo;
         private readonly AssetBundleProvider _provider;
-        private readonly List<Action<bool>> _bundleLoaderCallbackList = new ();
+        private readonly List<Action<bool>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<string, AssetInfoCache> _assetCacheMap = new();
         private readonly List<string> _unloadAssetList = new();
-        
+
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
@@ -52,13 +52,7 @@ namespace LiteQuark.Runtime
         {
             Unload();
             _unloadAssetList.Clear();
-            
-            if (Bundle != null)
-            {
-                Bundle.Unload(true);
-                Bundle = null;
-            }
-            
+
             var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();
             foreach (var callback in callbacks)
@@ -66,7 +60,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback, false);
             }
         }
-        
+
         public void Unload()
         {
             if (Stage == AssetCacheStage.Unloaded)
@@ -78,31 +72,34 @@ namespace LiteQuark.Runtime
             {
                 chunk.Value.Dispose();
             }
+
             _assetCacheMap.Clear();
             _unloadAssetList.Clear();
-            
+
             if (_refCount > 0 && Stage != AssetCacheStage.Retained)
             {
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
 
-            foreach (var lease in _dependencyLeases)
+            if (Bundle != null)
             {
-                lease.Dispose();
+                Bundle.Unload(true);
+                Bundle = null;
             }
-            _dependencyLeases.Clear();
+
+            ReleaseDependencyLeases();
 
             _refCount = 0;
             Stage = AssetCacheStage.Unloaded;
         }
-        
+
         public void Tick(float deltaTime)
         {
             if (Stage == AssetCacheStage.Retained)
             {
                 _retainTime -= deltaTime;
             }
-            
+
             foreach (var chunk in _assetCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
@@ -118,6 +115,7 @@ namespace LiteQuark.Runtime
                 {
                     UnloadAssetCache(assetPath);
                 }
+
                 _unloadAssetList.Clear();
             }
         }
@@ -133,21 +131,24 @@ namespace LiteQuark.Runtime
             {
                 LLog.Error("Bundle IncRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
             }
-            
+
             _refCount++;
         }
 
         private void DecRef()
         {
-            if (Stage != AssetCacheStage.Loaded)
+            if (_refCount <= 0 ||
+                (Stage != AssetCacheStage.Loaded &&
+                 Stage != AssetCacheStage.Created &&
+                 Stage != AssetCacheStage.Loading))
             {
                 LLog.Error("Bundle DecRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
                 return;
             }
-            
+
             _refCount--;
 
-            if (_refCount <= 0)
+            if (_refCount == 0 && Stage == AssetCacheStage.Loaded)
             {
                 Stage = AssetCacheStage.Retained;
                 _retainTime = LiteRuntime.Setting.Asset.EnableRetain
@@ -170,24 +171,15 @@ namespace LiteQuark.Runtime
 
         private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
         {
+            Bundle = bundle;
+
             if (bundle == null)
             {
                 Stage = AssetCacheStage.Created;
                 LLog.Error("Load bundle failed : {0}", _bundleInfo.BundlePath);
                 return false;
             }
-            
-            Bundle = bundle;
-            foreach (var dependency in _bundleInfo.DependencyList)
-            {
-                var cache = _provider.GetOrCreateBundleCache(dependency);
-                if (cache.Stage == AssetCacheStage.Unloaded)
-                {
-                    continue;
-                }
-                _dependencyLeases.Add(cache.AcquireLease());
-            }
-            
+
             Stage = AssetCacheStage.Loaded;
             return true;
         }
@@ -209,7 +201,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback);
                 return;
             }
-            
+
             var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
             if (op != null)
             {
@@ -220,7 +212,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback);
             }
         }
-        
+
         public void UnloadUnusedAssets()
         {
             foreach (var chunk in _assetCacheMap)
@@ -237,10 +229,11 @@ namespace LiteQuark.Runtime
                 {
                     UnloadAssetCache(assetPath);
                 }
+
                 _unloadAssetList.Clear();
             }
         }
-        
+
         private void UnloadAssetCache(string assetPath)
         {
             if (_assetCacheMap.TryGetValue(assetPath, out var cache))

@@ -11,6 +11,16 @@ namespace LiteQuark.Runtime
             return new Lease(this);
         }
 
+        private void ReleaseDependencyLeases()
+        {
+            foreach (var lease in _dependencyLeases)
+            {
+                lease.Dispose();
+            }
+
+            _dependencyLeases.Clear();
+        }
+
         internal sealed class Lease : IDispose
         {
             public string BundlePath { get; }

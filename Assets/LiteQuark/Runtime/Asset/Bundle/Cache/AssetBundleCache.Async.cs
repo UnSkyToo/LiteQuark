@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
-                
+
                 var cache = GetOrCreateAssetCache(assetPath);
                 cache.LoadAssetAsync<T>(asset =>
                 {
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, false, default);
                     return;
                 }
-                
+
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
 
                 LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, (sceneIsLoaded, scene) =>
@@ -57,7 +57,7 @@ namespace LiteQuark.Runtime
                 });
             });
         }
-        
+
         private void LoadBundleAsync(int priority, Action<bool> callback)
         {
             if (IsLoaded)
@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback, true);
                 return;
             }
-            
+
             _bundleLoaderCallbackList.Add(callback);
             if (Stage != AssetCacheStage.Created)
             {
@@ -76,9 +76,9 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            
+
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, BundlePath, DependencyList);
-            
+
             var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
             var acg = new AsyncCompletionGroup<UnityEngine.AssetBundle>(dependencies.Length + 1, HandleBundleLoadCompleted);
             foreach (var dependency in dependencies)
@@ -90,25 +90,34 @@ namespace LiteQuark.Runtime
                     acg.SignalSub(false);
                     continue;
                 }
+
+                _dependencyLeases.Add(dependencyCache.AcquireLease());
                 dependencyCache.LoadBundleAsync(priority, acg.SignalSub);
             }
+
             _provider.LoadBundle(_bundleInfo, priority, acg.SignalMain);
         }
-        
+
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
-            if (!success && bundle != null)
+            if (!success || bundle == null)
             {
-                bundle.Unload(true);
+                if (bundle != null)
+                {
+                    bundle.Unload(true);
+                }
+
+                ReleaseDependencyLeases();
+                bundle = null;
             }
-            
-            var isLoaded = OnBundleLoaded(success ? bundle : null);
-            
+
+            var isLoaded = OnBundleLoaded(bundle);
+
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
-            
+
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();
-            
+
             foreach (var loader in callbacks)
             {
                 LiteUtils.SafeInvoke(loader, isLoaded);
