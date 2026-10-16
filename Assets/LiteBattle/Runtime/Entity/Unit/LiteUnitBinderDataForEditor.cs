@@ -6,7 +6,7 @@ namespace LiteBattle.Runtime
     public static class LiteUnitBinderDataForEditor
     {
         private static string CurrentStateGroup_;
-        private static List<string> AnimatorStateNameList_ = new List<string>();
+        private static List<string> AnimatorStateNameList_ = new();
 
         public static void SetCurrentStateGroup(string stateGroup)
         {

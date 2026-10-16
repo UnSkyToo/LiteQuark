@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     public abstract class Singleton<T> where T :  class
     {
-        private static readonly Lazy<T> _instance = new Lazy<T>(CreateInstance);
+        private static readonly Lazy<T> _instance = new(CreateInstance);
 
         public static T Instance => _instance.Value;
 

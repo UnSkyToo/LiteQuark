@@ -5,7 +5,7 @@ namespace LiteQuark.Editor
 {
     internal sealed class TypeConverterRegistry
     {
-        private readonly List<ITypeConverter> _converters = new List<ITypeConverter>();
+        private readonly List<ITypeConverter> _converters = new();
 
         private static TypeConverterRegistry _instance;
         public static TypeConverterRegistry Instance => _instance ??= new TypeConverterRegistry();

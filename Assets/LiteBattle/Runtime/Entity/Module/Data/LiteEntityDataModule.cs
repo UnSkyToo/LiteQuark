@@ -4,7 +4,7 @@ namespace LiteBattle.Runtime
 {
     public sealed class LiteEntityDataModule : LiteEntityModuleBase
     {
-        private readonly Dictionary<LiteEntityDataType, LiteEntityDataValue> DataList_ = new Dictionary<LiteEntityDataType, LiteEntityDataValue>();
+        private readonly Dictionary<LiteEntityDataType, LiteEntityDataValue> DataList_ = new();
 
         public LiteEntityDataModule(LiteEntity entity)
             : base(entity)

@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
         public AssetBundleBuild[] Builds { get; set; } = Array.Empty<AssetBundleBuild>();
         
         private readonly string _defaultBundlePath = $"default{LiteConst.BundleFileExt}";
-        private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new Dictionary<string, BundleInfo>();
-        private readonly Dictionary<string, string[]> _dependencyCache = new Dictionary<string, string[]>();
+        private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new();
+        private readonly Dictionary<string, string[]> _dependencyCache = new();
         private ResCollectorSetting _setting = null;
         private VersionPackInfo _packInfo = null;
         private int _bundleID = 1;

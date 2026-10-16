@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
     public sealed class HttpClient
     {
         private readonly NetworkSystem _networkSystem;
-        private readonly List<IHttpInterceptor> _interceptors = new List<IHttpInterceptor>();
+        private readonly List<IHttpInterceptor> _interceptors = new();
 
         internal HttpClient(NetworkSystem networkSystem)
         {

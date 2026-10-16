@@ -6,8 +6,8 @@ namespace LiteQuark.Runtime
     [DefaultExecutionOrder(9999)]
     public class LiteLauncher : MonoBehaviour
     {
-        [SerializeField] public LiteSetting DebugSetting = new LiteSetting();
-        [SerializeField] public LiteSetting ReleaseSetting = new LiteSetting();
+        [SerializeField] public LiteSetting DebugSetting = new();
+        [SerializeField] public LiteSetting ReleaseSetting = new();
         [SerializeField] private bool _simulateReleaseBuild;
 
         private const int MaxConsecutiveErrors = 30;

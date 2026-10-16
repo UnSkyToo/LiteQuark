@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public static class MathUtils
     {
-        private static readonly System.Random Rand = new System.Random((int)DateTime.Now.Ticks);
+        private static readonly System.Random Rand = new((int)DateTime.Now.Ticks);
         
         public static bool Approximately(double a, double b)
         {

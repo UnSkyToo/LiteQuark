@@ -7,9 +7,9 @@ namespace LiteQuark.Runtime
 {
     internal sealed class SystemCenter : Singleton<SystemCenter>, ISubstance
     {
-        private readonly List<ISystem> _addList = new List<ISystem>();
-        private readonly List<ISystem> _systemList = new List<ISystem>();
-        private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new Dictionary<System.Type, ISystem>();
+        private readonly List<ISystem> _addList = new();
+        private readonly List<ISystem> _systemList = new();
+        private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new();
         
         private SystemCenter()
         {

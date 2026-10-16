@@ -25,7 +25,7 @@ namespace LiteBattle.Runtime
         
         public bool Enable { get; set; } = true;
 
-        private readonly Dictionary<KeyCode, KeyState> MapInfo_ = new Dictionary<KeyCode, KeyState>();
+        private readonly Dictionary<KeyCode, KeyState> MapInfo_ = new();
 
         public LiteKeyboardInput()
         {

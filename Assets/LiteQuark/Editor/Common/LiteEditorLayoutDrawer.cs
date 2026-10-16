@@ -198,7 +198,7 @@ namespace LiteQuark.Editor
             return enumFlagsAttr == null ? EditorGUILayout.EnumPopup(title, v) : EditorGUILayout.EnumFlagsField(title, v);
         }
 
-        private static readonly Dictionary<string, GameObject> Path2GoCache_ = new Dictionary<string, GameObject>();
+        private static readonly Dictionary<string, GameObject> Path2GoCache_ = new();
         private static string DrawGameObjectFiled(GUIContent title, string v)
         {
             GameObject go = null;
@@ -237,7 +237,7 @@ namespace LiteQuark.Editor
             return data;
         }
         
-        private static readonly Dictionary<object, bool> Foldout_ = new Dictionary<object, bool>();
+        private static readonly Dictionary<object, bool> Foldout_ = new();
         private static object DrawObjectInternal(GUIContent title, object data, Type type)
         {
             if (data == null)

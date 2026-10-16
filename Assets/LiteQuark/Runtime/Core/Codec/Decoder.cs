@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
 {
     public class Decoder
     {
-        private readonly List<Type> _typeList = new List<Type>();
+        private readonly List<Type> _typeList = new();
         
         public Decoder()
         {

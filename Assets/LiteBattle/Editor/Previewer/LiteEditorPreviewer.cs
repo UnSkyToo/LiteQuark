@@ -10,7 +10,7 @@ namespace LiteBattle.Editor
     public class LiteEditorPreviewer : Singleton<LiteEditorPreviewer>
     {
         private TimelineAsset Timeline_;
-        private readonly Dictionary<int, ILiteEventEditorPerformer> Performers_ = new Dictionary<int, ILiteEventEditorPerformer>();
+        private readonly Dictionary<int, ILiteEventEditorPerformer> Performers_ = new();
         private int FrameIndex_;
         
         private LiteEditorPreviewer()

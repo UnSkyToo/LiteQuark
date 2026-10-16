@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
 
         public const float MinIntervalTime = 0.00001f;
 
-        public static readonly Dictionary<string, int> InternalSystem = new Dictionary<string, int>
+        public static readonly Dictionary<string, int> InternalSystem = new()
         {
             { typeof(LogSystem).AssemblyQualifiedName, 99900 },
             { typeof(EventSystem).AssemblyQualifiedName, 99800 },

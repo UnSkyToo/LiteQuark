@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     public class Fsm : IFsm
     {
-        protected readonly Dictionary<int, IFsmState> StateMap = new Dictionary<int, IFsmState>();
+        protected readonly Dictionary<int, IFsmState> StateMap = new();
         protected IFsmState CurrentState = null;
 
         public Fsm()

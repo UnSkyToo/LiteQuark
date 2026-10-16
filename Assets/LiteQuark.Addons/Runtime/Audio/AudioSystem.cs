@@ -9,8 +9,8 @@ namespace LiteQuark.Runtime
         private bool _muteSound = false;
         private bool _muteMusic = false;
         
-        private readonly Dictionary<ulong, AudioObject> _audioCache = new Dictionary<ulong, AudioObject>();
-        private readonly List<AudioObject> _removeList = new List<AudioObject>();
+        private readonly Dictionary<ulong, AudioObject> _audioCache = new();
+        private readonly List<AudioObject> _removeList = new();
         private EmptyGameObjectPool _pool = null;
         private Transform _root = null;
         

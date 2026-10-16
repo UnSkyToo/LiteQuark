@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     public sealed class EffectSystem : ISystem, ITick
     {
         private readonly Action<EffectObject, SafeList<EffectObject>, float> _onTickDelegate = null;
-        private readonly SafeList<EffectObject> _effectList = new SafeList<EffectObject>();
+        private readonly SafeList<EffectObject> _effectList = new();
         
         public EffectSystem()
         {

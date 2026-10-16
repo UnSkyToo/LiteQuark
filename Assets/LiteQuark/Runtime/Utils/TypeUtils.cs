@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     public static class TypeUtils
     {
-        private static readonly List<Assembly> AssemblyList = new List<Assembly>();
+        private static readonly List<Assembly> AssemblyList = new();
 
         static TypeUtils()
         {

@@ -22,7 +22,7 @@ namespace LiteQuark.Editor.LoadProfiler
 
         public ViewMode CurrentViewMode { get; set; } = ViewMode.Sessions;
 
-        private readonly Dictionary<int, ProfilerTreeItem> _itemCacheMap = new Dictionary<int, ProfilerTreeItem>();
+        private readonly Dictionary<int, ProfilerTreeItem> _itemCacheMap = new();
         private int _idGenerator = 1;
         private int _durationSortedAscendingType; // 0=default, 1=ascending, -1=descending
 

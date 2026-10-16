@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
 {
     public class Encoder
     {
-        private readonly List<Type> _typeList = new List<Type>();
+        private readonly List<Type> _typeList = new();
         
         public Encoder()
         {

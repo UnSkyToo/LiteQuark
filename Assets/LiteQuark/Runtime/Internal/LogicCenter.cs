@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed class LogicCenter : Singleton<LogicCenter>, ISubstance
     {
-        private readonly List<ILogic> _logicList = new List<ILogic>();
+        private readonly List<ILogic> _logicList = new();
         
         private LogicCenter()
         {

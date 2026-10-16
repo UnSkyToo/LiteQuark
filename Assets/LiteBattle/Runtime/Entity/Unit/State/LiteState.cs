@@ -10,9 +10,9 @@ namespace LiteBattle.Runtime
         public LiteStateMachine Machine { get; private set; }
         public float Duration { get; }
         
-        private readonly List<LiteClip> Clips_ = new List<LiteClip>();
-        private readonly List<LiteClip> SignalClips_ = new List<LiteClip>();
-        private readonly List<LiteClip> DurationClips_ = new List<LiteClip>();
+        private readonly List<LiteClip> Clips_ = new();
+        private readonly List<LiteClip> SignalClips_ = new();
+        private readonly List<LiteClip> DurationClips_ = new();
         private float PreviousTime_ = 0f;
         private float CurrentTime_ = 0f;
 

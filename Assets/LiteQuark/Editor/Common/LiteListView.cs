@@ -13,7 +13,7 @@ namespace LiteQuark.Editor
 
         private int _selectIndex = InvalidIndex;
         private Vector2 _scrollPos = Vector2.zero;
-        private List<T> _data = new List<T>();
+        private List<T> _data = new();
 
         protected LiteListView()
         {

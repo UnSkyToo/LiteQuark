@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
 
         private readonly float _frameInterval = 0.01f;
         private readonly Action<ITimer, SafeList<ITimer>, float, float> _onTickDelegate = null;
-        private readonly SafeList<ITimer> _timerList = new SafeList<ITimer>();
+        private readonly SafeList<ITimer> _timerList = new();
 
         public TimerSystem()
         {

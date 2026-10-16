@@ -10,6 +10,6 @@ namespace LiteQuark.Editor
         /// </summary>
         public bool Enable { get; set; } = true;
 
-        public Dictionary<string, object> Data { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object> Data { get; set; } = new();
     }
 }

@@ -13,9 +13,9 @@ namespace LiteBattle.Editor
         private LiteUnitConfig CurrentUnit_ = null;
         private GameObject UnitGo_ = null;
         private Animator[] Animators_;
-        private readonly List<string> AnimatorStateNameList_ = new List<string>();
-        private readonly Dictionary<string, AnimatorState> AnimatorStateList_ = new Dictionary<string, AnimatorState>();
-        private readonly Dictionary<string, EffectBinder> EffectList_ = new Dictionary<string, EffectBinder>();
+        private readonly List<string> AnimatorStateNameList_ = new();
+        private readonly Dictionary<string, AnimatorState> AnimatorStateList_ = new();
+        private readonly Dictionary<string, EffectBinder> EffectList_ = new();
 
         private int PreviewAnimatorStateIndex_ = -1;
         private float PreviewAnimatorStateTime_ = 0f;

@@ -12,9 +12,9 @@ namespace LiteBattle.Editor
     {
         public LiteNexusEditor NexusEditor { get; }
 
-        private readonly Color RangeColor_ = new Color(1f, 0f, 0f, 0.5f);
-        private readonly BoxBoundsHandle BoxHandle_ = new BoxBoundsHandle();
-        private readonly SphereBoundsHandle SphereHandle_ = new SphereBoundsHandle();
+        private readonly Color RangeColor_ = new(1f, 0f, 0f, 0.5f);
+        private readonly BoxBoundsHandle BoxHandle_ = new();
+        private readonly SphereBoundsHandle SphereHandle_ = new();
         
         public LiteNexusSceneView(LiteNexusEditor nexusEditor)
         {

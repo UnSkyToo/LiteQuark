@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     [System.Serializable]
     public class RetryParam
     {
-        public static RetryParam Default { get; } = new RetryParam(60, 3, 1f);
+        public static RetryParam Default { get; } = new(60, 3, 1f);
         
         [Tooltip("超时设置，默认60秒")] [SerializeField]
         public int Timeout = 60;

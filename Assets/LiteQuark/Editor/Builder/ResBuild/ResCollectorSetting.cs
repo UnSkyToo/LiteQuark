@@ -9,7 +9,7 @@ namespace LiteQuark.Editor
     public class ResCollectorSetting : ScriptableObject
     {
         [SerializeField]
-        public List<string> IgnorePathList = new List<string>();
+        public List<string> IgnorePathList = new();
         
         private const string RES_SETTING_ASSET_PATH = "Assets/Editor/ResSetting.asset";
         private static ResCollectorSetting _setting = null;

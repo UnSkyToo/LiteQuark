@@ -13,8 +13,8 @@ namespace LiteQuark.Editor
         private Vector2 _scrollPos;
         private Vector2 _logScrollPos;
         private Vector2 _fileListScrollPos;
-        private readonly List<string> _logs = new List<string>();
-        private readonly List<ExcelFileInfo> _excelFiles = new List<ExcelFileInfo>();
+        private readonly List<string> _logs = new();
+        private readonly List<ExcelFileInfo> _excelFiles = new();
         private bool _isExporting;
 
         [MenuItem("Lite/Config Tool")]

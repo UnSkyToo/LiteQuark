@@ -18,7 +18,7 @@ namespace LiteBattle.Runtime
         [LiteOptionalTypeList(typeof(ILiteCondition), "Condition", typeof(LiteFalseCondition))]
         [SerializeReference]
         [HideInInspector]
-        public List<ILiteCondition> ConditionList = new List<ILiteCondition>();
+        public List<ILiteCondition> ConditionList = new();
 
         public bool HasData => true;
         

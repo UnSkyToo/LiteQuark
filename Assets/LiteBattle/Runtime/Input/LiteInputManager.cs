@@ -51,7 +51,7 @@ namespace LiteBattle.Runtime
         private Vector2 SimulateMove_ = Vector2.zero;
         private Vector2 SimulateGesture_ = Vector2.zero;
 
-        private readonly Dictionary<KeyCode, LitePlayerInputKey> InputKeyMapping_ = new Dictionary<KeyCode, LitePlayerInputKey>();
+        private readonly Dictionary<KeyCode, LitePlayerInputKey> InputKeyMapping_ = new();
 
         private LiteInputManager()
         {

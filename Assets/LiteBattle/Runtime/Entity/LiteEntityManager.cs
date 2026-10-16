@@ -6,9 +6,9 @@ namespace LiteBattle.Runtime
 {
     public sealed class LiteEntityManager : Singleton<LiteEntityManager>, IManager
     {
-        private readonly List<LiteEntity> EntityList_ = new List<LiteEntity>();
-        private readonly List<LiteEntity> AddList_ = new List<LiteEntity>();
-        private readonly List<LiteEntity> RemoveList_ = new List<LiteEntity>();
+        private readonly List<LiteEntity> EntityList_ = new();
+        private readonly List<LiteEntity> AddList_ = new();
+        private readonly List<LiteEntity> RemoveList_ = new();
 
         private LiteEntityManager()
         {

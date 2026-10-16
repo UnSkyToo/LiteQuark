@@ -19,8 +19,8 @@ namespace LiteQuark.Editor.BundleViewer
 
         private const string BundleType = "bundle";
 
-        private readonly Dictionary<int, BundleViewerTreeItem> _itemCacheMap = new Dictionary<int, BundleViewerTreeItem>();
-        private readonly Dictionary<string, BundleViewerTreeItem> _bundlePathCacheMap = new Dictionary<string, BundleViewerTreeItem>();
+        private readonly Dictionary<int, BundleViewerTreeItem> _itemCacheMap = new();
+        private readonly Dictionary<string, BundleViewerTreeItem> _bundlePathCacheMap = new();
         private int _idGenerator = 1;
         private int _sizeSortedAscendingType = 0;
         

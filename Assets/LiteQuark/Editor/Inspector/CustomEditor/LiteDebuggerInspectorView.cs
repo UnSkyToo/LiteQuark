@@ -8,8 +8,8 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteDebugger))]
     internal class LiteDebuggerInspectorView : LiteInspectorBaseView
     {
-        private readonly Dictionary<string, bool> _labelFoldout = new Dictionary<string, bool>();
-        private readonly Dictionary<ulong, bool> _idFoldout = new Dictionary<ulong, bool>();
+        private readonly Dictionary<string, bool> _labelFoldout = new();
+        private readonly Dictionary<ulong, bool> _idFoldout = new();
         
         protected override void OnDraw()
         {

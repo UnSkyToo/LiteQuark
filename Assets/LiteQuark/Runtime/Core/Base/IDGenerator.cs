@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
 
         private const int MaxCounter = 1 << CounterBits;
         
-        private static readonly object Lock = new object();
+        private static readonly object Lock = new();
         private static long _lastTimestamp;
         private static int _counter;
         

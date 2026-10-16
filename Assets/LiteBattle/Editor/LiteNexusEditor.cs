@@ -11,7 +11,7 @@ namespace LiteBattle.Editor
     public sealed class LiteNexusEditor : EditorWindow
     {
         private bool IsInit_ = false;
-        private readonly List<ILiteEditorView> ViewList_ = new List<ILiteEditorView>();
+        private readonly List<ILiteEditorView> ViewList_ = new();
         private LiteNexusSceneView SceneView_;
         
         [MenuItem("Lite/Nexus Engine/Editor Window")]

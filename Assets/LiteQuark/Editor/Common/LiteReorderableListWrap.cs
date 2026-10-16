@@ -152,7 +152,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static readonly Dictionary<object, LiteReorderableListWrap> ReorderableWraps = new Dictionary<object, LiteReorderableListWrap>();
+        private static readonly Dictionary<object, LiteReorderableListWrap> ReorderableWraps = new();
         [InitializeOnLoadMethod]
         private static void Clear()
         {

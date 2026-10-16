@@ -6,7 +6,7 @@ namespace LiteQuark.Editor
 {
     public sealed class SearchListWindow : EditorWindow
     {
-        private static Rect _windowRect = new Rect(0, 0, 1, 1);
+        private static Rect _windowRect = new(0, 0, 1, 1);
         public static void Draw(string title, string[] list, Action<string> callback)
         {
             EditorGUILayout.BeginHorizontal();

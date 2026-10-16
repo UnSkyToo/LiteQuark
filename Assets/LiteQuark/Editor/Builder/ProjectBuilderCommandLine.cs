@@ -106,7 +106,7 @@ namespace LiteQuark.Editor
 
         private class ArgumentData
         {
-            private readonly Dictionary<string, string> _map = new Dictionary<string, string>();
+            private readonly Dictionary<string, string> _map = new();
 
             public ArgumentData()
             {

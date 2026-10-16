@@ -116,7 +116,7 @@ namespace LiteBattle.Editor
                 
                 if (selected && GUILayout.Button(GUIContent.none, LiteEditorStyle.DropdownOption))
                 {
-                    GenericMenu menu = new GenericMenu();
+                    GenericMenu menu = new();
 
                     menu.AddItem(new GUIContent("Duplicate"), false, () =>
                     {

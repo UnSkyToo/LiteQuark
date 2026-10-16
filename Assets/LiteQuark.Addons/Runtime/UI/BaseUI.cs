@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
         public int SortingOrder { get; private set; }
 
         private GameObjectHandle _goHandle;
-        private readonly List<AssetHandle<Sprite>> _spriteHandleList = new List<AssetHandle<Sprite>>();
+        private readonly List<AssetHandle<Sprite>> _spriteHandleList = new();
         private readonly int _eventTag;
 
         protected BaseUI()

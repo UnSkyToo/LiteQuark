@@ -7,8 +7,8 @@ namespace LiteQuark.Editor
 {
     public static class HandleUtils
     {
-        private static readonly Color OutlineColor = new Color(1f, 1f, 1f, Handles.color.a);
-        private static readonly Stack<Color> ColorStack = new Stack<Color>();
+        private static readonly Color OutlineColor = new(1f, 1f, 1f, Handles.color.a);
+        private static readonly Stack<Color> ColorStack = new();
 
         [DebuggerStepThrough]
         public static void DrawBox(Vector3 position, Vector3 size, Color color)

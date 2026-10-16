@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
         private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate = null;
-        private readonly SafeList<ITask> _taskList = new SafeList<ITask>();
+        private readonly SafeList<ITask> _taskList = new();
         private readonly int _concurrencyLimit = 20;
         private readonly TaskPriority _ignoreLimitPriority = TaskPriority.High;
 

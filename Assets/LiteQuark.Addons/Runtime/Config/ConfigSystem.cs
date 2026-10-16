@@ -9,8 +9,8 @@ namespace LiteQuark.Runtime
     {
         public ConfigSystemSetting Setting { get; set; }
 
-        private readonly Dictionary<Type, object> _tableMap = new Dictionary<Type, object>();
-        private readonly List<TableRegistration> _registrations = new List<TableRegistration>();
+        private readonly Dictionary<Type, object> _tableMap = new();
+        private readonly List<TableRegistration> _registrations = new();
 
         public ConfigSystem()
         {

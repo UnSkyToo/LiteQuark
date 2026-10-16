@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     public sealed class ActionSystem : ISystem, ITick
     {
         private readonly Action<IAction, SafeList<IAction>, float, float> _onTickDelegate = null;
-        private readonly SafeList<IAction> _actionList = new SafeList<IAction>();
+        private readonly SafeList<IAction> _actionList = new();
         
         public ActionSystem()
         {

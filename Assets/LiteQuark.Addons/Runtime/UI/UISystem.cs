@@ -16,10 +16,10 @@ namespace LiteQuark.Runtime
         public Camera UICamera => Setting.UICamera ?? Camera.main;
 
         private RectTransform _canvasRoot;
-        private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new Dictionary<UIDepthMode, Transform>();
-        private readonly List<BaseUI> _openList = new List<BaseUI>();
-        private readonly List<BaseUI> _uiList = new List<BaseUI>();
-        private readonly List<BaseUI> _closeList = new List<BaseUI>();
+        private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new();
+        private readonly List<BaseUI> _openList = new();
+        private readonly List<BaseUI> _uiList = new();
+        private readonly List<BaseUI> _closeList = new();
 
         public UISystem()
         {

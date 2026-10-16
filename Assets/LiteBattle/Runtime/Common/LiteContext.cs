@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
         private const string TagKey = "lite_context_tag";
         
         private readonly LiteContext Outer_ = null;
-        private readonly Dictionary<string, LiteContextBaseData> DataList_ = new Dictionary<string, LiteContextBaseData>();
+        private readonly Dictionary<string, LiteContextBaseData> DataList_ = new();
 
         public LiteContext(LiteContext outer)
         {
