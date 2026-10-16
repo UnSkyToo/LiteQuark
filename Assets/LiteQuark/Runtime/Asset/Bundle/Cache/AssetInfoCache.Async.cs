@@ -4,22 +4,22 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(Action<bool> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Action<T> callback) where T : UnityEngine.Object
         {
             if (IsLoaded)
             {
-                var requestSucceeded = TryAcquireReference<T>();
+                var asset = TryAcquireReference<T>();
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, requestSucceeded,
-                    errorMessage: requestSucceeded ? null : "Asset type mismatch", isCached: true);
-                LiteUtils.SafeInvoke(callback, requestSucceeded);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, asset,
+                    errorMessage: asset ? null : "Asset type mismatch", isCached: true);
+                LiteUtils.SafeInvoke(callback, asset);
                 return;
             }
 
             _assetLoaderCallbackList.Add(isLoaded =>
             {
-                var requestSucceeded = isLoaded && TryAcquireReference<T>();
-                LiteUtils.SafeInvoke(callback, requestSucceeded);
+                var asset = isLoaded ? TryAcquireReference<T>() : null;
+                LiteUtils.SafeInvoke(callback, asset);
             });
             if (Stage != AssetCacheStage.Created)
             {
@@ -51,19 +51,19 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private bool TryAcquireReference<T>() where T : UnityEngine.Object
+        private T TryAcquireReference<T>() where T : UnityEngine.Object
         {
-            if (Asset is T)
+            if (Asset is T asset && asset != null)
             {
                 IncRef();
-                return true;
+                return asset;
             }
 
             if (Asset != null)
             {
                 LLog.Error("Asset type mismatch : {0}, expected {1}, actual {2}", _assetPath, typeof(T).Name, Asset.GetType().Name);
             }
-            return false;
+            return null;
         }
     }
 }

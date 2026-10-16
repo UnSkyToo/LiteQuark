@@ -19,10 +19,10 @@ namespace LiteQuark.Runtime
                 }
                 
                 var cache = GetOrCreateAssetCache(assetPath);
-                cache.LoadAssetAsync<T>(assetIsLoaded =>
+                cache.LoadAssetAsync<T>(asset =>
                 {
+                    var assetIsLoaded = asset != null;
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
-                    var asset = assetIsLoaded ? cache.Asset as T : null;
 
                     if (assetIsLoaded)
                     {
