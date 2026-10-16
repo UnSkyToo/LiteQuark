@@ -86,21 +86,11 @@ namespace LiteQuark.Runtime
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
 
-            if (Bundle != null)
+            foreach (var lease in _dependencyLeases)
             {
-                foreach (var dependency in _bundleInfo.DependencyList)
-                {
-                    if (_provider.TryGetBundleCache(dependency, out var cache))
-                    {
-                        if (cache.Stage == AssetCacheStage.Unloaded)
-                        {
-                            continue;
-                        }
-
-                        cache.DecRef();
-                    }
-                }
+                lease.Dispose();
             }
+            _dependencyLeases.Clear();
 
             _refCount = 0;
             Stage = AssetCacheStage.Unloaded;
@@ -175,7 +165,6 @@ namespace LiteQuark.Runtime
 
             cache = new AssetInfoCache(this, assetPath);
             _assetCacheMap.Add(assetPath, cache);
-            IncRef();
             return cache;
         }
 
@@ -196,7 +185,7 @@ namespace LiteQuark.Runtime
                 {
                     continue;
                 }
-                cache.IncRef();
+                _dependencyLeases.Add(cache.AcquireLease());
             }
             
             Stage = AssetCacheStage.Loaded;
@@ -207,10 +196,7 @@ namespace LiteQuark.Runtime
         {
             if (_assetCacheMap.TryGetValue(assetPath, out var cache))
             {
-                if (cache.ReleaseReference())
-                {
-                    DecRef();
-                }
+                cache.ReleaseReference();
             }
         }
 
@@ -261,7 +247,6 @@ namespace LiteQuark.Runtime
             {
                 cache.Unload();
                 _assetCacheMap.Remove(assetPath);
-                DecRef();
             }
         }
     }

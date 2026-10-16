@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
                                   Stage == AssetCacheStage.Created && _refCount == 0 && _loadAssetTask == null);
 
         private readonly string _assetPath;
-        private readonly AssetBundleCache _cache;
+        private readonly AssetBundleCache.Lease _bundleLease;
         private readonly List<Action<bool>> _assetLoaderCallbackList = new();
         
         public bool IsUsed => _refCount > 0;
@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
             Asset = null;
             
             _assetPath = assetPath;
-            _cache = cache;
+            _bundleLease = cache.AcquireLease();
             _refCount = 0;
             _retainTime = 0;
         }
@@ -61,6 +61,7 @@ namespace LiteQuark.Runtime
 
             _refCount = 0;
             Stage = AssetCacheStage.Unloaded;
+            _bundleLease.Dispose();
         }
         
         public void Tick(float deltaTime)

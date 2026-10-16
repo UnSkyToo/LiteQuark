@@ -9,8 +9,8 @@ namespace LiteQuark.Runtime
             if (IsLoaded)
             {
                 var asset = TryAcquireReference<T>();
-                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, asset,
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, asset,
                     errorMessage: asset ? null : "Asset type mismatch", isCached: true);
                 LiteUtils.SafeInvoke(callback, asset);
                 return;
@@ -29,9 +29,9 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(_assetPath);
 
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath);
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath);
 
-            _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
+            _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_bundleLease.Bundle, name, HandleAssetLoadCompleted);
         }
 
         private void HandleAssetLoadCompleted(UnityEngine.Object asset)
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
 
             var isLoaded = OnAssetLoaded(asset);
             
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
             
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();

@@ -23,12 +23,6 @@ namespace LiteQuark.Runtime
                 {
                     var assetIsLoaded = asset != null;
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
-
-                    if (assetIsLoaded)
-                    {
-                        IncRef();
-                    }
-                    
                     LiteUtils.SafeInvoke(callback, asset);
                 });
             });
