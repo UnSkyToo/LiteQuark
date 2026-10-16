@@ -88,7 +88,7 @@ namespace LiteBattle.Editor
             {
                 var unitConfigFullPath = GetItem(index);
                 var name = PathUtils.GetFileNameWithoutExt(unitConfigFullPath);
-                LiteInputTextDialog.ShowDialog("Change Name", name, (newName) =>
+                LiteInputTextDialog.ShowDialog("Change Name", name, newName =>
                 {
                     AssetUtils.RenameAsset(unitConfigFullPath, newName);
                     OnDataChanged();

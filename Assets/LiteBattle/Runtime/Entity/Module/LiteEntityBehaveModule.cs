@@ -120,7 +120,7 @@ namespace LiteBattle.Runtime
             RecyclePrefab();
             PrefabPath_ = prefabPath;
             
-            LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(null, (go) =>
+            LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(null, go =>
             {
                 Go_ = go;
                 TS_ = Go_.transform;

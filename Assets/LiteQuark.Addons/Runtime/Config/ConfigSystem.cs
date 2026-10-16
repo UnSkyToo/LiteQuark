@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             _registrations.Add(new TableRegistration(
                 typeof(T),
                 assetPath,
-                (json) => new ConfigTable<T>(parseFunc(json))
+                json => new ConfigTable<T>(parseFunc(json))
             ));
         }
 

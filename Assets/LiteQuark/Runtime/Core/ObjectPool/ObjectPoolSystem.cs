@@ -170,7 +170,7 @@ namespace LiteQuark.Runtime
             {
                 var pool = GetPool<TPool>(key, args);
                 var tcs = new UniTaskCompletionSource();
-                pool.Generate(generateCount, (_) => tcs.TrySetResult());
+                pool.Generate(generateCount, _ => tcs.TrySetResult());
                 await tcs.Task;
             }
         }

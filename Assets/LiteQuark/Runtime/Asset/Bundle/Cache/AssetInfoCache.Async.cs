@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            _assetLoaderCallbackList.Add((isLoaded) =>
+            _assetLoaderCallbackList.Add(isLoaded =>
             {
                 var requestSucceeded = isLoaded && TryAcquireReference<T>();
                 LiteUtils.SafeInvoke(callback, requestSucceeded);

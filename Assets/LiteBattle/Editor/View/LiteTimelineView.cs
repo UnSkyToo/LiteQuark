@@ -81,7 +81,7 @@ namespace LiteBattle.Editor
             {
                 var timelineFullPath = GetItem(index);
                 var name = PathUtils.GetFileNameWithoutExt(timelineFullPath);
-                LiteInputTextDialog.ShowDialog("Change Name", name, (newName) =>
+                LiteInputTextDialog.ShowDialog("Change Name", name, newName =>
                 {
                     AssetUtils.RenameAsset(timelineFullPath, newName);
                     OnDataChanged();

@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                LiteRuntime.Task.AddInstantiateGoTask(Template, Parent, count, (list) =>
+                LiteRuntime.Task.AddInstantiateGoTask(Template, Parent, count, list =>
                 {
                     foreach (var go in list)
                     {
@@ -139,7 +139,7 @@ namespace LiteQuark.Runtime
         public virtual UniTask<GameObject> Alloc(Transform parent)
         {
             var tcs = new UniTaskCompletionSource<GameObject>();
-            Alloc(parent, (go) =>
+            Alloc(parent, go =>
             {
                 tcs.TrySetResult(go);
             });

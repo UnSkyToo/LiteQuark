@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _effectList.Foreach((effect) => effect.Dispose());
+            _effectList.Foreach(effect => effect.Dispose());
             _effectList.Clear();
         }
 
@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
         
         public BaseObject FindEffect(ulong id)
         {
-            return _effectList.ForeachReturn((effect) => effect.UniqueID == id);
+            return _effectList.ForeachReturn(effect => effect.UniqueID == id);
         }
 
         public ulong PlayEffect(EffectCreateInfo info)
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            var effect = _effectList.ForeachReturn((effect) => effect.UniqueID == id);
+            var effect = _effectList.ForeachReturn(effect => effect.UniqueID == id);
             effect?.Stop();
         }
     }

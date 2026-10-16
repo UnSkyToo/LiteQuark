@@ -109,7 +109,7 @@ namespace LiteQuark.Runtime
             var audio = new AudioObject(type, path);
             _audioCache.Add(audio.UniqueID, audio);
 
-            audio.Load(_pool, parent, path, isLoop, volume, delay, (isLoaded) =>
+            audio.Load(_pool, parent, path, isLoop, volume, delay, isLoaded =>
             {
                 if (!isLoaded)
                 {

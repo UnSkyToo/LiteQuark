@@ -14,7 +14,7 @@ namespace LiteQuark.Editor
                 {
                     var conf = new ExcelDataSetConfiguration
                     {
-                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration
+                        ConfigureDataTable = _ => new ExcelDataTableConfiguration
                         {
                             UseHeaderRow = false,
                         }

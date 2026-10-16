@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            pool.Alloc(parent, (go) =>
+            pool.Alloc(parent, go =>
             {
                 Carrier = go;
                 if (Carrier == null)

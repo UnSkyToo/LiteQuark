@@ -32,7 +32,7 @@ namespace LiteQuark.Editor.BundleViewer
             _bundleTreeView = new BundleViewerTreeView(_assetTreeState);
             _searchField = new SearchField();
 
-            _bundleTreeView.OnItemSelectionChanged += (item) =>
+            _bundleTreeView.OnItemSelectionChanged += item =>
             {
                 _selectItem = item;
                 _detailScrollPos = Vector2.zero;

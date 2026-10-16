@@ -71,7 +71,7 @@ namespace LiteQuark.Runtime
 
         public override void Alloc(Transform parent, System.Action<GameObject> callback)
         {
-            base.Alloc(parent, (go) =>
+            base.Alloc(parent, go =>
             {
                 if (go != null)
                 {

@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _actionList.Foreach(static (action) => action.Dispose());
+            _actionList.Foreach(static action => action.Dispose());
             _actionList.Clear();
         }
 

@@ -135,7 +135,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             
-            op.completed += (result) =>
+            op.completed += result =>
             {
                 LiteUtils.SafeInvoke(callback);
             };

@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
         {
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, assetPath, BundlePath);
 
-            LoadBundleAsync(0, (bundleIsLoaded) =>
+            LoadBundleAsync(0, bundleIsLoaded =>
             {
                 if (!bundleIsLoaded)
                 {
@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
                 }
                 
                 var cache = GetOrCreateAssetCache(assetPath);
-                cache.LoadAssetAsync<T>((assetIsLoaded) =>
+                cache.LoadAssetAsync<T>(assetIsLoaded =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
                     var asset = assetIsLoaded ? cache.Asset as T : null;
@@ -38,7 +38,7 @@ namespace LiteQuark.Runtime
         {
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
 
-            LoadBundleAsync(0, (bundleIsLoaded) =>
+            LoadBundleAsync(0, bundleIsLoaded =>
             {
                 if (!bundleIsLoaded)
                 {

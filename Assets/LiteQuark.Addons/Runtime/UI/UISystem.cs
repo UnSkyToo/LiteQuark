@@ -180,7 +180,7 @@ namespace LiteQuark.Runtime
 
         public T FindUI<T>() where T : BaseUI
         {
-            return _uiList.Find((ui) => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
+            return _uiList.Find(ui => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
         }
 
         private void SetupUI(BaseUI ui, GameObject instance, GameObjectHandle handle)

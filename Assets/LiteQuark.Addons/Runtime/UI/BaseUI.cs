@@ -178,7 +178,7 @@ namespace LiteQuark.Runtime
         
         public void ReplaceSprite(string path, string resPath)
         {
-            LoadSprite(resPath, (sprite) =>
+            LoadSprite(resPath, sprite =>
             {
                 UIUtils.ReplaceSprite(Go, path, sprite);
             });
@@ -186,7 +186,7 @@ namespace LiteQuark.Runtime
         
         public void ReplaceSprite(Transform parent, string path, string resPath)
         {
-            LoadSprite(resPath, (sprite) =>
+            LoadSprite(resPath, sprite =>
             {
                 UIUtils.ReplaceSprite(parent, path, sprite);
             });

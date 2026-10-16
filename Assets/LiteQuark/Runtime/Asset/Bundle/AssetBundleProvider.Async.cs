@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync<T>(assetPath, (asset) =>
+            cache.LoadAssetAsync<T>(assetPath, asset =>
             {
                 LiteUtils.SafeInvoke(callback, asset);
             });

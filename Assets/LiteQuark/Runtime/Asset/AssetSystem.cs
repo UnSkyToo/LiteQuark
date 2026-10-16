@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
         public AssetHandle<T> LoadAssetHandle<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
-            return new AssetHandle<T>((cb) => _provider?.LoadAssetAsync<T>(formatPath, cb), ct,
+            return new AssetHandle<T>(cb => _provider?.LoadAssetAsync<T>(formatPath, cb), ct,
                 () => ReleaseAssetReference(formatPath));
         }
 
@@ -101,11 +101,11 @@ namespace LiteQuark.Runtime
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
-                (asset) => UnityEngine.Object.Instantiate(asset, parent), ct);
+                asset => UnityEngine.Object.Instantiate(asset, parent), ct);
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
-                (asset) => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
+                asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
         private void LoadSceneInternal(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
         {
@@ -141,8 +141,8 @@ namespace LiteQuark.Runtime
         }
 
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
-            => new SceneHandle((cb) => LoadSceneInternal(scenePath, parameters, cb), ct,
-                (scene) => ReleaseSceneReferenceAsync(scenePath, scene, null));
+            => new SceneHandle(cb => LoadSceneInternal(scenePath, parameters, cb), ct,
+                scene => ReleaseSceneReferenceAsync(scenePath, scene, null));
 
         private void ReleaseAssetReference(string assetPath)
         {
