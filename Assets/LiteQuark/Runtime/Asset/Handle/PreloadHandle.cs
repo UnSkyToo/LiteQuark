@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
 
         public bool IsDone { get; private set; }
         public bool Result => _result;
-        public UniTask<bool> Task => _tcs.Task;
+        internal UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
         public IReadOnlyList<string> FailedPaths => _failedPaths;
         public int TotalCount => _entries.Count;

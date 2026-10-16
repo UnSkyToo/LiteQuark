@@ -17,7 +17,10 @@ namespace LiteBattle.Runtime
 
         public async UniTask<bool> Startup()
         {
-            await LiteNexusDataManager.Instance.Startup();
+            if (!await LiteNexusDataManager.Instance.Startup())
+            {
+                return false;
+            }
             await LiteInputManager.Instance.Startup();
             await LiteEntityManager.Instance.Startup();
             await LiteCameraManager.Instance.Startup();

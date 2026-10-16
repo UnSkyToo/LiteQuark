@@ -2,6 +2,8 @@
 
 通过 `LiteRuntime.Asset` 访问。加载、预加载、实例化和场景所有权统一使用 Handle；`await handle` 只等待完成，结果从 `handle.Result` 读取。底层加载失败可能返回 `null` / `false`，取消会使等待抛出 `OperationCanceledException`。
 
+`AssetHandle<T>`、`GameObjectHandle`、`SceneHandle` 和 `PreloadHandle<T>` 的 `Task` 属性为 `internal`，仅供框架内部组合加载流程。业务代码统一保存 Handle，通过 `await handle` 等待、`Result` 读取结果，并在使用结束后调用 `Dispose()`；等待完成不会转移资源所有权。
+
 ## 路径与模式
 
 资源放在 `Assets/StandaloneAssets`，调用时使用相对该目录的完整文件路径，例如 `Prefabs/Player.prefab`。路径统一为小写和 `/`，不会自动补扩展名。
@@ -86,5 +88,8 @@ if (!preload.Result)
 - Bundle 中无引用资源可进入 Retention 缓存，保留时间由配置控制；仍被引用的资源不会因缓存清理而主动失去所有权。
 - `UnloadUnusedAssets(maxDepth: 5)` 最多执行指定轮数的缓存清理，以处理依赖释放；它不是精确的依赖图层数限制。实现还调用 Unity 的未使用资源清理和 GC，不宜逐帧执行。
 - 旧的 AssetSystem 回调加载、非 Handle 加载、按路径/对象释放、手动场景卸载接口已移除。实例化改用 `InstantiateHandle`，批量预加载改用 `PreloadAssetHandle<T>`。
+- 原先的 `var result = await handle.Task` 改为 `await handle; var result = handle.Result;`，并保持 Handle 覆盖资源使用期。不要通过 `GetAwaiter().GetResult()` 同步读取尚未完成的加载；将调用链改为异步等待。
+
+战斗模块在 `LiteNexusDataManager.Startup()` 中等待配置加载，再读取数据库；运行时同步访问 `LiteNexusConfig.Instance` 前必须完成该初始化，初始化失败或关闭数据管理器时释放配置 Handle。编辑器工具仍使用 AssetDatabase 访问配置。
 
 完整签名见 [AssetSystem.cs](AssetSystem.cs)，所有权实现见 [Handle](Handle)。

@@ -16,19 +16,39 @@ namespace LiteBattle.Runtime
         {
         }
         
-        public UniTask<bool> Startup()
+        public async UniTask<bool> Startup()
         {
-            return Load();
+            var initialized = false;
+            try
+            {
+                initialized = await Load();
+                return initialized;
+            }
+            finally
+            {
+                if (!initialized)
+                {
+                    Shutdown();
+                }
+            }
         }
 
         public void Shutdown()
         {
             Unload();
+            LiteNexusConfig.Release();
         }
 
         private async UniTask<bool> Load()
         {
-            var jsonPath = PathUtils.GetRelativeAssetRootPath(LiteNexusConfig.Instance.GetDatabaseJsonPath());
+            var config = await LiteNexusConfig.LoadAsync();
+            if (config == null)
+            {
+                LLog.Error("can't load nexus config");
+                return false;
+            }
+
+            var jsonPath = PathUtils.GetRelativeAssetRootPath(config.GetDatabaseJsonPath());
             using var jsonHandle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(jsonPath);
             await jsonHandle;
             var text = jsonHandle.Result;

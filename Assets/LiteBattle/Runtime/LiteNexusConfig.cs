@@ -1,4 +1,5 @@
 ﻿using LiteQuark.Runtime;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 #if UNITY_EDITOR
 using LiteQuark.Editor;
@@ -38,8 +39,7 @@ namespace LiteBattle.Runtime
 
                     Instance_ = AssetDatabase.LoadAssetAtPath<LiteNexusConfig>(configPath);
 #else
-                    ConfigHandle_ = LiteRuntime.Asset.LoadAssetHandle<LiteNexusConfig>(ConfigName);
-                    Instance_ = ConfigHandle_.Task.GetAwaiter().GetResult();
+                    throw new System.InvalidOperationException("Initialize LiteNexusDataManager before accessing LiteNexusConfig.Instance.");
 #endif
                 }
                 
@@ -48,6 +48,46 @@ namespace LiteBattle.Runtime
             }
         }
         
+        internal static async UniTask<LiteNexusConfig> LoadAsync()
+        {
+#if UNITY_EDITOR
+            return await UniTask.FromResult(Instance);
+#else
+            ConfigHandle_ ??= LiteRuntime.Asset.LoadAssetHandle<LiteNexusConfig>(ConfigName);
+            var handle = ConfigHandle_;
+            try
+            {
+                await handle;
+                if (ConfigHandle_ != handle)
+                {
+                    return null;
+                }
+
+                Instance_ = handle.Result;
+                if (Instance_ == null)
+                {
+                    Release();
+                }
+                return Instance_;
+            }
+            catch
+            {
+                if (ConfigHandle_ == handle)
+                {
+                    Release();
+                }
+                throw;
+            }
+#endif
+        }
+
+        internal static void Release()
+        {
+            ConfigHandle_?.Dispose();
+            ConfigHandle_ = null;
+            Instance_ = null;
+        }
+
 #if UNITY_EDITOR
         [MenuItem("Lite/Nexus Engine/Create Nexus Config")]
         public static void CreateNexusConfig()

@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
 
         public bool IsDone { get; private set; }
         public GameObject Result => _instance;
-        public UniTask<GameObject> Task => _tcs.Task;
+        internal UniTask<GameObject> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
         internal GameObjectHandle(AssetHandle<GameObject> prefabHandle,

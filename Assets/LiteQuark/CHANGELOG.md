@@ -1,6 +1,7 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：四种资源 Handle 的 `Task` 属性改为 internal，业务统一使用 `await handle` 和 `Result`；战斗配置改为初始化时异步加载、初始化失败或关闭时释放
 - 破坏：AssetSystem 对外统一为 Handle API，移除旧的回调加载、非 Handle 加载及按路径/对象释放接口；使用 `Dispose()` 管理所有权
 - 新增：`PreloadAssetHandle<T>` 批量预加载，提供成功状态、计数和失败路径；移除旧预加载接口
 - 优化：SceneHandle 保存实际 Scene 实例并按实例卸载；`await handle` 仅等待完成，结果从 `Result` 读取
