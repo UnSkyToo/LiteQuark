@@ -8,8 +8,11 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
-        public bool IsExpired => (Stage == AssetCacheStage.Retained && _retainTime <= 0 ||
-                                  Stage == AssetCacheStage.Created && _refCount == 0 && _loadAssetTask == null);
+        public bool IsExpired => !IsDispatching &&
+                                 ((Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
+                                  (Stage == AssetCacheStage.Created && _refCount == 0 && _loadAssetTask == null));
+
+        internal bool IsDispatching => _dispatchDepth > 0;
 
         private readonly string _assetPath;
         private readonly AssetBundleCache.Lease _bundleLease;
@@ -19,6 +22,7 @@ namespace LiteQuark.Runtime
         private int _refCount;
         private float _retainTime;
         private BaseTask _loadAssetTask;
+        private int _dispatchDepth;
 
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {

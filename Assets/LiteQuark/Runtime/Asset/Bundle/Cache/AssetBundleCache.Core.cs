@@ -217,7 +217,7 @@ namespace LiteQuark.Runtime
         {
             foreach (var chunk in _assetCacheMap)
             {
-                if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsExpired)
+                if (!chunk.Value.IsDispatching && (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsExpired))
                 {
                     _unloadAssetList.Add(chunk.Key);
                 }
