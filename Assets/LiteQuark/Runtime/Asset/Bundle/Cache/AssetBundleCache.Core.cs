@@ -197,23 +197,40 @@ namespace LiteQuark.Runtime
 
         public void ReleaseSceneReferenceAsync(UnityEngine.SceneManagement.Scene scene, Action callback)
         {
-            DecRef();
-
             if (!scene.IsValid() || !scene.isLoaded)
             {
+                DecRef();
                 LiteUtils.SafeInvoke(callback);
                 return;
             }
 
             var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
-            if (op != null)
+            if (op == null)
             {
-                LiteRuntime.Task.AddTask(op, callback);
-            }
-            else
-            {
+                LLog.Error("Start scene unload failed : {0}", scene.name);
                 LiteUtils.SafeInvoke(callback);
+                return;
             }
+
+            LiteRuntime.Task.AddTask(op, () =>
+            {
+                if (Stage == AssetCacheStage.Unloaded)
+                {
+                    LiteUtils.SafeInvoke(callback);
+                    return;
+                }
+
+                if (op.isDone && (!scene.IsValid() || !scene.isLoaded))
+                {
+                    DecRef();
+                }
+                else
+                {
+                    LLog.Error("Scene unload did not complete : {0}", scene.handle);
+                }
+
+                LiteUtils.SafeInvoke(callback);
+            });
         }
 
         public void UnloadUnusedAssets()
