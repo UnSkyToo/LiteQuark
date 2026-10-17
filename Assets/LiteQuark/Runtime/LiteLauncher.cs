@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
                     LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
                     return;
                 }
-                
+
                 if (_setting.Common.ThrowException)
                 {
                     throw;
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
             }
 #endif
         }
-        
+
         private void OnApplicationQuit()
         {
             try

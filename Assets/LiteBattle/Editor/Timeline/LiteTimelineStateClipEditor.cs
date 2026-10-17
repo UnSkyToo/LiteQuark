@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -26,14 +26,14 @@ namespace LiteBattle.Editor
                 if (stateClip.Event is LitePlayAnimationEvent playAnimationEvent)
                 {
                     clip.start = 0;
-                    
+
                     var stateLength = LiteEditorBinder.Instance.GetAnimatorStateLength(playAnimationEvent.AnimationName);
                     if (stateLength > 0)
                     {
                         clip.duration = stateLength;
                         LiteTimelineHelper.SetVisibleTimeRange(new Vector2(0, (float)clip.duration * 1.5f));
                     }
-                    
+
                     clip.displayName = $"{GetCommonDisplayName(clip)} {playAnimationEvent.AnimationName}";
                 }
                 else if (stateClip.Event is LitePlayEffectEvent playEffectEvent)
@@ -44,7 +44,7 @@ namespace LiteBattle.Editor
                     //     clip.duration = stateLength;
                     //     LiteTimelineHelper.SetVisibleTimeRange(new Vector2(0, (float)clip.duration * 1.5f));
                     // }
-                    
+
                     clip.displayName = $"{GetCommonDisplayName(clip)} {System.IO.Path.GetFileNameWithoutExtension(playEffectEvent.EffectPath)}";
                 }
                 else if (stateClip.Event is LiteTransferEvent transferEvent)

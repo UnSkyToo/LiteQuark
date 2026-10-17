@@ -14,14 +14,14 @@ namespace LiteQuark.Runtime
         public ParticleSystem[] Particles;
         public Animator[] Animators;
         public TrailRenderer[] Trails;
-        
+
         private float[] _trailsTime;
 
         public bool IsEmpty()
         {
             return Particles.Length == 0 && Animators.Length == 0 && Trails.Length == 0;
         }
-        
+
         public void Play(float speed)
         {
             if (Animators != null)
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
-            
+
             if (Particles != null)
             {
                 foreach (var particle in Particles)
@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
-            
+
             if (Trails != null)
             {
                 foreach (var trail in Trails)
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         public void PlayAnimation(string stateName, int layer)
         {
             if (Animators != null)
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         public void SetSpeed(float speed)
         {
             if (Animators != null)
@@ -172,7 +172,7 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
-            
+
             if (Particles != null)
             {
                 foreach (var particle in Particles)
@@ -192,7 +192,7 @@ namespace LiteQuark.Runtime
 
             IsLoop = false;
             var time = 0f;
-            
+
             foreach (var particle in Particles)
             {
                 time = Mathf.Max(particle.main.duration, time);
@@ -202,14 +202,14 @@ namespace LiteQuark.Runtime
                     break;
                 }
             }
-            
+
             foreach (var animator in Animators)
             {
                 if (animator.runtimeAnimatorController == null)
                 {
                     continue;
                 }
-                
+
                 foreach (var clip in animator.runtimeAnimatorController.animationClips)
                 {
                     time = Mathf.Max(clip.length, time);
@@ -225,7 +225,7 @@ namespace LiteQuark.Runtime
             {
                 IsLoop = true;
             }
-            
+
             LifeTime = IsLoop ? 0f : time;
             RetainTime = Mathf.Max(0.5f, LifeTime);
         }

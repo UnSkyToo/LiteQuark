@@ -10,9 +10,9 @@ namespace LiteQuark.Editor
             get => _config.Enable;
             protected set => _config.Enable = value;
         }
-        
+
         private readonly AppBuildConfig _config;
-        
+
         public BuilderAppView(ProjectBuilderWindow window, string title, AppBuildConfig config)
             : base(window, title)
         {

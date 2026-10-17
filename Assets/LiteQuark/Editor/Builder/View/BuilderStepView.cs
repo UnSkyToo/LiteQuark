@@ -31,9 +31,9 @@ namespace LiteQuark.Editor
                     Handles.color = Color.gray;
                     Handles.DrawLine(new Vector3(2, 34, 0), new Vector3(rect.width - 4, 34, 0));
                     Handles.color = preColor;
-                    
+
                     GUILayout.Space(8);
-                    
+
                     using (new EditorGUI.DisabledGroupScope(!Enabled))
                     {
                         DrawContent();

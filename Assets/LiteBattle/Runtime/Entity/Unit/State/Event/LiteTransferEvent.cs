@@ -21,7 +21,7 @@ namespace LiteBattle.Runtime
         public List<ILiteCondition> ConditionList = new();
 
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
         }

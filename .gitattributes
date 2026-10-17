@@ -1,0 +1,21 @@
+# Keep hand-maintained C# sources as LF even when core.autocrlf is enabled.
+Assets/LiteQuark/Runtime/**/*.cs text eol=lf
+Assets/LiteQuark/Editor/**/*.cs text eol=lf
+Assets/LiteQuark.Addons/**/*.cs text eol=lf
+Assets/LiteBattle/**/*.cs text eol=lf
+Assets/Scripts/**/*.cs text eol=lf
+Assets/Editor/**/*.cs text eol=lf
+
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+
+# Restore the default Git handling for generated files inside source directories.
+**/Generated/**/*.cs !text !eol
+**/generated/**/*.cs !text !eol
+**/*.g.cs !text !eol
+**/*.g.i.cs !text !eol
+**/*.generated.cs !text !eol
+**/*.Generated.cs !text !eol
+**/*Generated.cs !text !eol
+**/*.Designer.cs !text !eol
+**/*.designer.cs !text !eol

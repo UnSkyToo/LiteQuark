@@ -4,7 +4,7 @@ namespace LiteBattle.Runtime
     {
         public string Name { get; private set; }
         public LiteClip[] Clips { get; private set; }
-        
+
         public LiteStateConfig(string name, LiteClip[] clips)
         {
             Name = name;

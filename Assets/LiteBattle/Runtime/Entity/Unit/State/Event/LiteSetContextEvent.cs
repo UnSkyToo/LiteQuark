@@ -12,9 +12,9 @@ namespace LiteBattle.Runtime
 
         [LiteProperty("值", LitePropertyType.String)]
         public string Value = string.Empty;
-        
+
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
         }

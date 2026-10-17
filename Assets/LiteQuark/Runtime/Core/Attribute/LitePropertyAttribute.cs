@@ -39,14 +39,14 @@ namespace LiteQuark.Runtime
         /// </summary>
         OptionalTypeList,
     }
-    
+
     [Conditional("UNITY_EDITOR")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public sealed class LitePropertyAttribute : Attribute
     {
         public string Name { get; }
         public LitePropertyType Type { get; }
-        
+
         public LitePropertyAttribute(string name, LitePropertyType type)
         {
             Name = name;

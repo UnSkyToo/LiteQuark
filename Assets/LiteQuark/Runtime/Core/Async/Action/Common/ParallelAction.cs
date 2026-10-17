@@ -3,9 +3,9 @@ namespace LiteQuark.Runtime
     public class ParallelAction : CompositeAction
     {
         public override string DebugName => $"<Parallel - {Tag}>({SubActionCount})";
-        
+
         private int _currentCount;
-        
+
         public ParallelAction(string tag, int repeatCount, IAction[] args)
             : base(tag, repeatCount, args)
         {
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         {
             IsDone = SubActionCount == 0;
             _currentCount = 0;
-            
+
             ExecuteSubActions();
         }
 
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
                     endCount++;
                     continue;
                 }
-                
+
                 SubActions[index].Tick(deltaTime);
 
                 if (SubActions[index].IsDone)
@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
                     endCount++;
                 }
             }
-            
+
             if (endCount == SubActionCount)
             {
                 _currentCount++;

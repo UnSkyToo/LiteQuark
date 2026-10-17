@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public abstract class RectTransformBaseAction : BaseAction
     {
         protected readonly RectTransform RT;
-        
+
         protected RectTransformBaseAction(RectTransform transform)
         {
             RT = transform;

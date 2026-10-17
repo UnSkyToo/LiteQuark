@@ -10,12 +10,12 @@ namespace LiteQuark.Editor
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-            
+
             if (Application.isPlaying)
             {
                 return;
             }
-            
+
             var path = AssetDatabase.GetAssetPath(target);
             if (AssetDatabase.IsValidFolder(path) && path != LiteConst.AssetRootPath && path.StartsWith(LiteConst.AssetRootPath))
             {

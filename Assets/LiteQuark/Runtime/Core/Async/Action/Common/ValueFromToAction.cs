@@ -12,10 +12,10 @@ namespace LiteQuark.Runtime
         private readonly T _endValue;
         private readonly float _totalTime = 0f;
         private readonly EaseKind _easeKind;
-        
+
         private float _currentTime = 0f;
         private T _startValue;
-        
+
         protected ValueFromToAction(Func<T> getter, Action<T> setter, T value, float time, EaseKind easeKind = EaseKind.Linear)
         {
             _getter = getter;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             var value = LerpUnclamped(_startValue, _endValue, v);
             _setter.Invoke(value);
 
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
                 IsDone = true;
                 return;
             }
-            
+
             _currentTime = 0;
             _startValue = _getter.Invoke();
             IsDone = false;
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
             return Mathf.LerpUnclamped(start, end, t);
         }
     }
-    
+
     public class IntValueFromToAction : ValueFromToAction<int>
     {
         public IntValueFromToAction(Func<int> getter, Action<int> setter, int value, float time, EaseKind easeKind = EaseKind.Linear)
@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
             return Mathf.RoundToInt(start + (end - start) * t);
         }
     }
-    
+
     public class ColorValueFromToAction : ValueFromToAction<Color>
     {
         public ColorValueFromToAction(Func<Color> getter, Action<Color> setter, Color value, float time, EaseKind easeKind = EaseKind.Linear)
@@ -95,7 +95,7 @@ namespace LiteQuark.Runtime
             return Color.LerpUnclamped(start, end, t);
         }
     }
-    
+
     public static partial class ActionBuilderExtend
     {
         public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<float> getter, Action<float> setter, float value, float time, EaseKind easeKind = EaseKind.Linear)
@@ -103,13 +103,13 @@ namespace LiteQuark.Runtime
             builder.Add(new FloatValueFromToAction(getter, setter, value, time, easeKind));
             return builder;
         }
-        
+
         public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<int> getter, Action<int> setter, int value, float time, EaseKind easeKind = EaseKind.Linear)
         {
             builder.Add(new IntValueFromToAction(getter, setter, value, time, easeKind));
             return builder;
         }
-        
+
         public static ActionBuilder ValueFromTo(this ActionBuilder builder, Func<Color> getter, Action<Color> setter, Color value, float time, EaseKind easeKind = EaseKind.Linear)
         {
             builder.Add(new ColorValueFromToAction(getter, setter, value, time, easeKind));

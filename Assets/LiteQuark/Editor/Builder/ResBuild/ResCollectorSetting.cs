@@ -10,7 +10,7 @@ namespace LiteQuark.Editor
     {
         [SerializeField]
         public List<string> IgnorePathList = new();
-        
+
         private const string RES_SETTING_ASSET_PATH = "Assets/Editor/ResSetting.asset";
         private static ResCollectorSetting _setting = null;
         private static int _wasPreferencesDirCreated = 0;
@@ -35,7 +35,7 @@ namespace LiteQuark.Editor
                 IgnorePathList.Remove(path);
             }
         }
-        
+
         internal static ResCollectorSetting GetOrCreateSetting()
         {
             if (_setting != null)

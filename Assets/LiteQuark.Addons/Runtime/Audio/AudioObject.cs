@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
-                    
+
                 Source = Carrier.GetOrAddComponent<AudioSource>();
                 Source.clip = clip;
                 Source.volume = Mathf.Clamp01(volume);
@@ -153,7 +153,7 @@ namespace LiteQuark.Runtime
             {
                 Source.Play();
             }
-            
+
             return true;
         }
 
@@ -185,7 +185,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             Source.Pause();
         }
 
@@ -195,7 +195,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             Source.UnPause();
         }
 

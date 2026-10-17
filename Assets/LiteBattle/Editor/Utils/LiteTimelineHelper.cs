@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor.Timeline;
@@ -17,7 +17,7 @@ namespace LiteBattle.Editor
                 win.SetTimeline(asset);
             }
         }
-        
+
         public static void ClearTimeline()
         {
             var win = TimelineEditor.GetWindow();
@@ -35,7 +35,7 @@ namespace LiteBattle.Editor
                 win.SaveChanges();
             }
         }
-        
+
         public static void RepaintTimeline()
         {
             var win = TimelineEditor.GetWindow();
@@ -44,7 +44,7 @@ namespace LiteBattle.Editor
                 win.Repaint();
             }
         }
-        
+
         public static void SetVisibleTimeRange(Vector2 range)
         {
             var editorType = typeof(TimelineEditor);
@@ -53,7 +53,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             visibleTimeRangeProperty.SetValue(null, range);
         }
 
@@ -95,7 +95,7 @@ namespace LiteBattle.Editor
             {
                 throw new Exception("can't find TrackResourceCache type");
             }
-            
+
             var setIconMethod = resourceCacheType.GetMethod("SetTrackIcon", BindingFlags.Static | BindingFlags.Public);
             if (setIconMethod == null)
             {

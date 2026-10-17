@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using LiteBattle.Runtime;
 using LiteQuark.Editor;
 using LiteQuark.Runtime;
@@ -13,7 +13,7 @@ namespace LiteBattle.Editor
     {
         private readonly LiteRuntimeUnitList List_;
         private bool IsVisible_;
-        
+
         public LiteRuntimeView(LiteNexusEditor nexusEditor)
             : base(nexusEditor)
         {
@@ -47,10 +47,10 @@ namespace LiteBattle.Editor
         public override void Draw()
         {
             DrawTitle("Runtime View");
-            
+
             List_.RefreshData();
             List_.Draw();
-            
+
             // UpdateTimelineState();
         }
 
@@ -67,7 +67,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             var currentTime = state.GetCurrentTime();
             NexusEditor.GetTimelineCtrlView().SetFrameIndex(LiteTimelineHelper.TimeToFrame(currentTime));
 
@@ -85,13 +85,13 @@ namespace LiteBattle.Editor
         private class LiteRuntimeUnitList : LiteListView<LiteUnit>
         {
             private readonly LiteNexusEditor NexusEditor_;
-            
+
             public LiteRuntimeUnitList(LiteNexusEditor nexusEditor)
             {
                 NexusEditor_ = nexusEditor;
                 HideToolbar = true;
             }
-            
+
             protected override List<LiteUnit> GetList()
             {
                 var entityList = LiteEntityManager.Instance.GetEntityList();
@@ -132,11 +132,11 @@ namespace LiteBattle.Editor
                 if (GUILayout.Button($"{config.name}({obj.UniqueID})", selected ? LiteEditorStyle.ButtonSelect : LiteEditorStyle.ButtonNormal, GUILayout.ExpandWidth(true)))
                 {
                     selected = !selected;
-                    
+
                     LiteEditorBinder.Instance.BindUnitRuntime(obj);
                     NexusEditor_.GetTimelineView().Rebind();
                 }
-                
+
                 return selected;
             }
         }

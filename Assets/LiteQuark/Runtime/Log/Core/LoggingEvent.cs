@@ -13,7 +13,7 @@ namespace LiteQuark.Runtime
         public string Trace { get; }
         public string ThreadName { get; }
         public DateTime TimeStamp { get; }
-        
+
         public LoggingEvent(string loggerName, LogLevel level, string message, Exception exception)
             : this(loggerName, level, message, exception, level != LogLevel.Info ? new StackTrace().ToString() : string.Empty, Thread.CurrentThread.Name, DateTime.Now)
         {
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
             ThreadName = threadName;
             TimeStamp = timeStamp;
         }
-        
+
         public string GetExceptionString()
         {
             if (ThrowException != null)

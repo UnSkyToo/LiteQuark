@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public class RectTransformSetPositionAction : RectTransformBaseAction
     {
         public override string DebugName => $"<RectTransformSetPosition>({RT.name},{_position})";
-        
+
         private readonly Vector2 _position;
 
         public RectTransformSetPositionAction(RectTransform transform, Vector2 position)

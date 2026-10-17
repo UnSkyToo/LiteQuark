@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
     public sealed class LitePriorityAttribute : Attribute
     {
         public uint Value { get; }
-    
+
         public LitePriorityAttribute(uint value)
         {
             Value = value;

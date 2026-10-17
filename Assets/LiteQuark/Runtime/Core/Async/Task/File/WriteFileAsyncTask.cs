@@ -29,7 +29,7 @@
 //                 throw;
 //             }
 //         }
-//         
+//
 //         public override void Dispose()
 //         {
 //             _stream.Close();
@@ -60,7 +60,7 @@
 //                 if (_offset >= _data.Length)
 //                 {
 //                     await _stream.FlushAsync().ConfigureAwait(false);
-//                     
+//
 //                     _callback?.Invoke(true);
 //                     Complete(true);
 //                     break;

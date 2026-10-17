@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private EffectState _state;
         private GameObject _go;
         private EffectBinder _binder;
-        
+
         private float _curSpeed = 1f;
         private float _lastSpeed = 1f;
         private float _lastTimeScale = 1f;
@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
         {
             _info = info;
             _state = EffectState.Created;
-            
+
             LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Alloc(_info.Parent, OnLoad);
         }
 
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
                 {
                     UnityUtils.AddSortingOrder(_go, -_info.Order);
                 }
-                
+
                 LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(_go);
                 _go = null;
             }
@@ -107,7 +107,7 @@ namespace LiteQuark.Runtime
         private void Setup(GameObject go)
         {
             _go = go;
-            
+
             SetupBinder(go);
             SetupTransform(go);
 
@@ -154,7 +154,7 @@ namespace LiteQuark.Runtime
                 {
                     go.transform.position = _info.Position;
                 }
-                
+
                 if ((_info.Space & EffectSpace.LocalRotation) != 0)
                 {
                     go.transform.localRotation = _info.Rotation;
@@ -169,10 +169,10 @@ namespace LiteQuark.Runtime
                 go.transform.position = _info.Position;
                 go.transform.rotation = _info.Rotation;
             }
-                    
+
             go.transform.localScale = Vector3.one * _info.Scale;
         }
-        
+
         public void SetSpeed(float speed)
         {
             if (Mathf.Abs(_curSpeed - speed) > 0.0001f && IsValid)
@@ -199,7 +199,7 @@ namespace LiteQuark.Runtime
                 _binder?.SetTime(time);
             }
         }
-        
+
         public void Play(float speed)
         {
             if (IsValid)

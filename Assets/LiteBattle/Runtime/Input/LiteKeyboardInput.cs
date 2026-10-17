@@ -22,7 +22,7 @@ namespace LiteBattle.Runtime
             public float ReleasedTime = 100f;
             public int ClickCount = 0;
         }
-        
+
         public bool Enable { get; set; } = true;
 
         private readonly Dictionary<KeyCode, KeyState> MapInfo_ = new();
@@ -46,7 +46,7 @@ namespace LiteBattle.Runtime
             {
                 return;
             }
-            
+
             foreach (var map in MapInfo_)
             {
                 map.Value.PressedTime += deltaTime;

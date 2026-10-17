@@ -14,31 +14,31 @@ namespace LiteQuark.Runtime
         private CancellationTokenRegistration _ctr;
         private T _result;
         private bool _isDisposed;
-        
+
         public bool IsDone { get; private set; }
         public T Result => _result;
         internal UniTask<T> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
-        
+
         internal AssetHandle(Action<Action<T>> invoke, CancellationToken ct, Action releaseAction)
         {
             _releaseAction = releaseAction;
-            
+
             if (ct.IsCancellationRequested)
             {
                 IsDone = true;
                 _tcs.TrySetCanceled(ct);
                 return;
             }
-            
+
             if (ct.CanBeCanceled)
             {
                 _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
             }
-            
+
             invoke(OnCompleted);
         }
-        
+
         private void OnCompleted(T result)
         {
             _ctr.Dispose();
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
             _releaseAction?.Invoke();
             _result = default;
         }
-        
+
         public void Dispose()
         {
             if (_isDisposed)
@@ -67,15 +67,15 @@ namespace LiteQuark.Runtime
                 return;
             }
             _isDisposed = true;
-            
+
             _ctr.Dispose();
-            
+
             if (!IsDone)
             {
                 _tcs.TrySetCanceled();
                 return;
             }
-            
+
             if (_result != null)
             {
                 ReleaseResult();

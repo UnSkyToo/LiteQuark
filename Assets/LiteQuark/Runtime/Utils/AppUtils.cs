@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
             return ConvertRuntimePlatformToString(Application.platform);
 #endif
         }
-        
+
 #if UNITY_EDITOR
         private static string ConvertBuildTargetToString(UnityEditor.BuildTarget target)
         {
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
             {
                 var chunk1 = version1.Split('.');
                 var chunk2 = version2.Split('.');
-                
+
                 for (var i = 0; i < chunk1.Length; i++)
                 {
                     var v1 = int.Parse(chunk1[i]);
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
                         return -1;
                     }
                 }
-                
+
                 return 0;
             }
             catch
@@ -135,12 +135,12 @@ namespace LiteQuark.Runtime
         {
             return $"version_{GetMainVersion()}.txt";
         }
-        
+
         public static string GetDeviceID()
         {
             return $"{SystemInfo.deviceUniqueIdentifier}{GetMacAddress()}";
         }
-        
+
         private static string GetMacAddress()
         {
             foreach (var nf in NetworkInterface.GetAllNetworkInterfaces())
@@ -159,7 +159,7 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
-            
+
             return string.Empty;
         }
     }

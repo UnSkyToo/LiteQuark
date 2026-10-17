@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         public bool Disabled;
         [SerializeField]
         public string AssemblyQualifiedName;
-        
+
         public LiteTypeEntryData()
         {
         }

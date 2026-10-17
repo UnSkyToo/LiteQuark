@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     {
         void SetAlpha(float alpha);
     }
-    
+
     public class AlphaBox : IAlphaBox
     {
         private readonly SpriteRenderer[] _renderers;
@@ -24,14 +24,14 @@ namespace LiteQuark.Runtime
             {
                 _renderColors[i] = _renderers[i].color;
             }
-            
+
             _graphics = transform.GetComponentsInChildren<Graphic>();
             _graphicColors = new Color[_graphics.Length];
             for (var i = 0; i < _graphics.Length; ++i)
             {
                 _graphicColors[i] = _graphics[i].color;
             }
-            
+
             _canvasGroups = transform.GetComponentsInChildren<CanvasGroup>();
         }
 
@@ -42,7 +42,7 @@ namespace LiteQuark.Runtime
                 _renderColors[i].a = alpha;
                 _renderers[i].color = _renderColors[i];
             }
-            
+
             for (var i = 0; i < _graphics.Length; ++i)
             {
                 _graphicColors[i].a = alpha;

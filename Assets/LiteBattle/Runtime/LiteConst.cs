@@ -30,7 +30,7 @@ namespace LiteBattle.Runtime
             public const string None = "None";
             public const string True = "True";
             public const string False = "False";
-            
+
             public const string Moving = "Moving";
         }
 

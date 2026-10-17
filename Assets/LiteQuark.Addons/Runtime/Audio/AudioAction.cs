@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
         private readonly bool _isLoop;
         private readonly int _limit;
         private readonly float _volume;
-        
+
         public PlaySoundAction(string path, bool isLoop, int limit, float volume)
         {
             _path = path;
@@ -27,9 +27,9 @@ namespace LiteQuark.Runtime
     public class MuteAllSoundAction : BaseAction
     {
         public override string DebugName => $"<MuteAllSoundAction>({_isMute})";
-        
+
         private readonly bool _isMute;
-        
+
         public MuteAllSoundAction(bool isMute)
         {
             _isMute = isMute;
@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
             LiteRuntime.Get<AudioSystem>().MuteAllSound(_isMute);
         }
     }
-    
+
     public class PlayMusicAction : BaseAction
     {
         public override string DebugName => $"<PlayMusic>({_path},{_isLoop},{_volume},{_isOnly})";
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
         private readonly bool _isLoop;
         private readonly float _volume;
         private readonly bool _isOnly;
-        
+
         public PlayMusicAction(string path, bool isLoop, float volume, bool isOnly)
         {
             _path = path;
@@ -65,13 +65,13 @@ namespace LiteQuark.Runtime
             LiteRuntime.Get<AudioSystem>().PlayMusic(_path, _isLoop, _volume, _isOnly);
         }
     }
-    
+
     public class MuteAllMusicAction : BaseAction
     {
         public override string DebugName => $"<MuteAllMusicAction>({_isMute})";
-        
+
         private readonly bool _isMute;
-        
+
         public MuteAllMusicAction(bool isMute)
         {
             _isMute = isMute;

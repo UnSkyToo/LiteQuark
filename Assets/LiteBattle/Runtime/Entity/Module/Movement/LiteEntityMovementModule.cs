@@ -6,7 +6,7 @@ namespace LiteBattle.Runtime
     {
         private readonly LiteMoveController MoveController_;
         private readonly LiteRotateController RotateController_;
-        
+
         public LiteEntityMovementModule(LiteEntity entity)
             : base(entity)
         {
@@ -23,12 +23,12 @@ namespace LiteBattle.Runtime
             MoveController_.Tick(deltaTime);
             RotateController_.Tick(deltaTime);
         }
-        
+
         public void MoveToDir(Vector3 moveDir)
-        {   
+        {
             MoveController_.MoveToDir(moveDir, 7.0f);
             RotateController_.RotateTo(moveDir, 25.0f);
-            
+
             Entity.SetContext(LiteConst.ContextKey.PlayerMoveState, LiteConst.ContextValue.Moving);
         }
 
@@ -42,7 +42,7 @@ namespace LiteBattle.Runtime
         public void StopMove()
         {
             MoveController_.StopMove();
-            
+
             Entity.SetContext(LiteConst.ContextKey.PlayerMoveState, LiteConst.ContextValue.None);
         }
     }

@@ -13,7 +13,7 @@ namespace LiteBattle.Editor
             base.OnCreate(track, copiedFrom);
         }
     }
-    
+
     [CustomTimelineEditor(typeof(LiteTimelineStateTransferTrack))]
     public class LiteTimelineStateTransferTrackEditor : TrackEditor
     {

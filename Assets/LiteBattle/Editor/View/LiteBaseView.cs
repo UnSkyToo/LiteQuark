@@ -5,7 +5,7 @@ namespace LiteBattle.Editor
     public abstract class LiteBaseView : ILiteEditorView
     {
         public LiteNexusEditor NexusEditor { get; }
-        
+
         protected LiteBaseView(LiteNexusEditor nexusEditor)
         {
             NexusEditor = nexusEditor;

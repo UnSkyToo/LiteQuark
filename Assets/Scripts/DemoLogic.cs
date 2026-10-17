@@ -1,4 +1,4 @@
-﻿using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 
@@ -9,7 +9,7 @@ namespace LiteQuark.Demo
         public DemoLogic()
         {
         }
-        
+
         public UniTask<bool> Initialize()
         {
             return LiteNexusEngine.Instance.Startup();
@@ -21,7 +21,7 @@ namespace LiteQuark.Demo
             LiteNexusEngine.Instance.Shutdown();
             LiteRuntime.ObjectPool.RemoveUnusedPools();
         }
-        
+
         public void Tick(float deltaTime)
         {
             LiteNexusEngine.Instance.Tick(deltaTime);

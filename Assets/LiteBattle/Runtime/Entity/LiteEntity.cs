@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
     public abstract class LiteEntity : BaseObject, ISubstance
     {
         public string Tag { get; set; }
-        
+
         public bool IsAlive { get; protected set; }
         public LiteEntityCamp Camp { get; set; }
 
@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
         public Vector3 Scale { get; set; } = Vector3.one;
         public Quaternion Rotation { get; set; } = Quaternion.identity;
         public int AnimationNameHash { get; private set; } = 0;
-        
+
         private readonly LiteContext Context_;
         private readonly Dictionary<System.Type, LiteEntityModuleBase> Modules_;
 
@@ -98,7 +98,7 @@ namespace LiteBattle.Runtime
             var key = GetModuleKey<T>();
             Modules_.Remove(key);
         }
-        
+
         public T GetContext<T>(string key, T defaultValue)
         {
             return Context_.GetData(key, defaultValue);
@@ -118,7 +118,7 @@ namespace LiteBattle.Runtime
         {
             return Context_.GetTag(tag);
         }
-        
+
         public void PlayAnimation(string animationName)
         {
             AnimationNameHash = Animator.StringToHash(animationName);

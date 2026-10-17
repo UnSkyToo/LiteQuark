@@ -9,17 +9,17 @@ namespace LiteBattle.Runtime
         Press,
         LongPress,
     }
-    
+
     public class LitePlayerController : IDisposable
     {
         public LiteUnit Unit { get; private set; }
-        
+
         private Vector2 CurrentMoveDir_ = Vector2.zero;
 
         public LitePlayerController(LiteUnit unit)
         {
             Unit = unit;
-            
+
             LiteInputManager.Instance.EnableKeyboard = true;
             // LiteInputManager.Instance.EnableTouch = true;
 
@@ -81,7 +81,7 @@ namespace LiteBattle.Runtime
                 CurrentMoveDir_ = Vector2.zero;
             }
         }
-        
+
         private void OnClickHandler(LitePlayerInputKey inputKey)
         {
             if (Unit != null)
@@ -89,7 +89,7 @@ namespace LiteBattle.Runtime
                 Unit.SetContext(LiteInputKeyType.Click.ToContextKey(), inputKey.ToString(), 1);
             }
         }
-        
+
         private void OnKeyDownHandler(LitePlayerInputKey inputKey)
         {
             if (Unit != null)

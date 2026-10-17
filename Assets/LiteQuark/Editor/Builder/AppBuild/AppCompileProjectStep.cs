@@ -6,7 +6,7 @@ namespace LiteQuark.Editor
     internal sealed class AppCompileProjectStep : IBuildStep
     {
         public string Name => "App Compile Project Step";
-        
+
         public void Execute(ProjectBuilder builder)
         {
         }

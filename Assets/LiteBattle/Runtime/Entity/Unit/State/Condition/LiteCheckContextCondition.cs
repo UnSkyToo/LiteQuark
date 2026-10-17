@@ -2,14 +2,14 @@ using System;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
-{   
+{
     [LiteLabel("CheckContext")]
     [Serializable]
     public sealed class LiteCheckContextCondition : ILiteCondition
     {
         [LiteProperty("变量名", LitePropertyType.String)]
         public string Key = string.Empty;
-        
+
         [LiteProperty("比较函数", LitePropertyType.Enum)]
         public LiteCompareKind CompareKind = LiteCompareKind.Equal;
 
@@ -17,7 +17,7 @@ namespace LiteBattle.Runtime
         public string Value = string.Empty;
 
         public bool HasData => true;
-        
+
         public bool Check(LiteState state)
         {
             var contextValue = state.Unit.GetContext(Key, LiteConst.ContextValue.None);

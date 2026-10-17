@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
         {
             _callback = null;
         }
-        
+
         protected override IEnumerator ExecuteInternal()
         {
             while (State == TaskState.InProgress)
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
                     Complete(null);
                 }
             }
-            
+
             LiteUtils.SafeInvoke(_callback);
         }
     }

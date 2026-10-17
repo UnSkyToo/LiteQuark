@@ -1,4 +1,4 @@
-﻿using LiteQuark.Runtime;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {
@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
         Continue,
         Break,
     }
-    
+
     /// <summary>
     /// <para>Clip event interface</para>
     /// <para>Must be in the same assembly as the interface</para>

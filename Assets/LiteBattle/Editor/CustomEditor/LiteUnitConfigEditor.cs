@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using LiteQuark.Editor;
 using LiteQuark.Runtime;
 using UnityEditor;

@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
             {
                 appender.Close();
             }
-            
+
             _appenderList.Clear();
         }
 
@@ -46,7 +46,7 @@ namespace LiteQuark.Runtime
             {
                 return false;
             }
-            
+
             return (_currentLevel & level) == level;
         }
 
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
         {
             CallAppenderList(new LoggingEvent(Name, level, message, exception));
         }
-        
+
         protected virtual void ForcedLog(LoggingEvent logEvent)
         {
             CallAppenderList(logEvent);

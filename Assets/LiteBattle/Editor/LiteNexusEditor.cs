@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using LiteBattle.Runtime;
 using LiteQuark.Editor;
@@ -13,7 +13,7 @@ namespace LiteBattle.Editor
         private bool IsInit_ = false;
         private readonly List<ILiteEditorView> ViewList_ = new();
         private LiteNexusSceneView SceneView_;
-        
+
         [MenuItem("Lite/Nexus Engine/Editor Window")]
         private static void ShowEditor()
         {
@@ -25,7 +25,7 @@ namespace LiteBattle.Editor
         private void OnEnable()
         {
             IsInit_ = false;
-            
+
             LayoutUtils.OpenScene("LiteNexusEditorScene");
             Startup();
 
@@ -78,7 +78,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             SceneView_?.Draw(sceneView);
         }
 
@@ -86,7 +86,7 @@ namespace LiteBattle.Editor
         {
             LiteEditorBinder.Instance.Startup();
             LiteEditorPreviewer.Instance.Startup();
-            
+
             ViewList_.Clear();
             ViewList_.Add(new LiteRuntimeView(this));
             ViewList_.Add(new LiteUnitView(this));
@@ -109,7 +109,7 @@ namespace LiteBattle.Editor
             // LiteEditorLayoutDrawer.Clear();
             LiteEditorPreviewer.Instance.Shutdown();
             LiteEditorBinder.Instance.Shutdown();
-            
+
             SaveDatabase();
         }
 
@@ -145,7 +145,7 @@ namespace LiteBattle.Editor
         {
             var unitList = new List<string>();
             var stateMap = new Dictionary<string, List<string>>();
-            
+
             var unitConfigFullPathList = AssetUtils.GetAssetPathList("LiteUnitConfig", LiteNexusConfig.Instance.GetUnitDatabasePath());
             foreach (var unitConfigFullPath in unitConfigFullPathList)
             {
@@ -155,7 +155,7 @@ namespace LiteBattle.Editor
                     Debug.LogError($"{unitConfigFullPath} is not LiteUnitConfig");
                     continue;
                 }
-                
+
                 if (string.IsNullOrWhiteSpace(unitConfig.StateGroup))
                 {
                     Debug.LogError($"{unitConfigFullPath} StateGroup is empty");
@@ -165,7 +165,7 @@ namespace LiteBattle.Editor
                 var timelineRootPath = PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), unitConfig.StateGroup);
                 var timelineFullPathList = AssetUtils.GetAssetPathList("TimelineAsset", timelineRootPath);
                 var timelineList = new List<string>(timelineFullPathList.Count);
-                
+
                 foreach (var timelineFullPath in timelineFullPathList)
                 {
                     var timelinePath = PathUtils.GetRelativeAssetRootPath(timelineFullPath);

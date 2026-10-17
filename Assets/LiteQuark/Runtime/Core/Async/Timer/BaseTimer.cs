@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
         private int _repeatCount;
         private float _time;
         private float _delayTime;
-        
+
         protected BaseTimer(float interval, float delayTime, int repeatCount, Action onTick, Action onComplete, bool isUnscaled = false)
         {
             _interval = interval;
@@ -49,20 +49,20 @@ namespace LiteQuark.Runtime
                 {
                     return;
                 }
-                
+
                 deltaTime = -_delayTime;
                 _delayTime = 0;
             }
 
             _time += deltaTime;
-            
+
             if (_interval <= 0)
             {
                 _time = 0;
                 TriggerTick();
                 return;
             }
-            
+
             var tickCount = 0;
             while (_time >= _interval && !IsDone && tickCount < MaxTicksPerFrame)
             {
@@ -70,13 +70,13 @@ namespace LiteQuark.Runtime
                 TriggerTick();
                 tickCount++;
             }
-            
+
             if (tickCount >= MaxTicksPerFrame)
             {
                 _time = 0;
             }
         }
-        
+
         public void Pause()
         {
             _isPaused = true;

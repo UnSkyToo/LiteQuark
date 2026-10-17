@@ -7,14 +7,14 @@ namespace LiteQuark.Runtime
     public class SafeList<T> : IEnumerable<T>
     {
         private enum OperationType { Add, Remove, Clear }
-        
+
         private readonly Queue<(OperationType type, T item)> _ops;
         private readonly List<T> _values;
         private int _inEach;
-        
+
         public int Count => _values.Count;
         public T this[int index] => _values[index];
-        
+
         public SafeList()
         {
             _ops = new Queue<(OperationType type, T item)>();
@@ -118,7 +118,7 @@ namespace LiteQuark.Runtime
                 Flush();
             }
         }
-        
+
         public void Foreach<P1, P2, P3>(Action<T, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
@@ -136,7 +136,7 @@ namespace LiteQuark.Runtime
                 Flush();
             }
         }
-        
+
         /// <summary>
         /// Return T when func return true
         /// </summary>
@@ -186,7 +186,7 @@ namespace LiteQuark.Runtime
             }
             return default;
         }
-        
+
         public void Sort(IComparer<T> comparer)
         {
             if (_inEach > 0)

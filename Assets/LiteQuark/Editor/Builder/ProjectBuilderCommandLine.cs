@@ -100,7 +100,7 @@ namespace LiteQuark.Editor
                     argumentData.AddArgument(name, value);
                 }
             }
-            
+
             return argumentData;
         }
 
@@ -141,7 +141,7 @@ namespace LiteQuark.Editor
                 {
                     return _map[key];
                 }
-                
+
                 return string.Empty;
             }
 
@@ -152,7 +152,7 @@ namespace LiteQuark.Editor
                 {
                     return defaultValue;
                 }
-                
+
                 if (Enum.TryParse<T>(argument, true, out var enumValue))
                 {
                     return enumValue;
@@ -168,7 +168,7 @@ namespace LiteQuark.Editor
                 {
                     return defaultValue;
                 }
-                
+
                 if (bool.TryParse(argument, out var boolValue))
                 {
                     return boolValue;
@@ -203,7 +203,7 @@ namespace LiteQuark.Editor
 
                 return defaultValue;
             }
-            
+
 #region Cutsom Argument
             public BuildTarget GetTarget()
             {
@@ -239,7 +239,7 @@ namespace LiteQuark.Editor
 #endif
                 return 0;
             }
-            
+
             public bool GetHashMode()
             {
                 return GetBoolValue("hashMode", false);
@@ -249,7 +249,7 @@ namespace LiteQuark.Editor
             {
                 return GetBoolValue("flatMode", false);
             }
-            
+
             public bool GetArm64()
             {
 #if UNITY_ANDROID
@@ -276,7 +276,7 @@ namespace LiteQuark.Editor
                 return false;
 #endif
             }
-            
+
             public bool GetCreateSymbols()
             {
 #if UNITY_ANDROID
@@ -285,12 +285,12 @@ namespace LiteQuark.Editor
                 return false;
 #endif
             }
-            
+
             public bool GetDebugBuild()
             {
                 return GetBoolValue("debugBuild", false);
             }
-            
+
 
             public bool GetCopyToStreaming()
             {

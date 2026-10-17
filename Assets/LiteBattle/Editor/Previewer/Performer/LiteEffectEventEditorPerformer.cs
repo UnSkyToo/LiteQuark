@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using UnityEngine;
 
 namespace LiteBattle.Editor
@@ -9,7 +9,7 @@ namespace LiteBattle.Editor
         private int StartFrame_;
         private string EffectPath_;
         private Vector3 EffectPosition_;
-        
+
         public void OnExecute(ILiteEvent evt, int frame)
         {
             if (evt is LitePlayEffectEvent playEffectEvent)
@@ -19,7 +19,7 @@ namespace LiteBattle.Editor
                 EffectPosition_ = playEffectEvent.EffectPosition;
             }
         }
-        
+
         public void OnCancel()
         {
             LiteEditorBinder.Instance.StopEffect(EffectPath_);

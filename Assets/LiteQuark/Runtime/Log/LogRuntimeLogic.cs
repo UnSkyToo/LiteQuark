@@ -7,12 +7,12 @@ namespace LiteQuark.Runtime
     public class LogRuntimeLogic : ILogic
     {
         private GameObject _go;
-        
+
         public UniTask<bool> Initialize()
         {
             var setting = LiteRuntime.Setting.Log;
             var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
-            
+
             if (logEnable && setting.ShowLogViewer)
             {
                 var canvasScaler = Object.FindFirstObjectByType<CanvasScaler>();
@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
         {
             Object.Destroy(_go);
         }
-        
+
         public void Tick(float deltaTime)
         {
         }

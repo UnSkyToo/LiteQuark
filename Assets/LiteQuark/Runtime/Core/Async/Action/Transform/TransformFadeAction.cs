@@ -5,13 +5,13 @@ namespace LiteQuark.Runtime
     public class TransformFadeAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformFade>({TS.name},{_beginAlpha}->{_endAlpha},{_totalTime},{_easeKind})";
-        
+
         private readonly IAlphaBox _alphaBox;
         private readonly float _beginAlpha;
         private readonly float _endAlpha;
         private readonly float _totalTime;
         private readonly EaseKind _easeKind;
-        
+
         private float _currentTime;
 
         public TransformFadeAction(Transform transform, float beginAlpha, float endAlpha, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime = 0f;
             _alphaBox.SetAlpha(_beginAlpha);
             IsDone = false;
@@ -42,11 +42,11 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             _alphaBox.SetAlpha(Mathf.Lerp(_beginAlpha, _endAlpha, v));
 
             if (step >= 1f)
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
             }
         }
     }
-    
+
     public class TransformFadeInAction : TransformFadeAction
     {
         public TransformFadeInAction(Transform transform, float time, EaseKind easeKind = EaseKind.Linear, IAlphaBox box = null)

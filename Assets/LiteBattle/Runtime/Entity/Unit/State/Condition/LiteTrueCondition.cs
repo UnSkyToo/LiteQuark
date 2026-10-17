@@ -9,7 +9,7 @@ namespace LiteBattle.Runtime
     public class LiteTrueCondition : ILiteCondition
     {
         public bool HasData => false;
-        
+
         public bool Check(LiteState state)
         {
             return true;

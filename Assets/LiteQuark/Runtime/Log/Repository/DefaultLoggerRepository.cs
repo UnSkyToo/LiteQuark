@@ -13,29 +13,29 @@ namespace LiteQuark.Runtime
         {
             Name = "DefaultLoggerRepository";
         }
-        
+
         public DefaultLoggerRepository(ILoggerFactory loggerFactory)
         {
             _loggerFactory = loggerFactory;
             _loggerCache = new Dictionary<string, ILogger>();
         }
-        
+
         public override void Dispose()
         {
             base.Dispose();
-            
+
             _loggerCache.Clear();
         }
-        
-        public override ILogger[] GetCurrentLoggers() 
+
+        public override ILogger[] GetCurrentLoggers()
         {
             lock(this)
             {
                 var result = new List<ILogger>(_loggerCache.Count);
-                
+
                 foreach(var current in _loggerCache)
                 {
-                    if (current.Value is LoggerBase logger) 
+                    if (current.Value is LoggerBase logger)
                     {
                         result.Add(logger);
                     }
@@ -44,8 +44,8 @@ namespace LiteQuark.Runtime
                 return result.ToArray();
             }
         }
-        
-        public override ILogger GetLogger(string name) 
+
+        public override ILogger GetLogger(string name)
         {
             if (name == null)
             {
@@ -54,14 +54,14 @@ namespace LiteQuark.Runtime
 
             return GetLogger(name, _loggerFactory);
         }
-        
-        public override ILogger GetLogger(string name, ILoggerFactory factory) 
+
+        public override ILogger GetLogger(string name, ILoggerFactory factory)
         {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            
+
             if (factory == null)
             {
                 throw new ArgumentNullException(nameof(factory));
@@ -74,8 +74,8 @@ namespace LiteQuark.Runtime
                 {
                     logger = _loggerCache[name] as LoggerBase;
                 }
-                
-                if (logger == null) 
+
+                if (logger == null)
                 {
                     logger = factory.CreateLogger(name);
                     if (logger != null)

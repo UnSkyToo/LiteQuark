@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
 #endif
                         return;
                     }
-                    
+
                     callbackList.Add(callback);
                 }
                 else
@@ -120,7 +120,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             _disposed = true;
-            
+
 #if UNITY_EDITOR
             foreach (var chunk in _eventMap)
             {
@@ -158,7 +158,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             EventListener<T> listener = null;
             var eventType = typeof(T);
 

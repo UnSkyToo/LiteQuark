@@ -23,7 +23,7 @@ namespace LiteQuark.Editor.BundleViewer
         private readonly Dictionary<string, BundleViewerTreeItem> _bundlePathCacheMap = new();
         private int _idGenerator = 1;
         private int _sizeSortedAscendingType = 0;
-        
+
         public BundleViewerTreeView(TreeViewState state)
             : base(state, CreateHeader())
         {
@@ -68,15 +68,15 @@ namespace LiteQuark.Editor.BundleViewer
         {
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
             _idGenerator = 1;
-            
+
             var collector = new ResCollector();
             var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false, false);
-            
+
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
             BundleViewerUtils.SortTreeItemList(items, _sizeSortedAscendingType);
-            
+
             SetupParentsAndChildrenFromDepths(root, items);
-            
+
             IsLoaded = true;
             return root;
         }
@@ -86,7 +86,7 @@ namespace LiteQuark.Editor.BundleViewer
             var items = new List<TreeViewItem>();
             _itemCacheMap.Clear();
             _bundlePathCacheMap.Clear();
-            
+
             foreach (var bundle in packInfo.BundleList)
             {
                 var bundleItem = CreateBundleItem(bundle.BundlePath, $"{Path.GetFileNameWithoutExtension(bundle.BundlePath)}({bundle.AssetList.Length})", 0);
@@ -124,13 +124,13 @@ namespace LiteQuark.Editor.BundleViewer
                 var bundleItem = default(BundleViewerTreeItem);
                 var subPaths = bundle.BundlePath.Split(PathUtils.DirectorySeparatorChar);
                 var stepPath = new StringBuilder();
-                
+
                 for (var i = 0; i < subPaths.Length; ++i)
                 {
                     stepPath.Append(subPaths[i]);
                     stepPath.Append(PathUtils.DirectorySeparatorChar);
                     var key = stepPath.ToString().TrimEnd(PathUtils.DirectorySeparatorChar);
-                    
+
                     if (!treeDict.TryGetValue(key, out var item))
                     {
                         item = CreateBundleItem(key, subPaths[i], i);
@@ -146,12 +146,12 @@ namespace LiteQuark.Editor.BundleViewer
                         }
                         _itemCacheMap.Add(item.id, item);
                     }
-                    
+
                     bundleItem = item;
                 }
-                
+
                 _bundlePathCacheMap.Add(bundle.BundlePath, bundleItem);
-                
+
                 var totalSize = 0L;
                 foreach (var assetPath in bundle.AssetList)
                 {
@@ -179,7 +179,7 @@ namespace LiteQuark.Editor.BundleViewer
         private BundleViewerTreeItem CreateBundleItem(string bundlePath, string displayName, int depth)
         {
             var bundleFullPath = PathUtils.GetFullPathInAssetRoot(bundlePath).ToLower();
-            
+
             var bundleItem = new BundleViewerTreeItem
             {
                 id = _idGenerator++,
@@ -204,7 +204,7 @@ namespace LiteQuark.Editor.BundleViewer
                 Debug.LogError($"asset not exist : {assetFullPath}");
                 return null;
             }
-            
+
             var assetItem = new BundleViewerTreeItem
             {
                 id = _idGenerator++,
@@ -281,7 +281,7 @@ namespace LiteQuark.Editor.BundleViewer
             if (selectedIds.Count == 1 && _itemCacheMap.TryGetValue(selectedIds[0], out var item))
             {
                 OnItemSelectionChanged?.Invoke(item);
-                
+
                 if (Event.current.alt)
                 {
                     if (item.Type == BundleType)

@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
     {
         public abstract int ID { get; }
         public IFsm Fsm { get; set; }
-        
+
         protected FsmBaseState()
         {
         }
@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         public virtual void Dispose()
         {
         }
-        
+
         public virtual void Enter(params object[] args)
         {
         }
@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
         public virtual void Leave()
         {
         }
-        
+
         public virtual void Tick(float deltaTime)
         {
         }

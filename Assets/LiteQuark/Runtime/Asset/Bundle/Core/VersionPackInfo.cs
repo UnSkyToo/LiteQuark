@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
             HashMode = hashMode;
             FlatMode = flatMode;
             BundleList = bundleList;
-            
+
             IsValid = true;
         }
 
@@ -41,11 +41,11 @@ namespace LiteQuark.Runtime
             _bundleFileLoadPathCache.Clear();
             _bundlePathToBundleCache.Clear();
             _assetPathToBundleCache.Clear();
-            
+
             foreach (var bundle in BundleList)
             {
                 _bundlePathToBundleCache.Add(bundle.BundlePath, bundle);
-                
+
                 foreach (var assetPath in bundle.AssetList)
                 {
                     _assetPathToBundleCache.Add(assetPath, bundle);
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             foreach (var bundle in BundleList)
             {
                 var bundlePath = GetBundleFileBuildPath(bundle);
@@ -75,13 +75,13 @@ namespace LiteQuark.Runtime
             {
                 bundleIDMap.Add(bundle.BundlePath, bundle.BundleID.ToString());
             }
-            
+
             const string bundleFileExt = LiteConst.BundleFileExt;
-            
+
             foreach (var bundle in BundleList)
             {
                 var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
-                
+
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
@@ -109,13 +109,13 @@ namespace LiteQuark.Runtime
             {
                 bundleIDMap.Add(bundle.BundleID.ToString(), bundle.BundlePath);
             }
-            
+
             const string bundleFileExt = LiteConst.BundleFileExt;
-            
+
             foreach (var bundle in BundleList)
             {
                 var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
-                
+
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     var assetPath = bundle.AssetList[index];
@@ -139,7 +139,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
         {
             if (_bundlePathToBundleCache.TryGetValue(bundlePath, out var info))
@@ -157,7 +157,7 @@ namespace LiteQuark.Runtime
             {
                 return info;
             }
-            
+
             LLog.Error("Can't get bundle info : {0}", assetPath);
             return null;
         }
@@ -180,7 +180,7 @@ namespace LiteQuark.Runtime
             {
                 loadPath = $"{bundleInfo.Hash}{LiteConst.BundleFileExt}";
             }
-            
+
             _bundleFileLoadPathCache.Add(bundleInfo.BundlePath, loadPath);
             return loadPath;
         }
@@ -196,7 +196,7 @@ namespace LiteQuark.Runtime
             {
                 throw new InvalidOperationException("VersionPackInfo is not valid");
             }
-            
+
             SimplifyPath();
             try
             {
@@ -216,7 +216,7 @@ namespace LiteQuark.Runtime
             {
                 throw new InvalidOperationException("VersionPackInfo is not valid");
             }
-            
+
             SimplifyPath();
             try
             {

@@ -15,7 +15,7 @@ namespace LiteBattle.Runtime
         private LiteNexusDataManager()
         {
         }
-        
+
         public async UniTask<bool> Startup()
         {
             var initialized = false;
@@ -74,7 +74,7 @@ namespace LiteBattle.Runtime
 
                 UnitConfigMap_.Add(unitConfig.StateGroup, unitConfig);
                 UnitConfigHandleList_.Add(unitConfigHandle);
-                
+
                 var group = await LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
                 StateConfigMap_.Add(unitConfig.StateGroup, group);
             }
@@ -102,7 +102,7 @@ namespace LiteBattle.Runtime
         private async UniTask<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList)
         {
             var group = new Dictionary<string, LiteStateConfig>();
-            
+
             foreach (var filePath in stateList)
             {
                 using var timelineHandle = LiteRuntime.Asset.LoadAssetHandle<TimelineAsset>(filePath);
@@ -141,7 +141,7 @@ namespace LiteBattle.Runtime
                 {
                     continue;
                 }
-                
+
                 var clips = track.GetClips();
                 foreach (var clip in clips)
                 {
@@ -197,7 +197,7 @@ namespace LiteBattle.Runtime
             {
                 return null;
             }
-            
+
             if (StateConfigMap_.TryGetValue(stateGroupID, out var states))
             {
                 if (states.TryGetValue(stateID, out var state))

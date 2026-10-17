@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public class EmptyGameObjectPool : BaseGameObjectPool
     {
         public override string Name => Key;
-        
+
         public EmptyGameObjectPool()
         {
         }
@@ -13,11 +13,11 @@ namespace LiteQuark.Runtime
         public override void Initialize(string key, params object[] args)
         {
             base.Initialize(key, args);
-            
+
             OnLoadTemplate(new GameObject("PoolTemplate"));
             Template.transform.SetParent(Parent, false);
         }
-        
+
         public override void Dispose()
         {
             if (Template != null)
@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
                 Object.Destroy(Template);
                 Template = null;
             }
-            
+
             base.Dispose();
         }
     }

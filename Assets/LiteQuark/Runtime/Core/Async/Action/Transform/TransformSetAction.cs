@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public class TransformSetPositionAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSet{(_isLocal ? "Local" : "World")}Position>({TS.name},{_position})";
-        
+
         private readonly Vector3 _position;
         private readonly bool _isLocal;
 
@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (_isLocal)
             {
                 TS.localPosition = _position;
@@ -35,11 +35,11 @@ namespace LiteQuark.Runtime
             IsDone = true;
         }
     }
-    
+
     public class TransformSetScaleAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSetScale>({TS.name},{_scale})";
-        
+
         private readonly Vector3 _scale;
 
         public TransformSetScaleAction(Transform transform, Vector3 scale)
@@ -54,16 +54,16 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             TS.localScale = _scale;
             IsDone = true;
         }
     }
-    
+
     public class TransformSetRotationAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSet{(_isLocal ? "Local" : "World")}Rotation>({TS.name},{_rotation})";
-        
+
         private readonly Quaternion _rotation;
         private readonly bool _isLocal;
 
@@ -80,7 +80,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (_isLocal)
             {
                 TS.localRotation = _rotation;
@@ -93,11 +93,11 @@ namespace LiteQuark.Runtime
             IsDone = true;
         }
     }
-    
+
     public class TransformSetRotationAroundAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSetRotationAround>({TS.name},{_center},{_axis},{_angle})";
-        
+
         private readonly Vector3 _center;
         private readonly Vector3 _axis;
         private readonly float _angle;
@@ -116,16 +116,16 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             TS.RotateAround(_center, _axis, _angle);
             IsDone = true;
         }
     }
-    
+
     public class TransformSetAlphaAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSetAlpha>({TS.name},{_alpha})";
-        
+
         private readonly IAlphaBox _alphaBox;
         private readonly float _alpha;
 
@@ -142,16 +142,16 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _alphaBox.SetAlpha(_alpha);
             IsDone = true;
         }
     }
-    
+
     public class TransformSetActiveAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSetActive>({TS.name},{_value})";
-        
+
         private readonly bool _value;
 
         public TransformSetActiveAction(Transform transform, bool value)
@@ -166,12 +166,12 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             TS.gameObject.SetActive(_value);
             IsDone = true;
         }
     }
-    
+
     public class TransformSetParentAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformSetParent>({TS.name},{_worldStay})";
@@ -192,7 +192,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             TS.SetParent(_parent, _worldStay);
             IsDone = true;
         }

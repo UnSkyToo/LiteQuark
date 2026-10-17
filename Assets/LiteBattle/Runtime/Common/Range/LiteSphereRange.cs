@@ -10,10 +10,10 @@ namespace LiteBattle.Runtime
     {
         [LiteProperty("偏移", LitePropertyType.Vector3)]
         public Vector3 Offset = Vector3.zero;
-        
+
         [LiteProperty("半径", LitePropertyType.Float)]
         public float Radius = 1f;
-        
+
         public bool HasData => true;
 
         public ILiteRange Clone()

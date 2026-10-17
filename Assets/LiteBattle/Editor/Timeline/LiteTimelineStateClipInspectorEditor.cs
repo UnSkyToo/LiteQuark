@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using LiteQuark.Editor;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -10,7 +10,7 @@ namespace LiteBattle.Editor
     internal sealed class LiteStateClipInspectorEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
-        {   
+        {
             base.OnInspectorGUI();
 
             if (!LiteEditorBinder.Instance.IsReady)

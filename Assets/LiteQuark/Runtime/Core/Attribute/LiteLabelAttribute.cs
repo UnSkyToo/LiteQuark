@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
     public sealed class LiteLabelAttribute : Attribute
     {
         public string Label { get; }
-    
+
         public LiteLabelAttribute(string label)
         {
             Label = label;

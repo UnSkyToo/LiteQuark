@@ -27,14 +27,14 @@ namespace LiteQuark.Runtime
             _vibrato = vibrato;
             _randomness = randomness;
         }
-        
+
         public override void Execute()
         {
             if (!CheckSafety())
             {
                 return;
             }
-            
+
             _position = TS.localPosition;
             _currentTime = 0;
             _stepTime = 0;
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             _stepTime += deltaTime;
 
@@ -68,7 +68,7 @@ namespace LiteQuark.Runtime
         private void Shake()
         {
             _degree = _degree - 180f + Random.Range(-_randomness, _randomness);
-            
+
             var quaternion = Quaternion.AngleAxis(Random.Range(-_randomness, _randomness), Vector3.up);
             TS.localPosition = _position + quaternion * MathUtils.Vector3FromAngle(_degree, _strength);
         }

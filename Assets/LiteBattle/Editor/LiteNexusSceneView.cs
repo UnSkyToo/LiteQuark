@@ -15,7 +15,7 @@ namespace LiteBattle.Editor
         private readonly Color RangeColor_ = new(1f, 0f, 0f, 0.5f);
         private readonly BoxBoundsHandle BoxHandle_ = new();
         private readonly SphereBoundsHandle SphereHandle_ = new();
-        
+
         public LiteNexusSceneView(LiteNexusEditor nexusEditor)
         {
             NexusEditor = nexusEditor;
@@ -58,7 +58,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             if (range is LiteBoxRange boxRange)
             {
                 HandleUtils.DrawBox(unitGo.transform.position + boxRange.Offset, boxRange.Size, RangeColor_);
@@ -87,7 +87,7 @@ namespace LiteBattle.Editor
                 default:
                     return;
             }
-            
+
             switch (Tools.current)
             {
                 case Tool.Move:

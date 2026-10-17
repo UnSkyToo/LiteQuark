@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
         {
             return new Encoder().Encode(value);
         }
-        
+
         public static T Decode<T>(byte[] data)
         {
             return new Decoder().Decode<T>(data);

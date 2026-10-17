@@ -10,16 +10,16 @@ namespace LiteQuark.Runtime
     public class Encoder
     {
         private readonly List<Type> _typeList = new();
-        
+
         public Encoder()
         {
         }
-        
+
         public byte[] Encode<T>(T value)
         {
             _typeList.Clear();
             var result = new List<byte>();
-            
+
             using (var stream = new MemoryStream())
             {
                 using (var writer = new BinaryWriter(stream))
@@ -160,7 +160,7 @@ namespace LiteQuark.Runtime
             if (!type.IsPrimitive && (type.IsClass || type.IsValueType))
             {
                 writer.Write(false);
-                        
+
                 var fields = type.GetFields();
                 writer.Write(fields.Length);
                 foreach (var field in fields)
@@ -184,7 +184,7 @@ namespace LiteQuark.Runtime
                 throw new Exception($"Unsupported type: {type}");
             }
         }
-        
+
         private void EncodeMember(BinaryWriter writer, string memberName, Type memberType, object memberValue)
         {
             writer.Write(memberName);
@@ -200,7 +200,7 @@ namespace LiteQuark.Runtime
                 _typeList.Add(type);
                 index = _typeList.Count - 1;
             }
-            
+
             writer.Write((ushort)index);
         }
 

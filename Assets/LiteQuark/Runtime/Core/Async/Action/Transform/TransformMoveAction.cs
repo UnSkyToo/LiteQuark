@@ -11,7 +11,7 @@ namespace LiteQuark.Runtime
         private readonly bool _isLocal;
         private readonly bool _isRelative;
         private readonly EaseKind _easeKind;
-        
+
         private Vector3 _originPos;
         private Vector3 _targetPos;
         private float _currentTime;
@@ -32,7 +32,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime = 0;
             _originPos = GetValue();
             _targetPos = _isRelative ? _originPos + _position : _position;
@@ -45,11 +45,11 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             SetValue(Vector3.LerpUnclamped(_originPos, _targetPos, v));
 
             if (step >= 1)
@@ -63,7 +63,7 @@ namespace LiteQuark.Runtime
         {
             return _isLocal ? TS.localPosition : TS.position;
         }
-        
+
         private void SetValue(Vector3 value)
         {
             if (_isLocal)
@@ -76,7 +76,7 @@ namespace LiteQuark.Runtime
             }
         }
     }
-    
+
     public class TransformMovePathAction : TransformBaseAction
     {
         public override string DebugName => $"<Transform{(_isLocal ? "Local" : "World")}MovePath>({TS.name},{_startPos}->{_targetPos},{_totalTime},{_easeKind})";
@@ -86,7 +86,7 @@ namespace LiteQuark.Runtime
         private readonly float _moveSpeed;
         private readonly bool _isLocal;
         private readonly EaseKind _easeKind;
-        
+
         private int _pathIndex;
         private Vector3 _startPos;
         private Vector3 _targetPos;
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             IsDone = Mathf.Approximately(_moveSpeed, 0f);
             _pathIndex = 0;
             MoveToNextPath();
@@ -120,7 +120,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             ProcessMove(deltaTime);
         }
 
@@ -129,7 +129,7 @@ namespace LiteQuark.Runtime
             _currentTime += time;
             var step = Mathf.Clamp01(_currentTime / _moveTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             SetValue(Vector3.LerpUnclamped(_startPos, _targetPos, v));
 
             if (step >= 1)
@@ -149,7 +149,7 @@ namespace LiteQuark.Runtime
         {
             return _isLocal ? TS.localPosition : TS.position;
         }
-        
+
         private void SetValue(Vector3 value)
         {
             if (_isLocal)
@@ -161,7 +161,7 @@ namespace LiteQuark.Runtime
                 TS.position = value;
             }
         }
-        
+
         private void MoveToNextPath()
         {
             if (_pathIndex + 1 >= _paths.Length)

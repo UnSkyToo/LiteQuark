@@ -19,12 +19,12 @@ namespace LiteQuark.Editor
             EditorGUILayout.EndHorizontal();
         }
     }
-    
+
     internal sealed class SearchListWindowContent : PopupWindowContent
     {
         private readonly string[] _list;
         private readonly Action<string> _callback;
-        
+
         private string _search;
         private Vector2 _scrollPos;
 
@@ -32,7 +32,7 @@ namespace LiteQuark.Editor
         {
             _list = list;
             _callback = callback;
-            
+
             _search = string.Empty;
             _scrollPos = Vector2.zero;
         }

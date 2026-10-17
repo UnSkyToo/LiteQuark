@@ -8,9 +8,9 @@ namespace LiteBattle.Runtime
         Box,
         Sphere,
     }
-    
+
     public class LiteColliderBinder : MonoBehaviour
-    {   
+    {
         public ulong UniqueID { get; set; }
         public LiteColliderType ColliderType { get; set; }
 

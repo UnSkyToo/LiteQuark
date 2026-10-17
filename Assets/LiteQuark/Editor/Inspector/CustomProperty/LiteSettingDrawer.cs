@@ -34,12 +34,12 @@ namespace LiteQuark.Editor
     // public class LiteAssetSettingDrawer : PropertyDrawer
     // {
     //     private bool Foldout_ = false;
-    //     
+    //
     //     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     //     {
     //         EditorGUI.BeginProperty(position, label, property);
     //         Foldout_ = EditorGUILayout.BeginFoldoutHeaderGroup(Foldout_, "Asset");
-    //         
+    //
     //         using (new EditorGUI.IndentLevelScope(2))
     //         {
     //             if (Foldout_)
@@ -80,7 +80,7 @@ namespace LiteQuark.Editor
     // public class LiteLogSettingDrawer : PropertyDrawer
     // {
     //     private bool Foldout_ = false;
-    //     
+    //
     //     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     //     {
     //         EditorGUI.BeginProperty(position, label, property);
@@ -91,7 +91,7 @@ namespace LiteQuark.Editor
     //             if (Foldout_)
     //             {
     //                 EditorGUILayout.PropertyField(property.FindPropertyRelative("SimpleLog"));
-    //                 
+    //
     //                 var receiveLogProperty = property.FindPropertyRelative("ReceiveLog");
     //                 EditorGUILayout.PropertyField(receiveLogProperty);
     //

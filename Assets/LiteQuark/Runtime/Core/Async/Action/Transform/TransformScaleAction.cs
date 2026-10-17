@@ -5,12 +5,12 @@ namespace LiteQuark.Runtime
     public class TransformScaleAction : TransformBaseAction
     {
         public override string DebugName => $"<TransformScale>({TS.name},{_originScale}->{_targetScale},{_totalTime},{_easeKind})";
-        
+
         private readonly Vector3 _scale;
         private readonly float _totalTime;
         private readonly bool _isRelative;
         private readonly EaseKind _easeKind;
-        
+
         private Vector3 _originScale;
         private Vector3 _targetScale;
         private float _currentTime;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime = 0;
             _originScale = TS.localScale;
             _targetScale = _isRelative ? _originScale + _scale : _scale;
@@ -43,11 +43,11 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             TS.localScale = Vector3.LerpUnclamped(_originScale, _targetScale, v);
 
             if (step >= 1)

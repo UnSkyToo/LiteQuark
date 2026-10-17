@@ -11,7 +11,7 @@ namespace LiteQuark.Editor
     {
         public const string DefaultLayoutPrefsKey = "LiteQuark.DefaultLayoutName";
         public const string DefaultLayoutName = "LiteQuark.Layout";
-        
+
         public static string GetLastLoadedLayoutName()
         {
             try
@@ -37,7 +37,7 @@ namespace LiteQuark.Editor
         public static void OpenWorkspace(string scenePath, string layoutPath)
         {
             EditorSceneManager.OpenScene(scenePath);
-            
+
             var defaultLayoutName = PlayerPrefs.GetString(DefaultLayoutPrefsKey, DefaultLayoutName);
             EditorUtility.LoadWindowLayout($"{layoutPath}/{defaultLayoutName}.wlt");
         }
@@ -58,7 +58,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-            
+
             var guids = AssetDatabase.FindAssets($"{sceneName} t:Scene");
             foreach (var guid in guids)
             {
@@ -69,7 +69,7 @@ namespace LiteQuark.Editor
                     return;
                 }
             }
-            
+
             Debug.LogError($"无法找到 {sceneName}.scene 文件！");
         }
     }

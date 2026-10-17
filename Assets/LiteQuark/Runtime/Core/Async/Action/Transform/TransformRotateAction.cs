@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private readonly float _totalTime;
         private readonly bool _isLocal;
         private readonly EaseKind _easeKind;
-        
+
         private Quaternion _originRotation;
         private Quaternion _targetRotation;
         private float _currentTime;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime = 0;
             _originRotation = TS.localRotation;
             _targetRotation = _rotation;
@@ -43,11 +43,11 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             SetValue(Quaternion.LerpUnclamped(_originRotation, _targetRotation, v));
 
             if (step >= 1)
@@ -56,7 +56,7 @@ namespace LiteQuark.Runtime
                 IsDone = true;
             }
         }
-        
+
         private void SetValue(Quaternion value)
         {
             if (_isLocal)
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var angle = CalculateNextAngle(deltaTime);
 
@@ -121,7 +121,7 @@ namespace LiteQuark.Runtime
             {
                 TS.RotateAround(_center, _axis, angle);
             }
-            
+
             if (_currentTime >= _totalTime)
             {
                 IsDone = true;
@@ -131,7 +131,7 @@ namespace LiteQuark.Runtime
         private float CalculateNextAngle(float deltaTime)
         {
             var angle = deltaTime * _anglePerSecond;
-            
+
             if (_totalAngle > 0 && _accumulateAngle + angle > _totalAngle)
             {
                 angle = _totalAngle - _accumulateAngle;
@@ -146,7 +146,7 @@ namespace LiteQuark.Runtime
             {
                 _accumulateAngle += angle;
             }
-            
+
             return angle;
         }
     }
@@ -154,7 +154,7 @@ namespace LiteQuark.Runtime
     public class TransformTargetRotateAroundAction : TransformRotateAroundAction
     {
         private readonly Vector3 _targetPosition;
-        
+
         public TransformTargetRotateAroundAction(Transform transform, Vector3 center, Vector3 axis, Vector3 targetPosition, float angle, float time, bool isLocal = true)
             : base(transform, center, axis, angle, time, isLocal)
         {
@@ -167,7 +167,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (IsLocal)
             {
                 if (Vector3.Distance(TS.localPosition, _targetPosition) < 0.1f)

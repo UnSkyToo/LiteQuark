@@ -9,7 +9,7 @@ namespace LiteBattle.Runtime
     {
         [LiteProperty("Tag", LitePropertyType.Enum)]
         public LiteTag Tag = LiteTag.None;
-        
+
         [LiteProperty("值", LitePropertyType.Bool)]
         public bool Value = true;
 
@@ -17,9 +17,9 @@ namespace LiteBattle.Runtime
         public bool Revert = false;
 
         private bool OldValue_ = false;
-        
+
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
             OldValue_ = state.Unit.GetTag(Tag);

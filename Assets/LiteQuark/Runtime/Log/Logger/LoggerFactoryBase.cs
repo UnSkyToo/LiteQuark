@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
 
             return logger;
         }
-        
+
         internal sealed class LoggerImpl : LoggerBase
         {
             internal LoggerImpl(string name)

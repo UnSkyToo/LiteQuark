@@ -48,7 +48,7 @@ namespace LiteQuark.Editor
             textEditor.text = text;
             textEditor.OnFocus();
             textEditor.Copy();
-            
+
             LEditorLog.Info($"copy [{text}] success!");
         }
 
@@ -62,7 +62,7 @@ namespace LiteQuark.Editor
                 }
             }
         }
-        
+
         private void DrawStyleItem(GUIStyle style)
         {
             GUILayout.BeginHorizontal("box");

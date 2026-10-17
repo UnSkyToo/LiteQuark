@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 
 namespace LiteBattle.Editor
@@ -8,7 +8,7 @@ namespace LiteBattle.Editor
     public class LiteEventEditorPerformerAttribute : Attribute
     {
         public Type BindType { get; }
-        
+
         public LiteEventEditorPerformerAttribute(Type bindType)
         {
             BindType = bindType;

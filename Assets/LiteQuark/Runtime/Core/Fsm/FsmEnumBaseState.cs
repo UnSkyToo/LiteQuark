@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     {
         public override int ID => Convert.ToInt32(State);
         public abstract T State { get; }
-        
+
         protected FsmEnumBaseState()
             : base()
         {

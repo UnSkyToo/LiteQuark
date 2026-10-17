@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     public sealed class UnityWebGetRequestTask : UnityDownloadBaseTask
     {
         private Action<DownloadHandler> _callback;
-        
+
         public UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<DownloadHandler> callback)
             : base(uri, retry, forceNoCache)
         {
@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
         protected override void OnFailed()
         {
             base.OnFailed();
-            
+
             Cancel();
             LiteUtils.SafeInvoke(_callback, null);
         }
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
         protected override void OnSuccess(UnityWebRequest request)
         {
             base.OnSuccess(request);
-            
+
             var handler = request.downloadHandler;
             Complete(handler);
             LiteUtils.SafeInvoke(_callback, handler);

@@ -6,14 +6,14 @@ namespace LiteQuark.Runtime
     public class SafeDictionary<TKey, TValue>
     {
         private enum OperationType { Add, Remove, Clear }
-        
+
         private readonly Queue<(OperationType type, KeyValuePair<TKey, TValue> item)> _ops;
         private readonly Dictionary<TKey, TValue> _values;
         private int _inEach;
-        
+
         public int Count => _values.Count;
         public TValue this[TKey key] => _values[key];
-        
+
         public SafeDictionary()
         {
             _ops = new Queue<(OperationType type, KeyValuePair<TKey, TValue> item)>();
@@ -117,7 +117,7 @@ namespace LiteQuark.Runtime
                 Flush();
             }
         }
-        
+
         public void Foreach<P1, P2, P3>(Action<KeyValuePair<TKey, TValue>, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
@@ -135,7 +135,7 @@ namespace LiteQuark.Runtime
                 Flush();
             }
         }
-        
+
         /// <summary>
         /// Return T when func return true
         /// </summary>

@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private readonly List<ISystem> _addList = new();
         private readonly List<ISystem> _systemList = new();
         private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new();
-        
+
         private SystemCenter()
         {
         }
@@ -19,11 +19,11 @@ namespace LiteQuark.Runtime
         {
             UnInitializeSystem();
         }
-        
+
         public void Tick(float deltaTime)
         {
             ProcessAddList();
-            
+
             foreach (var system in _systemList)
             {
                 if (system is ITick tickSys)
@@ -53,29 +53,29 @@ namespace LiteQuark.Runtime
             _systemTypeMap.Clear();
 
             var systemList = GetAllSystemList();
-            
+
             foreach (var assemblyQualifiedName in systemList)
             {
                 if (ct.IsCancellationRequested)
                 {
                     return false;
                 }
-                
+
                 var systemType = System.Type.GetType(assemblyQualifiedName);
                 if (systemType == null)
                 {
                     throw new System.Exception($"cannot find system class type : {assemblyQualifiedName}");
                 }
-                
+
                 if (System.Activator.CreateInstance(systemType) is not ISystem system)
                 {
                     throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
                 }
-                
+
                 LLog.Info("Initialize {0}", assemblyQualifiedName);
-                
+
                 TryInjectSetting(system);
-                
+
                 var result = await system.Initialize();
                 if (ct.IsCancellationRequested)
                 {
@@ -100,20 +100,20 @@ namespace LiteQuark.Runtime
 
             return true;
         }
-        
+
         internal void UnInitializeSystem()
         {
             ProcessAddList();
-            
+
             for (var index = _systemList.Count - 1; index >= 0; --index)
             {
                 _systemList[index].Dispose();
             }
-            
+
             _systemList.Clear();
             _systemTypeMap.Clear();
         }
-        
+
         public T GetSystem<T>() where T : ISystem
         {
             if (_systemTypeMap.TryGetValue(typeof(T), out var system))
@@ -141,17 +141,17 @@ namespace LiteQuark.Runtime
                 {
                     continue;
                 }
-                
+
                 systemList.Add(assemblyQualifiedName);
             }
 
             return systemList;
         }
-        
+
         private void TryInjectSetting(ISystem system)
         {
             var systemType = system.GetType();
-            
+
             var settingInterface = systemType.GetInterfaces()
                 .FirstOrDefault(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
 
@@ -159,7 +159,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             var settingType = settingInterface.GetGenericArguments()[0];
             var setting = LiteRuntime.Setting.GetSetting(settingType);
             var property = settingInterface.GetProperty("Setting");

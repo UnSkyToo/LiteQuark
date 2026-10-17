@@ -16,11 +16,11 @@ namespace LiteBattle.Runtime
         public override void Initialize()
         {
             base.Initialize();
-            
+
             SetTag(LiteTag.CanMove, true);
             SetTag(LiteTag.CanJump, true);
             SetTag(LiteTag.Hit, false);
-            
+
             StateMachine_ = new LiteStateMachine(this, Config_.StateGroup);
             StateMachine_.SetNextState(Config_.EntryState);
             AttachModule<LiteEntityMovementModule>();

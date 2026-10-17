@@ -19,12 +19,12 @@ namespace LiteQuark.Editor
             var baseType = GetBaseTypeFromFieldInfo();
             var typeList = GetTypeList(baseType);
             var selectIndex = Array.FindIndex(typeList, s => s == assemblyQualifiedNameProperty.stringValue);
-            
+
             var disabledRect = new Rect(position.x, position.y, position.height, position.height);
             disabledProperty.boolValue = !EditorGUI.Toggle(disabledRect, !disabledProperty.boolValue);
-            
+
             EditorGUI.BeginDisabledGroup(disabledProperty.boolValue);
-            
+
             var popupRect = new Rect(position.x + disabledRect.width, position.y, position.width - disabledRect.width, position.height);
             EditorGUI.BeginChangeCheck();
             selectIndex = EditorGUI.Popup(popupRect, selectIndex, typeList);
@@ -32,17 +32,17 @@ namespace LiteQuark.Editor
             {
                 assemblyQualifiedNameProperty.stringValue = typeList[selectIndex];
             }
-            
+
             EditorGUI.EndDisabledGroup();
 
             EditorGUI.EndProperty();
         }
-        
+
         private Type GetBaseTypeFromFieldInfo()
         {
             var fieldType = fieldInfo.FieldType;
             var elementType = fieldType;
-            
+
             if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(List<>))
             {
                 elementType = fieldType.GetGenericArguments()[0];
@@ -56,22 +56,22 @@ namespace LiteQuark.Editor
             {
                 return null;
             }
-            
+
             if (elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(LiteTypeEntryData<>))
             {
                 return elementType.GetGenericArguments()[0];
             }
-            
+
             return null;
         }
-        
+
         private string[] GetTypeList(Type baseType)
         {
             if (baseType == null)
             {
                 return Array.Empty<string>();
             }
-            
+
             var typeList = TypeCache.GetTypesDerivedFrom(baseType);
             var nameList = new List<string>();
 
@@ -81,7 +81,7 @@ namespace LiteQuark.Editor
                 {
                     continue;
                 }
-                
+
                 nameList.Add(type.AssemblyQualifiedName);
             }
 

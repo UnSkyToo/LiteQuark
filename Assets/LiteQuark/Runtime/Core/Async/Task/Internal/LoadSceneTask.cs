@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     internal sealed class LoadSceneTask : BaseTask
     {
         public override string DebugName => $"LoadScene:{_sceneName}";
-        
+
         private readonly string _sceneName;
         private readonly LoadSceneParameters _parameters;
         private Action<bool, Scene> _callback;
@@ -29,17 +29,17 @@ namespace LiteQuark.Runtime
             _callback = null;
             _sceneRequest = null;
         }
-        
+
         public Scene GetScene()
         {
             return _scene;
         }
-        
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _sceneRequest?.progress ?? 0f;
         }
-        
+
         protected override void OnExecute()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -72,12 +72,12 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnSceneRequestLoadCompleted;
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            
+
             if (IsDone)
             {
                 return;
             }
-            
+
             var success = _scene.IsValid() && _scene.isLoaded;
             Complete(success ? _scene : default(Scene));
             LiteUtils.SafeInvoke(_callback, success, _scene);

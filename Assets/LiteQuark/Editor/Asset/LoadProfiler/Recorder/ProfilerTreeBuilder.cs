@@ -44,7 +44,7 @@ namespace LiteQuark.Editor.LoadProfiler
                         depNode = ProfilerDependencyNode.CreateVirtual(dep, AssetLoadEventType.Bundle, AssetLoadEventSource.Cached);
                         nodeMap[dep] = depNode;
                     }
-                    
+
                     if (depNode.Parent != null) continue;
 
                     node.AddChild(depNode);

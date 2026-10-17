@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
     public class Decoder
     {
         private readonly List<Type> _typeList = new();
-        
+
         public Decoder()
         {
         }
@@ -117,7 +117,7 @@ namespace LiteQuark.Runtime
         {
             var count = reader.ReadInt32();
             var dictionary = TypeUtils.CreateInstance(type) as IDictionary;
-                    
+
             for (var i = 0; i < count; i++)
             {
                 var keyType = ReadType(reader);
@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
                 var value = Decode(reader, valueType);
                 dictionary.Add(key, value);
             }
-                    
+
             return dictionary;
         }
 
@@ -162,7 +162,7 @@ namespace LiteQuark.Runtime
 
             return objectValue;
         }
-        
+
         private Type ReadType(BinaryReader reader)
         {
             var index = reader.ReadUInt16();

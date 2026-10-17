@@ -6,7 +6,7 @@ using System.Linq;
 namespace LiteQuark.Runtime
 {
     public static class ArrayUtils
-    {   
+    {
         public static int IndexOf(this int[] array, int value)
         {
             for (var index = 0; index < array.Length; ++index)
@@ -24,14 +24,14 @@ namespace LiteQuark.Runtime
         {
             return CloneObjectArray(array);
         }
-        
+
         public static T[] CloneObjectArray<T>(T[] array)
         {
             if (array == null)
             {
                 return null;
             }
-            
+
             var result = new T[array.Length];
 
             for (var index = 0; index < array.Length; ++index)
@@ -48,14 +48,14 @@ namespace LiteQuark.Runtime
 
             return result;
         }
-        
+
         public static T[] CloneDataArray<T>(T[] array) where T : ICloneable
         {
             if (array == null)
             {
                 return null;
             }
-            
+
             var result = new T[array.Length];
 
             for (var index = 0; index < array.Length; ++index)
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
 
             return result;
         }
-        
+
         public static object[] ToArray(this IList list)
         {
             var result = new object[list.Count];
@@ -93,7 +93,7 @@ namespace LiteQuark.Runtime
             Array.Copy(array2, 0, array, array1.Length, array2.Length);
             return array;
         }
-        
+
         public static T[] AppendArray<T>(T[] array1, T[] array2, bool allowSame)
         {
             if (allowSame)
@@ -109,19 +109,19 @@ namespace LiteQuark.Runtime
 
             return array.ToArray();
         }
-        
+
         public static IList AddToList(IList list, object element)
         {
             if (list == null)
             {
                 return null;
             }
-            
+
             if (element == null)
             {
                 return list;
             }
-            
+
             if (TypeUtils.IsListType(list.GetType()))
             {
                 list.Add(element);
@@ -134,7 +134,7 @@ namespace LiteQuark.Runtime
                 {
                     return list;
                 }
-                
+
                 for (var i = 0; i < list.Count; ++i)
                 {
                     newList[i] = list[i];
@@ -152,12 +152,12 @@ namespace LiteQuark.Runtime
             {
                 return null;
             }
-            
+
             if (index < 0 || index >= list.Count)
             {
                 return list;
             }
-            
+
             if (TypeUtils.IsListType(list.GetType()))
             {
                 list.RemoveAt(index);
@@ -170,7 +170,7 @@ namespace LiteQuark.Runtime
                 {
                     return list;
                 }
-                
+
                 for (var i = 0; i < index; ++i)
                 {
                     newList[i] = list[i];

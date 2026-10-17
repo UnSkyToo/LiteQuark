@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     public sealed class NetworkSystem : ISystem, ISystemSettingProvider<NetworkSystemSetting>
     {
         public NetworkSystemSetting Setting { get; set; }
-        
+
         private int _activeRequests = 0;
         private HttpClient _httpClient;
 

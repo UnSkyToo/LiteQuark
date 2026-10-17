@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 
 namespace LiteBattle.Editor
 {

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
@@ -12,21 +12,21 @@ namespace LiteBattle.Runtime
         {
             CurrentStateGroup_ = stateGroup;
         }
-        
+
         public static string GetCurrentUnitTimelineRootPath()
         {
             return PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), CurrentStateGroup_);
         }
-        
+
         public static List<string> GetCurrentUnitTimelinePathList()
         {
             var stateNameList = new List<string>();
-            
+
             if (string.IsNullOrWhiteSpace(CurrentStateGroup_))
             {
                 return stateNameList;
             }
-            
+
 #if UNITY_EDITOR
             var timelinePathList = LiteQuark.Editor.AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentUnitTimelineRootPath());
             foreach (var timelinePath in timelinePathList)

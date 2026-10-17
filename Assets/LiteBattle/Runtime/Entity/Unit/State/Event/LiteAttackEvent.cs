@@ -13,9 +13,9 @@ namespace LiteBattle.Runtime
         [SerializeReference]
         [HideInInspector]
         public ILiteRange Range = new LiteBoxRange();
-        
+
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
             var targets = LiteCollisionManager.Instance.CheckCollide(state.Unit, Range, state.Unit.Camp.Reverse());

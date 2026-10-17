@@ -55,10 +55,10 @@ namespace LiteQuark.Runtime
                 {
                     return false;
                 }
-                
+
                 CurrentState.Leave();
             }
-            
+
             StateMap.TryGetValue(id, out CurrentState);
             CurrentState?.Enter(args);
             return true;

@@ -19,7 +19,7 @@ namespace LiteBattle.Runtime
             EntityList_.Clear();
             AddList_.Clear();
             RemoveList_.Clear();
-            
+
             return UniTask.FromResult(true);
         }
 

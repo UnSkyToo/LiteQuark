@@ -11,7 +11,7 @@ namespace LiteBattle.Runtime
             FollowDirection,
             MoveToPosition,
         }
-        
+
         private readonly LiteEntity Entity_;
 
         private LiteMoveMode MoveMode_;
@@ -33,7 +33,7 @@ namespace LiteBattle.Runtime
             {
                 return;
             }
-            
+
             if (!Entity_.GetTag(LiteTag.CanMove))
             {
                 return;
@@ -52,9 +52,9 @@ namespace LiteBattle.Runtime
         public void MoveToDir(Vector3 moveDir, float moveSpeed, float moveTime = float.MaxValue)
         {
             MoveMode_ = LiteMoveMode.FollowDirection;
-            
+
             MoveDir_ = moveDir.normalized;
-            
+
             MoveSpeed_ = Mathf.Max(0.1f, moveSpeed);
             CurrentTime_ = 0f;
             MoveTime_ = moveTime;
@@ -66,7 +66,7 @@ namespace LiteBattle.Runtime
 
             TargetPos_ = targetPos;
             MoveDir_ = (targetPos - Entity_.Position).normalized;
-            
+
             MoveSpeed_ = Mathf.Max(0.1f, moveSpeed);
             CurrentTime_ = 0;
             MoveTime_ = Mathf.Max(0.01f, Vector3.Distance(Entity_.Position, TargetPos_) / MoveSpeed_);
@@ -78,7 +78,7 @@ namespace LiteBattle.Runtime
             {
                 Entity_.Position = TargetPos_;
             }
-            
+
             MoveMode_ = LiteMoveMode.None;
         }
     }

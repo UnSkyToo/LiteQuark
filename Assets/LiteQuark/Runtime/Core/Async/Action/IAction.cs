@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         void MarkAsSafe();
         void Stop();
         void Execute();
-        
+
         IAction SetFinalCallback(System.Action<IAction> callback);
         IAction SetUnscaled(bool isUnscaled);
     }

@@ -10,9 +10,9 @@ namespace LiteBattle.Runtime
         [LiteProperty("动画名字", LitePropertyType.CustomPopupList)]
         [LiteCustomPopupList(typeof(LiteUnitBinderDataForEditor), nameof(LiteUnitBinderDataForEditor.GetAnimatorStateNameList))]
         public string AnimationName;
-        
+
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
             state.Unit.PlayAnimation(AnimationName);

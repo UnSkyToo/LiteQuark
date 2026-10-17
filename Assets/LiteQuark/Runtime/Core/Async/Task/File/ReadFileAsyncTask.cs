@@ -29,7 +29,7 @@
 //                 throw;
 //             }
 //         }
-//         
+//
 //         public override void Dispose()
 //         {
 //             _stream.Close();

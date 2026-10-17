@@ -9,10 +9,10 @@ namespace LiteQuark.Runtime
         public string Name { get; set; }
         public ILogLayout Layout { get; set; }
         public virtual bool RequireLayout => false;
-        
+
         private const int RenderBufferSize = 256;
         private const int RenderBufferMaxCapacity = 1024;
-        
+
         private readonly List<ILogFilter> _filterList = null;
         private LogReusableStringWriter _renderWriter = null;
 
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             Close();
         }
 
@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
         protected virtual void OnOpen()
         {
         }
-        
+
         public void Close()
         {
             lock (this)
@@ -83,7 +83,7 @@ namespace LiteQuark.Runtime
 
             _filterList.Add(filter);
         }
-        
+
         public virtual void ClearFilterList()
         {
             _filterList.Clear();
@@ -124,7 +124,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         protected virtual bool FilterEvent(LoggingEvent loggingEvent)
         {
             foreach (var filter in _filterList)
@@ -143,7 +143,7 @@ namespace LiteQuark.Runtime
 
             return true;
         }
-        
+
         protected virtual bool PreAppendCheck()
         {
             if ((Layout == null) && RequireLayout)
@@ -154,9 +154,9 @@ namespace LiteQuark.Runtime
 
             return true;
         }
-        
+
         protected abstract void Append(LoggingEvent loggingEvent);
-        
+
         protected string RenderLoggingEvent(LoggingEvent loggingEvent)
         {
             if (_renderWriter == null)
@@ -173,15 +173,15 @@ namespace LiteQuark.Runtime
                 return _renderWriter.ToString();
             }
         }
-        
+
         protected void RenderLoggingEvent(TextWriter writer, LoggingEvent loggingEvent)
         {
-            if (Layout == null) 
+            if (Layout == null)
             {
                 throw new InvalidOperationException("A layout must be set");
             }
 
-            if (!Layout.IgnoresException) 
+            if (!Layout.IgnoresException)
             {
                 var exceptionStr = loggingEvent.GetExceptionString();
                 if (exceptionStr != null && exceptionStr.Length > 0)
@@ -190,13 +190,13 @@ namespace LiteQuark.Runtime
                     Layout.Format(writer, loggingEvent);
                     writer.WriteLine(exceptionStr);
                 }
-                else 
+                else
                 {
                     // there is no exception to render
                     Layout.Format(writer, loggingEvent);
                 }
             }
-            else 
+            else
             {
                 // The layout will render the exception
                 Layout.Format(writer, loggingEvent);

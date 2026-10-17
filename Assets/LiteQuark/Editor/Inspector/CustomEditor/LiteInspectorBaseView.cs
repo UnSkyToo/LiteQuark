@@ -18,9 +18,9 @@ namespace LiteQuark.Editor
                 _isCompiling = true;
                 OnCompileStart();
             }
-            
+
             OnDraw();
-            
+
             Repaint();
         }
 

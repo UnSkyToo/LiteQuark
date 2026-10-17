@@ -38,24 +38,24 @@ namespace LiteBattle.Editor
                     break;
             }
         }
-        
+
         public override void Draw()
         {
             DrawTitle("Unit View");
-            
+
             List_.Draw();
         }
 
         private class LiteUnitConfigList : LiteListView<string>
         {
             private readonly LiteNexusEditor NexusEditor_;
-            
+
             public LiteUnitConfigList(LiteNexusEditor nexusEditor)
             {
                 NexusEditor_ = nexusEditor;
                 EnableOrderControl = false;
             }
-            
+
             protected override List<string> GetList()
             {
                 var results = AssetUtils.GetAssetPathList("LiteUnitConfig", LiteNexusConfig.Instance.GetUnitDatabasePath());
@@ -93,7 +93,7 @@ namespace LiteBattle.Editor
                     AssetUtils.RenameAsset(unitConfigFullPath, newName);
                     OnDataChanged();
                 });
-                
+
                 return false;
             }
 
@@ -108,11 +108,11 @@ namespace LiteBattle.Editor
             {
                 var unitFullPath = obj;
                 var name = PathUtils.GetFileNameWithoutExt(unitFullPath);
-                
+
                 if (GUILayout.Button(name, selected ? LiteEditorStyle.ButtonSelect : LiteEditorStyle.ButtonNormal, GUILayout.ExpandWidth(true)))
                 {
                     selected = !selected;
-                    
+
                     LiteEditorBinder.Instance.UnBindUnit();
                     if (selected)
                     {

@@ -7,12 +7,12 @@ namespace LiteQuark.Runtime
     public sealed class EventSystem : ISystem
     {
         private readonly EventModule _globalEvent;
-        
+
         public EventSystem()
         {
             _globalEvent = new EventModule(LiteConst.Tag);
         }
-        
+
         public UniTask<bool> Initialize()
         {
             return UniTask.FromResult(true);
@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
         {
             return new EventModule(name);
         }
-        
+
         public void Send<T>(T msg) where T : IEventData
         {
             _globalEvent.Send(msg);
@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
         {
             _globalEvent.UnRegister(callback);
         }
-        
+
         public void UnRegister<T>(int tag, Action<T> callback) where T : IEventData
         {
             _globalEvent.UnRegister(tag, callback);

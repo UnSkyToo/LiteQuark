@@ -16,7 +16,7 @@ namespace LiteQuark.Editor
         {
             LEditorLog.Error($"Unsupported {title} type: {type}");
         }
-        
+
         public static void OpenFolder(string path)
         {
 #if UNITY_EDITOR_WIN
@@ -33,24 +33,24 @@ namespace LiteQuark.Editor
 
             Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll();
         }
-        
+
         public static string GetSizeString(long size)
         {
             if (size < 1024)
             {
                 return $"{size:0.0} B";
             }
-            
+
             if (size < 1024 * 1024)
             {
                 return $"{size / 1024.0f:0.0} KB";
             }
-            
+
             if (size < 1024 * 1024 * 1024)
             {
                 return $"{size / 1024.0f / 1024.0f:0.00} MB";
             }
-            
+
             return $"{size / 1024.0f / 1024.0f / 1024.0f:0.00} GB";
         }
 
@@ -59,7 +59,7 @@ namespace LiteQuark.Editor
             var obj = AssetDatabase.LoadMainAssetAtPath(path);
             Ping(obj);
         }
-        
+
         public static void Ping(Object obj)
         {
             if (obj == null)
@@ -114,7 +114,7 @@ namespace LiteQuark.Editor
                 OpenFolder(path);
             }
         }
-        
+
         public static string GetSelectedFolderPath()
         {
             if (Selection.activeObject == null)
@@ -127,7 +127,7 @@ namespace LiteQuark.Editor
             {
                 return path;
             }
-            
+
             return string.Empty;
         }
 
@@ -155,7 +155,7 @@ namespace LiteQuark.Editor
                 PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
             }
         }
-        
+
         public static void RemoveScriptingDefineSymbols(string removeSymbol)
         {
             var target = EditorUserBuildSettings.activeBuildTarget;
@@ -166,19 +166,19 @@ namespace LiteQuark.Editor
         {
             var namedBuildTarget = GetNamedBuildTarget(target);
             var symbols = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
-            
+
             if (symbols.Contains(removeSymbol))
             {
                 symbols = symbols.Replace(removeSymbol, string.Empty).Replace(";;", ";").Trim(';');
                 PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, symbols);
             }
         }
-        
+
         public static bool ShowConfirmDialog(string msg)
         {
             return EditorUtility.DisplayDialog("Lite Quark", msg, "Confirm", "Cancel");
         }
-        
+
         public static GUIContent GetTitleFromMemberInfo(MemberInfo info)
         {
             var labelAttr = info.GetCustomAttribute<LiteLabelAttribute>();
@@ -189,20 +189,20 @@ namespace LiteQuark.Editor
         public static List<Type> GetTypeListWithBaseType(Type baseType)
         {
             var results = new List<Type>();
-            
+
             results.AddRange(TypeCache.GetTypesDerivedFrom(baseType));
             // 剔除不能实例化的类型
             results.RemoveAll(type => type.IsAbstract || type.IsInterface);
-            
+
             TypeUtils.PrioritySort(results);
 
             return results;
         }
-        
+
         public static void ShowStandaloneGameView(string tag)
         {
             tag = string.IsNullOrWhiteSpace(tag) ? "LiteStandaloneGameView" : tag;
-            
+
             var inst = EditorWindow.CreateInstance(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")) as EditorWindow;
             inst.position = new Rect((Screen.width - 960) / 2f, 150, 960, 640);
             inst.titleContent = new GUIContent(tag);
@@ -213,7 +213,7 @@ namespace LiteQuark.Editor
         public static void HideStandaloneGameView(string tag)
         {
             tag = string.IsNullOrWhiteSpace(tag) ? "LiteStandaloneGameView" : tag;
-            
+
             var gameViews = Resources.FindObjectsOfTypeAll(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
             foreach (var game in gameViews)
             {

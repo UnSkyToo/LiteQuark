@@ -39,12 +39,12 @@ namespace LiteQuark.Runtime
             _loadAssetTask = null;
 
             var isLoaded = OnAssetLoaded(asset);
-            
+
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
-            
+
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
-            
+
             foreach (var loader in callbacks)
             {
                 LiteUtils.SafeInvoke(loader, isLoaded);

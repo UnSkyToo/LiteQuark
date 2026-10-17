@@ -1,4 +1,4 @@
-﻿// using LiteBattle.Runtime;
+// using LiteBattle.Runtime;
 // using UnityEditor;
 // using UnityEngine;
 //
@@ -12,7 +12,7 @@
 //             base.OnInspectorGUI();
 //
 //             var binder = serializedObject.targetObject as LiteUnitBinder;
-//             
+//
 //             EditorGUI.BeginChangeCheck();
 //             var newIndex = EditorGUILayout.Popup(new GUIContent("Animation"), binder.GetPreviewAnimatorStateIndex(), binder.GetAnimatorStateNameList().ToArray());
 //             if (EditorGUI.EndChangeCheck())
@@ -22,7 +22,7 @@
 //
 //             var frame = LiteTimelineHelper.TimeToFrame(binder.GetPreviewAnimatorStateTime());
 //             var maxFrame = LiteTimelineHelper.TimeToFrame(binder.GetAnimatorStateLength(newIndex));
-//             
+//
 //             EditorGUI.BeginChangeCheck();
 //             var newFrame = EditorGUILayout.IntSlider("Frame", frame, 0, maxFrame);
 //             if (EditorGUI.EndChangeCheck())

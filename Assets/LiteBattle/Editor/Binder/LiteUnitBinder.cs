@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -19,7 +19,7 @@ namespace LiteBattle.Editor
 
         private int PreviewAnimatorStateIndex_ = -1;
         private float PreviewAnimatorStateTime_ = 0f;
-        
+
         public LiteUnitBinder()
         {
         }
@@ -28,7 +28,7 @@ namespace LiteBattle.Editor
         {
             UnBindUnit();
         }
-        
+
         public void BindUnit(LiteUnitConfig config)
         {
             UnBindUnit();
@@ -37,7 +37,7 @@ namespace LiteBattle.Editor
             UnitGo_ = InstantiateGo(config.PrefabPath);
             UnitGo_.name = config.name;
             GenerateAnimatorData(UnitGo_);
-            
+
             LiteUnitBinderDataForEditor.SetCurrentStateGroup(CurrentUnit_.StateGroup);
             LiteUnitBinderDataForEditor.SetAnimatorStateNameList(AnimatorStateNameList_);
         }
@@ -49,7 +49,7 @@ namespace LiteBattle.Editor
             UnitGo_ = unit.GetModule<LiteEntityBehaveModule>().GetInternalGo();
             IsRuntime_ = true;
             GenerateAnimatorData(UnitGo_);
-            
+
             LiteUnitBinderDataForEditor.SetCurrentStateGroup(CurrentUnit_.StateGroup);
             LiteUnitBinderDataForEditor.SetAnimatorStateNameList(AnimatorStateNameList_);
         }
@@ -61,9 +61,9 @@ namespace LiteBattle.Editor
 
             PreviewAnimatorStateIndex_ = -1;
             PreviewAnimatorStateTime_ = 0f;
-            
+
             Animators_ = go.GetComponentsInChildren<Animator>();
-            
+
             foreach (var animator in Animators_)
             {
                 var ac = animator.runtimeAnimatorController as AnimatorController;
@@ -89,7 +89,7 @@ namespace LiteBattle.Editor
                 Object.DestroyImmediate(UnitGo_);
                 UnitGo_ = null;
             }
-            
+
             IsRuntime_ = false;
             CurrentUnit_ = null;
             Animators_ = null;
@@ -124,7 +124,7 @@ namespace LiteBattle.Editor
         {
             return UnitGo_;
         }
-        
+
         public string GetCurrentStateGroup()
         {
             if (!IsBindUnit())
@@ -134,13 +134,13 @@ namespace LiteBattle.Editor
 
             return CurrentUnit_.StateGroup;
         }
-        
+
         public string GetCurrentUnitTimelineRootPath()
         {
             var stateGroup = GetCurrentStateGroup();
             return PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
-        
+
         public string GetAnimatorStateName(int index)
         {
             if (index < 0 || index >= AnimatorStateNameList_.Count)
@@ -162,7 +162,7 @@ namespace LiteBattle.Editor
             {
                 return null;
             }
-            
+
             if (AnimatorStateList_.ContainsKey(stateName))
             {
                 return AnimatorStateList_[stateName];
@@ -181,13 +181,13 @@ namespace LiteBattle.Editor
 
             return state.motion.averageDuration;
         }
-        
+
         public float GetAnimatorStateLength(int index)
         {
             var stateName = GetAnimatorStateName(index);
             return GetAnimatorStateLength(stateName);
         }
-        
+
         public int GetPreviewAnimatorStateIndex()
         {
             return PreviewAnimatorStateIndex_;
@@ -225,7 +225,7 @@ namespace LiteBattle.Editor
         public void SampleAnimation(string animatorStateName, float time)
         {
             var state = GetAnimatorState(animatorStateName);
-            
+
             if (state == null)
             {
                 return;
@@ -243,7 +243,7 @@ namespace LiteBattle.Editor
             {
                 return null;
             }
-            
+
             if (!EffectList_.ContainsKey(effectPath))
             {
                 var effectGo = InstantiateGo(effectPath);
@@ -253,10 +253,10 @@ namespace LiteBattle.Editor
                     effect = effectGo.AddComponent<EffectBinder>();
                     effect.UpdateInfo();
                 }
-                
+
                 EffectList_.Add(effectPath, effect);
             }
-            
+
             return EffectList_[effectPath];
         }
 
@@ -266,7 +266,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             if (EffectList_.ContainsKey(effectPath))
             {
                 var effect = EffectList_[effectPath];
@@ -298,7 +298,7 @@ namespace LiteBattle.Editor
                 LLog.Error($"can't load prefab : {fullPath}");
                 return null;
             }
-                
+
             var inst = Object.Instantiate(origin, Vector3.zero, Quaternion.identity);
             if (inst == null)
             {

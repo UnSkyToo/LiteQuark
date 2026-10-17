@@ -7,13 +7,13 @@ namespace LiteQuark.Runtime
     {
         private readonly Action<EffectObject, SafeList<EffectObject>, float> _onTickDelegate = null;
         private readonly SafeList<EffectObject> _effectList = new();
-        
+
         public EffectSystem()
         {
             _effectList.Clear();
             _onTickDelegate = OnEffectTick;
         }
-        
+
         public UniTask<bool> Initialize()
         {
             return UniTask.FromResult(true);
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
         {
             _effectList.Foreach(_onTickDelegate, _effectList, deltaTime);
         }
-        
+
         private void OnEffectTick(EffectObject effect, SafeList<EffectObject> list, float dt)
         {
             if (effect.IsDone)
@@ -42,7 +42,7 @@ namespace LiteQuark.Runtime
                 effect.Tick(dt);
             }
         }
-        
+
         public BaseObject FindEffect(ulong id)
         {
             return _effectList.ForeachReturn(effect => effect.UniqueID == id);
@@ -59,14 +59,14 @@ namespace LiteQuark.Runtime
             _effectList.Add(effect);
             return effect.UniqueID;
         }
-        
+
         public void StopEffect(ulong id)
         {
             if (id == 0)
             {
                 return;
             }
-            
+
             var effect = _effectList.ForeachReturn(effect => effect.UniqueID == id);
             effect?.Stop();
         }

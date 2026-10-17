@@ -31,7 +31,7 @@ namespace LiteQuark.Editor
             {
                 builder.AppConfig.Options &= ~BuildOptions.Development;
             }
-            
+
 #if UNITY_ANDROID
             PlayerSettings.Android.bundleVersionCode = builder.AppConfig.BuildCode;
             PlayerSettings.Android.targetArchitectures = builder.AppConfig.Architecture;

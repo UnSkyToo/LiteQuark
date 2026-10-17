@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (AssemblyList.Contains(assembly))
             {
                 return;
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-        
+
         public static Type GetTypeWithAssembly(Assembly[] assemblyList, string typeName)
         {
             foreach (var assembly in assemblyList)
@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
             {
                 return true;
             }
-            
+
             if (a == null || b == null)
             {
                 return false;
@@ -98,17 +98,17 @@ namespace LiteQuark.Runtime
         {
             return typeof(T).IsAssignableFrom(type);
         }
-        
+
         public static bool IsListType(Type type)
         {
             return type.IsGenericType && typeof(System.Collections.IList).IsAssignableFrom(type);
         }
-        
+
         public static bool IsDictionaryType(Type type)
         {
             return type.IsGenericType && typeof(System.Collections.IDictionary).IsAssignableFrom(type);
         }
-        
+
         public static Type GetElementType(Type type)
         {
             if (type.IsArray)
@@ -133,7 +133,7 @@ namespace LiteQuark.Runtime
         {
             return !(type.IsAbstract || type.IsInterface);
         }
-        
+
         public static object CreateInstance(Type type)
         {
             if (type.IsInterface)
@@ -147,12 +147,12 @@ namespace LiteQuark.Runtime
                 LLog.Error("Can't create instance of abstract type {0}", type.Name);
                 return null;
             }
-            
+
             if (type.IsArray)
             {
                 return Array.CreateInstance(GetElementType(type), 0);
             }
-            
+
             if (IsListType(type))
             {
                 return CreateGenericList(GetElementType(type));
@@ -162,7 +162,7 @@ namespace LiteQuark.Runtime
             {
                 return CreateGenericDictionary(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
             }
-            
+
             return type == typeof(string) ? string.Empty : Activator.CreateInstance(type);
         }
 
@@ -179,7 +179,7 @@ namespace LiteQuark.Runtime
                 LLog.Error("Can't create instance of abstract type {0}", type.Name);
                 return null;
             }
-            
+
             if (type.IsArray)
             {
                 return Array.CreateInstance(GetElementType(type), count);
@@ -194,7 +194,7 @@ namespace LiteQuark.Runtime
             {
                 return CreateGenericDictionary(type.GenericTypeArguments[0], type.GenericTypeArguments[1]);
             }
-            
+
             LLog.Error("Can't create instance of array type {0}", type.Name);
             return null;
         }
@@ -203,7 +203,7 @@ namespace LiteQuark.Runtime
         {
             return (T) CreateInstance(typeof(T));
         }
-        
+
         public static object CreateGenericList(Type elementType)
         {
             var typeList = typeof(List<>);
@@ -238,7 +238,7 @@ namespace LiteQuark.Runtime
 
             return instanceType;
         }
-        
+
         public static T GetAttribute<T>(Type type, object[] attrs) where T : Attribute
         {
             T result = null;
@@ -253,18 +253,18 @@ namespace LiteQuark.Runtime
             }
             return result;
         }
-        
+
         public static string GetTypeDisplayName(Type type)
         {
             if (type == null)
             {
                 return "null";
             }
-            
+
             var labelAttr = GetAttribute<LiteLabelAttribute>(type, null);
             return labelAttr != null ? labelAttr.Label : type.Name;
         }
-        
+
         public static List<string> TypeListToString(List<Type> typeList)
         {
             var results = new List<string>();
@@ -276,14 +276,14 @@ namespace LiteQuark.Runtime
 
             return results;
         }
-        
+
         public static Type[] PrioritySort(Type[] sortList)
         {
             var list = new List<Type>(sortList);
             PrioritySort(list);
             return list.ToArray();
         }
-        
+
         public static void PrioritySort(List<Type> sortList)
         {
             sortList.Sort(static (a, b) =>
@@ -311,7 +311,7 @@ namespace LiteQuark.Runtime
             PrioritySort(list);
             return list.ToArray();
         }
-        
+
         public static void PrioritySort<T>(List<T> sortList) where T : MemberInfo
         {
             sortList.Sort(static (a, b) =>
@@ -332,14 +332,14 @@ namespace LiteQuark.Runtime
                 return 1;
             });
         }
-        
+
         public static uint GetPriorityFromType(Type type)
         {
             var priorityAttr = type.GetCustomAttribute<LitePriorityAttribute>();
             var value = priorityAttr != null ? priorityAttr.Value : 0;
             return value;
         }
-        
+
         public static uint GetPriorityFromType<T>(T info) where T : MemberInfo
         {
             var priorityAttr = info.GetCustomAttribute<LitePriorityAttribute>();

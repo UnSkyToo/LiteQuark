@@ -7,11 +7,11 @@ namespace LiteQuark.Runtime
         public bool IsUnscaled { get; private set; } = false;
         public bool IsSafety { get; private set; } = false;
         public System.Action<IAction> FinalCallback { get; private set; } = null;
-        
+
         protected BaseAction()
         {
         }
-        
+
         public virtual void Dispose()
         {
         }
@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
             FinalCallback = callback;
             return this;
         }
-        
+
         public IAction SetUnscaled(bool isUnscaled)
         {
             IsUnscaled = isUnscaled;

@@ -247,7 +247,7 @@ namespace LiteQuark.Runtime
 
             return results;
         }
-        
+
         private async UniTask SendAndAssign<T>(HttpRequest request, HttpResponse<T>[] results, int index)
         {
             results[index] = await Send<T>(request);

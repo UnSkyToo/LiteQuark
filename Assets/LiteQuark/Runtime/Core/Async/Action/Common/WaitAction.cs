@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
 
         private readonly float _waitTime = 0f;
         private float _currentTime = 0f;
-        
+
         public WaitTimeAction(float waitTime)
         {
             _waitTime = waitTime;
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
 
         private readonly int _waitFrame = 0;
         private int _currentFrame = 0;
-        
+
         public WaitFrameAction(int waitFrame)
         {
             _waitFrame = waitFrame;
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
     public class WaitUntilAction : BaseAction
     {
         public override string DebugName => $"<WaitUntil>({_conditionFunc})";
-        
+
         private readonly System.Func<bool> _conditionFunc = null;
 
         public WaitUntilAction(System.Func<bool> conditionFunc)
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
             IsDone = _conditionFunc?.Invoke() ?? true;
         }
     }
-    
+
     public static partial class ActionBuilderExtend
     {
         public static ActionBuilder WaitTime(this ActionBuilder builder, float time)
@@ -85,13 +85,13 @@ namespace LiteQuark.Runtime
             builder.Add(new WaitTimeAction(time));
             return builder;
         }
-        
+
         public static ActionBuilder WaitFrame(this ActionBuilder builder, int frame)
         {
             builder.Add(new WaitFrameAction(frame));
             return builder;
         }
-        
+
         public static ActionBuilder WaitUntil(this ActionBuilder builder, System.Func<bool> conditionFunc)
         {
             builder.Add(new WaitUntilAction(conditionFunc));

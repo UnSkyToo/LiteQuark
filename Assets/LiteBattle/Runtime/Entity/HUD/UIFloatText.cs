@@ -1,4 +1,4 @@
-﻿using LiteQuark.Runtime;
+using LiteQuark.Runtime;
 using TMPro;
 using UnityEngine;
 
@@ -20,7 +20,7 @@ namespace LiteBattle.Runtime
 
             var worldPos = Entity_.GetModule<LiteEntityBehaveModule>().GetInternalGo().transform.position + Vector3.up * 2f;
             RT.anchoredPosition = UIUtils.WorldPointToCanvasPoint(worldPos, LiteCameraManager.Instance.MainCamera, RT.parent, LiteRuntime.Get<UISystem>().UICamera);
-            
+
             var act = ActionBuilder.Sequence()
                 .RectTransformMove(RT, new Vector2(0f + Random.Range(-10, 10), 100f + Random.Range(-20, 20)), 0.5f, true)
                 .TransformFadeOut(RT, 0.5f)

@@ -8,11 +8,11 @@ namespace LiteQuark.Runtime
     public class FileLogAppender : TextWriterLogAppender
     {
         private readonly string _rootDirectoryPath;
-        
+
         private Stream _stream;
         private string _filePath;
         private readonly bool _appendToFile;
-        
+
         public FileLogAppender(string rootDirectoryPath, bool appendToFile)
         {
             _rootDirectoryPath = rootDirectoryPath;

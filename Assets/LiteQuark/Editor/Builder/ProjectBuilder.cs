@@ -10,13 +10,13 @@ namespace LiteQuark.Editor
     internal sealed class ProjectBuilder
     {
         public ProjectBuildConfig BuildConfig { get; private set; }
-        
+
         public BuildTarget Target => BuildConfig.Target;
         public string Version => BuildConfig.Version;
         public ResBuildConfig ResConfig => BuildConfig.ResConfig;
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
         public ResCollector Collector { get; private set; }
-        
+
         private IBuildCallback[] _buildCallbacks = Array.Empty<IBuildCallback>();
 
         public ProjectBuilder()
@@ -28,18 +28,18 @@ namespace LiteQuark.Editor
             BuildConfig = buildConfig;
             Collector = new ResCollector();
             _buildCallbacks = ProjectBuilderUtils.CreateBuildCallbackInstance();
-            
+
             var stepList = GenerateBuildStep(buildConfig);
-            
+
             return Execute(stepList);
         }
 
         private IBuildStep[] GenerateBuildStep(ProjectBuildConfig config)
         {
             var stepList = new List<IBuildStep>();
-            
+
             stepList.Add(new BuilderConfigureStep());
-            
+
             var resStep = GenerateResBuildStep(ResConfig);
             stepList.AddRange(resStep);
 
@@ -55,14 +55,14 @@ namespace LiteQuark.Editor
             {
                 return Array.Empty<IBuildStep>();
             }
-            
+
             var steps = new List<IBuildStep>();
 
             if (!config.IncrementBuildModel)
             {
                 steps.Add(new ResCleanFileStep());
             }
-            
+
             steps.Add(new ResCollectInfoStep());
             steps.Add(new ResBuildFileStep());
             steps.Add(new ResGeneratePackInfoStep());
@@ -71,7 +71,7 @@ namespace LiteQuark.Editor
             {
                 steps.Add(new ResCopyToStreamingAssetStep());
             }
-            
+
             return steps.ToArray();
         }
 
@@ -88,7 +88,7 @@ namespace LiteQuark.Editor
             steps.Add(new AppGenerateProjectStep());
             steps.Add(new AppCompileProjectStep());
             // steps.Add(new AppCleanStep());
-            
+
             return steps.ToArray();
         }
 
@@ -101,9 +101,9 @@ namespace LiteQuark.Editor
             string error = null;
             var buildReport = new ProjectBuildReport();
             buildReport.StartTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-            
+
             PlayerSettings.bundleVersion = Version;
-            
+
             PreProjectCallback();
 
             foreach (var step in stepList)
@@ -131,20 +131,20 @@ namespace LiteQuark.Editor
                     break;
                 }
             }
-            
+
             stopwatch.Stop();
             var isSuccess = string.IsNullOrEmpty(error);
             Log($"Complete build {(isSuccess ? "success" : $"failed({error})")} with {stopwatch.ElapsedMilliseconds / 1000f}s.");
-            
+
             buildReport.IsSuccess = isSuccess;
             buildReport.ElapsedSeconds = stopwatch.ElapsedMilliseconds / 1000f;
             buildReport.OutputRootPath = GetRootOutputPath();
             buildReport.OutputResPath = GetResOutputPath();
             buildReport.OutputAppPath = GetAppOutputPath();
             buildReport.EndTime = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-            
+
             PostProjectCallback(buildReport);
-            
+
             return buildReport;
         }
 
@@ -162,7 +162,7 @@ namespace LiteQuark.Editor
                 LogError(ex.Message);
             }
         }
-        
+
         private void PostProjectCallback(ProjectBuildReport report)
         {
             try
@@ -192,7 +192,7 @@ namespace LiteQuark.Editor
                 LogError(ex.Message);
             }
         }
-        
+
         private void PostStepCallback(Type stepType, string stepName)
         {
             try
@@ -217,12 +217,12 @@ namespace LiteQuark.Editor
         {
             LEditorLog.Error($"[{LiteConst.Tag}] {msg}");
         }
-        
+
         public string GetResOutputPath()
         {
             return $"{GetRootOutputPath()}/Res";
         }
-        
+
         public string GetAppOutputPath()
         {
             return $"{GetRootOutputPath()}/App";
@@ -248,19 +248,19 @@ namespace LiteQuark.Editor
 
             return legalProduceName.Replace(' ', '_');
         }
-        
+
         public string[] GetBuildSceneList()
         {
             var names = new List<string>();
-            
+
             foreach(var scene in EditorBuildSettings.scenes)
             {
-                if (scene is { enabled: true }) 
+                if (scene is { enabled: true })
                 {
                     names.Add (scene.path);
                 }
             }
-            
+
             return names.ToArray();
         }
     }

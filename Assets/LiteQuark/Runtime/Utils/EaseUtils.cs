@@ -106,7 +106,7 @@ namespace LiteQuark.Runtime
         {
             return t;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static float InSine(float t)
         {
@@ -265,7 +265,7 @@ namespace LiteQuark.Runtime
         private static float InElastic(float t)
         {
             const float c4 = (2f * Mathf.PI) / 3f;
-            
+
             return t == 0f ? 0f : Mathf.Approximately(t, 1f) ? 1f : -Mathf.Pow(2f, 10f * t - 10f) * Mathf.Sin((t * 10f - 10.75f) * c4);
         }
 

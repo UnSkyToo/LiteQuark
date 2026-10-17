@@ -9,12 +9,12 @@ namespace LiteQuark.Runtime
         public readonly string[] SourceFields = new string[] { };
         public readonly object[] Values = new object[] { };
         public readonly bool[] Inverses = new bool[] { };
-        
+
         public ConditionalShowAttribute(string sourceField, object value)
             : this(sourceField, value, false)
         {
         }
-        
+
         public ConditionalShowAttribute(string sourceField1, object value1, string sourceField2, object value2)
             : this(new[] { sourceField1, sourceField2 }, new[] { value1, value2 }, new[] { false, false })
         {

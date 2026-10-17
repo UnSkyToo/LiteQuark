@@ -49,7 +49,7 @@
 //                 RemoveList_.Remove(key);
 //                 return;
 //             }
-//             
+//
 //             AddList_.Add(key, value);
 //             Dirty_ = true;
 //         }
@@ -61,7 +61,7 @@
 //                 AddList_.Remove(key);
 //                 return;
 //             }
-//             
+//
 //             RemoveList_.Add(key);
 //             Dirty_ = true;
 //         }
@@ -111,7 +111,7 @@
 //                 InEach_--;
 //             }
 //         }
-//         
+//
 //         public void Foreach<P1, P2>(Action<TKey, TValue, P1, P2> func, P1 param1, P2 param2)
 //         {
 //             Flush();
@@ -128,7 +128,7 @@
 //                 InEach_--;
 //             }
 //         }
-//         
+//
 //         public void Foreach<P1, P2, P3>(Action<TKey, TValue, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
 //         {
 //             Flush();
@@ -145,7 +145,7 @@
 //                 InEach_--;
 //             }
 //         }
-//         
+//
 //         /// <summary>
 //         /// Return T when func return true
 //         /// </summary>
@@ -197,7 +197,7 @@
 //                     Values_.Add(chunk.Key, chunk.Value);
 //                 }
 //                 AddList_.Clear();
-//                 
+//
 //                 foreach (var key in RemoveList_)
 //                 {
 //                     Values_.Remove(key);

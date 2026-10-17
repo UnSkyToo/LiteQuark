@@ -10,14 +10,14 @@ namespace LiteQuark.Editor
     {
         private readonly Dictionary<string, bool> _labelFoldout = new();
         private readonly Dictionary<ulong, bool> _idFoldout = new();
-        
+
         protected override void OnDraw()
         {
             if (!Application.isPlaying)
             {
                 return;
             }
-            
+
             DrawFoldout("Action", DrawAction);
             DrawFoldout("Asset", DrawAsset);
             DrawFoldout("Task", DrawTask);
@@ -29,7 +29,7 @@ namespace LiteQuark.Editor
         private void DrawFoldout(string label, System.Action func)
         {
             _labelFoldout.TryAdd(label, false);
-            
+
             _labelFoldout[label] = EditorGUILayout.Foldout(_labelFoldout[label], label);
             if (_labelFoldout[label])
             {
@@ -106,7 +106,7 @@ namespace LiteQuark.Editor
                 EditorGUILayout.LabelField("Empty");
                 return;
             }
-            
+
             var visitorInfo = visitorInfoWrap.Value;
             if (visitorInfo.BundleVisitors.Length == 0)
             {

@@ -12,7 +12,7 @@ namespace LiteQuark.Editor
         }
 
         private readonly ResBuildConfig _config;
-        
+
         public BuilderResView(ProjectBuilderWindow window, string title, ResBuildConfig config)
             : base(window, title)
         {
@@ -24,11 +24,11 @@ namespace LiteQuark.Editor
             _config.Options = (BuildAssetBundleOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), _config.Options, false);
 
             _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), _config.HashMode);
-            
+
             _config.FlatMode = EditorGUILayout.Toggle(new GUIContent("Flat Mode", "Flat mode will remove bundle folder"), _config.FlatMode);
-            
+
             _config.IncrementBuildModel = EditorGUILayout.Toggle(new GUIContent("Increment Build", "Increment build mode will be use last build info"), _config.IncrementBuildModel);
-            
+
             _config.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), _config.CopyToStreamingAssets);
 
             if (_config.CopyToStreamingAssets)

@@ -33,7 +33,7 @@ namespace LiteBattle.Runtime
                 ChangeToState(StateGroupID, NextStateID_);
                 NextStateID_ = string.Empty;
             }
-            
+
             CurrentState_?.Tick(deltaTime);
 
             if (CurrentState_?.IsEnd() == true && string.IsNullOrWhiteSpace(NextStateID_))
@@ -46,7 +46,7 @@ namespace LiteBattle.Runtime
         private void ChangeToState(string stateGroupID, string stateID)
         {
             CurrentState_?.Leave();
-            
+
             var stateConfig = LiteNexusDataManager.Instance.GetStateConfig(stateGroupID, stateID);
             if (stateConfig != null)
             {

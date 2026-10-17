@@ -54,12 +54,12 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-        
+
         public static T GetComponentUpper<T>(GameObject parent) where T : Component
         {
             return GetComponentUpper<T>(parent.transform);
         }
-        
+
         public static T GetComponentUpper<T>(Transform parent) where T : Component
         {
             while (parent != null)
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
 
             return null;
         }
-        
+
         public static T GetOrAddComponent<T>(GameObject go) where T : Component
         {
             if (go == null)
@@ -91,16 +91,16 @@ namespace LiteQuark.Runtime
 
             return go.AddComponent<T>();
         }
-        
+
         public static T GetOrAddComponent<T>(Transform go) where T : Component
         {
             return GetOrAddComponent<T>(go.gameObject);
         }
-        
+
         public static GameObject CreateGameObject(Transform parent, string name)
         {
             var go = new GameObject(name);
-            
+
             go.transform.SetParent(parent);
             go.transform.localPosition = Vector3.zero;
             go.transform.localScale = Vector3.one;
@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
             UnityEngine.Object.DontDestroyOnLoad(go);
             return go;
         }
-        
+
         public static void SetActive(GameObject parent, string path, bool value)
         {
             SetActive(parent.transform, path, value);
@@ -162,14 +162,14 @@ namespace LiteQuark.Runtime
             {
                 renderer.sortingLayerName = layerName;
             }
-            
+
             var canvases = parent.GetComponentsInChildren<Canvas>();
             foreach (var canvas in canvases)
             {
                 canvas.sortingLayerName = layerName;
             }
         }
-        
+
         public static void ChangeSortingLayerID(GameObject parent, int layerID)
         {
             var renderers = parent.GetComponentsInChildren<Renderer>();
@@ -177,7 +177,7 @@ namespace LiteQuark.Runtime
             {
                 renderer.sortingLayerID = layerID;
             }
-            
+
             var canvases = parent.GetComponentsInChildren<Canvas>();
             foreach (var canvas in canvases)
             {
@@ -192,7 +192,7 @@ namespace LiteQuark.Runtime
             {
                 renderer.sortingOrder = order;
             }
-            
+
             var canvases = parent.GetComponentsInChildren<Canvas>();
             foreach (var canvas in canvases)
             {
@@ -207,21 +207,21 @@ namespace LiteQuark.Runtime
             {
                 renderer.sortingOrder += order;
             }
-            
+
             var canvases = parent.GetComponentsInChildren<Canvas>();
             foreach (var canvas in canvases)
             {
                 canvas.sortingOrder += order;
             }
         }
-        
+
 #if UNITY_EDITOR
         public static void ShowEditorNotification(string msg)
         {
             var func = typeof(UnityEditor.SceneView).GetMethod("ShowNotification", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
             func?.Invoke(null, new object[] { msg });
         }
-        
+
         public static void SetResolution(int width, int height)
         {
             Screen.SetResolution(width, height, false);
@@ -232,7 +232,7 @@ namespace LiteQuark.Runtime
             var gameViewSizeProp = gameView.GetType().GetProperty("currentGameViewSize", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var viewSize = gameViewSizeProp.GetValue(gameView, new object[0] { });
             var viewSizeType = viewSize.GetType();
-            
+
             viewSizeType.GetProperty("width", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).SetValue(viewSize, width, new object[0] { });
             viewSizeType.GetProperty("height", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).SetValue(viewSize, height, new object[0] { });
 
@@ -241,7 +241,7 @@ namespace LiteQuark.Runtime
         }
 #endif
     }
-    
+
     public static class UnityUtilsExtend
     {
         public static Transform FindChild(this GameObject parent, string path)
@@ -273,17 +273,17 @@ namespace LiteQuark.Runtime
         {
             return UnityUtils.GetComponent<T>(parent, path);
         }
-        
+
         public static T GetComponentUpper<T>(this GameObject parent) where T : Component
         {
             return UnityUtils.GetComponentUpper<T>(parent);
         }
-        
+
         public static T GetComponentUpper<T>(this Transform parent) where T : Component
         {
             return UnityUtils.GetComponentUpper<T>(parent);
         }
-        
+
         public static T GetOrAddComponent<T>(this GameObject go) where T : Component
         {
             return UnityUtils.GetOrAddComponent<T>(go);
@@ -293,7 +293,7 @@ namespace LiteQuark.Runtime
         {
             return UnityUtils.GetOrAddComponent<T>(go);
         }
-        
+
         public static void SetActive(this GameObject parent, string path, bool value)
         {
             UnityUtils.SetActive(parent, path, value);
@@ -311,7 +311,7 @@ namespace LiteQuark.Runtime
         {
             UnityUtils.SetActive(parent, path, value);
         }
-        
+
         public static UniTask<AsyncOperation>.Awaiter GetAwaiter(this AsyncOperation asyncOperation)
         {
             var tcs = new UniTaskCompletionSource<AsyncOperation>();

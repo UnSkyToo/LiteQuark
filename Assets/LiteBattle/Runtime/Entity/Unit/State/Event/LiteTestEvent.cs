@@ -9,9 +9,9 @@ namespace LiteBattle.Runtime
     {
         [LiteProperty("Go", LitePropertyType.GameObject)]
         public string Val = string.Empty;
-        
+
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
         }

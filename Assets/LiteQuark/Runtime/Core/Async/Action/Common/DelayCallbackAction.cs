@@ -3,7 +3,7 @@ namespace LiteQuark.Runtime
     public abstract class DelayCallbackBaseAction : BaseAction
     {
         public override string DebugName => $"<DelayCallback>({_currentTime}/{_waitTime})";
-        
+
         private readonly float _waitTime = 0f;
         private float _currentTime = 0f;
 

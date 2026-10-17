@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         private bool _simulateAsyncDelayInEditor;
         private int _asyncDelayMinFrame;
         private int _asyncDelayMaxFrame;
-        
+
         public AssetEditorProvider()
         {
         }
@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
             {
                 _simulateAsyncDelayInEditor = false;
             }
-            
+
             return UniTask.FromResult(true);
         }
 
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
                 LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value1, value2); });
             }
         }
-        
+
         public bool HasAsset(string assetPath)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
@@ -103,7 +103,7 @@ namespace LiteQuark.Runtime
             var scene = LoadSceneSync(scenePath, sceneName, parameters);
             SimulateAsync(callback, scene.IsValid() && scene.isLoaded, scene);
         }
-        
+
         public Scene LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
@@ -112,7 +112,7 @@ namespace LiteQuark.Runtime
             {
                 return scene;
             }
-            
+
             return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters);
         }
 
@@ -134,7 +134,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback);
                 return;
             }
-            
+
             op.completed += result =>
             {
                 LiteUtils.SafeInvoke(callback);

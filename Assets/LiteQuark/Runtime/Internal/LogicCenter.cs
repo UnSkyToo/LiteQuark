@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     internal sealed class LogicCenter : Singleton<LogicCenter>, ISubstance
     {
         private readonly List<ILogic> _logicList = new();
-        
+
         private LogicCenter()
         {
         }
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         {
             UnInitializeLogic();
         }
-        
+
         public void Tick(float deltaTime)
         {
             foreach (var logic in _logicList)
@@ -24,11 +24,11 @@ namespace LiteQuark.Runtime
                 logic.Tick(deltaTime);
             }
         }
-        
+
         internal async UniTask<bool> InitializeLogic(CancellationToken ct = default)
         {
             _logicList.Clear();
-            
+
             foreach (var logicEntry in LiteRuntime.Setting.LogicList)
             {
                 if (ct.IsCancellationRequested)
@@ -40,11 +40,11 @@ namespace LiteQuark.Runtime
                 {
                     continue;
                 }
-                
+
                 LLog.Info("Initialize {0} logic", logicEntry.AssemblyQualifiedName);
 
                 var logic = TypeUtils.CreateEntryInstance(logicEntry);
-                
+
                 var result = await logic.Initialize();
                 if (ct.IsCancellationRequested)
                 {
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
                     return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
             {
                 logic.Dispose();
             }
-            
+
             _logicList.Clear();
         }
     }

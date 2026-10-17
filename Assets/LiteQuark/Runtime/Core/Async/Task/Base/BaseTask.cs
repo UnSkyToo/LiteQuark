@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     public abstract class BaseTask : BaseObject, ITask
     {
         public override string DebugName => GetType().Name;
-        
+
         public float Progress { get; protected set; }
         public bool IsDone => State is TaskState.Completed or TaskState.Cancelled;
         public bool IsExecuted { get; private set; }
@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
         {
             Priority = priority;
         }
-        
+
         public void Execute()
         {
             if (State != TaskState.Pending)
@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
         {
             return !IsDone;
         }
-        
+
         void IEnumerator.Reset()
         {
         }

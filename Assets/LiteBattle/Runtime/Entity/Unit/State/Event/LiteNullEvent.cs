@@ -9,7 +9,7 @@ namespace LiteBattle.Runtime
     public sealed class LiteNullEvent : ILiteEvent
     {
         public bool HasData => false;
-        
+
         public void Enter(LiteState state)
         {
         }

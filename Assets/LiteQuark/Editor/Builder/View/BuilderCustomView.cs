@@ -10,7 +10,7 @@ namespace LiteQuark.Editor
 
         private readonly CustomBuildConfig _config;
         private readonly ICustomBuildView _view;
-        
+
         public BuilderCustomView(ProjectBuilderWindow window, string title, CustomBuildConfig config, ICustomBuildView view)
             : base(window, title)
         {

@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
             _finalCallback = null;
             _isUnscaled = false;
         }
-        
+
         public static ActionBuilder Sequence(string tag = "unknown", int repeatCount = 1)
         {
             return new ActionBuilder(BuildType.Sequence, tag, repeatCount);
@@ -74,13 +74,13 @@ namespace LiteQuark.Runtime
             _parent.Add(Flush());
             return _parent;
         }
-        
+
         public ActionBuilder SetFinalCallback(System.Action<IAction> callback)
         {
             _finalCallback = callback;
             return this;
         }
-        
+
         public ActionBuilder SetUnscaled(bool isUnscaled = true)
         {
             _isUnscaled = isUnscaled;
@@ -113,7 +113,7 @@ namespace LiteQuark.Runtime
 
             return action;
         }
-        
+
         public ActionBuilder Add(IAction action)
         {
             _actionList.Add(action);

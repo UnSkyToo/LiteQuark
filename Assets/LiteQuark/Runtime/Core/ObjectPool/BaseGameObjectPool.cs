@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         protected GameObject Template;
         protected ObjectPool<GameObject> Pool;
         protected readonly System.Collections.Generic.List<System.Action> LoadTemplateCallbackList = new();
-        
+
         protected BaseGameObjectPool()
         {
         }
@@ -33,10 +33,10 @@ namespace LiteQuark.Runtime
                 Parent.SetParent(root, false);
             }
             Parent.localPosition = Vector3.zero;
-            
+
             Pool = new ObjectPool<GameObject>(OnCreate, OnGet, OnRelease, OnDestroy);
         }
-        
+
         public virtual void Dispose()
         {
             Pool.Dispose();
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
             {
                 return null;
             }
-            
+
             var go = Object.Instantiate(Template, Parent);
             return go;
         }
@@ -126,7 +126,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
 
             Pool.Release(value);
         }
@@ -167,7 +167,7 @@ namespace LiteQuark.Runtime
             }
             LoadTemplateCallbackList.Clear();
         }
-        
+
         public UniTask WaitReadyAsync()
         {
             var tcs = new UniTaskCompletionSource();

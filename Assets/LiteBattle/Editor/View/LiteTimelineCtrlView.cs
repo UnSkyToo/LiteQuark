@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Timeline;
@@ -10,7 +10,7 @@ namespace LiteBattle.Editor
         private string CurrentTimelineName_ = string.Empty;
         private int MaxFrame_ = 0;
         private int FrameIndex_ = 0;
-        
+
         public LiteTimelineCtrlView(LiteNexusEditor nexusEditor)
             : base(nexusEditor)
         {
@@ -43,7 +43,7 @@ namespace LiteBattle.Editor
             {
                 OnTimelineChanged(timelineAsset);
             }
-            
+
             using (new EditorGUI.DisabledGroupScope(timelineAsset == null))
             {
                 DrawTimelineController(timelineAsset);
@@ -65,7 +65,7 @@ namespace LiteBattle.Editor
             MaxFrame_ = 0;
             FrameIndex_ = 0;
         }
-        
+
         private void OnTimelineChanged(TimelineAsset timelineAsset)
         {
             CurrentTimelineName_ = timelineAsset.name;
@@ -78,7 +78,7 @@ namespace LiteBattle.Editor
         {
             FrameIndex_ = frameIndex;
             LiteEditorPreviewer.Instance.ChangeFrame(FrameIndex_);
-            
+
             var time = LiteTimelineHelper.FrameToTime(FrameIndex_);
             LiteTimelineHelper.SetTimelineTrackTime((float) time);
             LiteTimelineHelper.RepaintTimeline();
@@ -96,14 +96,14 @@ namespace LiteBattle.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 DrawTransportToolbar();
-                
+
                 // if (GUILayout.Button("Clear", EditorStyles.toolbarButton))
                 // {
                 //     LiteTimelineHelper.ClearTimeline();
                 // }
             }
         }
-        
+
         private void DrawTransportToolbar()
         {
             GotoBeginingSequenceGUI();
@@ -112,7 +112,7 @@ namespace LiteBattle.Editor
             NextEventButtonGUI();
             GotoEndSequenceGUI();
         }
-        
+
         private void GotoBeginingSequenceGUI()
         {
             using (new EditorGUI.DisabledGroupScope(EditorApplication.isPlaying))
@@ -123,7 +123,7 @@ namespace LiteBattle.Editor
                 }
             }
         }
-        
+
         private void PreviousEventButtonGUI()
         {
             using (new EditorGUI.DisabledGroupScope(EditorApplication.isPlaying))
@@ -137,7 +137,7 @@ namespace LiteBattle.Editor
                 }
             }
         }
-        
+
         private void PlayButtonGUI()
         {
             using (new EditorGUI.DisabledGroupScope(EditorApplication.isPlaying))
@@ -171,7 +171,7 @@ namespace LiteBattle.Editor
                 }
             }
         }
-        
+
         private void GotoEndSequenceGUI()
         {
             using (new EditorGUI.DisabledGroupScope(EditorApplication.isPlaying))

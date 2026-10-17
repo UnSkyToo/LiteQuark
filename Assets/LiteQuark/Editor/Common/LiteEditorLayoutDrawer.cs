@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
                 EditorGUILayout.LabelField(new GUIContent(label, EditorGUIUtility.FindTexture("console.warnicon.sml")));
             }
         }
-        
+
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -28,7 +28,7 @@ namespace LiteQuark.Editor
         {
             return DrawObject(name, data, LitePropertyType.Object) as T;
         }
-        
+
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -39,7 +39,7 @@ namespace LiteQuark.Editor
         {
             return DrawObject(title, data, LitePropertyType.Object) as T;
         }
-        
+
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -50,7 +50,7 @@ namespace LiteQuark.Editor
         {
             return DrawObject(new GUIContent(name), data, propertyType);
         }
-        
+
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -63,11 +63,11 @@ namespace LiteQuark.Editor
             {
                 return null;
             }
-            
+
             var obj = DrawElement(title, data, data.GetType(), propertyType);
             return obj;
         }
-        
+
         private static object DrawElement(GUIContent title, object data, Type type, LitePropertyType propertyType, object[] attrs = null)
         {
             if (data == null && TypeUtils.CanCreateType(type))
@@ -155,7 +155,7 @@ namespace LiteQuark.Editor
             }
             return data;
         }
-        
+
         private static object DrawIntField(GUIContent title, int v, Type type, object[] attrs)
         {
             var rangeIntAttr = TypeUtils.GetAttribute<LiteIntRangeAttribute>(type, attrs);
@@ -163,11 +163,11 @@ namespace LiteQuark.Editor
             {
                 return EditorGUILayout.IntSlider(title, v, rangeIntAttr.Min, rangeIntAttr.Max);
             }
-            
+
             var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedIntAttr == null ? EditorGUILayout.IntField(title, v) : EditorGUILayout.DelayedIntField(title, v);
         }
-        
+
         private static float DrawFloatField(GUIContent title, float v, Type type, object[] attrs)
         {
             var rangeIntAttr = TypeUtils.GetAttribute<LiteFloatRangeAttribute>(type, attrs);
@@ -175,11 +175,11 @@ namespace LiteQuark.Editor
             {
                 return EditorGUILayout.Slider(title, v, rangeIntAttr.Min, rangeIntAttr.Max);
             }
-            
+
             var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedFloatAttr == null ? EditorGUILayout.FloatField(title, v) : EditorGUILayout.DelayedFloatField(title, v);
         }
-        
+
         private static double DrawDoubleField(GUIContent title, double v, Type type, object[] attrs)
         {
             var delayedDoubleAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
@@ -230,13 +230,13 @@ namespace LiteQuark.Editor
 
             return v;
         }
-        
+
         private static object DrawList(GUIContent title, IList data)
         {
             LiteReorderableListWrap.GetWrap(data)?.Draw(title);
             return data;
         }
-        
+
         private static readonly Dictionary<object, bool> Foldout_ = new();
         private static object DrawObjectInternal(GUIContent title, object data, Type type)
         {
@@ -244,7 +244,7 @@ namespace LiteQuark.Editor
             {
                 data = TypeUtils.CreateInstance(type);
             }
-            
+
             var depth = 0;
             if (title != GUIContent.none)
             {
@@ -252,24 +252,24 @@ namespace LiteQuark.Editor
                 {
                     Foldout_.Add(data, true);
                 }
-                
+
                 Foldout_[data] = EditorGUILayout.Foldout(Foldout_[data], title);
                 // EditorGUILayout.LabelField(title);
                 depth = 1;
-                
+
                 if (!Foldout_[data])
                 {
                     return data;
                 }
             }
-            
+
             using (new GUILayout.VerticalScope())
             {
                 EditorGUI.indentLevel += depth;
                 if (!type.IsPrimitive && (type.IsClass || type.IsValueType))
                 {
                     var enableSourceData = LiteEnableSourceAttribute.GetSourceData(data);
-                    
+
                     // var fields = type.GetFields().OrderBy(p => p.MetadataToken).ToArray();
                     var fields = TypeUtils.PrioritySort(type.GetFields());
                     foreach (var field in fields)
@@ -331,7 +331,7 @@ namespace LiteQuark.Editor
                 // var title = LiteEditorUtils.GetTitleFromMemberInfo(info);
                 var propertyValue = info.GetValue(target);
                 var attrs = info.GetCustomAttributes(true);
-                
+
                 EditorGUI.BeginDisabledGroup(!info.CanWrite);
                 EditorGUI.BeginChangeCheck();
                 propertyValue = DrawElement(title, propertyValue, info.PropertyType, propertyAttr.Type, attrs);
@@ -359,11 +359,11 @@ namespace LiteQuark.Editor
             var list = customAttr?.GetList() ?? new List<string>{"error custom list"};
             return DrawPopupStringList(title, list, v);
         }
-        
+
         private static string DrawPopupStringList(GUIContent title, List<string> list, string v)
         {
             var selectIndex = list.IndexOf(v);
-            
+
             EditorGUI.BeginChangeCheck();
             selectIndex = EditorGUILayout.Popup(title, selectIndex, list.ToArray());
             if (EditorGUI.EndChangeCheck())
@@ -374,14 +374,14 @@ namespace LiteQuark.Editor
 
             return v;
         }
-        
+
         private static object DrawOptionalTypeSelector(GUIContent title, Type baseType, object v)
         {
             var typeList = LiteEditorUtils.GetTypeListWithBaseType(baseType);
             var nameList = TypeUtils.TypeListToString(typeList);
             var currentType = v?.GetType();
             var selectIndex = nameList.IndexOf(TypeUtils.GetTypeDisplayName(currentType));
-            
+
             EditorGUI.BeginChangeCheck();
             selectIndex = EditorGUILayout.Popup(title, selectIndex, nameList.ToArray());
             if (EditorGUI.EndChangeCheck())
@@ -439,13 +439,13 @@ namespace LiteQuark.Editor
                         {
                             Foldout_.Add(v, true);
                         }
-                
+
                         Foldout_[v] = EditorGUILayout.Foldout(Foldout_[v], title);
                         if (!Foldout_[v])
                         {
                             return v;
                         }
-                        
+
                         GUILayout.FlexibleSpace();
                         GUILayout.Label($"{list.Count} items");
                     }
@@ -518,7 +518,7 @@ namespace LiteQuark.Editor
             LabelError($"{data?.GetType() ?? type} not implement IHasData");
             return data;
         }
-        
+
         private static string GetObjectDisplayName(object data, string defaultName)
         {
             var methodInfo = data?.GetType().GetMethod("ToString");
@@ -526,7 +526,7 @@ namespace LiteQuark.Editor
             {
                 return defaultName;
             }
-            
+
             return methodInfo.Invoke(data, null)?.ToString() ?? defaultName;
         }
 

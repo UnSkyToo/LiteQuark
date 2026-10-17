@@ -9,7 +9,7 @@ namespace LiteBattle.Runtime
         public LiteUnit Unit => Machine.Unit;
         public LiteStateMachine Machine { get; private set; }
         public float Duration { get; }
-        
+
         private readonly List<LiteClip> Clips_ = new();
         private readonly List<LiteClip> SignalClips_ = new();
         private readonly List<LiteClip> DurationClips_ = new();
@@ -31,7 +31,7 @@ namespace LiteBattle.Runtime
         {
             return CurrentTime_;
         }
-        
+
         public bool IsEnd()
         {
             return CurrentTime_ >= Duration;
@@ -40,13 +40,13 @@ namespace LiteBattle.Runtime
         public void Enter(LiteStateMachine machine)
         {
             Machine = machine;
-            
+
             SignalClips_.Clear();
             DurationClips_.Clear();
-            
+
             CurrentTime_ = 0;
             PreviousTime_ = 0;
-            
+
             // LiteLog.Info($"Enter {Name}");
         }
 
@@ -64,12 +64,12 @@ namespace LiteBattle.Runtime
             }
             DurationClips_.Clear();
         }
-        
+
         public void Tick(float deltaTime)
         {
             PreviousTime_ = CurrentTime_;
             CurrentTime_ += deltaTime;
-            
+
             ProcessClip(deltaTime);
         }
 
@@ -115,9 +115,9 @@ namespace LiteBattle.Runtime
             {
                 return LiteEventSignal.Continue;
             }
-            
+
             clip.Enter(this);
-            
+
             switch (clip.Kind)
             {
                 case LiteClipKind.Signal:

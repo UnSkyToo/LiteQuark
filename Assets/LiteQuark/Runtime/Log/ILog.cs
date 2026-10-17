@@ -6,28 +6,28 @@ namespace LiteQuark.Runtime
     public interface ILog
     {
         ILogger Logger { get; }
-        
+
         bool IsInfoEnabled { get; }
         bool IsWarnEnabled { get; }
         bool IsErrorEnabled { get; }
         bool IsFatalEnabled { get; }
 
         public void EnableLevel(LogLevel level, bool enabled);
-        
+
         void Info(string message);
         void Info(string format, params object[] args);
-        
+
         void Warn(string message);
         void Warn(string format, params object[] args);
-        
+
         void Error(string message);
         void Error(string format, params object[] args);
-        
+
         void Fatal(string message);
         void Fatal(Exception exception, string message);
         void Fatal(Exception exception, string format, params object[] args);
     }
-    
+
     public sealed class LogImpl : ILog
     {
         public ILogger Logger { get; }
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
         {
             Logger.EnableLevel(level, enabled);
         }
-        
+
         public void Info(string message)
         {
             if (IsInfoEnabled)

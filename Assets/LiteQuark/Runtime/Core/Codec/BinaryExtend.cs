@@ -11,7 +11,7 @@ namespace LiteQuark.Runtime
             writer.Write(value.GetType());
             writer.Write(value.ToString());
         }
-        
+
         public static Enum ReadEnum(this BinaryReader reader)
         {
             var type = reader.ReadType();
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
             writer.Write(value.width);
             writer.Write(value.height);
         }
-        
+
         public static Rect ReadRect(this BinaryReader reader)
         {
             return new Rect(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -44,18 +44,18 @@ namespace LiteQuark.Runtime
             writer.Write(value.width);
             writer.Write(value.height);
         }
-        
+
         public static RectInt ReadRectInt(this BinaryReader reader)
         {
             return new RectInt(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
         }
-        
+
         public static void Write(this BinaryWriter writer, Vector2 value)
         {
             writer.Write(value.x);
             writer.Write(value.y);
         }
-        
+
         public static Vector2 ReadVector2(this BinaryReader reader)
         {
             return new Vector2(reader.ReadSingle(), reader.ReadSingle());
@@ -66,19 +66,19 @@ namespace LiteQuark.Runtime
             writer.Write(value.x);
             writer.Write(value.y);
         }
-        
+
         public static Vector2Int ReadVector2Int(this BinaryReader reader)
         {
             return new Vector2Int(reader.ReadInt32(), reader.ReadInt32());
         }
-        
+
         public static void Write(this BinaryWriter writer, Vector3 value)
         {
             writer.Write(value.x);
             writer.Write(value.y);
             writer.Write(value.z);
         }
-        
+
         public static Vector3 ReadVector3(this BinaryReader reader)
         {
             return new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -90,12 +90,12 @@ namespace LiteQuark.Runtime
             writer.Write(value.y);
             writer.Write(value.z);
         }
-        
+
         public static Vector3Int ReadVector3Int(this BinaryReader reader)
         {
             return new Vector3Int(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
         }
-        
+
         public static void Write(this BinaryWriter writer, Vector4 value)
         {
             writer.Write(value.x);
@@ -103,12 +103,12 @@ namespace LiteQuark.Runtime
             writer.Write(value.z);
             writer.Write(value.w);
         }
-        
+
         public static Vector4 ReadVector4(this BinaryReader reader)
         {
             return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
-        
+
         public static void Write(this BinaryWriter writer, Color value)
         {
             writer.Write(value.r);
@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
             writer.Write(value.b);
             writer.Write(value.a);
         }
-        
+
         public static Color ReadColor(this BinaryReader reader)
         {
             return new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -136,7 +136,7 @@ namespace LiteQuark.Runtime
                 writer.Write(type?.FullName ?? string.Empty);
             }
         }
-        
+
         public static Type ReadType(this BinaryReader reader)
         {
             var assemblyQualifiedName = reader.ReadString();

@@ -6,9 +6,9 @@ namespace LiteQuark.Runtime
     {
         public bool ImmediateFlush { get; set; } = true;
         public override bool RequireLayout => true;
-        
+
         protected LogQuietTextWriter QuiteWriter;
-        
+
         public TextWriterLogAppender()
         {
         }
@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        protected override void Append(LoggingEvent loggingEvent) 
+        protected override void Append(LoggingEvent loggingEvent)
         {
             if (QuiteWriter != null)
             {
@@ -33,22 +33,22 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
-        protected virtual void Reset() 
+
+        protected virtual void Reset()
         {
             CloseWriter();
             QuiteWriter = null;
         }
-        
-        protected virtual void CloseWriter() 
+
+        protected virtual void CloseWriter()
         {
-            if (QuiteWriter != null) 
+            if (QuiteWriter != null)
             {
-                try 
+                try
                 {
                     QuiteWriter.Close();
-                } 
-                catch(Exception ex) 
+                }
+                catch(Exception ex)
                 {
                     LogErrorHandler.Error($"Could not close writer [{QuiteWriter}]", ex);
                 }

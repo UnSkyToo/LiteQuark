@@ -14,7 +14,7 @@ namespace LiteQuark.Editor
                 EditorGUI.LabelField(rect, new GUIContent(label, EditorGUIUtility.FindTexture("console.warnicon.sml")));
             }
         }
-        
+
         /// <summary>
         /// <para>Support Data Type</para>
         /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
@@ -84,7 +84,7 @@ namespace LiteQuark.Editor
             }
             return data;
         }
-        
+
         private static object DrawIntField(Rect rect, GUIContent title, int v, Type type, object[] attrs)
         {
             var rangeIntAttr = TypeUtils.GetAttribute<LiteIntRangeAttribute>(type, attrs);
@@ -92,7 +92,7 @@ namespace LiteQuark.Editor
             {
                 return EditorGUI.IntSlider(rect, title, v, rangeIntAttr.Min, rangeIntAttr.Max);
             }
-            
+
             var delayedIntAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedIntAttr == null ? EditorGUI.IntField(rect, title, v) : EditorGUI.DelayedIntField(rect, title, v);
         }
@@ -104,7 +104,7 @@ namespace LiteQuark.Editor
             {
                 return EditorGUI.Slider(rect, title, v, rangeIntAttr.Min, rangeIntAttr.Max);
             }
-            
+
             var delayedFloatAttr = TypeUtils.GetAttribute<LiteDelayedAttribute>(type, attrs);
             return delayedFloatAttr == null ? EditorGUI.FloatField(rect, title, v) : EditorGUI.DelayedFloatField(rect, title, v);
         }

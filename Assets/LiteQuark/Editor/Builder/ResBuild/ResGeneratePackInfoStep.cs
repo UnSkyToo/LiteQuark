@@ -8,7 +8,7 @@ namespace LiteQuark.Editor
     internal sealed class ResGeneratePackInfoStep : IBuildStep
     {
         public string Name => "Res Generate PackInfo Step";
-        
+
         public void Execute(ProjectBuilder builder)
         {
             var collector = builder.Collector;
@@ -20,7 +20,7 @@ namespace LiteQuark.Editor
                 builder.LogError("AssetBundleManifest is null");
                 return;
             }
-            
+
             var rootPath = builder.GetResOutputPath();
             foreach (var bundle in versionPack.BundleList)
             {
@@ -38,7 +38,7 @@ namespace LiteQuark.Editor
             if (builder.ResConfig.HashMode)
             {
                 versionPack.ApplyHash(manifest);
-                
+
                 foreach (var bundleInfo in versionPack.BundleList)
                 {
                     var oldPath = PathUtils.ConcatPath(rootPath, versionPack.GetBundleFileBuildPath(bundleInfo));
@@ -46,7 +46,7 @@ namespace LiteQuark.Editor
                     PathUtils.RenameFile(oldPath, newPath);
                 }
             }
-            
+
             var jsonData = versionPack.ToBinaryData();
             PathUtils.CreateDirectory(builder.GetResOutputPath());
             System.IO.File.WriteAllBytes(PathUtils.ConcatPath(builder.GetResOutputPath(), AppUtils.GetVersionFileName()), jsonData);

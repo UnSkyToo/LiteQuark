@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-	[CustomEditor(typeof(EffectBinder))]
+    [CustomEditor(typeof(EffectBinder))]
     internal class EffectBinderInspector : LiteInspectorBaseView
     {
         protected override void OnDraw()
@@ -13,7 +13,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-            
+
             serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, "m_Script");
 
@@ -27,8 +27,8 @@ namespace LiteQuark.Editor
                     AssetDatabase.SaveAssetIfDirty(binder);
                 }
             }
-            
+
             serializedObject.ApplyModifiedProperties();
         }
-	}
+    }
 }

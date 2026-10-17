@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         UniTask<T> Alloc();
         void Recycle(T value);
     }
-    
+
     public interface IGameObjectPool : IObjectPool<GameObject>
     {
         void Alloc(Transform parent, System.Action<GameObject> callback);

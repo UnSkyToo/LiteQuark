@@ -11,7 +11,7 @@ namespace LiteQuark.Editor.BundleViewer
             {
                 return;
             }
-            
+
             if (type < 0)
             {
                 items.Sort((a, b) => ((BundleViewerTreeItem)b).Size.CompareTo(((BundleViewerTreeItem)a).Size));

@@ -9,7 +9,7 @@ namespace LiteQuark.Editor
         private const string SubPath = "Navigation/PathList.json";
         private NavigationData _data;
         private Vector2 _scrollPos;
-        
+
         [MenuItem("Lite/Common/Navigation")]
         private static void ShowWin()
         {
@@ -48,7 +48,7 @@ namespace LiteQuark.Editor
         private void OnGUI()
         {
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-            
+
             using (new EditorGUILayout.VerticalScope())
             {
                 if (GUILayout.Button("PersistentData Path"))
@@ -68,7 +68,7 @@ namespace LiteQuark.Editor
                         if (GUILayout.Button(path))
                         {
                             LiteEditorUtils.Ping(path);
-                            
+
                             if (Event.current.alt)
                             {
                                 LiteEditorUtils.OpenAsset(path);
@@ -84,7 +84,7 @@ namespace LiteQuark.Editor
                     }
                 }
             }
-            
+
             EditorGUILayout.EndScrollView();
 
             GUILayout.FlexibleSpace();
@@ -100,7 +100,7 @@ namespace LiteQuark.Editor
                 else if (Event.current.type == EventType.DragExited)
                 {
                     _data.AddPath(DragAndDrop.paths);
-                    
+
                     Focus();
                     Event.current.Use();
                 }

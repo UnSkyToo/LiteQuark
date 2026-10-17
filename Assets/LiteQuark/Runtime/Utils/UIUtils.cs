@@ -100,7 +100,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             var image = UnityUtils.GetComponent<Image>(parent, path);
             if (image != null)
             {

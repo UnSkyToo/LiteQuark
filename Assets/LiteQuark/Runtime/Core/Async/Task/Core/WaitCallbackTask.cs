@@ -5,13 +5,13 @@ namespace LiteQuark.Runtime
     public sealed class WaitCallbackTask : BaseTask
     {
         private readonly Action<Action<bool>> _func;
-        
+
         public WaitCallbackTask(Action<Action<bool>> func)
             : base()
         {
             _func = func;
         }
-        
+
         public override void Dispose()
         {
         }

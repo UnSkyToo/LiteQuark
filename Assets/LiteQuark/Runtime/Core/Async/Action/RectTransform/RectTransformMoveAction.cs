@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private readonly float _totalTime;
         private readonly bool _isRelative;
         private readonly EaseKind _easeKind;
-        
+
         private Vector2 _originPos;
         private Vector2 _targetPos;
         private float _currentTime;
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime = 0;
             _originPos = GetValue();
             _targetPos = _isRelative ? _originPos + _position : _position;
@@ -43,11 +43,11 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
             var v = EaseUtils.Sample(_easeKind, step);
-            
+
             SetValue(Vector2.LerpUnclamped(_originPos, _targetPos, v));
 
             if (step >= 1)
@@ -61,7 +61,7 @@ namespace LiteQuark.Runtime
         {
             return RT.anchoredPosition;
         }
-        
+
         private void SetValue(Vector2 value)
         {
             RT.anchoredPosition = value;

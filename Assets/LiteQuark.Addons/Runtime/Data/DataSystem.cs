@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public sealed class DataSystem : ISystem, ISystemSettingProvider<DataSystemSetting>
     {
         public DataSystemSetting Setting { get; set; }
-        
+
         private IDataProvider _provider;
 
         public DataSystem()
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
                 case DataProviderMode.Custom:
                     _provider = TypeUtils.CreateEntryInstance(Setting.CustomProviderType);
                     break;
-                
+
                 default:
                     _provider = new PlayerPrefsProvider(Setting.EnableEncryption, Setting.EncryptionKey);
                     break;

@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         public UIConfig Config { get; set; }
         public UISystem System { get; set; }
         public UIState State { get; set; }
-        
+
         public GameObject Go { get; private set; }
         public RectTransform RT { get; private set; }
 
@@ -74,11 +74,11 @@ namespace LiteQuark.Runtime
         {
             OnUpdate(deltaTime);
         }
-        
+
         protected virtual void OnOpen(params object[] paramList)
         {
         }
-        
+
         protected virtual void OnClose()
         {
         }
@@ -93,7 +93,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             var maxWidth = Display.main.systemWidth;
             var maxHeight = Display.main.systemHeight;
             var safeArea = Screen.safeArea;
@@ -124,17 +124,17 @@ namespace LiteQuark.Runtime
         {
             return UnityUtils.GetComponent(Go, path, type);
         }
-        
+
         public Component GetComponent(Type type)
         {
             return Go.GetComponent(type);
         }
-        
+
         public T GetComponent<T>(string path) where T : Component
         {
             return UnityUtils.GetComponent<T>(Go, path);
         }
-        
+
         public T GetComponent<T>() where T : Component
         {
             return Go.GetComponent<T>();
@@ -144,7 +144,7 @@ namespace LiteQuark.Runtime
         {
             UnityUtils.SetActive(Go, path, value);
         }
-        
+
         public void LoadSprite(string resPath, Action<Sprite> callback)
         {
             var handle = LiteRuntime.Asset.LoadAssetHandle<Sprite>(resPath);
@@ -175,7 +175,7 @@ namespace LiteQuark.Runtime
                 LLog.Error("Load sprite error: {0}", ex.Message);
             }
         }
-        
+
         public void ReplaceSprite(string path, string resPath)
         {
             LoadSprite(resPath, sprite =>
@@ -183,7 +183,7 @@ namespace LiteQuark.Runtime
                 UIUtils.ReplaceSprite(Go, path, sprite);
             });
         }
-        
+
         public void ReplaceSprite(Transform parent, string path, string resPath)
         {
             LoadSprite(resPath, sprite =>
@@ -191,7 +191,7 @@ namespace LiteQuark.Runtime
                 UIUtils.ReplaceSprite(parent, path, sprite);
             });
         }
-        
+
         public void ReplaceSprite(GameObject parent, string path, string resPath)
         {
             ReplaceSprite(parent.transform, path, resPath);
@@ -221,7 +221,7 @@ namespace LiteQuark.Runtime
         {
             LiteRuntime.Event.UnRegister(_eventTag, callback);
         }
-        
+
         private void UnRegisterAllEvent()
         {
             LiteRuntime.Event.UnRegisterAll(_eventTag);

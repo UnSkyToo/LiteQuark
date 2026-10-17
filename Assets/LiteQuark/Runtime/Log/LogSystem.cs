@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             _logCache.Clear();
-            
+
             if (_repository != null)
             {
                 _repository.Dispose();
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
             {
                 return log;
             }
-            
+
             var logger = _repository.GetLogger(name);
             log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
             _logCache.Add(name, log);
@@ -82,7 +82,7 @@ namespace LiteQuark.Runtime
             {
                 return log;
             }
-            
+
             var logger = _repository.GetLogger(name, loggerFactory);
             log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
             _logCache.Add(name, log);

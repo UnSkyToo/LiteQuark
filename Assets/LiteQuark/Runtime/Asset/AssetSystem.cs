@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         public AssetSystem()
         {
             var mode = LiteRuntime.Setting.Asset.AssetMode;
-            
+
 #if !UNITY_EDITOR
             if (mode == AssetProviderMode.Editor)
             {
@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
                     throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");
             }
         }
-        
+
         public UniTask<bool> Initialize()
         {
             return _provider.Initialize();
@@ -45,7 +45,7 @@ namespace LiteQuark.Runtime
         {
             _loadingSceneSet.Clear();
             _provider?.UnloadUnusedAssets(20);
-            
+
             _provider?.Dispose();
             _provider = null;
         }
@@ -64,7 +64,7 @@ namespace LiteQuark.Runtime
         {
             return PathUtils.FormatAssetPath(path);
         }
-        
+
         public bool HasAsset(string assetPath)
         {
             var formatPath = FormatPath(assetPath);

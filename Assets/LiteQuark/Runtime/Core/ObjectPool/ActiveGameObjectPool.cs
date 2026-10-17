@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
                 _templateHandle = null;
                 Template = null;
             }
-            
+
             base.Dispose();
         }
 

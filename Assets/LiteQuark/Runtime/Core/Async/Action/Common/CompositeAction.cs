@@ -15,17 +15,17 @@ namespace LiteQuark.Runtime
             SubActionCount = args?.Length ?? 0;
             IsDone = SubActionCount == 0;
         }
-        
+
         public override void Dispose()
         {
             foreach (var action in SubActions)
             {
                 action.Dispose();
             }
-            
+
             base.Dispose();
         }
-        
+
         public override void MarkAsSafe()
         {
             base.MarkAsSafe();
@@ -35,14 +35,14 @@ namespace LiteQuark.Runtime
                 action.MarkAsSafe();
             }
         }
-        
+
         public override void Stop()
         {
             foreach (var action in SubActions)
             {
                 action.Stop();
             }
-            
+
             base.Stop();
         }
 

@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         public UniTask<object> Task { get; }
 
         public void SetPriority(TaskPriority priority);
-        
+
         public void Execute();
         public void Cancel();
     }

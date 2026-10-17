@@ -14,17 +14,17 @@ namespace LiteQuark.Runtime
         private readonly string _assetPath;
         private readonly AssetBundleCache.Lease _bundleLease;
         private readonly List<Action<bool>> _assetLoaderCallbackList = new();
-        
+
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
         private BaseTask _loadAssetTask;
-        
+
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
             Stage = AssetCacheStage.Created;
             Asset = null;
-            
+
             _assetPath = assetPath;
             _bundleLease = cache.AcquireLease();
             _refCount = 0;
@@ -38,7 +38,7 @@ namespace LiteQuark.Runtime
             _loadAssetTask?.Cancel();
             _loadAssetTask = null;
             Asset = null;
-            
+
             var callbacks = new List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
             foreach (var cb in callbacks)
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (_refCount > 0 && Stage != AssetCacheStage.Retained)
             {
                 LLog.Warning("Unload asset leak : {0}({1})", _assetPath, _refCount);
@@ -63,7 +63,7 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Unloaded;
             _bundleLease.Dispose();
         }
-        
+
         public void Tick(float deltaTime)
         {
             if (Stage == AssetCacheStage.Retained)
@@ -83,7 +83,7 @@ namespace LiteQuark.Runtime
             {
                 LLog.Error("Asset IncRef error, {0} : {1}", _assetPath, Stage);
             }
-            
+
             _refCount++;
         }
 
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
                 LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
                 return false;
             }
-            
+
             _refCount--;
 
             if (_refCount <= 0)
@@ -104,7 +104,7 @@ namespace LiteQuark.Runtime
                     ? LiteRuntime.Setting.Asset.AssetRetainTime
                     : 0f;
             }
-            
+
             return true;
         }
 

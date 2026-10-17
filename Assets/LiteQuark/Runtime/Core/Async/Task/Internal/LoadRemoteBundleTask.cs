@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         private readonly string _hash;
         private AssetBundle _bundle;
         private Action<AssetBundle> _callback;
-        
+
         public LoadRemoteBundleTask(string bundleUri, string hash, Action<AssetBundle> callback)
             : base(bundleUri, LiteRuntime.Setting.Asset.BundleDownloadRetry, false)
         {
@@ -26,14 +26,14 @@ namespace LiteQuark.Runtime
             base.Dispose();
             _callback = null;
         }
-        
+
         protected override UnityWebRequest CreateRequest()
         {
             if (string.IsNullOrEmpty(_hash))
             {
                 return UnityWebRequestAssetBundle.GetAssetBundle(_bundleUri);
             }
-            
+
             return UnityWebRequestAssetBundle.GetAssetBundle(_bundleUri, Hash128.Parse(_hash));
         }
 
@@ -46,11 +46,11 @@ namespace LiteQuark.Runtime
             LiteUtils.SafeInvoke(_callback, null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }
-        
+
         protected override void OnSuccess(UnityWebRequest request)
         {
             base.OnSuccess(request);
-            
+
             _bundle = DownloadHandlerAssetBundle.GetContent(request);
             Complete(_bundle);
             LiteUtils.SafeInvoke(_callback, _bundle);

@@ -8,14 +8,14 @@ namespace LiteQuark.Runtime
     {
         private VersionPackInfo _packInfo = null;
         private AssetBundleLoader _bundleLoader = null;
-        
+
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
         private readonly List<string> _unloadBundleList = new();
-        
+
         public AssetBundleProvider()
         {
         }
-        
+
         public async UniTask<bool> Initialize()
         {
             var bundleLocater = CreateLocater();
@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
             {
                 return false;
             }
-            
+
             _packInfo = await bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
             if (_packInfo == null)
             {
@@ -55,16 +55,16 @@ namespace LiteQuark.Runtime
             }
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
-            
+
             _bundleLoader?.Dispose();
             _bundleLoader = null;
             _packInfo = null;
         }
-        
+
         public void Tick(float deltaTime)
         {
             _bundleLoader.Tick(deltaTime);
-            
+
             foreach (var chunk in _bundleCacheMap)
             {
                 chunk.Value.Tick(deltaTime);
@@ -88,7 +88,7 @@ namespace LiteQuark.Runtime
                 _unloadBundleList.Clear();
             }
         }
-        
+
         public string GetVersion()
         {
             return _packInfo?.Version ?? AppUtils.GetVersion();
@@ -98,14 +98,14 @@ namespace LiteQuark.Runtime
         {
             return _bundleCacheMap.TryGetValue(bundlePath, out cache);
         }
-        
+
         internal AssetBundleCache GetOrCreateBundleCache(string bundlePath)
         {
             if (_bundleCacheMap.TryGetValue(bundlePath, out var cache))
             {
                 return cache;
             }
-            
+
             var bundleInfo = _packInfo.GetBundleInfoFromBundlePath(bundlePath);
             if (bundleInfo == null)
             {
@@ -116,12 +116,12 @@ namespace LiteQuark.Runtime
             _bundleCacheMap.Add(bundlePath, cache);
             return cache;
         }
-        
+
         public bool HasAsset(string assetPath)
         {
             return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
         }
-        
+
         public void ReleaseAssetReference(string assetPath)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
@@ -144,7 +144,7 @@ namespace LiteQuark.Runtime
                 LiteUtils.SafeInvoke(callback);
                 return;
             }
-            
+
             if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
             {
                 cache.ReleaseSceneReferenceAsync(scene, callback);
@@ -199,7 +199,7 @@ namespace LiteQuark.Runtime
                 _bundleCacheMap.Remove(bundlePath);
             }
         }
-        
+
         internal void LoadBundle(BundleInfo bundleInfo, int priority, Action<UnityEngine.AssetBundle> callback)
         {
             _bundleLoader.LoadBundle(bundleInfo, priority, callback);

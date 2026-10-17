@@ -37,14 +37,14 @@ namespace LiteQuark.Runtime
         public void Dispose()
         {
             _monoBehaviourInstance?.StopAllCoroutines();
-            
+
             _taskList.Foreach(static task =>
             {
                 task.Cancel();
                 task.Dispose();
             });
             _taskList.Clear();
-            
+
             RunningTaskCount = 0;
             PendingTaskCount = 0;
         }
@@ -62,7 +62,7 @@ namespace LiteQuark.Runtime
                 {
                     RunningTaskCount++;
                     PendingTaskCount--;
-                    
+
                     try
                     {
                         task.Execute();
@@ -91,7 +91,7 @@ namespace LiteQuark.Runtime
                     task.Cancel();
                 }
             }
-            
+
             if (task.IsDone)
             {
                 task.Dispose();
@@ -107,7 +107,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         internal SafeList<ITask> GetTaskList()
         {
             return _taskList;
@@ -165,21 +165,21 @@ namespace LiteQuark.Runtime
             AddTask(task);
             return task;
         }
-        
+
         public InstantiateGameObjectTask AddInstantiateGoTask(UnityEngine.GameObject template, UnityEngine.Transform parent, int count, Action<UnityEngine.GameObject[]> callback)
         {
             var task = new InstantiateGameObjectTask(template, parent, count, callback);
             AddTask(task);
             return task;
         }
-        
+
         public UnityWebGetRequestTask AddUnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
         {
             var task = new UnityWebGetRequestTask(uri, retry, forceNoCache, callback);
             AddTask(task);
             return task;
         }
-        
+
         internal LoadVersionPackTask AddLoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
         {
             var task = new LoadVersionPackTask(uri, callback);

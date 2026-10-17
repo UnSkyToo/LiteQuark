@@ -17,7 +17,7 @@ namespace LiteBattle.Runtime
         private UINameplateHUD HUD_;
         private Queue<(string, EffectCreateInfo)> CacheEffect_ = new();
         private List<ulong> EffectList_ = new();
-        
+
         public LiteEntityBehaveModule(LiteEntity entity)
             : base(entity)
         {
@@ -48,7 +48,7 @@ namespace LiteBattle.Runtime
             {
                 return;
             }
-            
+
             UpdateTransform();
             UpdateAnimator();
         }
@@ -113,13 +113,13 @@ namespace LiteBattle.Runtime
                 EffectList_.Add(effectID);
             }
         }
-        
+
         public void LoadPrefab(string prefabPath)
         {
             IsLoad_ = false;
             RecyclePrefab();
             PrefabPath_ = prefabPath;
-            
+
             LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(null, go =>
             {
                 Go_ = go;
@@ -127,7 +127,7 @@ namespace LiteBattle.Runtime
                 TS_.localPosition = Vector3.zero;
                 TS_.localScale = Vector3.one;
                 TS_.localRotation = Quaternion.identity;
-                
+
                 Animator_ = Go_.GetComponent<Animator>();
 
                 ColliderBinder_ = Go_.GetOrAddComponent<LiteColliderBinder>();

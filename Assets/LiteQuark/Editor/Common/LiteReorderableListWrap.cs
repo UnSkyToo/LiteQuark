@@ -21,7 +21,7 @@ namespace LiteQuark.Editor
         {
             _isList = TypeUtils.IsListType(data.GetType());
             _elementType = TypeUtils.GetElementType(data.GetType());
-            
+
             _list = new ReorderableList(data, _elementType, true, false, true, true)
             {
                 drawElementCallback = OnDrawElement,

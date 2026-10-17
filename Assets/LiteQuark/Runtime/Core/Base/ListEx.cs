@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
                 _dirty = true;
                 return;
             }
-            
+
             _addList.Add(item);
             _dirty = true;
         }
@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
                 _dirty = true;
                 return;
             }
-            
+
             _removeList.Add(item);
             _dirty = true;
         }
@@ -115,7 +115,7 @@ namespace LiteQuark.Runtime
                 _inEach--;
             }
         }
-        
+
         public void Foreach<P1, P2, P3>(Action<T, P1, P2, P3> func, P1 param1, P2 param2, P3 param3)
         {
             Flush();
@@ -132,7 +132,7 @@ namespace LiteQuark.Runtime
                 _inEach--;
             }
         }
-        
+
         /// <summary>
         /// Return T when func return true
         /// </summary>
@@ -181,7 +181,7 @@ namespace LiteQuark.Runtime
                         return item;
                     }
                 }
-                
+
                 foreach (var item in _addList)
                 {
                     if (func?.Invoke(item, param) == true)
@@ -203,19 +203,19 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             foreach (var item in _removeList)
             {
                 _values.Remove(item);
             }
             _removeList.Clear();
-            
+
             foreach (var item in _addList)
             {
                 _values.Add(item);
             }
             _addList.Clear();
-            
+
             _dirty = false;
         }
 
@@ -223,7 +223,7 @@ namespace LiteQuark.Runtime
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             Flush();
-            
+
             for (var index = 0; index < _values.Count; ++index)
             {
                 yield return _values[index];
@@ -234,7 +234,7 @@ namespace LiteQuark.Runtime
         IEnumerator IEnumerable.GetEnumerator()
         {
             Flush();
-            
+
             for (var index = 0; index < _values.Count; ++index)
             {
                 yield return _values[index];

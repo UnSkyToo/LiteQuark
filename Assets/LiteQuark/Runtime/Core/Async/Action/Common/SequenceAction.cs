@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
         private int _currentCount;
         private IAction _current;
         private int _index;
-        
+
         public SequenceAction(string tag, int repeatCount, IAction[] args)
             : base(tag, repeatCount, args)
         {
@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
         {
             IsDone = SubActionCount == 0;
             _currentCount = 0;
-            
+
             ActivateNextAction();
         }
 
@@ -30,7 +30,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             if (_current.IsDone)
             {
                 ActivateNextAction();
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
         protected virtual int GetNextIndex()
         {
             _index++;
-            
+
             if (_index >= SubActionCount)
             {
                 _currentCount++;
@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
                 {
                     return 0;
                 }
-                
+
                 return -1;
             }
 

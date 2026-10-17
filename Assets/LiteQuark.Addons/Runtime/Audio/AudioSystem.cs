@@ -8,12 +8,12 @@ namespace LiteQuark.Runtime
     {
         private bool _muteSound = false;
         private bool _muteMusic = false;
-        
+
         private readonly Dictionary<ulong, AudioObject> _audioCache = new();
         private readonly List<AudioObject> _removeList = new();
         private EmptyGameObjectPool _pool = null;
         private Transform _root = null;
-        
+
         public AudioSystem()
         {
             _audioCache.Clear();
@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             _muteSound = false;
             _muteMusic = false;
         }
-        
+
         public UniTask<bool> Initialize()
         {
             _root = UnityUtils.CreateHoldGameObject("Audio").transform;
@@ -44,16 +44,16 @@ namespace LiteQuark.Runtime
                 chunk.Value.Unload(_pool);
             }
             _audioCache.Clear();
-            
+
             LiteRuntime.ObjectPool.RemovePool(_pool);
-            
+
             if (_root != null)
             {
                 Object.Destroy(_root.gameObject);
                 _root = null;
             }
         }
-        
+
         public void Tick(float deltaTime)
         {
             foreach (var chunk in _audioCache)
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
                 _removeList.Clear();
             }
         }
-        
+
         public AudioObject GetAudio(ulong id)
         {
             return _audioCache.GetValueOrDefault(id);
@@ -83,7 +83,7 @@ namespace LiteQuark.Runtime
         private int GetAudioCountByPath(string path)
         {
             var count = 0;
-            
+
             foreach (var chunk in _audioCache)
             {
                 if (chunk.Value.Path == path)
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
 
             return count;
         }
-        
+
         private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
         {
             if (limit > 0)
@@ -105,7 +105,7 @@ namespace LiteQuark.Runtime
                     return 0;
                 }
             }
-            
+
             var audio = new AudioObject(type, path);
             _audioCache.Add(audio.UniqueID, audio);
 
@@ -116,11 +116,11 @@ namespace LiteQuark.Runtime
                     _removeList.Add(audio);
                     return;
                 }
-                
+
                 SetupAudioOnLoad(audio);
                 audio.Play();
             });
-            
+
             return audio.UniqueID;
         }
 
@@ -222,7 +222,7 @@ namespace LiteQuark.Runtime
                 }
             }
         }
-        
+
         public void SetAllAudioVolume(float volume)
         {
             foreach (var chunk in _audioCache)
@@ -234,7 +234,7 @@ namespace LiteQuark.Runtime
         public void PauseAllAudio()
         {
             AudioListener.pause = true;
-            
+
             foreach (var chunk in _audioCache)
             {
                 chunk.Value.Pause();
@@ -244,7 +244,7 @@ namespace LiteQuark.Runtime
         public void ResumeAllAudio()
         {
             AudioListener.pause = false;
-            
+
             foreach (var chunk in _audioCache)
             {
                 chunk.Value.Resume();

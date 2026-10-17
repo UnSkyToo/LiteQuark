@@ -7,9 +7,9 @@ namespace LiteQuark.Runtime
     public sealed class LogQuietTextWriter : TextWriter
     {
         public override Encoding Encoding => _writer.Encoding;
-        
+
         private readonly TextWriter _writer;
-        
+
         public LogQuietTextWriter(TextWriter writer)
         {
             _writer = writer;
@@ -20,37 +20,37 @@ namespace LiteQuark.Runtime
             _writer.Flush();
         }
 
-        public override void Write(char value) 
+        public override void Write(char value)
         {
-            try 
+            try
             {
                 _writer.Write(value);
-            } 
-            catch(Exception e) 
+            }
+            catch(Exception e)
             {
                 LogErrorHandler.Error($"Failed to write [{value}].", e);
             }
         }
-        
-        public override void Write(char[] buffer, int index, int count) 
+
+        public override void Write(char[] buffer, int index, int count)
         {
-            try 
+            try
             {
                 _writer.Write(buffer, index, count);
-            } 
-            catch(Exception ex) 
+            }
+            catch(Exception ex)
             {
                 LogErrorHandler.Error("Failed to write buffer.", ex);
             }
         }
-        
-        public override void Write(string value) 
+
+        public override void Write(string value)
         {
-            try 
+            try
             {
                 _writer.Write(value);
-            } 
-            catch(Exception ex) 
+            }
+            catch(Exception ex)
             {
                 LogErrorHandler.Error($"Failed to write [{value}].", ex);
             }
@@ -58,11 +58,11 @@ namespace LiteQuark.Runtime
 
         public override void WriteLine()
         {
-            try 
+            try
             {
                 _writer.WriteLine();
-            } 
-            catch(Exception ex) 
+            }
+            catch(Exception ex)
             {
                 LogErrorHandler.Error($"Failed to write ['/n'].", ex);
             }

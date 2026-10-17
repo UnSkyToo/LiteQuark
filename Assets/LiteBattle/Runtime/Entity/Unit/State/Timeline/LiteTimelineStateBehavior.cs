@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine.Playables;
 
 namespace LiteBattle.Runtime
@@ -7,9 +7,9 @@ namespace LiteBattle.Runtime
     public sealed class LiteTimelineStateBehavior : PlayableBehaviour
     {
         public static event Action<double> OnTimeChange;
-        
+
         public ILiteEvent Event;
-        
+
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
             // var progress = playable.GetTime() / playable.GetDuration();

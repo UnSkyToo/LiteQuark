@@ -11,13 +11,13 @@ namespace LiteQuark.Editor
         public ResBuildConfig ResCfg => _resCfg;
         public AppBuildConfig AppCfg => _appCfg;
         public CustomBuildConfig CustomCfg => _customCfg;
-        
+
         private BuildTarget _target;
         private string _version;
         private ResBuildConfig _resCfg;
         private AppBuildConfig _appCfg;
         private CustomBuildConfig _customCfg;
-        
+
         private List<BuilderStepView> _stepViewList;
         private ICustomBuildView _customView;
 
@@ -39,7 +39,7 @@ namespace LiteQuark.Editor
                 Identifier = PlayerSettings.applicationIdentifier,
                 ProduceName = PlayerSettings.productName,
             };
-            
+
 #if UNITY_ANDROID
             _appCfg.BuildCode = PlayerSettings.Android.bundleVersionCode;
 #elif UNITY_IOS
@@ -55,7 +55,7 @@ namespace LiteQuark.Editor
                 new BuilderResView(this, "Res - Compile Resource Step", _resCfg),
                 new BuilderAppView(this, "App - Build Application Step", _appCfg),
             };
-            
+
             var customView = ProjectBuilderUtils.CreateCustomBuildView();
             if (customView != null)
             {
@@ -66,16 +66,16 @@ namespace LiteQuark.Editor
         private void OnDisable()
         {
         }
-        
+
         private void OnGUI()
         {
             const int space = 5;
-            
+
             var viewCount = _stepViewList.Count;
             var viewWidth = Mathf.Max(300, (position.width - (viewCount + 1) * space) / viewCount);
             var viewHeight = Mathf.Max(300, (position.height - space * 2) * 0.8f);
             var viewRect = new Rect(space, space, viewWidth, viewHeight);
-            
+
             foreach (var view in _stepViewList)
             {
                 view.Draw(viewRect);
@@ -104,7 +104,7 @@ namespace LiteQuark.Editor
             {
                 EditorGUILayout.LabelField($"Customize the build pipeline using {nameof(IBuildCallback)},{nameof(ICustomBuildView)}.");
             }
-            
+
             GUILayout.EndArea();
         }
 
@@ -118,7 +118,7 @@ namespace LiteQuark.Editor
 
             var buildCfg = new ProjectBuildConfig(_target, _version, _resCfg, _appCfg, _customCfg);
             var buildReport = new ProjectBuilder().Build(buildCfg);
-            
+
             var resultMsg = buildReport.IsSuccess ? "Build Success" : "Build Failed";
             var timeMsg = $"Time : {buildReport.ElapsedSeconds:0.00}s";
 

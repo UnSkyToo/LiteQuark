@@ -13,7 +13,7 @@ namespace LiteQuark.Editor.BundleViewer
         private Vector2 _detailScrollPos = Vector2.zero;
 
         private bool _combineMode = true;
-        
+
         [MenuItem("Lite/Asset/Bundle Viewer")]
         private static void ShowWin()
         {
@@ -28,7 +28,7 @@ namespace LiteQuark.Editor.BundleViewer
             {
                 _assetTreeState = new TreeViewState();
             }
-            
+
             _bundleTreeView = new BundleViewerTreeView(_assetTreeState);
             _searchField = new SearchField();
 
@@ -50,14 +50,14 @@ namespace LiteQuark.Editor.BundleViewer
             {
                 var centerRect = new Rect(0, 0, position.width, position.height);
                 EditorGUI.DrawRect(centerRect, new Color(0, 0, 0, 0.5f));
-                
+
                 var style = new GUIStyle(EditorStyles.label)
                 {
                     alignment = TextAnchor.MiddleCenter,
                     fontSize = 24,
                     normal = { textColor = Color.white }
                 };
-                
+
                 GUI.Label(centerRect, "Loading...", style);
                 return;
             }
@@ -77,7 +77,7 @@ namespace LiteQuark.Editor.BundleViewer
                     EditorGUILayout.LabelField("Exclude folders whose names contain '~' or '#', as well as assets within the Packages directory.");
                 }
             }
-            
+
             var searchRect = EditorGUILayout.GetControlRect(false, GUILayout.ExpandWidth(true), GUILayout.Height(EditorGUIUtility.singleLineHeight));
             _bundleTreeView.searchString = _searchField.OnGUI(searchRect, _bundleTreeView.searchString);
 

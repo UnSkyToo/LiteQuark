@@ -43,13 +43,13 @@ namespace LiteBattle.Editor
         private class LiteTimelineAssetList : LiteListView<string>
         {
             private readonly LiteNexusEditor NexusEditor_;
-            
+
             public LiteTimelineAssetList(LiteNexusEditor nexusEditor)
             {
                 NexusEditor_ = nexusEditor;
                 EnableOrderControl = false;
             }
-            
+
             protected override List<string> GetList()
             {
                 var results = LiteEditorBinder.Instance.GetCurrentUnitTimelinePathList();
@@ -86,7 +86,7 @@ namespace LiteBattle.Editor
                     AssetUtils.RenameAsset(timelineFullPath, newName);
                     OnDataChanged();
                 });
-                
+
                 return false;
             }
 
@@ -105,7 +105,7 @@ namespace LiteBattle.Editor
                 if (GUILayout.Button(name, selected ? LiteEditorStyle.ButtonSelect : LiteEditorStyle.ButtonNormal, GUILayout.ExpandWidth(true)))
                 {
                     selected = !selected;
-                    
+
                     LiteEditorBinder.Instance.UnBindTimeline();
                     if (selected)
                     {
@@ -113,7 +113,7 @@ namespace LiteBattle.Editor
                         LiteEditorBinder.Instance.BindTimeline(asset);
                     }
                 }
-                
+
                 if (selected && GUILayout.Button(GUIContent.none, LiteEditorStyle.DropdownOption))
                 {
                     GenericMenu menu = new();

@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
     public sealed class LiteCollisionManager : Singleton<LiteCollisionManager>
     {
         public const int MaxOverlapCount = 20;
-        
+
         private Collider[] CollideResult_ = new Collider[MaxOverlapCount];
 
         private LiteCollisionManager()
@@ -36,7 +36,7 @@ namespace LiteBattle.Runtime
         }
 
         private int CheckOverlap(LiteEntity owner, ILiteRange range)
-        {   
+        {
             switch (range)
             {
                 case LiteBoxRange boxRange:

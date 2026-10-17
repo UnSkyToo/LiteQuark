@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Editor
 {
-    
+
     public class CustomBuildConfig
     {
         /// <summary>

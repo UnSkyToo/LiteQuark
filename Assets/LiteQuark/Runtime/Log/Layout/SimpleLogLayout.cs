@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     public sealed class SimpleLogLayout : ILogLayout
     {
         public bool IgnoresException => true;
-        
+
         public void Format(TextWriter writer, LoggingEvent loggingEvent)
         {
             if (loggingEvent == null)

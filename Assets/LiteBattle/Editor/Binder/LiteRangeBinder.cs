@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Editor
@@ -6,7 +6,7 @@ namespace LiteBattle.Editor
     internal class LiteRangeBinder : IDispose
     {
         private ILiteRange CurrentRange_ = null;
-        
+
         public LiteRangeBinder()
         {
         }
@@ -15,7 +15,7 @@ namespace LiteBattle.Editor
         {
             UnBindAttackRange();
         }
-        
+
         public bool IsBindAttackRange()
         {
             return CurrentRange_ != null;

@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
             _template = template;
             _parent = parent;
             _count = count;
-            
+
             _callback = callback;
         }
 
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
         public override void Cancel()
         {
             base.Cancel();
-            
+
             if (_task != null)
             {
                 _task.Cancel();
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
         private void OnInstantiateComplete(AsyncOperation operation)
         {
             _task = null;
-            
+
             if (operation.isDone && operation is AsyncInstantiateOperation { Result: not null } asyncOperation)
             {
                 var result = new GameObject[asyncOperation.Result.Length];
@@ -62,7 +62,7 @@ namespace LiteQuark.Runtime
                 {
                     result[i] = asyncOperation.Result[i] as GameObject;
                 }
-                
+
                 Complete(result);
                 LiteUtils.SafeInvoke(_callback, result);
             }

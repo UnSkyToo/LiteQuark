@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     internal sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
         public override string DebugName => $"LoadAsset {_assetName}";
-        
+
         private readonly AssetBundle _bundle;
         private readonly string _assetName;
         private Action<T> _callback;
@@ -29,12 +29,12 @@ namespace LiteQuark.Runtime
             _assetRequest = null;
             _asset = null;
         }
-        
+
         public T GetAsset()
         {
             return _asset;
         }
-        
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _assetRequest?.progress ?? 0f;
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
         private void OnAssetRequestLoadCompleted(AsyncOperation op)
         {
             op.completed -= OnAssetRequestLoadCompleted;
-            
+
             if (IsDone)
             {
                 return;

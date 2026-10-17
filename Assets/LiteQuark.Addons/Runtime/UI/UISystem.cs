@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
     public sealed class UISystem : ISystem, ISystemSettingProvider<UISystemSetting>, ITick
     {
         public UISystemSetting Setting { get; set; }
-        
+
         private const int UIStepOrder = 100;
 
         public RectTransform CanvasRoot => _canvasRoot;
@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
         public UISystem()
         {
         }
-        
+
         public UniTask<bool> Initialize()
         {
             var parent = GameObject.Find("Canvas");
@@ -44,7 +44,7 @@ namespace LiteQuark.Runtime
                 rectTrans.sizeDelta = Vector2.zero;
                 _canvasTransform.Add(depthMode, go.transform);
             }
-            
+
             return UniTask.FromResult(true);
         }
 
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
         {
             HandleOpenList();
             HandleCloseList();
-            
+
             foreach (var ui in _uiList)
             {
                 ui.Update(deltaTime);
@@ -101,7 +101,7 @@ namespace LiteQuark.Runtime
                     LLog.Error("Load ui prefab error : {0}", config.PrefabPath);
                     return null;
                 }
-                
+
                 SetupUI(ui, instance, handle);
                 ui.State = UIState.Opened;
                 ui.Open(paramList);
@@ -186,7 +186,7 @@ namespace LiteQuark.Runtime
         private void SetupUI(BaseUI ui, GameObject instance, GameObjectHandle handle)
         {
             var parent = GetUIParent(ui.Config.DepthMode);
-            
+
             var rectTransform = instance.GetComponent<RectTransform>();
             if (rectTransform == null)
             {
@@ -203,7 +203,7 @@ namespace LiteQuark.Runtime
 
             var raycaster = instance.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
-            
+
             ui.BindGo(instance, handle);
             UIBinder.AutoBind(ui);
         }
@@ -227,7 +227,7 @@ namespace LiteQuark.Runtime
             // rectTrans.anchoredPosition = Vector2.zero;
             // rectTrans.sizeDelta = Vector2.zero;
             go.layer = LayerMask.NameToLayer("UI");
-            
+
             var canvas = go.GetOrAddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = UICamera;
@@ -238,10 +238,10 @@ namespace LiteQuark.Runtime
             scaler.referenceResolution = new Vector2(Setting.ResolutionWidth, Setting.ResolutionHeight);
             scaler.matchWidthOrHeight = Setting.MatchValue;
             scaler.referencePixelsPerUnit = 100;
-            
+
             UICamera.orthographic = true;
             UICamera.orthographicSize = Screen.height / (2f * scaler.referencePixelsPerUnit);
-            
+
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;
 

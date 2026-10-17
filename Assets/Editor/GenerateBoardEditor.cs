@@ -13,7 +13,7 @@ namespace LiteGamePlay.Editor
     //     }
     //
     //     private GameObject Go_;
-    //     
+    //
     //     private void OnGUI()
     //     {
     //         Go_ = EditorGUILayout.ObjectField(new GUIContent("Prefab"), Go_, typeof(GameObject), true) as GameObject;
@@ -22,12 +22,12 @@ namespace LiteGamePlay.Editor
     //             if (GUILayout.Button("Generate"))
     //             {
     //                 var step = 7.02f / 18f;
-    //                 
+    //
     //                 var hParent = Go_.transform.Find("Horizontal");
     //                 var h1 = hParent.Find("L1").gameObject;
     //
     //                 var y = 3.51f;
-    //                 
+    //
     //                 for (var i = 2; i < 18; ++i)
     //                 {
     //                     var hInstance = Instantiate(h1);
@@ -35,12 +35,12 @@ namespace LiteGamePlay.Editor
     //                     hInstance.transform.SetParent(hParent, false);
     //                     hInstance.transform.localPosition = new Vector3(0, y - i * step, 0);
     //                 }
-    //                 
+    //
     //                 var vParent = Go_.transform.Find("Vertical");
     //                 var v1 = vParent.Find("L1").gameObject;
     //
     //                 var x = -3.51f;
-    //                 
+    //
     //                 for (var i = 2; i < 18; ++i)
     //                 {
     //                     var vInstance = Instantiate(v1);

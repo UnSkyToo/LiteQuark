@@ -11,7 +11,7 @@ namespace LiteQuark.Runtime
             BundleVisitors = bundleVisitors;
         }
     }
-    
+
     internal readonly struct BundleVisitorInfo
     {
         public string BundlePath { get; }
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
             AssetVisitors = assetVisitors;
         }
     }
-    
+
     internal readonly struct AssetVisitorInfo
     {
         public string AssetPath { get; }

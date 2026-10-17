@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -13,10 +13,10 @@ namespace LiteBattle.Runtime
 
         [LiteProperty("挂载节点", LitePropertyType.String)]
         public string HangPoint;
-        
+
         [LiteProperty("挂载位置", LitePropertyType.Vector3)]
         public Vector3 EffectPosition;
-        
+
         public bool HasData => true;
 
         public void Enter(LiteState state)
@@ -28,11 +28,11 @@ namespace LiteBattle.Runtime
         {
             return LiteEventSignal.Continue;
         }
-        
+
         public void Leave(LiteState state)
         {
         }
-        
+
         public ILiteEvent Clone()
         {
             var evt = new LitePlayEffectEvent();

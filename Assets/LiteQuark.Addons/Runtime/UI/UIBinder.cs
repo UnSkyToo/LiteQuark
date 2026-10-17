@@ -127,17 +127,17 @@ namespace LiteQuark.Runtime
             }
         }
     }
-    
+
     public abstract class UIBaseAttribute : Attribute
     {
         public string Path { get; }
-        
+
         protected UIBaseAttribute(string path)
         {
             Path = path;
         }
     }
-    
+
     public class UINodeAttribute : UIBaseAttribute
     {
         public UINodeAttribute(string path)

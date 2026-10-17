@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
     public static class LLog
     {
         private static ILog _log = null;
-        
+
         private static ILog GetLog()
         {
             if (_log == null)
@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
                 log.Info(format, args);
             }
         }
-        
+
         public static void Info(string msg)
         {
             var log = GetLog();
@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
                 log.Info(msg);
             }
         }
-        
+
         public static void Warning(string format, params object[] args)
         {
             var log = GetLog();
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
                 log.Warn(msg);
             }
         }
-        
+
         public static void Error(string format, params object[] args)
         {
             var log = GetLog();
@@ -93,7 +93,7 @@ namespace LiteQuark.Runtime
                 log.Error(msg);
             }
         }
-        
+
         public static void Exception(Exception ex, string format, params object[] args)
         {
             var log = GetLog();

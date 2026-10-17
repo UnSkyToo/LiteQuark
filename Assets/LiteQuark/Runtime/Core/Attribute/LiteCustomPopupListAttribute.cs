@@ -11,7 +11,7 @@ namespace LiteQuark.Runtime
     {
         public string MethodName { get; }
         public Type DeclaringType { get; }
-        
+
         public LiteCustomPopupListAttribute(Type declaringType, string methodName)
         {
             DeclaringType = declaringType;

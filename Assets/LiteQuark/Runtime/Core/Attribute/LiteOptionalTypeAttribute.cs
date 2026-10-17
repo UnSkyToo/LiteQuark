@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
     {
         public Type BaseType { get; }
         public string DataTitle { get; }
-        
+
         /// <param name="baseType">基类类型（推荐用接口）</param>
         /// <param name="dataTitle">数据字段的标题</param>
         public LiteOptionalTypeAttribute(Type baseType, string dataTitle)
@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
             DataTitle = dataTitle;
         }
     }
-    
+
     /// <summary>
     /// 配合LitePropertyType.OptionalType使用
     /// <para>配置可选类LiteOptionalType(typeof(IData), "数据")来声明类型</para>
@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
         public Type BaseType { get; }
         public string DataTitle { get; }
         public Type DefaultType { get; }
-        
+
         /// <param name="baseType">基类类型（推荐用接口）</param>
         /// <param name="dataTitle">数据字段的标题</param>
         /// <param name="defaultType">添加数据时，默认实例的子类类型</param>

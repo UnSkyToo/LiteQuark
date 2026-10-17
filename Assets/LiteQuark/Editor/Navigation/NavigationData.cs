@@ -33,7 +33,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-            
+
             _realPathList.Add(path);
         }
 
@@ -83,7 +83,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-            
+
             data.FlushWhenSave();
             var jsonText = EditorJsonUtility.ToJson(data, true);
             PathUtils.CreateDirectory(jsonPath);

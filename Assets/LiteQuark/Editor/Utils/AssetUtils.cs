@@ -18,7 +18,7 @@ namespace LiteQuark.Editor
             {
                 return results;
             }
-            
+
             var assetGUIDs = AssetDatabase.FindAssets($"t:{assetType}", new[] {rootPath});
             foreach (var guid in assetGUIDs)
             {
@@ -27,28 +27,28 @@ namespace LiteQuark.Editor
             }
             return results;
         }
-        
+
         public static T CreateAsset<T>(string rootPath, string name) where T : ScriptableObject
         {
             if (!Directory.Exists(rootPath))
             {
                 Directory.CreateDirectory(rootPath);
             }
-            
-            var fullPath = PathUtils.ConcatPath(rootPath, name); 
+
+            var fullPath = PathUtils.ConcatPath(rootPath, name);
             var asset = ScriptableObject.CreateInstance<T>();
             asset.name = name;
             AssetDatabase.CreateAsset(asset, fullPath);
             AssetDatabase.SaveAssetIfDirty(asset);
             return asset;
         }
-        
+
         public static void DeleteAsset(string fullPath)
         {
             AssetDatabase.DeleteAsset(fullPath);
             AssetDatabase.SaveAssets();
         }
-        
+
         public static void DuplicateAsset(string fullPath)
         {
             var newFileName = $"{Path.GetFileNameWithoutExtension(fullPath)}_{DateTime.Now.Second}_{DateTime.Now.Millisecond}";
@@ -56,7 +56,7 @@ namespace LiteQuark.Editor
             AssetDatabase.CopyAsset(fullPath, newPath);
             AssetDatabase.SaveAssets();
         }
-        
+
         public static void RenameAsset(string fullPath, string newName)
         {
             AssetDatabase.RenameAsset(fullPath, newName);
@@ -67,7 +67,7 @@ namespace LiteQuark.Editor
         {
             var result = new StringBuilder();
             result.Append(prefix);
-            
+
             len = Mathf.Max(len, 1);
             for (var i = 0; i < len; ++i)
             {

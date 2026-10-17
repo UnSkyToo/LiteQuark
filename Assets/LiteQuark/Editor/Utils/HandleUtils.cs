@@ -20,7 +20,7 @@ namespace LiteQuark.Editor
         public static void DrawBox(Matrix4x4 matrix, Vector3 size, Color color)
         {
             ApplyColor(color);
-            
+
             var points = GetBoxVertices(matrix, size);
             var indices = GetBoxSurfaceIndex();
             for (var i = 0; i < 6; ++i)
@@ -33,12 +33,12 @@ namespace LiteQuark.Editor
                     points[indices[i * 4 + 3]]
                 };
                 DrawPolygon(vertices, true);
-                
+
                 ApplyColor(OutlineColor);
                 DrawPolygon(vertices, false);
                 RevertColor();
             }
-            
+
             RevertColor();
         }
 
@@ -66,7 +66,7 @@ namespace LiteQuark.Editor
             DrawCircle(matrix * Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0)), radius, false);
             DrawCircle(matrix * Matrix4x4.Rotate(Quaternion.Euler(90, 0, 0)), radius, false);
             RevertColor();
-            
+
             RevertColor();
         }
 
@@ -114,13 +114,13 @@ namespace LiteQuark.Editor
                 Handles.color = ColorStack.Pop();
             }
         }
-        
+
         private static Vector3[] GetSphereVertices(Matrix4x4 matrix, float radius, int step = 30)
         {
             const float twoPI = Mathf.PI * 2f;
             var deltaDeg = twoPI / step;
             var vertices = new Vector3[step];
-            
+
             for (var i = 0; i < step; ++i)
             {
                 var degree = twoPI - deltaDeg * i;
@@ -130,7 +130,7 @@ namespace LiteQuark.Editor
 
             return vertices;
         }
-        
+
         private static Vector3[] GetBoxVertices(Matrix4x4 matrix, Vector3 size)
         {
             var halfSize = size / 2f;
@@ -144,7 +144,7 @@ namespace LiteQuark.Editor
             points[1] = new Vector3(halfSize.x, halfSize.y, -halfSize.z);
             points[2] = new Vector3(-halfSize.x, halfSize.y, -halfSize.z);
             points[3] = new Vector3(-halfSize.x, halfSize.y, halfSize.z);
-            
+
             //  5 ← 4
             //  ↓   ↑
             //  6 → 7
@@ -160,7 +160,7 @@ namespace LiteQuark.Editor
 
             return points;
         }
-        
+
         private static int[] GetBoxSurfaceIndex()
         {
             return new int[]

@@ -6,7 +6,7 @@ public class MipmapViewer
 {
     private static readonly Dictionary<SceneView, SceneView.CameraMode> PreviousCameraMode = new ();
 
-    
+
     [InitializeOnLoadMethod]
     private static void HookIntoSceneView()
     {
@@ -30,7 +30,7 @@ public class MipmapViewer
             }
         };
     }
-    
+
     private static Shader GetDrawModeShader(SceneView.CameraMode mode)
     {
         if (mode.name == "Mipmap Mode")

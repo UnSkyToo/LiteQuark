@@ -13,7 +13,7 @@ namespace LiteBattle.Runtime
 
         [LiteProperty("监测类型", LitePropertyType.Enum)]
         public LiteInputKeyType CheckType;
-        
+
         [LiteProperty("设置属性Key", LitePropertyType.String)]
         public string SetContextKey;
 
@@ -21,7 +21,7 @@ namespace LiteBattle.Runtime
         public string SetContextValue;
 
         public bool HasData => true;
-        
+
         public void Enter(LiteState state)
         {
         }

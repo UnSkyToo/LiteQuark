@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
             : base()
         {
         }
-        
+
         protected override void OnRelease(GameObject go)
         {
             var particles = go.GetComponentsInChildren<ParticleSystem>();
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             {
                 particle.Stop();
             }
-            
+
             base.OnRelease(go);
         }
 

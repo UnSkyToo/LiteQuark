@@ -546,7 +546,7 @@ namespace LiteQuark.Editor
             Repaint();
         }
 
-        private static string FormatFileSize(long bytes) 
+        private static string FormatFileSize(long bytes)
         {
             if (bytes < 1024) return $"{bytes} B";
             if (bytes < 1024 * 1024) return $"{bytes / 1024f:F1} KB";

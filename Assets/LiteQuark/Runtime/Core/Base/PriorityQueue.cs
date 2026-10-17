@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
             {
                 return false;
             }
-            
+
             var lastIndex = _heap.Count - 1;
             _heap[index] = _heap[lastIndex];
             _heap.RemoveAt(lastIndex);
@@ -77,10 +77,10 @@ namespace LiteQuark.Runtime
                 HeapifyUp(index);
                 HeapifyDown(index);
             }
-            
+
             return true;
         }
-        
+
         public void UpdatePriority(T item)
         {
             var index = _heap.IndexOf(item);
@@ -88,7 +88,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             HeapifyUp(index);
             HeapifyDown(index);
         }

@@ -6,11 +6,11 @@ namespace LiteBattle.Runtime
     public sealed class LiteRotateController : ITick
     {
         private readonly LiteEntity Entity_;
-        
+
         private Quaternion TargetRotation_ = Quaternion.identity;
         private float RotateSpeed_ = 0f;
         private bool UpdateRotation_ = false;
-        
+
         public LiteRotateController(LiteEntity entity)
         {
             Entity_ = entity;

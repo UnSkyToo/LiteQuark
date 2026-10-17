@@ -65,7 +65,7 @@ namespace LiteQuark.Editor
                 }
                 else
                 {
-                    // original implementation(doens't work with nested serializedObjects) 
+                    // original implementation(doens't work with nested serializedObjects)
                     sourcePropertyValueFromArray = property.serializedObject.FindProperty(sourceFieldArray[index]);
                 }
 

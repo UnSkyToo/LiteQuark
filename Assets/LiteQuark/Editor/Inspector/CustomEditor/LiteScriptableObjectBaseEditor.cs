@@ -7,11 +7,11 @@ namespace LiteQuark.Editor
         public sealed override void OnInspectorGUI()
         {
             // base.OnInspectorGUI();
-            
+
             if (target is UnityEngine.ScriptableObject)
             {
                 serializedObject.Update();
-                
+
                 EditorGUI.BeginChangeCheck();
                 OnDraw();
                 if (EditorGUI.EndChangeCheck())

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using LiteBattle.Runtime;
 using LiteQuark.Editor;
@@ -12,7 +12,7 @@ namespace LiteBattle.Editor
         private TimelineAsset Timeline_;
         private readonly Dictionary<int, ILiteEventEditorPerformer> Performers_ = new();
         private int FrameIndex_;
-        
+
         private LiteEditorPreviewer()
         {
         }
@@ -29,7 +29,7 @@ namespace LiteBattle.Editor
         public void Shutdown()
         {
             LiteTimelineStateBehavior.OnTimeChange -= OnTimeChange;
-            
+
             CancelAllPerformer();
         }
 
@@ -154,7 +154,7 @@ namespace LiteBattle.Editor
             {
                 return;
             }
-            
+
             Performers_[instanceID].OnCancel();
             Performers_.Remove(instanceID);
         }
@@ -162,7 +162,7 @@ namespace LiteBattle.Editor
         private Type GetPerformerType(ILiteEvent evt)
         {
             var performerTypes = LiteEditorUtils.GetTypeListWithBaseType(typeof(ILiteEventEditorPerformer));
-            
+
             foreach (var performerType in performerTypes)
             {
                 var performerAttr = TypeUtils.GetAttribute<LiteEventEditorPerformerAttribute>(performerType, null);

@@ -5,7 +5,7 @@ namespace LiteBattle.Runtime
     public class LiteContext
     {
         private const string TagKey = "lite_context_tag";
-        
+
         private readonly LiteContext Outer_ = null;
         private readonly Dictionary<string, LiteContextBaseData> DataList_ = new();
 
@@ -27,12 +27,12 @@ namespace LiteBattle.Runtime
                 {
                     return Outer_.GetData<T>(key, defaultValue);
                 }
-                
+
                 return defaultValue;
             }
 
             var data = DataList_[key];
-            
+
             if (data.IsValid() && data is LiteContextData<T> realData)
             {
                 return realData.Value;
@@ -40,7 +40,7 @@ namespace LiteBattle.Runtime
 
             return defaultValue;
         }
-        
+
         public void SetTag(LiteTag tag, bool value, int lifeCycle)
         {
             SetData($"{TagKey}_{tag}", value, lifeCycle);
@@ -50,7 +50,7 @@ namespace LiteBattle.Runtime
         {
             return GetData($"{TagKey}_{tag}", false);
         }
-        
+
         // public void SetTag(LiteTag tag, bool value, int lifeCycle)
         // {
         //     var data = GetData(TagKey, 0u);
@@ -63,7 +63,7 @@ namespace LiteBattle.Runtime
         //     {
         //         data &= ~((uint) tag);
         //     }
-        //     
+        //
         //     SetData(TagKey, data, lifeCycle);
         // }
         //

@@ -9,9 +9,9 @@ namespace LiteQuark.Editor
         protected override void OnDraw()
         {
             DrawDefaultInspector();
-            
+
             EditorGUILayout.Space(5);
-            
+
             if (GUILayout.Button("Clean Invalid Paths"))
             {
                 CleanInvalidPaths();
@@ -26,10 +26,10 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-            
+
             var removed = setting.IgnorePathList.RemoveAll(path =>
                 string.IsNullOrWhiteSpace(path) || !AssetDatabase.IsValidFolder(path));
-            
+
             if (removed > 0)
             {
                 EditorUtility.SetDirty(target);

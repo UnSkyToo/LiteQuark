@@ -8,12 +8,12 @@ namespace LiteQuark.Runtime
     public static class PathUtils
     {
         public const char DirectorySeparatorChar = '/';
-        
+
         public static bool PathIsFile(string filePath)
         {
             return filePath.LastIndexOf('.') > filePath.LastIndexOf('/');
         }
-        
+
         public static string UnifyPath(string path)
         {
             var unifyPath = path.Replace('\\', DirectorySeparatorChar);
@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
             {
                 return string.Empty;
             }
-            
+
             return UnifyPath(path).TrimStart(DirectorySeparatorChar).ToLowerInvariant();
         }
 
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
         public static string[] GetRelativeAssetRootPath(string[] pathList)
         {
             var result = new string[pathList.Length];
-            
+
             for (var index = 0; index < pathList.Length; ++index)
             {
                 result[index] = GetRelativeAssetRootPath(pathList[index]);
@@ -86,10 +86,10 @@ namespace LiteQuark.Runtime
             {
                 return path;
             }
-            
+
             return ConcatPath(LiteConst.AssetRootPath, path);
         }
-        
+
         /// <summary>
         /// Get the full path in the asset data.
         /// </summary>
@@ -106,7 +106,7 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.persistentDataPath, path);
         }
-        
+
         /// <summary>
         /// Get the full path in persistent tag root.
         /// </summary>
@@ -122,7 +122,7 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.streamingAssetsPath, path);
         }
-        
+
         /// <summary>
         /// Get the full path in streaming assets tag root.
         /// </summary>
@@ -130,7 +130,7 @@ namespace LiteQuark.Runtime
         {
             return ConcatPath(Application.streamingAssetsPath, tag, path);
         }
-        
+
         public static string GetFullPathInRuntime(string path)
         {
             var fullPath = GetPersistentDataPath(LiteConst.Tag, path);
@@ -138,7 +138,7 @@ namespace LiteQuark.Runtime
             {
                 return fullPath;
             }
-            
+
             return GetStreamingAssetsPath(LiteConst.Tag, path);
         }
 
@@ -147,7 +147,7 @@ namespace LiteQuark.Runtime
             var path = PathIsFile(fullPath) ? Path.GetDirectoryName(fullPath) : fullPath;
             return UnifyPath(path);
         }
-        
+
         public static bool FileExists(string path)
         {
             return File.Exists(path);
@@ -176,7 +176,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             File.Delete(path);
         }
 
@@ -184,12 +184,12 @@ namespace LiteQuark.Runtime
         {
             var fileList = Directory.GetFiles(path);
             fileList = fileList.Select(UnifyPath).ToArray();
-            
+
             if (handler != null)
             {
                 return fileList.Select(handler).ToArray();
             }
-            
+
             return fileList;
         }
 
@@ -217,7 +217,7 @@ namespace LiteQuark.Runtime
             {
                 path = Path.GetDirectoryName(path);
             }
-            
+
             if (!Directory.Exists(path))
             {
                 if (!Directory.CreateDirectory(path).Exists)
@@ -233,7 +233,7 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            
+
             Directory.Delete(path, true);
         }
 
@@ -246,7 +246,7 @@ namespace LiteQuark.Runtime
         {
             var directoryList = Directory.GetDirectories(path);
             directoryList = directoryList.Select(UnifyPath).ToArray();
-            
+
             if (handler != null)
             {
                 directoryList = directoryList.Select(handler).ToArray();
@@ -259,25 +259,25 @@ namespace LiteQuark.Runtime
         {
             sourcePath = UnifyPath(sourcePath);
             destPath = UnifyPath(destPath);
-            
+
             if (!DirectoryExists(sourcePath))
             {
                 return;
             }
-            
+
             var filePathList = Directory.GetFiles(sourcePath);
             var directoryPathList = Directory.GetDirectories(sourcePath);
-            
+
             if (filePathList.Length > 0)
             {
                 var isEmptyFolder = true;
                 CreateDirectory(destPath);
-                
+
                 foreach (var filePath in filePathList)
                 {
                     var relativePath = UnifyPath(filePath).Replace(sourcePath, string.Empty);
                     var destFullPath = ConcatPath(destPath, relativePath);
-                    
+
                     if (condition == null || condition.Invoke(filePath))
                     {
                         isEmptyFolder = false;
@@ -295,7 +295,7 @@ namespace LiteQuark.Runtime
             {
                 var relativePath = UnifyPath(directoryPath).Replace(sourcePath, string.Empty);
                 var destFullPath = ConcatPath(destPath, relativePath);
-                
+
                 CopyDirectory(directoryPath, destFullPath, condition);
             }
         }

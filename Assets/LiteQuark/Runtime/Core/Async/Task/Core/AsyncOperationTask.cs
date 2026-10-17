@@ -8,19 +8,19 @@ namespace LiteQuark.Runtime
     {
         private readonly AsyncOperation _asyncOperation;
         private Action _callback;
-        
+
         public AsyncOperationTask(AsyncOperation asyncOperation, Action callback)
             : base()
         {
             _asyncOperation = asyncOperation;
             _callback = callback;
         }
-        
+
         public override void Dispose()
         {
             _callback = null;
         }
-        
+
         protected override IEnumerator ExecuteInternal()
         {
             while (State == TaskState.InProgress)
@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
                     Complete(null);
                 }
             }
-            
+
             LiteUtils.SafeInvoke(_callback);
         }
     }

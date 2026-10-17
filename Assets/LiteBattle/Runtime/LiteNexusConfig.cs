@@ -1,4 +1,4 @@
-﻿using LiteQuark.Runtime;
+using LiteQuark.Runtime;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -18,10 +18,10 @@ namespace LiteBattle.Runtime
         /// </summary>
         [SerializeField]
         public bool QuickReload = false;
-        
+
         [SerializeField]
         public string DatabasePath = "Assets/StandaloneAssets/NexusDatabase";
-        
+
         private static LiteNexusConfig Instance_;
         private static AssetHandle<LiteNexusConfig> ConfigHandle_;
         public static LiteNexusConfig Instance
@@ -42,12 +42,12 @@ namespace LiteBattle.Runtime
                     throw new System.InvalidOperationException("Initialize LiteNexusDataManager before accessing LiteNexusConfig.Instance.");
 #endif
                 }
-                
+
                 Debug.Assert(Instance_ != null);
                 return Instance_;
             }
         }
-        
+
         internal static async UniTask<LiteNexusConfig> LoadAsync()
         {
 #if UNITY_EDITOR
@@ -95,7 +95,7 @@ namespace LiteBattle.Runtime
             AssetUtils.CreateAsset<LiteNexusConfig>(ConfigPath, ConfigName);
         }
 #endif
-        
+
         private string GetDatabaseFullPath(string subPath)
         {
             return PathUtils.ConcatPath(DatabasePath, subPath);

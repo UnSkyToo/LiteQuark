@@ -8,13 +8,13 @@ namespace LiteQuark.Runtime
     {
         private readonly Action<IAction, SafeList<IAction>, float, float> _onTickDelegate = null;
         private readonly SafeList<IAction> _actionList = new();
-        
+
         public ActionSystem()
         {
             _onTickDelegate = OnActionTick;
             _actionList.Clear();
         }
-        
+
         public UniTask<bool> Initialize()
         {
             return UniTask.FromResult(true);
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
             {
                 return null;
             }
-            
+
             return _actionList.ForeachReturn(static (action, targetId) => action.ID == targetId, id);
         }
 
@@ -96,7 +96,7 @@ namespace LiteQuark.Runtime
             {
                 action.MarkAsSafe();
             }
-            
+
             _actionList.Add(action);
             action.Execute();
             return action.ID;

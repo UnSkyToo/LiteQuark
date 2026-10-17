@@ -1,4 +1,4 @@
-﻿using LiteQuark.Runtime;
+using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
 {

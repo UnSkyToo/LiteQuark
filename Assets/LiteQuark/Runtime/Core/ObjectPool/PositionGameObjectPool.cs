@@ -5,12 +5,12 @@ namespace LiteQuark.Runtime
     public class PositionGameObjectPool : ActiveGameObjectPool
     {
         private static readonly Vector3 InvalidPosition = new(-9999, -9999, -9999);
-        
+
         public PositionGameObjectPool()
             : base()
         {
         }
-        
+
         protected override void OnRelease(GameObject go)
         {
             go.transform.SetParent(Parent, false);

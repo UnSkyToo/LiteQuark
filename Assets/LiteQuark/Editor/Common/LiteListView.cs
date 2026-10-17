@@ -8,7 +8,7 @@ namespace LiteQuark.Editor
     {
         public bool HideToolbar { get; protected set; } = false;
         public bool EnableOrderControl { get; protected set; } = true;
-        
+
         private const int InvalidIndex = -1;
 
         private int _selectIndex = InvalidIndex;
@@ -40,22 +40,22 @@ namespace LiteQuark.Editor
 
             return default;
         }
-        
+
         public void Draw()
         {
             LiteEditorStyle.Generate();
-            
+
             _selectIndex = ClampSelectIndex(_selectIndex);
-            
+
             DrawDataList();
-            
+
             DrawToolbar();
         }
 
         private void DrawDataList()
         {
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-            
+
             using (new GUILayout.VerticalScope())
             {
                 for (var i = 0; i < _data.Count; ++i)
@@ -80,7 +80,7 @@ namespace LiteQuark.Editor
                 }
                 GUILayout.FlexibleSpace();
             }
-            
+
             EditorGUILayout.EndScrollView();
         }
 
@@ -90,7 +90,7 @@ namespace LiteQuark.Editor
             {
                 return;
             }
-        
+
             using (new GUILayout.VerticalScope(LiteEditorStyle.InFooter))
             {
                 if (_selectIndex != -1)
@@ -171,7 +171,7 @@ namespace LiteQuark.Editor
         {
             return _data == null ? InvalidIndex : Mathf.Clamp(index, -1, _data.Count - 1);
         }
-        
+
         protected virtual bool DrawItem(int index, bool selected, T obj)
         {
             if (GUILayout.Button($"{obj}", selected ? LiteEditorStyle.ButtonSelect : LiteEditorStyle.ButtonNormal, GUILayout.ExpandWidth(true)))

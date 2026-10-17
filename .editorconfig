@@ -1,0 +1,36 @@
+root = true
+
+# Hand-maintained C# sources only. Third-party assets and build outputs are not included.
+[Assets/{LiteQuark/Runtime,LiteQuark/Editor,LiteQuark.Addons,LiteBattle,Scripts,Editor}/**.cs]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Keep the repository's formatting configuration in the same text format.
+[.{editorconfig,gitattributes}]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Generated C# files inside source directories remain owned by their generators.
+[**/{Generated,generated}/**.cs]
+charset = unset
+end_of_line = unset
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset
+insert_final_newline = unset
+
+[**/{*.g.cs,*.g.i.cs,*.generated.cs,*.Generated.cs,*Generated.cs,*.Designer.cs,*.designer.cs}]
+charset = unset
+end_of_line = unset
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset
+insert_final_newline = unset

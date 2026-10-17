@@ -30,18 +30,18 @@ namespace LiteBattle.Runtime
                 }
             }
         }
-        
+
         public event System.Action<Vector2> JoystickMoveStart;
         public event System.Action<Vector2> JoystickMove;
         public event System.Action<Vector2> JoystickMoveEnd;
         public event System.Action<LitePlayerInputKey> Click;
         public event System.Action<LitePlayerInputKey> KeyDown;
-        public event System.Action<LitePlayerInputKey> KeyUp; 
+        public event System.Action<LitePlayerInputKey> KeyUp;
         public event System.Action<LitePlayerInputKey> LongPressStart;
         public event System.Action<LitePlayerInputKey> LongPressEnd;
         public event System.Action<Vector2> TouchMove;
         public event System.Action<float> TouchScale;
-        
+
         private LiteKeyboardInput Keyboard_;
         private LiteTouchInput Touch_;
 
@@ -61,16 +61,16 @@ namespace LiteBattle.Runtime
         {
             Keyboard_ = new LiteKeyboardInput();
             Touch_ = new LiteTouchInput(OnTouchMove, OnTouchScale);
-            
+
             InputKeyMapping_.Add(KeyCode.J, LitePlayerInputKey.Attack);
             InputKeyMapping_.Add(KeyCode.K, LitePlayerInputKey.Slot1);
             InputKeyMapping_.Add(KeyCode.L, LitePlayerInputKey.Slot2);
             InputKeyMapping_.Add(KeyCode.I, LitePlayerInputKey.Slot3);
             InputKeyMapping_.Add(KeyCode.Space, LitePlayerInputKey.Jump);
-            
+
             EnableKeyboard = false;
             EnableTouch = false;
-            
+
             return UniTask.FromResult(true);
         }
 
@@ -106,7 +106,7 @@ namespace LiteBattle.Runtime
                 OnJoystickMove(Vector2.zero);
                 return;
             }
-            
+
             Keyboard_.Update(deltaTime);
 
             var doubleClick = false;
@@ -147,7 +147,7 @@ namespace LiteBattle.Runtime
             {
                 SimulateLastInput_ = SimulateInput_;
                 SimulateInput_ = Vector3.zero;
-                
+
                 if (Input.GetKey(KeyCode.W))
                 {
                     SimulateInput_ += new Vector3(0, 0, 1f);
@@ -177,7 +177,7 @@ namespace LiteBattle.Runtime
                     {
                         OnJoystickMoveStart(SimulateMove_);
                     }
-                    
+
                     OnJoystickMove(SimulateMove_);
                 }
                 else
@@ -218,7 +218,7 @@ namespace LiteBattle.Runtime
                 }
             }
         }
-        
+
         private void OnJoystickMoveStart(Vector2 dir)
         {
             JoystickMoveStart?.Invoke(dir);
@@ -235,7 +235,7 @@ namespace LiteBattle.Runtime
             InputDir_ = Vector2.zero;
             JoystickMoveEnd?.Invoke(dir);
         }
-        
+
         private void OnSwipeStart(Vector2 dir)
         {
         }
@@ -243,16 +243,16 @@ namespace LiteBattle.Runtime
         private void OnSwipe(Vector2 dir)
         {
         }
-        
+
         private void OnSwipeEnd(Vector2 dir)
         {
         }
-        
+
         private void OnClick(LitePlayerInputKey inputKey)
         {
             Click?.Invoke(inputKey);
         }
-        
+
         private void OnKeyDown(LitePlayerInputKey inputKey)
         {
             KeyDown?.Invoke(inputKey);
@@ -272,7 +272,7 @@ namespace LiteBattle.Runtime
         {
             LongPressEnd?.Invoke(inputKey);
         }
-        
+
         private void OnTouchMove(Vector2 offset)
         {
             TouchMove?.Invoke(offset);

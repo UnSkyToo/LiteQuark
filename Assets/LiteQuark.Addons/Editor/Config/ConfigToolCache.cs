@@ -5,7 +5,7 @@ namespace LiteQuark.Editor
     internal static class ConfigToolCache
     {
         private const string KeyCache = "LiteQuark.ConfigTool.Cache";
-        
+
         private const string KeyExcelFolder = "LiteQuark.ConfigTool.ExcelFolder";
         private const string KeyJsonOutputFolder = "LiteQuark.ConfigTool.JsonOutputFolder";
         private const string KeyCodeOutputFolder = "LiteQuark.ConfigTool.CodeOutputFolder";
@@ -16,7 +16,7 @@ namespace LiteQuark.Editor
         private const string DefaultCodeOutputFolder = "Assets/GamePlay/Config";
         private const string DefaultCodeNamespace = "GamePlay";
         private const string DefaultJsonBasePath = "Configs";
-        
+
         public static string Cache
         {
             get => EditorPrefs.GetString(KeyCache, string.Empty);

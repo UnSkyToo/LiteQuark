@@ -1,4 +1,4 @@
-﻿using LiteQuark.Runtime;
+using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Playables;
@@ -21,23 +21,23 @@ namespace LiteBattle.Editor
                 go.AddComponent<PlayableDirector>();
                 TempGo_ = go;
             }
-            
+
             TimelineDirector_ = go.GetComponent<PlayableDirector>();
         }
 
         public void Dispose()
         {
             UnBindTimeline();
-            
+
             if (TempGo_ != null)
             {
                 Object.DestroyImmediate(TempGo_);
                 TempGo_ = null;
             }
-            
+
             TimelineDirector_ = null;
         }
-        
+
         public bool IsBindTimeline()
         {
             return CurrentTimeline_ != null;

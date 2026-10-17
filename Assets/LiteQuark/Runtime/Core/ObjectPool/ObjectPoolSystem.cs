@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         {
             _poolCache.Clear();
         }
-        
+
         public UniTask<bool> Initialize()
         {
             _root = UnityUtils.CreateHoldGameObject("ObjectPool").transform;
@@ -73,7 +73,7 @@ namespace LiteQuark.Runtime
 
             return AddPool<TPool>(key, args);
         }
-        
+
         public TPool AddPool<TPool>(string key, params object[] args) where TPool : IBasePool
         {
             var pool = System.Activator.CreateInstance<TPool>();
@@ -115,7 +115,7 @@ namespace LiteQuark.Runtime
         {
             RecycleCollection<List<TItem>, TItem>(list);
         }
-        
+
         public Dictionary<TKey, TValue> AllocDictionary<TKey, TValue>()
         {
             return AllocCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>();
@@ -125,7 +125,7 @@ namespace LiteQuark.Runtime
         {
             RecycleCollection<Dictionary<TKey, TValue>, KeyValuePair<TKey, TValue>>(dictionary);
         }
-        
+
         public HashSet<TItem> AllocHashSet<TItem>()
         {
             return AllocCollection<HashSet<TItem>, TItem>();
@@ -155,13 +155,13 @@ namespace LiteQuark.Runtime
         {
             return GetPool<ParticlePool>(path, _root);
         }
-        
+
         public UniTask PreloadPoolAsync<TPool>(string key, params object[] args) where TPool : class, IBasePool
         {
             var pool = GetPool<TPool>(key, args);
             return pool.WaitReadyAsync();
         }
-        
+
         public async UniTask PreloadPoolAsync<TPool>(string key, int generateCount, params object[] args) where TPool : class, IBasePool
         {
             await PreloadPoolAsync<TPool>(key, args);

@@ -3,9 +3,9 @@ namespace LiteQuark.Runtime
     internal class BundleRemoteLocater : IBundleLocater
     {
         public bool DisableUnityWebCache { get; set; } = false;
-        
+
         private readonly string _remoteUri;
-        
+
         public BundleRemoteLocater(string remoteUri)
         {
             _remoteUri = remoteUri;
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
             versionPackUri = $"{versionPackUri}?t={AppUtils.GetVersion()}";
             return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, callback);
         }
-        
+
         public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
         {
             var bundleUri = PathUtils.ConcatPath(_remoteUri, bundlePath);

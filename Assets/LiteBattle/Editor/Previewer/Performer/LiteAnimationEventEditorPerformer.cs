@@ -1,4 +1,4 @@
-﻿using LiteBattle.Runtime;
+using LiteBattle.Runtime;
 
 namespace LiteBattle.Editor
 {
@@ -7,7 +7,7 @@ namespace LiteBattle.Editor
     {
         private int StartFrame_;
         private string AnimationName_;
-        
+
         public void OnExecute(ILiteEvent evt, int frame)
         {
             if (evt is LitePlayAnimationEvent playAnimationEvent)

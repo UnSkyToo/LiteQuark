@@ -5,10 +5,10 @@ namespace LiteBattle.Runtime
     public sealed class LiteTouchInput
     {
         public bool Enable { get; set; } = true;
-        
+
         private readonly System.Action<Vector2> OnTouchMove_;
         private readonly System.Action<float> OnTouchScale_;
-        
+
         private Vector2 PreviousTouchPosition1_;
         private Vector2 PreviousTouchPosition2_;
 
@@ -27,7 +27,7 @@ namespace LiteBattle.Runtime
             {
                 return;
             }
-            
+
 #if (((UNITY_ANDROID || UNITY_IPHONE || UNITY_WP8 || UNITY_BLACKBERRY) && !UNITY_EDITOR))
             UpdateTouch(deltaTime);
 #else

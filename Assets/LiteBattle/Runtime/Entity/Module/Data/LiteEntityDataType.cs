@@ -1,4 +1,4 @@
-﻿namespace LiteBattle.Runtime
+namespace LiteBattle.Runtime
 {
     public enum LiteEntityDataType
     {

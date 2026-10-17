@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
             : base()
         {
         }
-        
+
         public override LoggerBase CreateLogger(string name)
         {
             var unityConsoleAppender = new UnityConsoleLogAppender();
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             // var fileAppender = new FileLogAppender(UnityEngine.Application.persistentDataPath, false);
             // fileAppender.Name = name;
             // fileAppender.Layout = new SimpleLogLayout();
-            
+
             return CreateLogger(name, new ILogAppender[] { unityConsoleAppender/*, fileAppender */});
         }
     }

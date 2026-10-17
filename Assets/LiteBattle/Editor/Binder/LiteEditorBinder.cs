@@ -35,19 +35,19 @@ namespace LiteBattle.Editor
                 UnitBinder_.Dispose();
                 UnitBinder_ = null;
             }
-            
+
             if (TimelineBinder_ != null)
             {
                 TimelineBinder_.Dispose();
                 TimelineBinder_ = null;
             }
-            
+
             if (RangeBinder_ != null)
             {
                 RangeBinder_.Dispose();
                 RangeBinder_ = null;
             }
-            
+
             Selection.activeObject = null;
         }
 
@@ -65,7 +65,7 @@ namespace LiteBattle.Editor
         {
             return UnitBinder_?.GetUnitGo();
         }
-        
+
         public string GetCurrentStateGroup()
         {
             return UnitBinder_.GetCurrentStateGroup();
@@ -111,17 +111,17 @@ namespace LiteBattle.Editor
             var stateGroup = GetCurrentStateGroup();
             return PathUtils.ConcatPath(LiteNexusConfig.Instance.GetTimelineDatabasePath(), stateGroup);
         }
-        
+
         public List<string> GetCurrentUnitTimelinePathList()
         {
             if (string.IsNullOrWhiteSpace(GetCurrentStateGroup()))
             {
                 return new List<string>();
             }
-            
+
             return AssetUtils.GetAssetPathList("TimelineAsset", GetCurrentUnitTimelineRootPath());
         }
-        
+
         public void BindUnit(LiteUnitConfig config)
         {
             UnitBinder_.BindUnit(config);

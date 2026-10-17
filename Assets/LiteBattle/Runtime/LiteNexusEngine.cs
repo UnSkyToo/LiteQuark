@@ -43,14 +43,14 @@ namespace LiteBattle.Runtime
             monster.Position = new Vector3(3, 0, 3);
             monster.Camp = LiteEntityCamp.Dark;
             monster.Tag = "Monster Test";
-            
+
             return true;
         }
 
         public void Shutdown()
         {
             PlayerController_?.Dispose();
-            
+
             LiteCameraManager.Instance.Shutdown();
             LiteEntityManager.Instance.Shutdown();
             LiteInputManager.Instance.Shutdown();
@@ -64,7 +64,7 @@ namespace LiteBattle.Runtime
             LiteEntityManager.Instance.Tick(deltaTime);
             LiteCameraManager.Instance.Tick(deltaTime);
             PostTick(deltaTime);
-            
+
             // if (Input.GetKeyDown(KeyCode.Z))
             // {
             //     var entity = LiteEntityManager.Instance.AddAttackEntity();

@@ -1,9 +1,9 @@
-﻿namespace LiteBattle.Runtime
+namespace LiteBattle.Runtime
 {
     public sealed class LiteEntityDataValue
     {
         public double FinalValue => (Base_ + Change_) * Percent_ + Delta_;
-        
+
         private double Base_;
         private double Change_;
         private double Percent_;
