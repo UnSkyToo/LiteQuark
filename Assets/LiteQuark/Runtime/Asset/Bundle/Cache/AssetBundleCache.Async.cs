@@ -118,9 +118,17 @@ namespace LiteQuark.Runtime
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();
 
-            foreach (var loader in callbacks)
+            _dispatchDepth++;
+            try
             {
-                LiteUtils.SafeInvoke(loader, isLoaded);
+                foreach (var loader in callbacks)
+                {
+                    LiteUtils.SafeInvoke(loader, isLoaded);
+                }
+            }
+            finally
+            {
+                _dispatchDepth--;
             }
         }
     }

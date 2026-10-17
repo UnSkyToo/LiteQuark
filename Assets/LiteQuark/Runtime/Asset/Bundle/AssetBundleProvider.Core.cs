@@ -166,7 +166,7 @@ namespace LiteQuark.Runtime
                 {
                     chunk.Value.UnloadUnusedAssets();
 
-                    if (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsOrphan)
+                    if (!chunk.Value.IsDispatching && (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsOrphan))
                     {
                         _unloadBundleList.Add(chunk.Key);
                     }

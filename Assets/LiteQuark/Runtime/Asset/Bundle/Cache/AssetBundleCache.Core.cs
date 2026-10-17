@@ -12,16 +12,18 @@ namespace LiteQuark.Runtime
         /// <summary>
         /// 资源是否过期了
         /// </summary>
-        internal bool IsExpired =>
-            (Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
-            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0);
+        internal bool IsExpired => !IsDispatching &&
+            ((Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
+            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0));
 
         /// <summary>
         /// 资源是否为孤立资源（被加载了，但没有任何引用）
         /// </summary>
-        internal bool IsOrphan =>
-            (Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0) ||
-            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0);
+        internal bool IsOrphan => !IsDispatching &&
+            ((Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0) ||
+            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0));
+
+        internal bool IsDispatching => _dispatchDepth > 0;
 
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
@@ -36,6 +38,7 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
+        private int _dispatchDepth;
 
         public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
