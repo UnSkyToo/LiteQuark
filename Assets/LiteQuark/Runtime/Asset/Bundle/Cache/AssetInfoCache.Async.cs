@@ -31,11 +31,24 @@ namespace LiteQuark.Runtime
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath);
 
-            _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_bundleLease.Bundle, name, HandleAssetLoadCompleted);
+            try
+            {
+                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_bundleLease.Bundle, name, HandleAssetLoadCompleted);
+            }
+            catch
+            {
+                HandleAssetLoadCompleted(null);
+                throw;
+            }
         }
 
         private void HandleAssetLoadCompleted(UnityEngine.Object asset)
         {
+            if (Stage == AssetCacheStage.Unloaded)
+            {
+                return;
+            }
+
             _loadAssetTask = null;
 
             var isLoaded = OnAssetLoaded(asset);

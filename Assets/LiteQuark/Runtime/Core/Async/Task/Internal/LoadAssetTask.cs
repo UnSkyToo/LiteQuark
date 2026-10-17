@@ -35,6 +35,21 @@ namespace LiteQuark.Runtime
             return _asset;
         }
 
+        public override void Cancel()
+        {
+            if (IsDone)
+            {
+                return;
+            }
+
+            base.Cancel();
+
+            if (_assetRequest == null)
+            {
+                NotifyCompleted(null);
+            }
+        }
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _assetRequest?.progress ?? 0f;
@@ -42,7 +57,22 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
+            try
+            {
+                _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
+            }
+            catch
+            {
+                Cancel();
+                throw;
+            }
+
+            if (_assetRequest == null)
+            {
+                Cancel();
+                return;
+            }
+
             _assetRequest.completed += OnAssetRequestLoadCompleted;
         }
 
@@ -54,9 +84,17 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
+
             _asset = _assetRequest.asset as T;
             Complete(_asset);
-            LiteUtils.SafeInvoke(_callback, _asset);
+            NotifyCompleted(_asset);
+        }
+
+        private void NotifyCompleted(T asset)
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, asset);
         }
     }
 }
