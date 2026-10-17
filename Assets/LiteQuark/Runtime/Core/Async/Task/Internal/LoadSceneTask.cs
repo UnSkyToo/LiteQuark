@@ -35,6 +35,22 @@ namespace LiteQuark.Runtime
             return _scene;
         }
 
+        public override void Cancel()
+        {
+            if (IsDone)
+            {
+                return;
+            }
+
+            base.Cancel();
+
+            if (_sceneRequest == null)
+            {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                NotifyCompleted(false, default);
+            }
+        }
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _sceneRequest?.progress ?? 0f;
@@ -44,12 +60,19 @@ namespace LiteQuark.Runtime
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            _sceneRequest = SceneManager.LoadSceneAsync(_sceneName, _parameters);
+            try
+            {
+                _sceneRequest = SceneManager.LoadSceneAsync(_sceneName, _parameters);
+            }
+            catch
+            {
+                Cancel();
+                throw;
+            }
+
             if (_sceneRequest == null)
             {
-                SceneManager.sceneLoaded -= OnSceneLoaded;
                 Cancel();
-                LiteUtils.SafeInvoke(_callback, false, default);
                 return;
             }
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
@@ -79,8 +102,15 @@ namespace LiteQuark.Runtime
             }
 
             var success = _scene.IsValid() && _scene.isLoaded;
-            Complete(success ? _scene : default(Scene));
-            LiteUtils.SafeInvoke(_callback, success, _scene);
+            Complete(success ? _scene : default);
+            NotifyCompleted(success, _scene);
+        }
+
+        private void NotifyCompleted(bool success, Scene scene)
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, success, scene);
         }
     }
 }

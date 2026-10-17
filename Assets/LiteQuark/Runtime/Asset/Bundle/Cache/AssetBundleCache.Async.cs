@@ -43,18 +43,30 @@ namespace LiteQuark.Runtime
 
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
 
-                LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, (sceneIsLoaded, scene) =>
+                IncRef();
+
+                void OnSceneLoadCompleted(bool sceneIsLoaded, Scene scene)
                 {
+                    if (!sceneIsLoaded && Stage != AssetCacheStage.Unloaded)
+                    {
+                        DecRef();
+                    }
+
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
 
-                    if (sceneIsLoaded)
-                    {
-                        IncRef();
-                    }
-
                     LiteUtils.SafeInvoke(callback, sceneIsLoaded, scene);
-                });
+                }
+
+                try
+                {
+                    LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, OnSceneLoadCompleted);
+                }
+                catch
+                {
+                    OnSceneLoadCompleted(false, default);
+                    throw;
+                }
             });
         }
 
