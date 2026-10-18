@@ -220,7 +220,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                if (op.isDone && (!scene.IsValid() || !scene.isLoaded))
+                if (!scene.IsValid() || !scene.isLoaded)
                 {
                     DecRef();
                 }

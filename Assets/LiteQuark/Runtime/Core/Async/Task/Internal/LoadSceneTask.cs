@@ -60,15 +60,7 @@ namespace LiteQuark.Runtime
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            try
-            {
-                _sceneRequest = SceneManager.LoadSceneAsync(_sceneName, _parameters);
-            }
-            catch
-            {
-                Cancel();
-                throw;
-            }
+            _sceneRequest = SceneManager.LoadSceneAsync(_sceneName, _parameters);
 
             if (_sceneRequest == null)
             {

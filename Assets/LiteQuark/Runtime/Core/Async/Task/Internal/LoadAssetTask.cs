@@ -57,15 +57,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            try
-            {
-                _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
-            }
-            catch
-            {
-                Cancel();
-                throw;
-            }
+            _assetRequest = _bundle.LoadAssetAsync<T>(_assetName);
 
             if (_assetRequest == null)
             {

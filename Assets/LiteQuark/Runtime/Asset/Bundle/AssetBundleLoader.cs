@@ -97,13 +97,6 @@ namespace LiteQuark.Runtime
                     break;
                 }
 
-                if (task == null)
-                {
-                    LLog.Error("Create bundle load task returned null : {0}", info.Path);
-                    FailPendingTask(info.Path);
-                    break;
-                }
-
                 task.SetPriority(TaskPriority.Urgent);
                 _runningTasks.Add(new RunningTask(info.Path, task));
             }
