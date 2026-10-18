@@ -84,9 +84,41 @@ namespace LiteQuark.Runtime
             while (_runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
-                var task = _bundleLocater.LoadBundle(info.Path, info.Hash, null);
+                ILoadBundleTask task;
+
+                try
+                {
+                    task = _bundleLocater.LoadBundle(info.Path, info.Hash, null);
+                }
+                catch (Exception ex)
+                {
+                    LLog.Exception(ex, "Create bundle load task failed : {0}", info.Path);
+                    FailPendingTask(info.Path);
+                    break;
+                }
+
+                if (task == null)
+                {
+                    LLog.Error("Create bundle load task returned null : {0}", info.Path);
+                    FailPendingTask(info.Path);
+                    break;
+                }
+
                 task.SetPriority(TaskPriority.Urgent);
                 _runningTasks.Add(new RunningTask(info.Path, task));
+            }
+        }
+
+        private void FailPendingTask(string bundlePath)
+        {
+            if (!_pendingTaskMap.Remove(bundlePath, out var pendingTask))
+            {
+                return;
+            }
+
+            foreach (var callback in pendingTask.CallbackList)
+            {
+                LiteUtils.SafeInvoke(callback, null);
             }
         }
 
