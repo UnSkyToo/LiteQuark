@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, assetPath, BundlePath);
 
@@ -19,11 +19,11 @@ namespace LiteQuark.Runtime
                 }
 
                 var cache = GetOrCreateAssetCache(assetPath);
-                cache.LoadAssetAsync<T>(asset =>
+                cache.LoadAssetAsync<T>(lease =>
                 {
-                    var assetIsLoaded = asset != null;
+                    var assetIsLoaded = lease != null;
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
-                    LiteUtils.SafeInvoke(callback, asset);
+                    LiteUtils.SafeInvoke(callback, lease);
                 });
             });
         }

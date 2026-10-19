@@ -9,21 +9,18 @@ namespace LiteQuark.Runtime
     /// </summary>
     public class AssetHandle<T> : IAssetHandle<T> where T : UnityEngine.Object
     {
-        private readonly Action _releaseAction;
         private readonly UniTaskCompletionSource<T> _tcs = new();
         private CancellationTokenRegistration _ctr;
-        private T _result;
+        private AssetInfoCache.Lease<T> _lease;
         private bool _isDisposed;
 
         public bool IsDone { get; private set; }
-        public T Result => _result;
+        public T Result => _lease?.Asset;
         internal UniTask<T> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal AssetHandle(Action<Action<T>> invoke, CancellationToken ct, Action releaseAction)
+        internal AssetHandle(Action<Action<AssetInfoCache.Lease<T>>> invoke, CancellationToken ct)
         {
-            _releaseAction = releaseAction;
-
             if (ct.IsCancellationRequested)
             {
                 IsDone = true;
@@ -39,15 +36,15 @@ namespace LiteQuark.Runtime
             invoke(OnCompleted);
         }
 
-        private void OnCompleted(T result)
+        private void OnCompleted(AssetInfoCache.Lease<T> lease)
         {
             _ctr.Dispose();
-            _result = result;
+            _lease = lease;
             IsDone = true;
 
-            if (!_tcs.TrySetResult(result))
+            if (!_tcs.TrySetResult(_lease?.Asset))
             {
-                if (_result != null)
+                if (_lease != null)
                 {
                     ReleaseResult();
                 }
@@ -56,8 +53,8 @@ namespace LiteQuark.Runtime
 
         private void ReleaseResult()
         {
-            _releaseAction?.Invoke();
-            _result = default;
+            _lease?.Dispose();
+            _lease = null;
         }
 
         public void Dispose()
@@ -76,7 +73,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (_result != null)
+            if (_lease != null)
             {
                 ReleaseResult();
             }

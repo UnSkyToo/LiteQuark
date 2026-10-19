@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        public void LoadAssetAsync<T>(string assetPath, Action<T> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
@@ -14,9 +14,9 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync<T>(assetPath, asset =>
+            cache.LoadAssetAsync<T>(assetPath, lease =>
             {
-                LiteUtils.SafeInvoke(callback, asset);
+                LiteUtils.SafeInvoke(callback, lease);
             });
         }
 

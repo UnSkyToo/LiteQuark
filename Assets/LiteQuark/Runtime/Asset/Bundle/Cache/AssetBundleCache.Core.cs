@@ -187,14 +187,6 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public void ReleaseAssetReference(string assetPath)
-        {
-            if (_assetCacheMap.TryGetValue(assetPath, out var cache))
-            {
-                cache.ReleaseReference();
-            }
-        }
-
         public void ReleaseSceneReferenceAsync(UnityEngine.SceneManagement.Scene scene, Action callback)
         {
             if (!scene.IsValid() || !scene.isLoaded)

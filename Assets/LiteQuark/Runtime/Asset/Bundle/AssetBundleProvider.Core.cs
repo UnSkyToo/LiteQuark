@@ -122,20 +122,6 @@ namespace LiteQuark.Runtime
             return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
         }
 
-        public void ReleaseAssetReference(string assetPath)
-        {
-            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
-            if (bundleInfo == null)
-            {
-                return;
-            }
-
-            if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
-            {
-                cache.ReleaseAssetReference(assetPath);
-            }
-        }
-
         public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.Scene scene, Action callback)
         {
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);

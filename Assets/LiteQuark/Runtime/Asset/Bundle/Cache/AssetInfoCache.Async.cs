@@ -4,22 +4,22 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(Action<T> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Action<Lease<T>> callback) where T : UnityEngine.Object
         {
             if (IsLoaded)
             {
-                var asset = TryAcquireReference<T>();
+                var lease = TryAcquireLease<T>();
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, asset,
-                    errorMessage: asset ? null : "Asset type mismatch", isCached: true);
-                LiteUtils.SafeInvoke(callback, asset);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, lease != null,
+                    errorMessage: lease != null ? null : "Asset type mismatch", isCached: true);
+                LiteUtils.SafeInvoke(callback, lease);
                 return;
             }
 
             _assetLoaderCallbackList.Add(isLoaded =>
             {
-                var asset = isLoaded ? TryAcquireReference<T>() : null;
-                LiteUtils.SafeInvoke(callback, asset);
+                var lease = isLoaded ? TryAcquireLease<T>() : null;
+                LiteUtils.SafeInvoke(callback, lease);
             });
             if (Stage != AssetCacheStage.Created)
             {
@@ -72,12 +72,11 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private T TryAcquireReference<T>() where T : UnityEngine.Object
+        private Lease<T> TryAcquireLease<T>() where T : UnityEngine.Object
         {
             if (Asset is T asset && asset != null)
             {
-                IncRef();
-                return asset;
+                return AcquireLease(asset);
             }
 
             if (Asset != null)

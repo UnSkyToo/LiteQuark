@@ -125,10 +125,5 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loaded;
             return true;
         }
-
-        public bool ReleaseReference()
-        {
-            return DecRef();
-        }
     }
 }
