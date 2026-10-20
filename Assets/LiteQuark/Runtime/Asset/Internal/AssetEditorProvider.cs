@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -12,6 +13,7 @@ namespace LiteQuark.Runtime
         private bool _simulateAsyncDelayInEditor;
         private int _asyncDelayMinFrame;
         private int _asyncDelayMaxFrame;
+        private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
 
         public AssetEditorProvider()
         {
@@ -35,6 +37,7 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
+            _loadingSceneSet.Clear();
         }
 
         public void Tick(float deltaTime)
@@ -61,21 +64,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void SimulateAsync<T1, T2>(Action<T1, T2> callback, T1 value1, T2 value2)
-        {
-            if (_simulateAsyncDelayInEditor)
-            {
-                LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), () =>
-                {
-                    LiteUtils.SafeInvoke(callback, value1, value2);
-                });
-            }
-            else
-            {
-                LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value1, value2); });
-            }
-        }
-
         public bool HasAsset(string assetPath)
         {
             var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
@@ -99,43 +87,59 @@ namespace LiteQuark.Runtime
             return AssetInfoCache.Lease<T>.CreateUncached(asset);
         }
 
-        public void LoadSceneAsync(string scenePath, string sceneName, LoadSceneParameters parameters, Action<bool, Scene> callback)
+        public void LoadSceneAsync(string scenePath, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
-            var scene = LoadSceneSync(scenePath, sceneName, parameters);
-            SimulateAsync(callback, scene.IsValid() && scene.isLoaded, scene);
-        }
-
-        public Scene LoadSceneSync(string scenePath, string sceneName, LoadSceneParameters parameters)
-        {
-            var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
-            var scene = SceneManager.GetSceneByPath(fullPath);
-            if (scene.isLoaded)
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            if (!_loadingSceneSet.Add(sceneName))
             {
-                return scene;
-            }
-
-            return EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters);
-        }
-
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, Scene scene, Action callback)
-        {
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                LiteUtils.SafeInvoke(callback);
+                LLog.Error("Scene is already loading: {0}", sceneName);
+                LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
-            var op = SceneManager.UnloadSceneAsync(scene);
-            if (op == null)
-            {
-                LiteUtils.SafeInvoke(callback);
-                return;
-            }
+            LoadSceneInternal().Forget();
 
-            op.completed += result =>
+            async UniTask LoadSceneInternal()
             {
-                LiteUtils.SafeInvoke(callback);
-            };
+                try
+                {
+                    var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
+                    var loadScene = EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters);
+                    await UniTask.WaitUntil(() => !loadScene.IsValid() || loadScene.isLoaded);
+
+                    SimulateAsync(scene =>
+                    {
+                        if (!scene.IsValid() || !scene.isLoaded)
+                        {
+                            LLog.Error("Can't load scene : {0}", fullPath);
+                            _loadingSceneSet.Remove(sceneName);
+                            LiteUtils.SafeInvoke(callback, null);
+                            return;
+                        }
+
+                        var cache = new SceneInfoCache(null, sceneName, parameters);
+                        cache.LoadSceneForEditor(scene, lease =>
+                        {
+                            _loadingSceneSet.Remove(sceneName);
+
+                            if (!scene.IsValid() || !scene.isLoaded)
+                            {
+                                lease?.Dispose();
+                                LiteUtils.SafeInvoke(callback, null);
+                                return;
+                            }
+
+                            LiteUtils.SafeInvoke(callback, lease);
+                        });
+                    }, loadScene);
+                }
+                catch (Exception ex)
+                {
+                    _loadingSceneSet.Remove(sceneName);
+                    LLog.Exception(ex, "Load scene failed : {0}", scenePath);
+                    LiteUtils.SafeInvoke(callback, null);
+                }
+            }
         }
 
         public void UnloadUnusedAssets(int maxDepth)

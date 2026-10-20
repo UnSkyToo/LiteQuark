@@ -20,17 +20,40 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
+        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
-            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
-            if (bundleInfo == null)
+            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
+            if (!_loadingSceneSet.Add(sceneName))
             {
-                LiteUtils.SafeInvoke(callback, false, default);
+                LLog.Error("Scene is already loading: {0}", sceneName);
+                LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
-            var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadSceneAsync(sceneName, parameters, callback);
+            var formatPath = PathUtils.FormatAssetPath(scenePath);
+
+            try
+            {
+                var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(formatPath);
+                if (bundleInfo == null)
+                {
+                    _loadingSceneSet.Remove(sceneName);
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+
+                var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
+                cache.LoadSceneAsync(sceneName, parameters, lease =>
+                {
+                    _loadingSceneSet.Remove(sceneName);
+                    LiteUtils.SafeInvoke(callback, lease);
+                });
+            }
+            catch
+            {
+                _loadingSceneSet.Remove(sceneName);
+                throw;
+            }
         }
     }
 }

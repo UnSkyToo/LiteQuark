@@ -28,7 +28,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<bool, Scene> callback)
+        public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
 
@@ -37,36 +37,17 @@ namespace LiteQuark.Runtime
                 if (!bundleIsLoaded)
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, false, errorMessage: "Bundle load failed");
-                    LiteUtils.SafeInvoke(callback, false, default);
+                    LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
 
-                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, sceneName, BundlePath);
-
-                IncRef();
-
-                void OnSceneLoadCompleted(bool sceneIsLoaded, Scene scene)
+                var cache = CreateSceneCache(sceneName, parameters);
+                cache.LoadSceneAsync(lease =>
                 {
-                    if (!sceneIsLoaded && Stage != AssetCacheStage.Unloaded)
-                    {
-                        DecRef();
-                    }
-
-                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
+                    var sceneIsLoaded = lease != null;
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, sceneIsLoaded, errorMessage: sceneIsLoaded ? null : "Scene load failed");
-
-                    LiteUtils.SafeInvoke(callback, sceneIsLoaded, scene);
-                }
-
-                try
-                {
-                    LiteRuntime.Task.AddLoadSceneTask(sceneName, parameters, OnSceneLoadCompleted);
-                }
-                catch
-                {
-                    OnSceneLoadCompleted(false, default);
-                    throw;
-                }
+                    LiteUtils.SafeInvoke(callback, lease);
+                });
             });
         }
 

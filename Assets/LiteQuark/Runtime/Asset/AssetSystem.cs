@@ -9,7 +9,6 @@ namespace LiteQuark.Runtime
     public sealed class AssetSystem : ISystem, ITick
     {
         private IAssetProvider _provider = null;
-        private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
 
         public AssetSystem()
         {
@@ -43,7 +42,6 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _loadingSceneSet.Clear();
             _provider?.UnloadUnusedAssets(20);
 
             _provider?.Dispose();
@@ -106,49 +104,8 @@ namespace LiteQuark.Runtime
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
                 asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
-        private void LoadSceneInternal(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
-        {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            if (!_loadingSceneSet.Add(sceneName))
-            {
-                LLog.Error("Scene is already loading: {0}", sceneName);
-                LiteUtils.SafeInvoke(callback, false, default);
-                return;
-            }
-
-            var formatPath = FormatPath(scenePath);
-            if (_provider == null)
-            {
-                _loadingSceneSet.Remove(sceneName);
-                LiteUtils.SafeInvoke(callback, false, default);
-                return;
-            }
-
-            try
-            {
-                _provider.LoadSceneAsync(formatPath, sceneName, parameters, (success, scene) =>
-                {
-                    _loadingSceneSet.Remove(sceneName);
-                    LiteUtils.SafeInvoke(callback, success, scene);
-                });
-            }
-            catch
-            {
-                _loadingSceneSet.Remove(sceneName);
-                throw;
-            }
-        }
-
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
-            => new SceneHandle(cb => LoadSceneInternal(scenePath, parameters, cb), ct,
-                scene => ReleaseSceneReferenceAsync(scenePath, scene, null));
-
-        private void ReleaseSceneReferenceAsync(string scenePath, UnityEngine.SceneManagement.Scene scene, Action callback)
-        {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            var formatPath = FormatPath(scenePath);
-            _provider?.ReleaseSceneReferenceAsync(formatPath, sceneName, scene, callback);
-        }
+            => new SceneHandle(cb => _provider?.LoadSceneAsync(scenePath, parameters, cb), ct);
 
         /// <summary>
         /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用

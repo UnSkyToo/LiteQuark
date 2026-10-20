@@ -34,6 +34,7 @@ namespace LiteQuark.Runtime
         private readonly List<Action<bool>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<string, AssetInfoCache> _assetCacheMap = new();
         private readonly List<string> _unloadAssetList = new();
+        private readonly List<SceneInfoCache> _sceneCacheMap = new();
 
         public bool IsUsed => _refCount > 0;
         private int _refCount;
@@ -87,6 +88,13 @@ namespace LiteQuark.Runtime
             _assetCacheMap.Clear();
             _unloadAssetList.Clear();
 
+            foreach (var chunk in _sceneCacheMap)
+            {
+                chunk.Dispose();
+            }
+
+            _sceneCacheMap.Clear();
+
             if (_refCount > 0)
             {
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
@@ -128,6 +136,14 @@ namespace LiteQuark.Runtime
                 }
 
                 _unloadAssetList.Clear();
+            }
+
+            for (var index = _sceneCacheMap.Count - 1; index >= 0; index--)
+            {
+                if (_sceneCacheMap[index].Stage == AssetCacheStage.Unloaded)
+                {
+                    _sceneCacheMap.RemoveAt(index);
+                }
             }
         }
 
@@ -190,6 +206,13 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
+        private SceneInfoCache CreateSceneCache(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        {
+            var cache = new SceneInfoCache(AcquireLease(), sceneName, parameters);
+            _sceneCacheMap.Add(cache);
+            return cache;
+        }
+
         private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
         {
             Bundle = bundle;
@@ -203,44 +226,6 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loaded;
             return true;
-        }
-
-        public void ReleaseSceneReferenceAsync(UnityEngine.SceneManagement.Scene scene, Action callback)
-        {
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                DecRef();
-                LiteUtils.SafeInvoke(callback);
-                return;
-            }
-
-            var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(scene);
-            if (op == null)
-            {
-                LLog.Error("Start scene unload failed : {0}", scene.name);
-                LiteUtils.SafeInvoke(callback);
-                return;
-            }
-
-            LiteRuntime.Task.AddTask(op, () =>
-            {
-                if (Stage == AssetCacheStage.Unloaded)
-                {
-                    LiteUtils.SafeInvoke(callback);
-                    return;
-                }
-
-                if (!scene.IsValid() || !scene.isLoaded)
-                {
-                    DecRef();
-                }
-                else
-                {
-                    LLog.Error("Scene unload did not complete : {0}", scene.handle);
-                }
-
-                LiteUtils.SafeInvoke(callback);
-            });
         }
 
         public void UnloadUnusedAssets()

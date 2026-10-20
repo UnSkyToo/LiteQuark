@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime
 
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
         private readonly List<string> _unloadBundleList = new();
+        private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
 
         public AssetBundleProvider()
         {
@@ -55,6 +56,7 @@ namespace LiteQuark.Runtime
             }
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
+            _loadingSceneSet.Clear();
 
             _bundleLoader?.Dispose();
             _bundleLoader = null;
@@ -120,25 +122,6 @@ namespace LiteQuark.Runtime
         public bool HasAsset(string assetPath)
         {
             return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
-        }
-
-        public void ReleaseSceneReferenceAsync(string scenePath, string sceneName, UnityEngine.SceneManagement.Scene scene, Action callback)
-        {
-            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(scenePath);
-            if (bundleInfo == null)
-            {
-                LiteUtils.SafeInvoke(callback);
-                return;
-            }
-
-            if (_bundleCacheMap.TryGetValue(bundleInfo.BundlePath, out var cache) && cache.IsLoaded)
-            {
-                cache.ReleaseSceneReferenceAsync(scene, callback);
-            }
-            else
-            {
-                LiteUtils.SafeInvoke(callback);
-            }
         }
 
         public void UnloadUnusedAssets(int maxDepth)

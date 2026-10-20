@@ -8,24 +8,20 @@ namespace LiteQuark.Runtime
     /// <summary>
     /// Handle for a loaded scene. Dispose unloads the scene owned by this handle.
     /// </summary>
-    public class SceneHandle : IAssetHandle<bool>
+    public class SceneHandle : IAssetHandle<Scene?>
     {
-        private readonly Action<Scene> _releaseAction;
-        private readonly UniTaskCompletionSource<bool> _tcs = new();
+        private readonly UniTaskCompletionSource<Scene?> _tcs = new();
         private CancellationTokenRegistration _ctr;
+        private SceneInfoCache.Lease _lease;
         private bool _isDisposed;
-        private bool _isLoaded;
-        private Scene _scene;
 
         public bool IsDone { get; private set; }
-        public bool Result => _isLoaded;
-        internal UniTask<bool> Task => _tcs.Task;
+        public Scene? Result => _lease?.Scene;
+        internal UniTask<Scene?> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal SceneHandle(Action<Action<bool, Scene>> invoke, CancellationToken ct, Action<Scene> releaseAction)
+        internal SceneHandle(Action<Action<SceneInfoCache.Lease>> invoke, CancellationToken ct)
         {
-            _releaseAction = releaseAction;
-
             if (ct.IsCancellationRequested)
             {
                 IsDone = true;
@@ -38,30 +34,38 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
             }
 
-            invoke(OnSceneLoaded);
+            invoke(OnCompleted);
         }
 
-        private void OnSceneLoaded(bool success, Scene scene)
+        private void OnCompleted(SceneInfoCache.Lease lease)
         {
             _ctr.Dispose();
-            _scene = scene;
-            success = success && scene.IsValid() && scene.isLoaded;
-            _isLoaded = success;
+            _lease = lease;
             IsDone = true;
 
-            if (!_tcs.TrySetResult(success))
+            if (!_tcs.TrySetResult(_lease?.Scene))
             {
-                if (success)
+                if (_lease != null)
                 {
-                    ReleaseScene();
+                    ReleaseResult();
                 }
             }
         }
 
+        private void ReleaseResult()
+        {
+            _lease?.Dispose();
+            _lease = null;
+        }
+
         public void Dispose()
         {
-            if (_isDisposed) return;
+            if (_isDisposed)
+            {
+                return;
+            }
             _isDisposed = true;
+
             _ctr.Dispose();
 
             if (!IsDone)
@@ -70,16 +74,10 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (_isLoaded)
+            if (_lease != null)
             {
-                ReleaseScene();
+                ReleaseResult();
             }
-        }
-
-        private void ReleaseScene()
-        {
-            _releaseAction?.Invoke(_scene);
-            _isLoaded = false;
         }
     }
 }

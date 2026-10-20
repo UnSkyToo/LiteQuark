@@ -54,7 +54,7 @@ var parameters = new UnityEngine.SceneManagement.LoadSceneParameters(
     UnityEngine.SceneManagement.LoadSceneMode.Additive);
 var sceneHandle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle.unity", parameters);
 await sceneHandle;
-if (!sceneHandle.Result)
+if (sceneHandle.Result == null)
 {
     LLog.Error("Scene load failed");
 }
@@ -62,7 +62,7 @@ if (!sceneHandle.Result)
 sceneHandle.Dispose();
 ```
 
-`SceneHandle.Result` 是成功标记；Handle 内部记录实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同名场景的并发加载会被拒绝。
+`SceneHandle.Result` 为 `Scene?`，加载失败、Handle 已释放或场景已失效时返回 `null`；非空时可通过 `.Value` 取得实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同名场景的并发加载会被拒绝；前一次加载完成后再次以 Additive 加载同一路径，会创建独立实例。通过 Single 模式或外部调用卸载场景后，仍须释放原 Handle 以归还其资源引用。
 
 ```csharp
 var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
