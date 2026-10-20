@@ -7,6 +7,12 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             var cache = GetOrCreateAssetCache(assetPath);
             var requestLease = cache.AcquireLease<T>();
 
@@ -33,6 +39,12 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             var requestLease = AcquireLease();
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);

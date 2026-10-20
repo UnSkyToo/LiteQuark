@@ -13,6 +13,8 @@ namespace LiteQuark.Runtime
         private readonly List<string> _unloadBundleList = new();
         private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
 
+        private bool _isDisposed;
+
         public AssetBundleProvider()
         {
         }
@@ -45,11 +47,18 @@ namespace LiteQuark.Runtime
 
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
+            _isDisposed = false;
             return true;
         }
 
         public void Dispose()
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+            _isDisposed = true;
+
             foreach (var chunk in _bundleCacheMap)
             {
                 LiteUtils.SafeInvoke(chunk.Value.Dispose);

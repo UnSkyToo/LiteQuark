@@ -6,6 +6,12 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
+            if (_isDisposed)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
             if (bundleInfo == null)
             {
@@ -19,6 +25,12 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
+            if (_isDisposed)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             if (!_loadingSceneSet.Add(sceneName))
             {
