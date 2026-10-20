@@ -569,7 +569,6 @@ MonoBehaviour:
         RetryInterval: 1
       DisableUnityWebCache: 0
       EnableRetain: 1
-      AssetRetainTime: 120
       BundleRetainTime: 300
       EditorForceStreamingAssets: 1
       SimulateAsyncDelayInEditor: 1
@@ -627,7 +626,6 @@ MonoBehaviour:
         RetryInterval: 1
       DisableUnityWebCache: 0
       EnableRetain: 1
-      AssetRetainTime: 120
       BundleRetainTime: 300
       EditorForceStreamingAssets: 1
       SimulateAsyncDelayInEditor: 1

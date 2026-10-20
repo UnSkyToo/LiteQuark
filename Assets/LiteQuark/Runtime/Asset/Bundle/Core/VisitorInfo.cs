@@ -40,15 +40,13 @@ namespace LiteQuark.Runtime
         public long MemorySize { get; }
         public int RefCount { get; }
         public string Stage { get; }
-        public float RetainTime { get; }
 
-        public AssetVisitorInfo(string assetPath, long memorySize, int refCount, string stage, float retainTime)
+        public AssetVisitorInfo(string assetPath, long memorySize, int refCount, string stage)
         {
             AssetPath = assetPath;
             MemorySize = memorySize;
             RefCount = refCount;
             Stage = stage;
-            RetainTime = retainTime;
         }
     }
 

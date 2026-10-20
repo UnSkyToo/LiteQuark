@@ -33,7 +33,6 @@ namespace LiteQuark.Runtime
         private readonly AssetBundleProvider _provider;
         private readonly List<Action<bool>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<string, AssetInfoCache> _assetCacheMap = new();
-        private readonly List<string> _unloadAssetList = new();
         private readonly List<SceneInfoCache> _sceneCacheMap = new();
 
         public bool IsUsed => _refCount > 0;
@@ -60,8 +59,6 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                _unloadAssetList.Clear();
-
                 var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
                 _bundleLoaderCallbackList.Clear();
                 foreach (var callback in callbacks)
@@ -86,7 +83,6 @@ namespace LiteQuark.Runtime
             }
 
             _assetCacheMap.Clear();
-            _unloadAssetList.Clear();
 
             foreach (var chunk in _sceneCacheMap)
             {
@@ -117,25 +113,6 @@ namespace LiteQuark.Runtime
             if (Stage == AssetCacheStage.Retained)
             {
                 _retainTime -= deltaTime;
-            }
-
-            foreach (var chunk in _assetCacheMap)
-            {
-                chunk.Value.Tick(deltaTime);
-                if (chunk.Value.IsExpired)
-                {
-                    _unloadAssetList.Add(chunk.Key);
-                }
-            }
-
-            if (_unloadAssetList.Count > 0)
-            {
-                foreach (var assetPath in _unloadAssetList)
-                {
-                    UnloadAssetCache(assetPath);
-                }
-
-                _unloadAssetList.Clear();
             }
 
             for (var index = _sceneCacheMap.Count - 1; index >= 0; index--)
@@ -226,36 +203,6 @@ namespace LiteQuark.Runtime
 
             Stage = AssetCacheStage.Loaded;
             return true;
-        }
-
-        public void UnloadUnusedAssets()
-        {
-            foreach (var chunk in _assetCacheMap)
-            {
-                if (!chunk.Value.IsDispatching && (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsExpired))
-                {
-                    _unloadAssetList.Add(chunk.Key);
-                }
-            }
-
-            if (_unloadAssetList.Count > 0)
-            {
-                foreach (var assetPath in _unloadAssetList)
-                {
-                    UnloadAssetCache(assetPath);
-                }
-
-                _unloadAssetList.Clear();
-            }
-        }
-
-        private void UnloadAssetCache(string assetPath)
-        {
-            if (_assetCacheMap.TryGetValue(assetPath, out var cache))
-            {
-                cache.Unload();
-                _assetCacheMap.Remove(assetPath);
-            }
         }
     }
 }

@@ -133,8 +133,6 @@ namespace LiteQuark.Runtime
 
                 foreach (var chunk in _bundleCacheMap)
                 {
-                    chunk.Value.UnloadUnusedAssets();
-
                     if (!chunk.Value.IsDispatching && (chunk.Value.Stage == AssetCacheStage.Retained || chunk.Value.IsOrphan))
                     {
                         _unloadBundleList.Add(chunk.Key);

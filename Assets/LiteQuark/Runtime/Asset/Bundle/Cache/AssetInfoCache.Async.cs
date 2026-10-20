@@ -2,7 +2,7 @@ using System;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetInfoCache : ITick, IDispose
+    internal sealed partial class AssetInfoCache : IDispose
     {
         public void LoadAssetAsync<T>(Action<Lease<T>> callback) where T : UnityEngine.Object
         {
@@ -15,8 +15,8 @@ namespace LiteQuark.Runtime
             if (IsLoaded)
             {
                 var lease = TryAcquireLease<T>();
-                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, lease != null,
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, lease != null,
                     errorMessage: lease != null ? null : "Asset type mismatch", isCached: true);
                 LiteUtils.SafeInvoke(callback, lease);
                 return;
@@ -32,14 +32,15 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            EnsureBundleLease();
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(_assetPath);
 
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath);
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath);
 
             try
             {
-                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_bundleLease.Bundle, name, HandleAssetLoadCompleted);
+                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
             }
             catch
             {
@@ -59,7 +60,7 @@ namespace LiteQuark.Runtime
 
             var isLoaded = OnAssetLoaded(asset);
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _bundleLease.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
 
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
@@ -75,6 +76,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _dispatchDepth--;
+                TryReleaseBundleLease();
             }
         }
 

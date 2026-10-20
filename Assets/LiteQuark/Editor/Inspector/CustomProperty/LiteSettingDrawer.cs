@@ -53,7 +53,6 @@ namespace LiteQuark.Editor
     //                 {
     //                     using (new EditorGUI.IndentLevelScope())
     //                     {
-    //                         EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetRetainTime"));
     //                         EditorGUILayout.PropertyField(property.FindPropertyRelative("BundleRetainTime"));
     //                     }
     //                 }

@@ -16,8 +16,8 @@
 | `BundleLocater` | `BuiltIn` 优先读取 persistentDataPath/LiteQuark，再回退到 StreamingAssets/LiteQuark；`Remote` 使用远端资源包 |
 | `BundleRemoteUri` | 远程基础地址；运行时拼接小写平台名和版本号前两段（如 `0.4`）目录 |
 | `ConcurrencyLimit` | Bundle 加载并发，默认 5 |
-| `EnableRetain` | 启用保留缓存，默认 true |
-| `AssetRetainTime` / `BundleRetainTime` | 默认 120 / 300 秒 |
+| `EnableRetain` | 启用 Bundle 保留缓存，默认 true |
+| `BundleRetainTime` | Bundle 引用归零后的保留时间，默认 300 秒 |
 
 发布前使用 `Lite > Builder` 生成 Bundle 和版本文件；资源随包发布时放入对应 StreamingAssets。在编辑器中测试 BuiltIn 模式时，`EditorForceStreamingAssets` 默认为 true，会强制从 StreamingAssets 读取。Bundle 初始化会检测依赖环，检测失败或版本文件加载失败时不会完成系统初始化。Resource 模式已移除。
 
@@ -85,7 +85,10 @@ if (!preload.Result)
 - 每个加载请求持有自己的 Handle，重复 `Dispose()` 不会重复释放该 Handle 的引用。
 - `UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 也由调用者保管，在图片不再使用时释放；不要忽略返回值。
 - 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；迟到的加载结果由 Handle 清理。用 `try/finally` 或 `using` 保证退出时释放。
-- Bundle 中无引用资源可进入 Retention 缓存，保留时间由配置控制；仍被引用的资源不会因缓存清理而主动失去所有权。
+- Bundle 模式仅在 Bundle 层计算保留时间。最后一个 Asset Handle 释放后，资源条目在加载和回调派发结束时归还主 Bundle 引用，保留已加载对象的索引；条目和索引随所属 Bundle 卸载一起清除。仍有 Handle 使用的资源会继续持有 Bundle 引用。
+- Bundle 引用归零后进入保留期；期间再次请求已缓存的同类型或兼容类型资源，会重新取得引用并直接交付已有对象，无需再次发起 Asset 加载。关闭 `EnableRetain` 时，零引用 Bundle 在后续清理时回收。保留缓存不会延长已释放 Handle 的所有权，业务仍须用有效 Handle 覆盖资源使用期。
+- 依赖 Bundle 继续由主 Bundle 持有引用，主 Bundle 实际卸载后才归还；依赖引用归零时再开始自己的保留计时。
+- 原 `AssetRetainTime` 配置已移除，只需配置 `BundleRetainTime`。主 Bundle 无其他引用时，不再先等待一段独立的 Asset 保留时间。
 - `UnloadUnusedAssets(maxDepth: 5)` 最多执行指定轮数的缓存清理，以处理依赖释放；它不是精确的依赖图层数限制。实现还调用 Unity 的未使用资源清理和 GC，不宜逐帧执行。
 - 旧的 AssetSystem 回调加载、非 Handle 加载、按路径/对象释放、手动场景卸载接口已移除。实例化改用 `InstantiateHandle`，批量预加载改用 `PreloadAssetHandle<T>`。
 - 原先的 `var result = await handle.Task` 改为 `await handle; var result = handle.Result;`，并保持 Handle 覆盖资源使用期。不要通过 `GetAwaiter().GetResult()` 同步读取尚未完成的加载；将调用链改为异步等待。

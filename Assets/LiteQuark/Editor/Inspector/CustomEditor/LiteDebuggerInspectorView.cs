@@ -127,7 +127,7 @@ namespace LiteQuark.Editor
 
                     foreach (var assetInfo in bundleInfo.AssetVisitors)
                     {
-                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{LiteEditorUtils.GetSizeString(assetInfo.MemorySize)} {assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");
+                        EditorGUILayout.LabelField(assetInfo.AssetPath, $"{LiteEditorUtils.GetSizeString(assetInfo.MemorySize)} {assetInfo.RefCount} {assetInfo.Stage}");
                     }
                 }
             }

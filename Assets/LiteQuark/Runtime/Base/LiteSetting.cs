@@ -98,13 +98,10 @@ namespace LiteQuark.Runtime
             [Tooltip("是否屏蔽Unity Web Cache机制")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public bool DisableUnityWebCache = false;
 
-            [Tooltip("是否开启资源缓存模式，可以在释放资源后进行保留")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
+            [Tooltip("是否开启Bundle保留缓存，引用归零后延迟卸载")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]
             public bool EnableRetain = true;
 
-            [Tooltip("开启缓存后，设定资源保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
-            public float AssetRetainTime = 120; // 2 min
-
-            [Tooltip("开启缓存后，设定Bundle保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
+            [Tooltip("开启缓存后，Bundle引用归零后的保留时间，单位（秒）")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(EnableRetain), true)] [SerializeField]
             public float BundleRetainTime = 300f; // 5 min
 
             [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle), SerializeField]

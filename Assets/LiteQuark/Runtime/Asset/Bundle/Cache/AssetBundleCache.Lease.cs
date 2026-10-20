@@ -25,10 +25,6 @@ namespace LiteQuark.Runtime
         {
             public string BundlePath { get; }
 
-            internal UnityEngine.AssetBundle Bundle => _cache != null
-                ? _cache.Bundle
-                : throw new System.ObjectDisposedException(nameof(Lease));
-
             private AssetBundleCache _cache;
 
             public Lease(AssetBundleCache cache)

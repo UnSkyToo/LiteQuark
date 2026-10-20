@@ -213,11 +213,6 @@ namespace LiteQuark.Editor
 
             if (asset.AssetMode == AssetProviderMode.Bundle && asset.EnableRetain)
             {
-                if (asset.AssetRetainTime <= 0)
-                {
-                    EditorGUILayout.HelpBox("AssetRetainTime should be greater than 0 when Retain is enabled.", MessageType.Warning);
-                }
-
                 if (asset.BundleRetainTime <= 0)
                 {
                     EditorGUILayout.HelpBox("BundleRetainTime should be greater than 0 when Retain is enabled.", MessageType.Warning);
