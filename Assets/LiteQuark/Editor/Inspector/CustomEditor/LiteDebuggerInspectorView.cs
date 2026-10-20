@@ -120,6 +120,11 @@ namespace LiteQuark.Editor
 
                 using (new EditorGUI.IndentLevelScope())
                 {
+                    foreach (var sceneInfo in bundleInfo.SceneVisitors)
+                    {
+                        EditorGUILayout.LabelField(sceneInfo.SceneName);
+                    }
+
                     foreach (var assetInfo in bundleInfo.AssetVisitors)
                     {
                         EditorGUILayout.LabelField(assetInfo.AssetPath, $"{LiteEditorUtils.GetSizeString(assetInfo.MemorySize)} {assetInfo.RefCount} {assetInfo.Stage}({assetInfo.RetainTime:0.0}s)");

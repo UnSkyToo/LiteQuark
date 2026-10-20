@@ -12,6 +12,7 @@ namespace LiteQuark.Runtime
                 _refCount,
                 Stage.ToString(),
                 _retainTime,
+                _sceneCacheMap.Select(chunk => chunk.GetVisitorInfo()).ToArray(),
                 _assetCacheMap.Select(chunk => chunk.Value.GetVisitorInfo()).ToArray());
             return info;
         }
