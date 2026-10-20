@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
 
         public SceneInfoCache(AssetBundleCache.Lease bundleLease, string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
-            Stage = AssetCacheStage.Created;
+            Stage = AssetCacheStage.Idle;
 
             _sceneName = sceneName;
             _parameters = parameters;

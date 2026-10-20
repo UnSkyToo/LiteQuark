@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
 #if UNITY_EDITOR
         internal void LoadSceneForEditor(UnityEngine.SceneManagement.Scene scene, Action<Lease> callback)
         {
-            if (Stage != AssetCacheStage.Created)
+            if (Stage != AssetCacheStage.Idle)
             {
                 return;
             }
@@ -22,7 +22,7 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(Action<Lease> callback)
         {
-            if (Stage != AssetCacheStage.Created)
+            if (Stage != AssetCacheStage.Idle)
             {
                 return;
             }

@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
             }
 
             _bundleLoaderCallbackList.Add(callback);
-            if (Stage != AssetCacheStage.Created)
+            if (Stage != AssetCacheStage.Idle)
             {
                 return;
             }

@@ -7,7 +7,8 @@ namespace LiteQuark.Runtime
     {
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
-        public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
+        public bool IsLoaded => Stage == AssetCacheStage.Loaded;
+        public bool IsRetained => Stage == AssetCacheStage.Loaded && _refCount == 0;
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
         internal long FileSize => _bundleInfo?.Size ?? 0;
@@ -24,7 +25,7 @@ namespace LiteQuark.Runtime
 
         public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
-            Stage = AssetCacheStage.Created;
+            Stage = AssetCacheStage.Idle;
             Bundle = null;
 
             _bundleInfo = bundleInfo;
@@ -59,9 +60,8 @@ namespace LiteQuark.Runtime
 
             return Stage switch
             {
-                AssetCacheStage.Created => true,
-                AssetCacheStage.Retained => ignoreRetainTime || _retainTime <= 0f,
-                AssetCacheStage.Loaded => ignoreRetainTime,
+                AssetCacheStage.Idle => true,
+                AssetCacheStage.Loaded => ignoreRetainTime || _retainTime <= 0f,
                 _ => false
             };
         }
@@ -108,7 +108,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            if (Stage == AssetCacheStage.Retained)
+            if (IsRetained)
             {
                 _retainTime -= deltaTime;
             }
@@ -124,12 +124,7 @@ namespace LiteQuark.Runtime
 
         private void IncRef()
         {
-            if (Stage == AssetCacheStage.Retained)
-            {
-                Stage = AssetCacheStage.Loaded;
-            }
-
-            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
+            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Idle && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Bundle IncRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
                 throw new ObjectDisposedException(nameof(AssetBundleCache));
@@ -151,7 +146,7 @@ namespace LiteQuark.Runtime
 
             if (_refCount <= 0 ||
                 (Stage != AssetCacheStage.Loaded &&
-                 Stage != AssetCacheStage.Created &&
+                 Stage != AssetCacheStage.Idle &&
                  Stage != AssetCacheStage.Loading))
             {
                 LLog.Error("Bundle DecRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
@@ -162,7 +157,6 @@ namespace LiteQuark.Runtime
 
             if (_refCount == 0 && Stage == AssetCacheStage.Loaded)
             {
-                Stage = AssetCacheStage.Retained;
                 _retainTime = LiteRuntime.Setting.Asset.EnableRetain
                     ? LiteRuntime.Setting.Asset.BundleRetainTime
                     : 0f;
@@ -194,7 +188,7 @@ namespace LiteQuark.Runtime
 
             if (bundle == null)
             {
-                Stage = AssetCacheStage.Created;
+                Stage = AssetCacheStage.Idle;
                 LLog.Error("Load bundle failed : {0}", _bundleInfo.BundlePath);
                 return false;
             }

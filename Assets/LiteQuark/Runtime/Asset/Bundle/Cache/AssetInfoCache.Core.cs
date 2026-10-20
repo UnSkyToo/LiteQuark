@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
 
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
-            Stage = AssetCacheStage.Created;
+            Stage = AssetCacheStage.Idle;
             Asset = null;
 
             _assetPath = assetPath;
@@ -66,7 +66,7 @@ namespace LiteQuark.Runtime
 
         private void IncRef()
         {
-            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
+            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Idle && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Asset IncRef error, {0} : {1}", _assetPath, Stage);
                 throw new ObjectDisposedException(nameof(AssetInfoCache));
@@ -78,7 +78,7 @@ namespace LiteQuark.Runtime
 
         private void DecRef()
         {
-            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
+            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Idle && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
                 throw new ObjectDisposedException(nameof(AssetInfoCache));
@@ -103,7 +103,7 @@ namespace LiteQuark.Runtime
             if (asset == null)
             {
                 Asset = null;
-                Stage = AssetCacheStage.Created;
+                Stage = AssetCacheStage.Idle;
                 LLog.Error("Load asset failed : {0}", _assetPath);
                 return false;
             }

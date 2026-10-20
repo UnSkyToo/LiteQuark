@@ -2,10 +2,9 @@ namespace LiteQuark.Runtime
 {
     internal enum AssetCacheStage : int
     {
-        Created,
+        Idle,
         Loading,
         Loaded,
-        Retained,
         Unloading,
         Unloaded,
     }

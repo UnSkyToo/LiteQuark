@@ -38,7 +38,7 @@ namespace LiteQuark.Runtime
                 }
                 LiteUtils.SafeInvoke(callback, lease);
             });
-            if (Stage != AssetCacheStage.Created)
+            if (Stage != AssetCacheStage.Idle)
             {
                 return;
             }
