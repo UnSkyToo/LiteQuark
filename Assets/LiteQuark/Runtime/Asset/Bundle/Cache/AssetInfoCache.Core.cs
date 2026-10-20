@@ -9,8 +9,6 @@ namespace LiteQuark.Runtime
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded;
 
-        internal bool IsDispatching => _dispatchDepth > 0;
-
         private readonly string _assetPath;
         private readonly AssetBundleCache _cache;
         private readonly List<Action<bool>> _assetLoaderCallbackList = new();
@@ -19,7 +17,6 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private BaseTask _loadAssetTask;
-        private int _dispatchDepth;
 
         public AssetInfoCache(AssetBundleCache cache, string assetPath)
         {
@@ -75,56 +72,37 @@ namespace LiteQuark.Runtime
                 throw new ObjectDisposedException(nameof(AssetInfoCache));
             }
 
-            EnsureBundleLease();
+            _mainLease ??= _cache.AcquireLease();
             _refCount++;
         }
 
-        private bool DecRef()
+        private void DecRef()
         {
-            if (Stage != AssetCacheStage.Loaded)
+            if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Asset DecRef error, {0} : {1}", _assetPath, Stage);
-                return false;
+                throw new ObjectDisposedException(nameof(AssetInfoCache));
             }
-
-            _refCount--;
 
             if (_refCount <= 0)
-            {
-                TryReleaseBundleLease();
-            }
-
-            return true;
-        }
-
-        private void EnsureBundleLease()
-        {
-            if (_refCount == 0 && _mainLease == null)
-            {
-                _mainLease = _cache.AcquireLease();
-            }
-        }
-
-        private void TryReleaseBundleLease()
-        {
-            if (_refCount > 0 ||
-                _loadAssetTask != null ||
-                _assetLoaderCallbackList.Count > 0 ||
-                _dispatchDepth > 0 ||
-                Stage == AssetCacheStage.Loading)
             {
                 return;
             }
 
-            var lease = _mainLease;
-            _mainLease = null;
-            lease?.Dispose();
+            _refCount--;
+            if (_refCount == 0)
+            {
+                var lease = _mainLease;
+                _mainLease = null;
+                lease?.Dispose();
+            }
         }
 
         private bool OnAssetLoaded(UnityEngine.Object asset)
         {
             if (asset == null)
             {
+                Asset = null;
                 Stage = AssetCacheStage.Created;
                 LLog.Error("Load asset failed : {0}", _assetPath);
                 return false;

@@ -14,10 +14,7 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync<T>(assetPath, lease =>
-            {
-                LiteUtils.SafeInvoke(callback, lease);
-            });
+            cache.LoadAssetAsync(assetPath, callback);
         }
 
         public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)

@@ -83,9 +83,10 @@ if (!preload.Result)
 ## 释放与迁移
 
 - 每个加载请求持有自己的 Handle，重复 `Dispose()` 不会重复释放该 Handle 的引用。
+- Bundle 模式的 Asset 请求在被接受时取得内部 Lease，覆盖等待 Bundle 和资源加载的阶段；加载成功后将同一份 Asset Lease 转交给 Handle，失败时归还引用。场景请求提前取得的 Bundle Lease 则在 Bundle 加载成功后转交场景条目，按场景生命周期归还。
 - `UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 也由调用者保管，在图片不再使用时释放；不要忽略返回值。
-- 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；迟到的加载结果由 Handle 清理。用 `try/finally` 或 `using` 保证退出时释放。
-- Bundle 模式仅在 Bundle 层计算保留时间。最后一个 Asset Handle 释放后，资源条目在加载和回调派发结束时归还主 Bundle 引用，保留已加载对象的索引；条目和索引随所属 Bundle 卸载一起清除。仍有 Handle 使用的资源会继续持有 Bundle 引用。
+- 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；内部请求引用保留到加载完成通知，再由失败路径或 Handle 对迟到结果的清理归还。用 `try/finally` 或 `using` 保证退出时释放。
+- Bundle 模式仅在 Bundle 层计算保留时间。最后一份 Asset Lease 释放、资源引用归零时，资源条目立即归还主 Bundle 引用，不再等待当前回调派发结束，并保留已加载对象的索引；条目和索引随所属 Bundle 卸载一起清除。仍有未交付请求或有效 Handle 的资源会继续持有 Bundle 引用。回调中释放最后一份引用后调用 `UnloadUnusedAssets()`，可以在该回调返回前回收 Bundle。
 - Bundle 引用归零后进入保留期；期间再次请求已缓存的同类型或兼容类型资源，会重新取得引用并直接交付已有对象，无需再次发起 Asset 加载。关闭 `EnableRetain` 时，零引用 Bundle 在后续清理时回收。保留缓存不会延长已释放 Handle 的所有权，业务仍须用有效 Handle 覆盖资源使用期。
 - 依赖 Bundle 继续由主 Bundle 持有引用，主 Bundle 实际卸载后才归还；依赖引用归零时再开始自己的保留计时。
 - 原 `AssetRetainTime` 配置已移除，只需配置 `BundleRetainTime`。主 Bundle 无其他引用时，不再先等待一段独立的 Asset 保留时间。

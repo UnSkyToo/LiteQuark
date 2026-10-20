@@ -8,23 +8,6 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded || Stage == AssetCacheStage.Retained;
-
-        /// <summary>
-        /// 资源是否过期了
-        /// </summary>
-        internal bool IsExpired => !IsDispatching &&
-            ((Stage == AssetCacheStage.Retained && _retainTime <= 0) ||
-            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0));
-
-        /// <summary>
-        /// 资源是否为孤立资源（被加载了，但没有任何引用）
-        /// </summary>
-        internal bool IsOrphan => !IsDispatching &&
-            ((Stage == AssetCacheStage.Loaded && !IsUsed && _bundleLoaderCallbackList.Count == 0) ||
-            (Stage == AssetCacheStage.Created && !IsUsed && _bundleLoaderCallbackList.Count == 0));
-
-        internal bool IsDispatching => _dispatchDepth > 0;
-
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
         internal string[] DependencyList => _bundleInfo?.DependencyList ?? Array.Empty<string>();
         internal long FileSize => _bundleInfo?.Size ?? 0;
@@ -38,7 +21,6 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
-        private int _dispatchDepth;
 
         public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
@@ -66,6 +48,22 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, false);
                 }
             }
+        }
+
+        internal bool CanUnload(bool ignoreRetainTime)
+        {
+            if (IsUsed)
+            {
+                return false;
+            }
+
+            return Stage switch
+            {
+                AssetCacheStage.Created => true,
+                AssetCacheStage.Retained => ignoreRetainTime || _retainTime <= 0f,
+                AssetCacheStage.Loaded => ignoreRetainTime,
+                _ => false
+            };
         }
 
         public void Unload()
@@ -183,9 +181,9 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
-        private SceneInfoCache CreateSceneCache(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
+        private SceneInfoCache CreateSceneCache(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Lease bundleLease)
         {
-            var cache = new SceneInfoCache(AcquireLease(), sceneName, parameters);
+            var cache = new SceneInfoCache(bundleLease, sceneName, parameters);
             _sceneCacheMap.Add(cache);
             return cache;
         }

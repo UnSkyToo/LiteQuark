@@ -4,27 +4,38 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : IDispose
     {
-        public void LoadAssetAsync<T>(Action<Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Lease<T> lease, Action<Lease<T>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
+                lease.Dispose();
                 LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
             if (IsLoaded)
             {
-                var lease = TryAcquireLease<T>();
+                var success = lease.TryBindAsset(Asset);
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, lease != null,
-                    errorMessage: lease != null ? null : "Asset type mismatch", isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, success,
+                    errorMessage: success ? null : "Asset type mismatch", isCached: true);
+                if (!success)
+                {
+                    lease.Dispose();
+                    lease = null;
+                }
                 LiteUtils.SafeInvoke(callback, lease);
                 return;
             }
 
             _assetLoaderCallbackList.Add(isLoaded =>
             {
-                var lease = isLoaded ? TryAcquireLease<T>() : null;
+                var success = isLoaded && lease.TryBindAsset(Asset);
+                if (!success)
+                {
+                    lease.Dispose();
+                    lease = null;
+                }
                 LiteUtils.SafeInvoke(callback, lease);
             });
             if (Stage != AssetCacheStage.Created)
@@ -32,7 +43,6 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            EnsureBundleLease();
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(_assetPath);
 
@@ -60,38 +70,15 @@ namespace LiteQuark.Runtime
 
             var isLoaded = OnAssetLoaded(asset);
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
-
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
 
-            _dispatchDepth++;
-            try
-            {
-                foreach (var loader in callbacks)
-                {
-                    LiteUtils.SafeInvoke(loader, isLoaded);
-                }
-            }
-            finally
-            {
-                _dispatchDepth--;
-                TryReleaseBundleLease();
-            }
-        }
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
 
-        private Lease<T> TryAcquireLease<T>() where T : UnityEngine.Object
-        {
-            if (IsLoaded && Asset is T asset && asset != null)
+            foreach (var loader in callbacks)
             {
-                return AcquireLease(asset);
+                LiteUtils.SafeInvoke(loader, isLoaded);
             }
-
-            if (Asset != null)
-            {
-                LLog.Error("Asset type mismatch : {0}, expected {1}, actual {2}", _assetPath, typeof(T).Name, Asset.GetType().Name);
-            }
-            return null;
         }
     }
 }

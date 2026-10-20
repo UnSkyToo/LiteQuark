@@ -105,29 +105,43 @@ namespace LiteQuark.Runtime
         internal static void DispatchBegin(AssetLoadEventType targetType, string assetPath, string bundlePath,
             string[] dependencies = null, bool isCached = false)
         {
-            var isRemote = LiteRuntime.Setting?.Asset?.BundleLocater == BundleLocaterMode.Remote;
-            OnLoadEvent?.Invoke(new AssetLoadEventArgs(
-                AssetLoadEventTiming.Begin,
-                targetType,
-                assetPath,
-                bundlePath,
-                dependencies,
-                isCached: isCached,
-                isRemote: isRemote));
+            try
+            {
+                var isRemote = LiteRuntime.Setting?.Asset?.BundleLocater == BundleLocaterMode.Remote;
+                OnLoadEvent?.Invoke(new AssetLoadEventArgs(
+                    AssetLoadEventTiming.Begin,
+                    targetType,
+                    assetPath,
+                    bundlePath,
+                    dependencies,
+                    isCached: isCached,
+                    isRemote: isRemote));
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex);
+            }
         }
 
         internal static void DispatchEnd(AssetLoadEventType targetType, string assetPath, string bundlePath,
             bool isSuccess, long fileSize = 0, string errorMessage = null, bool isCached = false)
         {
-            OnLoadEvent?.Invoke(new AssetLoadEventArgs(
-                AssetLoadEventTiming.End,
-                targetType,
-                assetPath,
-                bundlePath,
-                isSuccess: isSuccess,
-                fileSize: fileSize,
-                errorMessage: errorMessage,
-                isCached: isCached));
+            try
+            {
+                OnLoadEvent?.Invoke(new AssetLoadEventArgs(
+                    AssetLoadEventTiming.End,
+                    targetType,
+                    assetPath,
+                    bundlePath,
+                    isSuccess: isSuccess,
+                    fileSize: fileSize,
+                    errorMessage: errorMessage,
+                    isCached: isCached));
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex);
+            }
         }
 #else
         [Conditional("UNITY_EDITOR")]

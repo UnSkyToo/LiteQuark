@@ -7,6 +7,9 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
+            var cache = GetOrCreateAssetCache(assetPath);
+            var requestLease = cache.AcquireLease<T>();
+
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, assetPath, BundlePath);
 
             LoadBundleAsync(0, bundleIsLoaded =>
@@ -14,12 +17,12 @@ namespace LiteQuark.Runtime
                 if (!bundleIsLoaded)
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, false, errorMessage: "Bundle load failed");
+                    requestLease.Dispose();
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
 
-                var cache = GetOrCreateAssetCache(assetPath);
-                cache.LoadAssetAsync<T>(lease =>
+                cache.LoadAssetAsync(requestLease, lease =>
                 {
                     var assetIsLoaded = lease != null;
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetPath, BundlePath, assetIsLoaded, errorMessage: assetIsLoaded ? null : "Asset load failed");
@@ -30,6 +33,8 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
         {
+            var requestLease = AcquireLease();
+
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
 
             LoadBundleAsync(0, bundleIsLoaded =>
@@ -37,11 +42,12 @@ namespace LiteQuark.Runtime
                 if (!bundleIsLoaded)
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneName, BundlePath, false, errorMessage: "Bundle load failed");
+                    requestLease.Dispose();
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
 
-                var cache = CreateSceneCache(sceneName, parameters);
+                var cache = CreateSceneCache(sceneName, parameters, requestLease);
                 cache.LoadSceneAsync(lease =>
                 {
                     var sceneIsLoaded = lease != null;
@@ -121,22 +127,14 @@ namespace LiteQuark.Runtime
 
             var isLoaded = OnBundleLoaded(bundle);
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
-
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();
 
-            _dispatchDepth++;
-            try
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");
+
+            foreach (var loader in callbacks)
             {
-                foreach (var loader in callbacks)
-                {
-                    LiteUtils.SafeInvoke(loader, isLoaded);
-                }
-            }
-            finally
-            {
-                _dispatchDepth--;
+                LiteUtils.SafeInvoke(loader, isLoaded);
             }
         }
     }
