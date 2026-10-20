@@ -87,8 +87,15 @@ namespace LiteQuark.Runtime
 
         private void CompleteUnload()
         {
-            _bundleLease?.Dispose();
+            if (Stage == AssetCacheStage.Unloaded)
+            {
+                return;
+            }
+
             Stage = AssetCacheStage.Unloaded;
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= OnSceneUnloaded;
+
+            _bundleLease?.Dispose();
         }
 
         private bool OnSceneLoaded(bool success, UnityEngine.SceneManagement.Scene scene)
@@ -102,7 +109,17 @@ namespace LiteQuark.Runtime
 
             _scene = scene;
             Stage = AssetCacheStage.Loaded;
+
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
             return true;
+        }
+
+        private void OnSceneUnloaded(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (scene == _scene)
+            {
+                CompleteUnload();
+            }
         }
     }
 }
