@@ -26,7 +26,7 @@
                 _cache = null;
                 Asset = null;
 
-                if (cache == null || cache.Stage == AssetCacheStage.Unloaded)
+                if (cache == null || (cache.Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded))
                 {
                     return;
                 }

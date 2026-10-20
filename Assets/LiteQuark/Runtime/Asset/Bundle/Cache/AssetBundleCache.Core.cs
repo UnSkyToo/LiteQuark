@@ -53,23 +53,31 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            Unload();
-            _unloadAssetList.Clear();
-
-            var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
-            _bundleLoaderCallbackList.Clear();
-            foreach (var callback in callbacks)
+            try
             {
-                LiteUtils.SafeInvoke(callback, false);
+                Unload();
+            }
+            finally
+            {
+                _unloadAssetList.Clear();
+
+                var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
+                _bundleLoaderCallbackList.Clear();
+                foreach (var callback in callbacks)
+                {
+                    LiteUtils.SafeInvoke(callback, false);
+                }
             }
         }
 
         public void Unload()
         {
-            if (Stage == AssetCacheStage.Unloaded)
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }
+
+            Stage = AssetCacheStage.Unloading;
 
             foreach (var chunk in _assetCacheMap)
             {
@@ -79,7 +87,7 @@ namespace LiteQuark.Runtime
             _assetCacheMap.Clear();
             _unloadAssetList.Clear();
 
-            if (_refCount > 0 && Stage != AssetCacheStage.Retained)
+            if (_refCount > 0)
             {
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
@@ -133,6 +141,7 @@ namespace LiteQuark.Runtime
             if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Bundle IncRef error, {0} : {1}", _bundleInfo.BundlePath, Stage);
+                throw new ObjectDisposedException(nameof(AssetBundleCache));
             }
 
             _refCount++;
@@ -140,6 +149,15 @@ namespace LiteQuark.Runtime
 
         private void DecRef()
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                if (_refCount > 0)
+                {
+                    _refCount--;
+                }
+                return;
+            }
+
             if (_refCount <= 0 ||
                 (Stage != AssetCacheStage.Loaded &&
                  Stage != AssetCacheStage.Created &&

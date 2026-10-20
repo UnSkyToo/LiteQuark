@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
         {
             foreach (var chunk in _bundleCacheMap)
             {
-                chunk.Value.Dispose();
+                LiteUtils.SafeInvoke(chunk.Value.Dispose);
             }
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();

@@ -72,6 +72,12 @@ namespace LiteQuark.Runtime
 
         private void LoadBundleAsync(int priority, Action<bool> callback)
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                LiteUtils.SafeInvoke(callback, false);
+                return;
+            }
+
             if (IsLoaded)
             {
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, BundlePath, DependencyList, isCached: true);
@@ -112,6 +118,15 @@ namespace LiteQuark.Runtime
 
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                if (bundle != null)
+                {
+                    bundle.Unload(true);
+                }
+                return;
+            }
+
             if (!success || bundle == null)
             {
                 if (bundle != null)

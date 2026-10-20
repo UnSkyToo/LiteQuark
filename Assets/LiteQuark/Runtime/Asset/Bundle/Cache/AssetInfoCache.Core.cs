@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
 
         public void Unload()
         {
-            if (Stage == AssetCacheStage.Unloaded)
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }
@@ -63,9 +63,10 @@ namespace LiteQuark.Runtime
                 LLog.Warning("Unload asset leak : {0}({1})", _assetPath, _refCount);
             }
 
+            Stage = AssetCacheStage.Unloading;
             _refCount = 0;
-            Stage = AssetCacheStage.Unloaded;
             _bundleLease.Dispose();
+            Stage = AssetCacheStage.Unloaded;
         }
 
         public void Tick(float deltaTime)
@@ -86,6 +87,7 @@ namespace LiteQuark.Runtime
             if (Stage != AssetCacheStage.Loaded && Stage != AssetCacheStage.Created && Stage != AssetCacheStage.Loading)
             {
                 LLog.Error("Asset IncRef error, {0} : {1}", _assetPath, Stage);
+                throw new ObjectDisposedException(nameof(AssetInfoCache));
             }
 
             _refCount++;

@@ -6,6 +6,12 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(Action<Lease<T>> callback) where T : UnityEngine.Object
         {
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             if (IsLoaded)
             {
                 var lease = TryAcquireLease<T>();
@@ -44,7 +50,7 @@ namespace LiteQuark.Runtime
 
         private void HandleAssetLoadCompleted(UnityEngine.Object asset)
         {
-            if (Stage == AssetCacheStage.Unloaded)
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }
@@ -74,7 +80,7 @@ namespace LiteQuark.Runtime
 
         private Lease<T> TryAcquireLease<T>() where T : UnityEngine.Object
         {
-            if (Asset is T asset && asset != null)
+            if (IsLoaded && Asset is T asset && asset != null)
             {
                 return AcquireLease(asset);
             }

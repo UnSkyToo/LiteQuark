@@ -6,6 +6,7 @@ namespace LiteQuark.Runtime
         Loading,
         Loaded,
         Retained,
+        Unloading,
         Unloaded,
     }
 }
