@@ -64,6 +64,8 @@ sceneHandle.Dispose();
 
 `SceneHandle.Result` 为 `Scene?`，加载失败、Handle 已释放或场景已失效时返回 `null`；非空时可通过 `.Value` 取得实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同名场景的并发加载会被拒绝；前一次加载完成后再次以 Additive 加载同一路径，会创建独立实例。通过 Single 模式或外部调用卸载场景后，框架会监听实际卸载事件，自动结束对应场景条目并归还其 Bundle 引用，`SceneHandle.Result` 返回 `null`。业务仍应在持有者生命周期结束时调用 `Dispose()`；此时不会重复卸载场景或释放资源引用。归还引用不代表共享 Bundle 立即卸载，实际回收仍遵循引用计数和缓存策略。Editor 和 Bundle 模式共用这一场景收尾逻辑。
 
+场景卸载先启动 Unity 的卸载操作，再通过 TaskSystem 的 `AsyncOperation` 便利入口观察完成；该包装任务进入无限额的 Flow 组，不等待默认组空位。Flow 不改变底层卸载的异步完成语义。
+
 ```csharp
 var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
 using var preload = LiteRuntime.Asset.PreloadAssetHandle<Sprite>(paths);

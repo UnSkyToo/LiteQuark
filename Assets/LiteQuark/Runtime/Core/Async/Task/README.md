@@ -20,7 +20,16 @@ if (task.State == TaskState.Cancelled)
 }
 ```
 
-`AddTask` 的便利重载支持 `IEnumerator`、`UnityEngine.AsyncOperation`、`IAsyncResult` 和 `Action<Action<bool>>`；前三种包装还接受完成回调。便利入口的签名保持不变，公开的任务创建入口默认使用默认组和 `Normal` 优先级。需要指定组或优先级时，先构造任务对象，再调用 `AddTask(ITask task, int groupId = DefaultGroupId, TaskPriority priority = TaskPriority.Normal)`。
+`AddTask` 的便利重载支持 `IEnumerator`、`UnityEngine.AsyncOperation`、`IAsyncResult` 和 `Action<Action<bool>>`；前三种包装还接受完成回调。便利入口的签名保持不变，公开便利入口使用 `Normal` 优先级，按以下规则选择组：
+
+| 入口 | 使用的组 | 含义 |
+| --- | --- | --- |
+| `AddTask(AsyncOperation, callback)`、`AddTask(IAsyncResult, callback)` | Flow | 观察已有操作，不等待默认组空位 |
+| `AddMainThreadTask(func, param)` | Flow | 排队派发主线程委托，不等待默认组空位 |
+| `AddTask(IEnumerator, callback)`、`AddTask(Action<Action<bool>>)` | Default | 包装内容可能启动实际工作，不自动视为流程 |
+| `AddInstantiateGoTask(...)`、`AddUnityWebGetRequestTask(...)` | Default | 启动实际实例化或请求操作 |
+
+需要指定组或优先级时，先构造任务对象，再调用 `AddTask(ITask task, int groupId = DefaultGroupId, TaskPriority priority = TaskPriority.Normal)`。通用入口只按传入的组登记，不根据任务类型自动分组；例如自行构造 `AsyncOperationTask` 后通过该入口提交，若不指定组仍进入 Default。
 
 自定义任务一般继承 `BaseTask`，实现 `OnExecute()`、`Dispose()`，按需重写 `OnTick()`，结束时调用 `Complete(result)`。任务是一次性对象：只提交尚未执行的 Pending 任务，不重复提交、跨组重复提交或在外部调用其 `Execute()`。成功提交后，由 TaskSystem 负责最终释放。
 
@@ -34,24 +43,31 @@ if (task.State == TaskState.Cancelled)
 | --- | --- | --- |
 | `ConcurrencyLimit` | 20 | 默认组的并发上限，构造 TaskSystem 时读取并限制为至少 1 |
 
-默认组 ID 为 `TaskSystem.DefaultGroupId`（0）。其他组由调用方注册；有额度组要求正整数，`null` 表示无限额组。组 ID 不可重复，提交到未注册的组会报错；当前不提供运行时更改额度、删除组或任务迁组接口。
+TaskSystem 自动注册 Default 和 Flow 两个组：
+
+| 组 | ID | 额度 |
+| --- | --- | --- |
+| Default | `TaskSystem.DefaultGroupId`（0） | 使用 Launcher 的 Task 设置 |
+| Flow | `TaskSystem.FlowGroupId`（`int.MaxValue`） | `null`，没有数量准入上限 |
+
+两个内置 ID 已被占用，不需要再次注册。其他组由调用方注册；有额度组要求正整数，`null` 表示无限额组。组 ID 不可重复，提交到未注册的组会报错；当前不提供运行时更改额度、删除组或任务迁组接口。
 
 ```csharp
 // 在初始化阶段注册一次；组 ID 由项目统一约定。
 const int workGroupId = 1;
-const int flowGroupId = 2;
 LiteRuntime.Task.RegisterGroup(workGroupId, concurrencyLimit: 2);
-LiteRuntime.Task.RegisterGroup(flowGroupId, concurrencyLimit: null);
 
 var task = new WaitCallbackTask(done => done(true));
 LiteRuntime.Task.AddTask(task, groupId: workGroupId, priority: TaskPriority.High);
 ```
 
-组表示共享额度，不由任务类型自动决定。当前系统只自动注册默认组，尚未将 Asset 等模块划分到独立业务组。组之间不共享额度，但同组父任务占满额度后等待同组子任务，仍可能无法继续。调度器不会识别协程或回调内部的等待关系；调用方应显式安排组归属，例如将仅编排子任务的流程放入无限额组。独立组也不能消除依赖循环。
+组表示共享额度，尚未将 Asset 等模块划分到独立业务组。Flow 中的任务仍统一登记、推进和收尾，也计入系统运行统计，但不消耗 Default 的额度。Flow 不代表立即执行，也不限制每帧 CPU 耗时。
+
+同组父任务占满额度后等待同组子任务，仍可能无法继续。调度器不会识别协程或回调内部的等待关系；仅编排子任务或等待结果的流程，应在构造任务后显式传入 `groupId: TaskSystem.FlowGroupId`。实际启动下载、计算等工作的协程或回调任务，仍应使用有额度的工作组。直接使用 UniTask 或 Handle 的等待流程本来就不占 TaskSystem 额度，无需为分组再包装成 Task。独立组也不能消除依赖循环。
 
 额度统计的是已准入、尚未收尾的逻辑任务。取消任务后，底层 Unity 操作不一定已经停止；包装已有的 `AsyncOperation` / `IAsyncResult` 也不会延迟底层操作启动。因此组额度不等于底层操作的严格物理并发上限。
 
-`RunningTaskCount` / `PendingTaskCount` 是各组运行和排队数量之和，只用于观测，不作为总准入上限。直接 `StartCoroutine()` / `StopCoroutine()` 使用 Launcher 承载协程，不走分组队列。
+`RunningTaskCount` / `PendingTaskCount` 是所有组（包括 Flow）的运行和排队数量之和，只用于观测，不作为总准入上限。直接 `StartCoroutine()` / `StopCoroutine()` 使用 Launcher 承载协程，不走分组队列。
 
 ## 优先级与执行时序
 
@@ -69,7 +85,7 @@ LiteRuntime.Task.PostMainThreadTask(_ => LLog.Info("Main thread"), null);
 
 - `PostMainThreadTask(callback, state)` 投递到初始化时捕获的同步上下文。
 - `SendMainThreadTask(callback, state)` 同步发送，可能阻塞调用线程。
-- `AddMainThreadTask(func, param)` 加入 TaskSystem 队列，与投递接口不同。
+- `AddMainThreadTask(func, param)` 加入 TaskSystem 的 Flow 组，由后续调度执行，与投递接口不同。
 - 不要在后台线程访问 Unity 对象或直接修改任务队列；需要同步时使用上述投递入口。避免主线程等待正在等待主线程的工作。
 
 TaskSystem 由框架在主线程驱动；不递归调用 Tick，不在任务回调中释放 TaskSystem。框架停止调度后调用 Dispose，清理回调不再提交任务。关闭时停止 Launcher 上的协程，并取消、释放全部登记任务。资源加载使用 AssetSystem 的 Handle API，不直接依赖内部加载任务。

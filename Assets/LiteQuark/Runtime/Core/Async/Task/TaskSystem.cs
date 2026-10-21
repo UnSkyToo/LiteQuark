@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
     public sealed class TaskSystem : ISystem, ITick
     {
         public const int DefaultGroupId = 0;
+        public const int FlowGroupId = int.MaxValue;
 
         public int PendingTaskCount
         {
@@ -50,6 +51,8 @@ namespace LiteQuark.Runtime
 
             var defaultLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
             RegisterGroup(DefaultGroupId, defaultLimit);
+
+            RegisterGroup(FlowGroupId, null);
         }
 
         public UniTask<bool> Initialize()
@@ -278,14 +281,14 @@ namespace LiteQuark.Runtime
         public AsyncOperationTask AddTask(UnityEngine.AsyncOperation asyncOperation, Action callback = null)
         {
             var task = new AsyncOperationTask(asyncOperation, callback);
-            AddTask(task);
+            AddTask(task, FlowGroupId);
             return task;
         }
 
         public AsyncResultTask AddTask(IAsyncResult asyncResult, Action callback = null)
         {
             var task = new AsyncResultTask(asyncResult, callback);
-            AddTask(task);
+            AddTask(task, FlowGroupId);
             return task;
         }
 
@@ -299,7 +302,7 @@ namespace LiteQuark.Runtime
         public MainThreadTask AddMainThreadTask(Action<object> func, object param)
         {
             var task = new MainThreadTask(func, param);
-            AddTask(task);
+            AddTask(task, FlowGroupId);
             return task;
         }
 
