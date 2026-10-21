@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         private readonly VersionPackInfo _packInfo;
         private readonly int _concurrencyLimit;
 
-        private readonly Dictionary<string, PendingTask> _pendingTaskMap;
+        private readonly Dictionary<string, PendingTask> _taskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
 
@@ -20,14 +20,14 @@ namespace LiteQuark.Runtime
             _packInfo = packInfo ?? throw new ArgumentNullException(nameof(packInfo));
             _concurrencyLimit = Mathf.Max(1, concurrencyLimit);
 
-            _pendingTaskMap = new Dictionary<string, PendingTask>();
-            _pendingTaskQueue = new PriorityQueue<PendingTask>(static (x, y) => x.Priority.CompareTo(y.Priority));
+            _taskMap = new Dictionary<string, PendingTask>();
+            _pendingTaskQueue = new PriorityQueue<PendingTask>(static (x, y) => ((int)x.Priority).CompareTo((int)y.Priority));
             _runningTasks = new List<RunningTask>();
         }
 
         public void Dispose()
         {
-            _pendingTaskMap.Clear();
+            _taskMap.Clear();
             _pendingTaskQueue.Clear();
 
             foreach (var task in _runningTasks)
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             _runningTasks.Clear();
         }
 
-        public void LoadBundle(BundleInfo bundleInfo, int priority, Action<AssetBundle> callback)
+        public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetBundle> callback)
         {
             var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
 
@@ -47,18 +47,47 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (_pendingTaskMap.TryGetValue(bundlePath, out var waitTask))
+            if (_taskMap.TryGetValue(bundlePath, out var task))
             {
-                waitTask.Priority = Mathf.Max(waitTask.Priority, priority);
-                waitTask.CallbackList.Add(callback);
-                _pendingTaskQueue.UpdatePriority(waitTask);
+                task.CallbackList.Add(callback);
+                RaisePendingPriority(task, priority);
+                return;
             }
-            else
+
+            task = new PendingTask(bundlePath, bundleInfo.Hash, priority, callback);
+            _taskMap.Add(bundlePath, task);
+            _pendingTaskQueue.Enqueue(task);
+        }
+
+        public void RaiseBundlePriority(BundleInfo bundleInfo, AssetLoadPriority priority)
+        {
+            var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
+
+            if (string.IsNullOrEmpty(bundlePath))
             {
-                waitTask = new PendingTask(bundlePath, bundleInfo.Hash, priority, callback);
-                _pendingTaskMap.Add(bundlePath, waitTask);
-                _pendingTaskQueue.Enqueue(waitTask);
+                return;
             }
+
+            if (_taskMap.TryGetValue(bundlePath, out var task))
+            {
+                RaisePendingPriority(task, priority);
+            }
+        }
+
+        private void RaisePendingPriority(PendingTask task, AssetLoadPriority priority)
+        {
+            if (priority <= task.Priority)
+            {
+                return;
+            }
+
+            if (!_pendingTaskQueue.Contains(task))
+            {
+                return;
+            }
+
+            task.Priority = priority;
+            _pendingTaskQueue.UpdatePriority(task);
         }
 
         public void Tick(float deltaTime)
@@ -71,7 +100,7 @@ namespace LiteQuark.Runtime
                     _runningTasks.RemoveAt(i);
 
                     var bundle = runningTask.LoadTask.GetBundle();
-                    if (_pendingTaskMap.Remove(runningTask.Path, out var pendingTask))
+                    if (_taskMap.Remove(runningTask.Path, out var pendingTask))
                     {
                         foreach (var callback in pendingTask.CallbackList)
                         {
@@ -104,7 +133,7 @@ namespace LiteQuark.Runtime
 
         private void FailPendingTask(string bundlePath)
         {
-            if (!_pendingTaskMap.Remove(bundlePath, out var pendingTask))
+            if (!_taskMap.Remove(bundlePath, out var pendingTask))
             {
                 return;
             }
@@ -119,10 +148,10 @@ namespace LiteQuark.Runtime
         {
             public string Path { get; }
             public string Hash { get; }
-            public int Priority { get; set; }
+            public AssetLoadPriority Priority { get; set; }
             public List<Action<AssetBundle>> CallbackList { get; set; }
 
-            public PendingTask(string path, string hash, int priority, Action<AssetBundle> callback)
+            public PendingTask(string path, string hash, AssetLoadPriority priority, Action<AssetBundle> callback)
             {
                 Path = path;
                 Hash = hash;

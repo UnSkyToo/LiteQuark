@@ -37,6 +37,8 @@ if (task.State == TaskState.Cancelled)
 
 通过 `RunningTaskCount` / `PendingTaskCount` 查看调度数量。直接 `StartCoroutine()` / `StopCoroutine()` 使用 Launcher 承载协程，不走该队列。
 
+Asset 模块的 `AssetLoadPriority` 用于 Bundle Loader 自己的稳定优先队列，与这里的 `TaskPriority` 独立。Bundle Loader 限制自身并发，并将提交的 Bundle Task 设为 `Urgent`；这些任务绕过 TaskSystem 准入上限，但仍计入 `RunningTaskCount`。Bundle 就绪后的 Asset/Scene 加载任务仍按普通任务调度，因此 Asset 请求提权不保证整条加载链优先，也不会改变全局并发策略。详见 [资源加载优先级](../../../Asset/README.md#加载优先级)。
+
 ## 主线程
 
 ```csharp

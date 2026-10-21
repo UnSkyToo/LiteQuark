@@ -70,7 +70,7 @@ namespace LiteQuark.Runtime
             return AssetDatabase.GetMainAssetTypeAtPath(fullPath) != null;
         }
 
-        public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             SimulateAsync(callback, LoadAssetSync<T>(assetPath));
         }
@@ -87,7 +87,7 @@ namespace LiteQuark.Runtime
             return AssetInfoCache.Lease<T>.CreateUncached(asset);
         }
 
-        public void LoadSceneAsync(string scenePath, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
+        public void LoadSceneAsync(string scenePath, LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
         {
             var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
             if (!_loadingSceneSet.Add(sceneName))

@@ -176,9 +176,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal void LoadBundle(BundleInfo bundleInfo, int priority, Action<UnityEngine.AssetBundle> callback)
+        internal void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<UnityEngine.AssetBundle> callback)
         {
             _bundleLoader.LoadBundle(bundleInfo, priority, callback);
+        }
+
+        internal void RaiseBundlePriority(BundleInfo bundleInfo, AssetLoadPriority priority)
+        {
+            _bundleLoader.RaiseBundlePriority(bundleInfo, priority);
         }
 
         private IBundleLocater CreateLocater()

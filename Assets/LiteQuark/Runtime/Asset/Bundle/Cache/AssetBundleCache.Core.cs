@@ -22,6 +22,7 @@ namespace LiteQuark.Runtime
         public bool IsUsed => _refCount > 0;
         private int _refCount;
         private float _retainTime;
+        private AssetLoadPriority _loadPriority;
 
         public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
         {
@@ -180,6 +181,25 @@ namespace LiteQuark.Runtime
             var cache = new SceneInfoCache(bundleLease, sceneName, parameters);
             _sceneCacheMap.Add(cache);
             return cache;
+        }
+
+        private void RaiseLoadPriority(AssetLoadPriority priority)
+        {
+            if (Stage != AssetCacheStage.Loading || priority <= _loadPriority)
+            {
+                return;
+            }
+
+            _loadPriority = priority;
+            _provider.RaiseBundlePriority(_bundleInfo, priority);
+
+            foreach (var dependency in DependencyList)
+            {
+                if (_provider.TryGetBundleCache(dependency, out var dependencyCache))
+                {
+                    dependencyCache.RaiseLoadPriority(priority);
+                }
+            }
         }
 
         private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)

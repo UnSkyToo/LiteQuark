@@ -69,13 +69,13 @@ namespace LiteQuark.Runtime
             return _provider?.HasAsset(formatPath) ?? false;
         }
 
-        public AssetHandle<T> LoadAssetHandle<T>(string assetPath, CancellationToken ct = default) where T : UnityEngine.Object
+        public AssetHandle<T> LoadAssetHandle<T>(string assetPath, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
         {
             var formatPath = FormatPath(assetPath);
-            return new AssetHandle<T>(cb => _provider?.LoadAssetAsync(formatPath, cb), ct);
+            return new AssetHandle<T>(cb => _provider?.LoadAssetAsync(formatPath, priority, cb), ct);
         }
 
-        public PreloadHandle<T> PreloadAssetHandle<T>(IEnumerable<string> assetPaths, CancellationToken ct = default) where T : UnityEngine.Object
+        public PreloadHandle<T> PreloadAssetHandle<T>(IEnumerable<string> assetPaths, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
         {
             if (assetPaths == null)
             {
@@ -84,6 +84,7 @@ namespace LiteQuark.Runtime
 
             var formatPaths = new List<string>();
             var pathSet = new HashSet<string>();
+
             foreach (var assetPath in assetPaths)
             {
                 var formatPath = FormatPath(assetPath);
@@ -93,19 +94,19 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            return new PreloadHandle<T>(formatPaths, LoadAssetHandle<T>, ct);
+            return new PreloadHandle<T>(formatPaths, (path, token) => LoadAssetHandle<T>(path, priority, token), ct);
         }
 
-        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, CancellationToken ct = default)
-            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
+        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
+            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, priority, ct),
                 asset => UnityEngine.Object.Instantiate(asset, parent), ct);
 
-        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, CancellationToken ct = default)
-            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, ct),
+        public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, UnityEngine.Vector3 position, UnityEngine.Quaternion rotation, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
+            => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, priority, ct),
                 asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
-        public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, CancellationToken ct = default)
-            => new SceneHandle(cb => _provider?.LoadSceneAsync(scenePath, parameters, cb), ct);
+        public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
+            => new SceneHandle(cb => _provider?.LoadSceneAsync(scenePath, parameters, priority, cb), ct);
 
         /// <summary>
         /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用

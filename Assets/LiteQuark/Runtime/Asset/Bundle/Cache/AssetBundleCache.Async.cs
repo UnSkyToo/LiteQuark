@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
@@ -18,7 +18,7 @@ namespace LiteQuark.Runtime
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, assetPath, BundlePath);
 
-            LoadBundleAsync(0, bundleIsLoaded =>
+            LoadBundleAsync(priority, bundleIsLoaded =>
             {
                 if (!bundleIsLoaded)
                 {
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
+        public void LoadSceneAsync(string sceneName, LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneName, BundlePath);
 
-            LoadBundleAsync(0, bundleIsLoaded =>
+            LoadBundleAsync(priority, bundleIsLoaded =>
             {
                 if (!bundleIsLoaded)
                 {
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        private void LoadBundleAsync(int priority, Action<bool> callback)
+        private void LoadBundleAsync(AssetLoadPriority priority, Action<bool> callback)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
@@ -87,17 +87,21 @@ namespace LiteQuark.Runtime
             }
 
             _bundleLoaderCallbackList.Add(callback);
-            if (Stage != AssetCacheStage.Idle)
+
+            if (Stage == AssetCacheStage.Loading)
             {
+                RaiseLoadPriority(priority);
                 return;
             }
 
+            _loadPriority = priority;
             Stage = AssetCacheStage.Loading;
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, BundlePath, DependencyList);
 
-            var dependencies = _bundleInfo.DependencyList ?? Array.Empty<string>();
+            var dependencies = DependencyList;
             var acg = new AsyncCompletionGroup<UnityEngine.AssetBundle>(dependencies.Length + 1, HandleBundleLoadCompleted);
+
             foreach (var dependency in dependencies)
             {
                 var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
@@ -109,10 +113,10 @@ namespace LiteQuark.Runtime
                 }
 
                 _dependencyLeases.Add(dependencyCache.AcquireLease());
-                dependencyCache.LoadBundleAsync(priority, acg.SignalSub);
+                dependencyCache.LoadBundleAsync(_loadPriority, acg.SignalSub);
             }
 
-            _provider.LoadBundle(_bundleInfo, priority, acg.SignalMain);
+            _provider.LoadBundle(_bundleInfo, _loadPriority, acg.SignalMain);
         }
 
         private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle)

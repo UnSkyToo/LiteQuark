@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        public void LoadAssetAsync<T>(string assetPath, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetPath, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             if (_isDisposed)
             {
@@ -20,10 +20,10 @@ namespace LiteQuark.Runtime
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync(assetPath, callback);
+            cache.LoadAssetAsync(assetPath, priority, callback);
         }
 
-        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<SceneInfoCache.Lease> callback)
+        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
         {
             if (_isDisposed)
             {
@@ -52,7 +52,7 @@ namespace LiteQuark.Runtime
                 }
 
                 var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-                cache.LoadSceneAsync(sceneName, parameters, lease =>
+                cache.LoadSceneAsync(sceneName, parameters, priority, lease =>
                 {
                     _loadingSceneSet.Remove(sceneName);
                     LiteUtils.SafeInvoke(callback, lease);

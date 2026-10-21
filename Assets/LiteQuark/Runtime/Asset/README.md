@@ -80,6 +80,31 @@ if (!preload.Result)
 
 预加载会对规范化后的路径去重，提供 `TotalCount`、`LoadedCount`、`FailedCount` 和 `FailedPaths`。它持有批量资源引用，不直接提供资源对象；释放它会释放内部 Handle。
 
+## 加载优先级
+
+`LoadAssetHandle`、`PreloadAssetHandle`、两个 `InstantiateHandle` 重载和 `LoadSceneHandle` 均接受 `priority` 参数，类型为 [AssetLoadPriority](AssetLoadPriority.cs)：`Low`、`Normal`、`High`，默认均为 `Normal`。参数位于可选的 `ct` 之前，建议使用命名参数：
+
+```csharp
+// 后台预加载。业务持有该 Handle，直到不再需要这批资源。
+var preload = LiteRuntime.Asset.PreloadAssetHandle<GameObject>(
+    backgroundPaths, priority: AssetLoadPriority.Low, ct: cancellationToken);
+
+// 玩家当前需要的界面。实例化入口将优先级传给内部 prefab 加载。
+var window = LiteRuntime.Asset.InstantiateHandle(
+    "UI/Inventory.prefab", parent: uiRoot,
+    priority: AssetLoadPriority.High, ct: cancellationToken);
+```
+
+`backgroundPaths`、`uiRoot` 和 `cancellationToken` 由调用方提供；两个 Handle 仍须在使用结束后 `Dispose()`。预加载将同一优先级传给每个子请求，不固定为低优先级。
+
+- 优先级只决定 Bundle Loader 尚未提交到底层 TaskSystem 的任务顺序。优先级高的先出队；同级按首次入队顺序执行，提权保留原入队序号。已提交的加载不抢占、不重启，也不因提权突破 Asset 设置的 `ConcurrencyLimit`。
+- 请求优先级传给主 Bundle 及全部依赖。共享加载在本轮收到更高优先级请求时会向尚未就绪的依赖传播提权，即使主 Bundle 自身已启动或物理加载已完成。依赖不额外提高一级；读取 Asset 或加载 Scene 前仍等待全部必要 Bundle 成功。
+- 本轮有效优先级只升不降。后来的低优先级请求，以及高优先级 Handle 的取消或释放，都不会降低本轮优先级。加载失败后重试会以新请求重新初始化优先级；取消和迟到结果的所有权规则不变。
+- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。Bundle 就绪后的 Asset/Scene 任务仍受现有 TaskSystem 调度与全局名额影响；`AssetLoadPriority` 不等同于 `TaskPriority`，不会获得忽略上限的权限。持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。
+- Editor 直读模式接受该参数，但不模拟 Bundle 优先级队列。验证调度顺序时使用 Bundle 模式，并观察 Loader 实际提交任务的时机；Profiler 的 Bundle Begin 事件表示 Cache 接受加载，不能用来判断实际开始顺序。
+
+资源加载 Profiler 事件只用于编辑器观测，订阅者不得在事件中发起加载、释放或修改资源生命周期。
+
 ## 释放与迁移
 
 - 每个加载请求持有自己的 Handle，重复 `Dispose()` 不会重复释放该 Handle 的引用。
@@ -93,6 +118,7 @@ if (!preload.Result)
 - `UnloadUnusedAssets(maxDepth: 5)` 最多执行指定轮数的缓存清理，以处理依赖释放；它不是精确的依赖图层数限制。实现还调用 Unity 的未使用资源清理和 GC，不宜逐帧执行。
 - 旧的 AssetSystem 回调加载、非 Handle 加载、按路径/对象释放、手动场景卸载接口已移除。实例化改用 `InstantiateHandle`，批量预加载改用 `PreloadAssetHandle<T>`。
 - 原先的 `var result = await handle.Task` 改为 `await handle; var result = handle.Result;`，并保持 Handle 覆盖资源使用期。不要通过 `GetAwaiter().GetResult()` 同步读取尚未完成的加载；将调用链改为异步等待。
+- 加入优先级参数后，原有按位置传入取消令牌的调用（如 `LoadAssetHandle<T>(path, token)`）应改为 `LoadAssetHandle<T>(path, ct: token)`，或显式传入 `priority` 后再传 `ct`。预加载、实例化和场景加载入口同样适用。
 
 战斗模块在 `LiteNexusDataManager.Startup()` 中等待配置加载，再读取数据库；运行时同步访问 `LiteNexusConfig.Instance` 前必须完成该初始化，初始化失败或关闭数据管理器时释放配置 Handle。编辑器工具仍使用 AssetDatabase 访问配置。
 

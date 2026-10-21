@@ -94,8 +94,9 @@ namespace LiteQuark.Runtime
 #endif
 
     /// <summary>
-    /// 资源加载事件分发器
-    /// 非 Editor 构建中，所有方法调用会被编译器完全剔除
+    /// 仅供 Editor 资源加载 Profiler 使用的内部观测入口。<br/>
+    /// 订阅者只记录分析数据，不得发起资源加载、释放或修改资源生命周期。<br/>
+    /// 非业务扩展点；非 Editor 构建中调用被编译器剔除。
     /// </summary>
     internal static class AssetLoadEventDispatcher
     {
