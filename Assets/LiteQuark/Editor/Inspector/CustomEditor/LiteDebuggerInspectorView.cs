@@ -133,17 +133,31 @@ namespace LiteQuark.Editor
             }
         }
 
+        private readonly List<ITask> _taskBuffer = new();
         private void DrawTask()
         {
-            var taskList = LiteRuntime.Task?.GetTaskList();
-            if (taskList == null)
+            var system = LiteRuntime.Task;
+            if (system == null)
             {
+                _taskBuffer.Clear();
                 EditorGUILayout.LabelField("Empty");
+                return;
             }
-            else
+
+            system.CopyTasksTo(_taskBuffer);
+
+            try
             {
-                EditorGUILayout.LabelField($"Running: {LiteRuntime.Task.RunningTaskCount}/{LiteRuntime.Task.ConcurrencyLimit} | Pending: {LiteRuntime.Task.PendingTaskCount}");
-                taskList.Foreach(DrawOneTask, EditorGUI.indentLevel);
+                EditorGUILayout.LabelField($"Running: {system.RunningTaskCount} | Pending: {system.PendingTaskCount}");
+
+                for (var i = 0; i < _taskBuffer.Count; i++)
+                {
+                    DrawOneTask(_taskBuffer[i], EditorGUI.indentLevel);
+                }
+            }
+            finally
+            {
+                _taskBuffer.Clear();
             }
         }
 

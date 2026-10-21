@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
@@ -8,29 +9,51 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class TaskSystem : ISystem, ITick
     {
-        public int RunningTaskCount { get; private set; } = 0;
-        public int PendingTaskCount { get; private set; } = 0;
+        public const int DefaultGroupId = 0;
+
+        public int PendingTaskCount
+        {
+            get
+            {
+                var count = 0;
+                for (var i = 0; i < _groups.Count; i++)
+                {
+                    count += _groups[i].PendingTaskCount;
+                }
+                return count;
+            }
+        }
+
+        public int RunningTaskCount
+        {
+            get
+            {
+                var count = 0;
+                for (var i = 0; i < _groups.Count; i++)
+                {
+                    count += _groups[i].RunningTaskCount;
+                }
+                return count;
+            }
+        }
 
         private readonly UnityEngine.MonoBehaviour _monoBehaviourInstance = null;
         private readonly SynchronizationContext _mainThreadSynchronizationContext = null;
-        private readonly Action<ITask, SafeList<ITask>, float> _onTickDelegate = null;
-        private readonly SafeList<ITask> _taskList = new();
-        private readonly int _concurrencyLimit = 20;
-        private readonly TaskPriority _ignoreLimitPriority = TaskPriority.High;
+
+        private readonly List<TaskGroup> _groups = new();
+        private readonly List<TaskRecord> _records = new();
 
         public TaskSystem()
         {
             _monoBehaviourInstance = LiteRuntime.Instance.Launcher;
             _mainThreadSynchronizationContext = SynchronizationContext.Current;
-            _onTickDelegate = OnTaskTick;
-            _concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
-            _ignoreLimitPriority = LiteRuntime.Setting.Task.IgnoreLimitPriority;
+
+            var defaultLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
+            RegisterGroup(DefaultGroupId, defaultLimit);
         }
 
         public UniTask<bool> Initialize()
         {
-            RunningTaskCount = 0;
-            PendingTaskCount = 0;
             return UniTask.FromResult(true);
         }
 
@@ -38,82 +61,138 @@ namespace LiteQuark.Runtime
         {
             _monoBehaviourInstance?.StopAllCoroutines();
 
-            _taskList.Foreach(static task =>
+            var count = _records.Count;
+            for (var i = 0; i < count; i++)
             {
-                task.Cancel();
-                task.Dispose();
-            });
-            _taskList.Clear();
+                Retire(_records[i], cancel: true);
+            }
 
-            RunningTaskCount = 0;
-            PendingTaskCount = 0;
+            _records.Clear();
+            _groups.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            _taskList.Foreach(_onTickDelegate, _taskList, deltaTime);
-        }
+            var recordCount = _records.Count;
+            var groupCount = _groups.Count;
 
-        private void OnTaskTick(ITask task, SafeList<ITask> list, float dt)
-        {
-            if (task.State == TaskState.Pending)
+            try
             {
-                if (RunningTaskCount < _concurrencyLimit || task.Priority >= _ignoreLimitPriority)
+                for (var i = 0; i < recordCount; i++)
                 {
-                    RunningTaskCount++;
-                    PendingTaskCount--;
-
-                    try
-                    {
-                        task.Execute();
-                    }
-                    catch (Exception ex)
-                    {
-                        LLog.Error("Task {0} execute failed: {1}", task.GetType().Name, ex);
-                        task.Cancel();
-                    }
+                    TickRecord(_records[i], deltaTime);
                 }
-                else
+
+                for (var i = 0; i < groupCount; i++)
                 {
-                    return;
+                    var group = _groups[i];
+                    var remaining = group.PendingTaskCount;
+
+                    while (remaining > 0 && group.TryAdmit(out var record))
+                    {
+                        remaining--;
+                        StartRecord(record);
+                    }
                 }
             }
+            finally
+            {
+                _records.RemoveAll(static record => record.Phase == TaskSchedulePhase.Retired);
+            }
+        }
 
-            if (task.State == TaskState.InProgress)
+        private void TickRecord(TaskRecord record, float deltaTime)
+        {
+            if (record.Phase == TaskSchedulePhase.Retired)
+            {
+                return;
+            }
+
+            try
+            {
+                if (record.Phase == TaskSchedulePhase.Running && !record.Task.IsDone)
+                {
+                    record.Task.Tick(deltaTime);
+                }
+
+                if (record.Task.IsDone)
+                {
+                    Retire(record, cancel: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Task {0} tick failed", record.Task.GetType().Name);
+                Retire(record, cancel: true);
+            }
+        }
+
+        private void StartRecord(TaskRecord record)
+        {
+            try
+            {
+                if (!record.Task.IsDone)
+                {
+                    record.Task.Execute();
+                }
+
+                if (record.Task.IsDone)
+                {
+                    Retire(record, cancel: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Task {0} execute failed", record.Task.GetType().Name);
+                Retire(record, cancel: true);
+            }
+        }
+
+        private void Retire(TaskRecord record, bool cancel)
+        {
+            if (record.Phase == TaskSchedulePhase.Retired)
+            {
+                return;
+            }
+
+            record.Group.Detach(record);
+
+            if (cancel)
             {
                 try
                 {
-                    task.Tick(dt);
+                    record.Task.Cancel();
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    LLog.Error("Task {0} tick failed: {1}", task.GetType().Name, ex);
-                    task.Cancel();
+                    LLog.Exception(ex, "Task {0} cancel failed", record.Task.GetType().Name);
                 }
             }
 
-            if (task.IsDone)
+            try
             {
-                task.Dispose();
-                list.Remove(task);
-
-                if (task.IsExecuted)
-                {
-                    RunningTaskCount = Math.Max(0, RunningTaskCount - 1);
-                }
-                else
-                {
-                    PendingTaskCount = Math.Max(0, PendingTaskCount - 1);
-                }
+                record.Task.Dispose();
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Task {0} dispose failed", record.Task.GetType().Name);
             }
         }
 
-        internal SafeList<ITask> GetTaskList()
+        internal void CopyTasksTo(List<ITask> destination)
         {
-            return _taskList;
-        }
+            destination.Clear();
 
-        internal int ConcurrencyLimit => _concurrencyLimit;
+            for (var i = 0; i < _records.Count; i++)
+            {
+                var record = _records[i];
+
+                if (record.Phase != TaskSchedulePhase.Retired)
+                {
+                    destination.Add(record.Task);
+                }
+            }
+        }
 
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
         {
@@ -125,10 +204,68 @@ namespace LiteQuark.Runtime
             _monoBehaviourInstance?.StopCoroutine(routine);
         }
 
-        public void AddTask(ITask task)
+        public void RegisterGroup(int groupId, int? concurrencyLimit)
         {
-            _taskList.Add(task);
-            PendingTaskCount++;
+            if (FindGroup(groupId) != null)
+            {
+                throw new ArgumentException($"Task group {groupId} already exists.", nameof(groupId));
+            }
+
+            _groups.Add(new TaskGroup(groupId, concurrencyLimit));
+        }
+
+        private TaskGroup FindGroup(int groupId)
+        {
+            foreach (var group in _groups)
+            {
+                if (group.Id == groupId)
+                {
+                    return group;
+                }
+            }
+
+            return null;
+        }
+
+        private bool ContainsTask(ITask task)
+        {
+            foreach (var record in _records)
+            {
+                if (ReferenceEquals(record.Task, task))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void AddTask(ITask task, int groupId = DefaultGroupId)
+        {
+            if (task == null)
+            {
+                throw new ArgumentNullException(nameof(task));
+            }
+
+            var group = FindGroup(groupId);
+            if (group == null)
+            {
+                throw new ArgumentException($"Task group {groupId} does not exist.", nameof(groupId));
+            }
+
+            if (ContainsTask(task))
+            {
+                throw new InvalidOperationException("Task is already registered.");
+            }
+
+            if (task.State != TaskState.Pending || task.IsExecuted || task.IsDone)
+            {
+                throw new InvalidOperationException("Only a new pending task can be submitted.");
+            }
+
+            var record = new TaskRecord(task, group);
+            _records.Add(record);
+            group.Enqueue(record);
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)
