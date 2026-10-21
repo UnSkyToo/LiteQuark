@@ -232,41 +232,86 @@ namespace LiteQuark.Runtime
             }
         }
 
-        // GC Alloc 40B
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        public Enumerator GetEnumerator()
         {
-            Flush();
-            _inEach++;
-            try
-            {
-                for (var index = 0; index < _values.Count; ++index)
-                {
-                    yield return _values[index];
-                }
-            }
-            finally
-            {
-                _inEach--;
-                Flush();
-            }
+            return new Enumerator(this);
         }
 
-        // GC Alloc 40B
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
-            Flush();
-            _inEach++;
-            try
+            return GetEnumerator();
+        }
+
+        /// <summary>
+        /// 优先通过 foreach 使用。<br/>
+        /// 手动使用时必须 Dispose，且禁止复制已启动的枚举器。
+        /// </summary>
+        public struct Enumerator : IEnumerator<T>
+        {
+            public T Current { get; private set; }
+
+            object IEnumerator.Current => Current;
+
+            private SafeList<T> _owner;
+            private int _index;
+            private bool _started;
+
+            internal Enumerator(SafeList<T> owner)
             {
-                for (var index = 0; index < _values.Count; ++index)
+                _owner = owner;
+                _index = 0;
+                _started = false;
+                Current = default;
+            }
+
+            public bool MoveNext()
+            {
+                if (_owner == null)
                 {
-                    yield return _values[index];
+                    return false;
+                }
+
+                if (!_started)
+                {
+                    _owner.Flush();
+                    _owner._inEach++;
+                    _started = true;
+                }
+
+                if (_index < _owner._values.Count)
+                {
+                    Current = _owner._values[_index++];
+                    return true;
+                }
+
+                Dispose();
+                return false;
+            }
+
+            public void Dispose()
+            {
+                var owner = _owner;
+                var started = _started;
+
+                _owner = null;
+                _started = false;
+                Current = default;
+
+                if (started)
+                {
+                    owner._inEach--;
+                    owner.Flush();
                 }
             }
-            finally
+
+            void IEnumerator.Reset()
             {
-                _inEach--;
-                Flush();
+                throw new NotSupportedException();
             }
         }
     }

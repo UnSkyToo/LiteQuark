@@ -1,17 +1,13 @@
-using System;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
     public sealed class EffectSystem : ISystem, ITick
     {
-        private readonly Action<EffectObject, SafeList<EffectObject>, float> _onTickDelegate = null;
         private readonly SafeList<EffectObject> _effectList = new();
 
         public EffectSystem()
         {
-            _effectList.Clear();
-            _onTickDelegate = OnEffectTick;
         }
 
         public UniTask<bool> Initialize()
@@ -21,31 +17,40 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _effectList.Foreach(effect => effect.Dispose());
+            foreach (var effect in _effectList)
+            {
+                effect.Dispose();
+            }
             _effectList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            _effectList.Foreach(_onTickDelegate, _effectList, deltaTime);
-        }
-
-        private void OnEffectTick(EffectObject effect, SafeList<EffectObject> list, float dt)
-        {
-            if (effect.IsDone)
+            foreach (var effect in _effectList)
             {
-                effect.Dispose();
-                list.Remove(effect);
-            }
-            else
-            {
-                effect.Tick(dt);
+                if (effect.IsDone)
+                {
+                    effect.Dispose();
+                    _effectList.Remove(effect);
+                }
+                else
+                {
+                    effect.Tick(deltaTime);
+                }
             }
         }
 
-        public BaseObject FindEffect(ulong id)
+        public EffectObject FindEffect(ulong id)
         {
-            return _effectList.ForeachReturn(effect => effect.UniqueID == id);
+            foreach (var effect in _effectList)
+            {
+                if (effect.UniqueID == id)
+                {
+                    return effect;
+                }
+            }
+
+            return null;
         }
 
         public ulong PlayEffect(EffectCreateInfo info)
@@ -67,7 +72,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var effect = _effectList.ForeachReturn(effect => effect.UniqueID == id);
+            var effect = FindEffect(id);
             effect?.Stop();
         }
     }

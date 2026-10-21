@@ -53,7 +53,7 @@ public static class EffectExample
 
 ## 控制与预热
 
-`FindEffect(id)` 返回 `BaseObject`，需要转换为 `EffectObject` 后检查 `IsValid`。可用接口包括 `SetSpeed`、`ResetSpeed`、`SetTime`、`Play(speed)`、`PlayAnimation(stateName, layer, speed)` 和 `Stop()`；当前没有公开的 Pause/Resume 接口。
+`FindEffect(id)` 返回 `EffectObject`，未找到时返回 null；找到后可直接检查 `IsValid`。可用接口包括 `SetSpeed`、`ResetSpeed`、`SetTime`、`Play(speed)`、`PlayAnimation(stateName, layer, speed)` 和 `Stop()`；当前没有公开的 Pause/Resume 接口。
 
 `SetTime` 调整 Binder 中组件的播放位置，不同步 EffectObject 自身的剩余生命周期。`SetSpeed(0)` 同时暂停剩余时长推进，可能使停止后的保留阶段也无法完成。
 

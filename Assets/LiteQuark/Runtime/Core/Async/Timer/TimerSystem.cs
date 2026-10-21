@@ -9,13 +9,11 @@ namespace LiteQuark.Runtime
         public const int RepeatCountForever = -1;
 
         private readonly float _frameInterval = 0.01f;
-        private readonly Action<ITimer, SafeList<ITimer>, float, float> _onTickDelegate = null;
         private readonly SafeList<ITimer> _timerList = new();
 
         public TimerSystem()
         {
             _frameInterval = MathF.Max(0.01f, 1.0f / LiteRuntime.Setting.Common.TargetFrameRate);
-            _onTickDelegate = OnTimerTick;
         }
 
         public UniTask<bool> Initialize()
@@ -30,16 +28,16 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _timerList.Foreach(_onTickDelegate, _timerList, deltaTime, LiteTime.UnscaledDeltaTime);
-        }
+            var unscaledDeltaTime = LiteTime.UnscaledDeltaTime;
 
-        private void OnTimerTick(ITimer timer, SafeList<ITimer> list, float dt, float unscaledDt)
-        {
-            timer.Tick(timer.IsUnscaled ? unscaledDt : dt);
-
-            if (timer.IsDone)
+            foreach (var timer in _timerList)
             {
-                list.Remove(timer);
+                timer.Tick(timer.IsUnscaled ? unscaledDeltaTime : deltaTime);
+
+                if (timer.IsDone)
+                {
+                    _timerList.Remove(timer);
+                }
             }
         }
 
@@ -98,7 +96,15 @@ namespace LiteQuark.Runtime
                 return null;
             }
 
-            return _timerList.ForeachReturn(static (timer, targetId) => timer.ID == targetId, id);
+            foreach (var timer in _timerList)
+            {
+                if (timer.ID == id)
+                {
+                    return timer;
+                }
+            }
+
+            return null;
         }
 
         public void StopTimer(ulong id)
@@ -113,7 +119,10 @@ namespace LiteQuark.Runtime
 
         public void CancelAll()
         {
-            _timerList.Foreach(static timer => timer.Cancel());
+            foreach (var timer in _timerList)
+            {
+                timer.Cancel();
+            }
         }
 
         internal SafeList<ITimer> GetTimerList()

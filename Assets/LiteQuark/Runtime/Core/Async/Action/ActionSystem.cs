@@ -1,4 +1,3 @@
-using System;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -6,13 +5,10 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class ActionSystem : ISystem, ITick
     {
-        private readonly Action<IAction, SafeList<IAction>, float, float> _onTickDelegate = null;
         private readonly SafeList<IAction> _actionList = new();
 
         public ActionSystem()
         {
-            _onTickDelegate = OnActionTick;
-            _actionList.Clear();
         }
 
         public UniTask<bool> Initialize()
@@ -22,34 +18,37 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            _actionList.Foreach(static action => action.Dispose());
+            foreach (var action in _actionList)
+            {
+                action.Dispose();
+            }
             _actionList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
-            _actionList.Foreach(_onTickDelegate, _actionList, deltaTime, LiteTime.UnscaledDeltaTime);
-        }
+            var unscaledDeltaTime = LiteTime.UnscaledDeltaTime;
 
-        private void OnActionTick(IAction action, SafeList<IAction> list, float dt, float unscaledDt)
-        {
-            try
+            foreach (var action in _actionList)
             {
-                if (action.IsDone)
+                try
                 {
-                    LiteUtils.SafeInvoke(action.FinalCallback, action);
-                    action.Dispose();
-                    list.Remove(action);
+                    if (action.IsDone)
+                    {
+                        LiteUtils.SafeInvoke(action.FinalCallback, action);
+                        action.Dispose();
+                        _actionList.Remove(action);
+                    }
+                    else
+                    {
+                        action.Tick(action.IsUnscaled ? unscaledDeltaTime : deltaTime);
+                    }
                 }
-                else
+                catch
                 {
-                    action.Tick(action.IsUnscaled ? unscaledDt : dt);
+                    action.Stop();
+                    throw;
                 }
-            }
-            catch
-            {
-                action.Stop();
-                throw;
             }
         }
 
@@ -76,7 +75,15 @@ namespace LiteQuark.Runtime
                 return null;
             }
 
-            return _actionList.ForeachReturn(static (action, targetId) => action.ID == targetId, id);
+            foreach (var action in _actionList)
+            {
+                if (action.ID == id)
+                {
+                    return action;
+                }
+            }
+
+            return null;
         }
 
         public void StopAction(ulong id)
@@ -87,7 +94,16 @@ namespace LiteQuark.Runtime
                 return;
             }
             action.Stop();
-            OnActionTick(action, _actionList, 0, 0);
+
+            try
+            {
+                LiteUtils.SafeInvoke(action.FinalCallback, action);
+                action.Dispose();
+            }
+            finally
+            {
+                _actionList.Remove(action);
+            }
         }
 
         public ulong AddAction(IAction action, bool isSafety = false)
