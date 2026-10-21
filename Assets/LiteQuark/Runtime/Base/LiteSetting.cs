@@ -66,11 +66,8 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class TaskSetting
         {
-            [Tooltip("并发任务数量限制")] [Range(1, 50), SerializeField]
+            [Tooltip("默认任务组的并发数量限制")] [Range(1, 50), SerializeField]
             public int ConcurrencyLimit = 20;
-
-            [Tooltip("忽略并发限制起始等级")]
-            public TaskPriority IgnoreLimitPriority = TaskPriority.High;
 
             public TaskSetting()
             {

@@ -11,7 +11,6 @@ namespace LiteQuark.Runtime
             : base(uri, new RetryParam(60, 3, 1f), true)
         {
             _callback = callback;
-            SetPriority(TaskPriority.Urgent);
         }
 
         public override void Dispose()

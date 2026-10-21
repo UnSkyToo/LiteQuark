@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
 
             Id = id;
             ConcurrencyLimit = concurrencyLimit;
-            _pendingTaskQueue = new PriorityQueue<TaskRecord>(static (x, y) => ((int)x.Task.Priority).CompareTo((int)y.Task.Priority));
+            _pendingTaskQueue = new PriorityQueue<TaskRecord>(static (x, y) => ((int)x.Priority).CompareTo((int)y.Priority));
         }
 
         public void Enqueue(TaskRecord record)

@@ -12,7 +12,6 @@ namespace LiteQuark.Runtime
         public bool IsExecuted { get; private set; }
         public object Result { get; protected set; }
         public TaskState State { get; protected set; }
-        public TaskPriority Priority { get; private set; } = TaskPriority.Normal;
 
         public UniTask<object> Task
         {
@@ -39,11 +38,6 @@ namespace LiteQuark.Runtime
         }
 
         public abstract void Dispose();
-
-        public void SetPriority(TaskPriority priority)
-        {
-            Priority = priority;
-        }
 
         public void Execute()
         {

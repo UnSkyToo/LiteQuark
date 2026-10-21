@@ -126,7 +126,6 @@ namespace LiteQuark.Runtime
                     break;
                 }
 
-                task.SetPriority(TaskPriority.Urgent);
                 _runningTasks.Add(new RunningTask(info.Path, task));
             }
         }

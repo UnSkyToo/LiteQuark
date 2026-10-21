@@ -100,7 +100,7 @@ var window = LiteRuntime.Asset.InstantiateHandle(
 - 优先级只决定 Bundle Loader 尚未提交到底层 TaskSystem 的任务顺序。优先级高的先出队；同级按首次入队顺序执行，提权保留原入队序号。已提交的加载不抢占、不重启，也不因提权突破 Asset 设置的 `ConcurrencyLimit`。
 - 请求优先级传给主 Bundle 及全部依赖。共享加载在本轮收到更高优先级请求时会向尚未就绪的依赖传播提权，即使主 Bundle 自身已启动或物理加载已完成。依赖不额外提高一级；读取 Asset 或加载 Scene 前仍等待全部必要 Bundle 成功。
 - 本轮有效优先级只升不降。后来的低优先级请求，以及高优先级 Handle 的取消或释放，都不会降低本轮优先级。加载失败后重试会以新请求重新初始化优先级；取消和迟到结果的所有权规则不变。
-- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。Bundle 就绪后的 Asset/Scene 任务仍受现有 TaskSystem 调度与全局名额影响；`AssetLoadPriority` 不等同于 `TaskPriority`，不会获得忽略上限的权限。持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。
+- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。TaskSystem 另按任务组限制并发，没有跨组总上限；当前版本包和 Bundle 任务以 `TaskPriority.Urgent` 提交到默认组，Bundle 就绪后的 Asset/Scene 任务以 `Normal` 提交到同一组，均受默认组额度约束。Bundle Loader 自身的并发限制仍然保留。`AssetLoadPriority` 不等同于 `TaskPriority`，不会改变已提交任务的固定优先级或获得绕限权限，也不保证整条加载链优先。持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。参见 [TaskSystem 分组调度](../Core/Async/Task/README.md)。
 - Editor 直读模式接受该参数，但不模拟 Bundle 优先级队列。验证调度顺序时使用 Bundle 模式，并观察 Loader 实际提交任务的时机；Profiler 的 Bundle Begin 事件表示 Cache 接受加载，不能用来判断实际开始顺序。
 
 资源加载 Profiler 事件只用于编辑器观测，订阅者不得在事件中发起加载、释放或修改资源生命周期。

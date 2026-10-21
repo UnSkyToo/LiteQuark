@@ -240,7 +240,7 @@ namespace LiteQuark.Runtime
             return false;
         }
 
-        public void AddTask(ITask task, int groupId = DefaultGroupId)
+        public void AddTask(ITask task, int groupId = DefaultGroupId, TaskPriority priority = TaskPriority.Normal)
         {
             if (task == null)
             {
@@ -263,7 +263,7 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("Only a new pending task can be submitted.");
             }
 
-            var record = new TaskRecord(task, group);
+            var record = new TaskRecord(task, group, priority);
             _records.Add(record);
             group.Enqueue(record);
         }
@@ -320,21 +320,21 @@ namespace LiteQuark.Runtime
         internal LoadVersionPackTask AddLoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
         {
             var task = new LoadVersionPackTask(uri, callback);
-            AddTask(task);
+            AddTask(task, priority: TaskPriority.Urgent);
             return task;
         }
 
         internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
-            AddTask(task);
+            AddTask(task, priority: TaskPriority.Urgent);
             return task;
         }
 
         internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, hash, callback);
-            AddTask(task);
+            AddTask(task, priority: TaskPriority.Urgent);
             return task;
         }
 

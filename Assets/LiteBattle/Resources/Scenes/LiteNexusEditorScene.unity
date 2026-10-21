@@ -557,7 +557,6 @@ MonoBehaviour:
       TimeScale: 1
     Task:
       ConcurrencyLimit: 20
-      IgnoreLimitPriority: 2
     Asset:
       AssetMode: 1
       BundleLocater: 0
@@ -614,7 +613,6 @@ MonoBehaviour:
       TimeScale: 1
     Task:
       ConcurrencyLimit: 20
-      IgnoreLimitPriority: 2
     Asset:
       AssetMode: 0
       BundleLocater: 0
