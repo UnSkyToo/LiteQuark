@@ -4,50 +4,41 @@ using System.Collections.Generic;
 namespace LiteQuark.Runtime
 {
     /// <summary>
-    /// 一个最大堆优先队列，优先级大的元素先出队
+    /// 稳定最大堆。比较结果相同时，先入队的元素先出队。<br/>
+    /// 元素不可重复，入队期间相等性和哈希值必须保持不变。<br/>
+    /// 修改影响排序的字段后，必须调用 UpdatePriority。
     /// </summary>
-    public class PriorityQueue<T>
+    public sealed class PriorityQueue<T>
     {
-        private readonly List<T> _heap;
+        private readonly List<Entry> _heap = new();
+        private readonly Dictionary<T, int> _indices = new();
         private readonly Comparison<T> _comparer;
+        private long _nextOrder;
 
         public int Count => _heap.Count;
 
         public PriorityQueue(Comparison<T> comparer)
         {
-            _heap = new List<T>();
             _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
         public void Clear()
         {
             _heap.Clear();
+            _indices.Clear();
+            _nextOrder = 0;
         }
+
+        public bool Contains(T item) => _indices.ContainsKey(item);
 
         public void Enqueue(T item)
         {
-            _heap.Add(item);
-            HeapifyUp(_heap.Count - 1);
-        }
+            var index = _heap.Count;
 
-        public T Dequeue()
-        {
-            if (_heap.Count == 0)
-            {
-                throw new InvalidOperationException("Queue is empty.");
-            }
+            _indices.Add(item, index);
+            _heap.Add(new Entry(item, _nextOrder++));
 
-            var root = _heap[0];
-            var lastIndex = _heap.Count - 1;
-            _heap[0] = _heap[lastIndex];
-            _heap.RemoveAt(lastIndex);
-
-            if (_heap.Count > 0)
-            {
-                HeapifyDown(0);
-            }
-
-            return root;
+            HeapifyUp(index);
         }
 
         public T Peek()
@@ -57,40 +48,73 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("Queue is empty.");
             }
 
-            return _heap[0];
+            return _heap[0].Item;
+        }
+
+        public T Dequeue()
+        {
+            var item = Peek();
+            RemoveAt(0);
+            return item;
         }
 
         public bool Remove(T item)
         {
-            var index = _heap.IndexOf(item);
-            if (index < 0)
+            if (!_indices.TryGetValue(item, out var index))
             {
                 return false;
             }
 
-            var lastIndex = _heap.Count - 1;
-            _heap[index] = _heap[lastIndex];
-            _heap.RemoveAt(lastIndex);
-
-            if (index < _heap.Count)
-            {
-                HeapifyUp(index);
-                HeapifyDown(index);
-            }
-
+            RemoveAt(index);
             return true;
         }
 
-        public void UpdatePriority(T item)
+        public bool UpdatePriority(T item)
         {
-            var index = _heap.IndexOf(item);
-            if (index < 0)
+            if (!_indices.TryGetValue(item, out var index))
             {
+                return false;
+            }
+
+            RestoreHeap(index);
+            return true;
+        }
+
+        private void RemoveAt(int index)
+        {
+            var lastIndex = _heap.Count - 1;
+            _indices.Remove(_heap[index].Item);
+
+            if (index == lastIndex)
+            {
+                _heap.RemoveAt(lastIndex);
                 return;
             }
 
-            HeapifyUp(index);
-            HeapifyDown(index);
+            var replacement = _heap[lastIndex];
+            _heap[index] = replacement;
+            _heap.RemoveAt(lastIndex);
+            _indices[replacement.Item] = index;
+
+            RestoreHeap(index);
+        }
+
+        private void RestoreHeap(int index)
+        {
+            if (index > 0 && Compare(_heap[index], _heap[(index - 1) / 2]) > 0)
+            {
+                HeapifyUp(index);
+            }
+            else
+            {
+                HeapifyDown(index);
+            }
+        }
+
+        private int Compare(Entry x, Entry y)
+        {
+            var result  = _comparer(x.Item, y.Item);
+            return result != 0 ? result : y.Order.CompareTo(x.Order);
         }
 
         private void HeapifyUp(int index)
@@ -98,7 +122,7 @@ namespace LiteQuark.Runtime
             while (index > 0)
             {
                 var parent = (index - 1) / 2;
-                if (_comparer(_heap[index], _heap[parent]) <= 0)
+                if (Compare(_heap[index], _heap[parent]) <= 0)
                 {
                     break;
                 }
@@ -109,26 +133,25 @@ namespace LiteQuark.Runtime
 
         private void HeapifyDown(int index)
         {
-            var lastIndex = _heap.Count - 1;
             while (true)
             {
                 var left = index * 2 + 1;
-                var right = left + 1;
-                var largest = index;
-
-                if (left <= lastIndex && _comparer(_heap[left], _heap[largest]) > 0)
+                if (left >= _heap.Count)
                 {
-                    largest = left;
+                    return;
                 }
 
-                if (right <= lastIndex && _comparer(_heap[right], _heap[largest]) > 0)
+                var right = left + 1;
+                var largest = left;
+
+                if (right < _heap.Count && Compare(_heap[right], _heap[left]) > 0)
                 {
                     largest = right;
                 }
 
-                if (largest == index)
+                if (Compare(_heap[largest], _heap[index]) <= 0)
                 {
-                    break;
+                    return;
                 }
 
                 Swap(index, largest);
@@ -139,6 +162,21 @@ namespace LiteQuark.Runtime
         private void Swap(int i, int j)
         {
             (_heap[i], _heap[j]) = (_heap[j], _heap[i]);
+
+            _indices[_heap[i].Item] = i;
+            _indices[_heap[j].Item] = j;
+        }
+
+        private readonly struct Entry
+        {
+            public readonly T Item;
+            public readonly long Order;
+
+            public Entry(T item, long order)
+            {
+                Item = item;
+                Order = order;
+            }
         }
     }
 }
