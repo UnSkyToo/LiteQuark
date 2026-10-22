@@ -12,7 +12,9 @@ namespace LiteQuark.Editor
         /// <summary>
         /// Build res options
         /// </summary>
-        public BuildAssetBundleOptions Options { get; set; } = BuildAssetBundleOptions.ChunkBasedCompression;
+        public BuildAssetBundleOptions Options { get; set; } = BuildAssetBundleOptions.ChunkBasedCompression |
+                                                               BuildAssetBundleOptions.DisableLoadAssetByFileName |
+                                                               BuildAssetBundleOptions.DisableLoadAssetByFileNameWithExtension;
 
         /// <summary>
         /// Enable hash mode for bundle
