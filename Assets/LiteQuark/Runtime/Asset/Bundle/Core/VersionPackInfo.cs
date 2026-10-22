@@ -132,7 +132,7 @@ namespace LiteQuark.Runtime
                 {
                     var assetPath = bundle.AssetList[index];
 
-                    if (!assetPath.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase))
+                    if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
                     {
                         bundle.AssetList[index] = prefix + assetPath;
                     }

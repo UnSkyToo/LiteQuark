@@ -14,6 +14,8 @@
 
 版本文件继续以压缩后的相对路径为主，JSON 字段、依赖 ID 字符串、UTF-8 编码和现有加密方式保持不变。普通 Bundle 使用其逻辑 `BundlePath` 去掉 `.ab` 后的目录作为前缀：例如 `a/b/c.ab` 中的 `a/b/c/d.png` 存为 `d.png`，读取时补回 `a/b/c/`。压缩只截去开头匹配的目录前缀，不删除路径中间再次出现的同名目录；不匹配的普通相对路径会报错，已有的完整 `Assets/...` 路径表示仍受支持。
 
+恢复时按 `Assets/` 目录边界识别完整项目路径，因此 `assets.json`、`assets_icon.png`、`assetsbackup/icon.png` 等普通相对路径会正常补回 Bundle 前缀。**已知目录歧义（暂缓处理）：**如果压缩后的相对路径本身以 `assets/` 开头（不区分大小写），仍无法与完整项目路径区分。例如 `data.ab` 中的 `data/assets/icon.png` 存为 `assets/icon.png` 后，恢复时会跳过 `data/`。本轮仅修复普通名称的前缀误判，未扩展存储表示；暂时应避免产生这类压缩路径，后续单独处理该歧义。
+
 只有根级 `default.ab` 使用空前缀：根目录的 `config.json` 原样存储并恢复为 `config.json`；真实 `default` 子目录中的 `default/config.json` 保留该目录，二者不会混淆。`a/default.ab` 等嵌套 Bundle 仍使用普通目录前缀。这一规则与 HashMode、FlatMode 产生的物理 Bundle 文件名无关。
 
 读取时先恢复资源路径和依赖路径，再由 `Initialize()` 建立完整规范 key 索引；建立索引不会再次改写 `BundleInfo.AssetList`。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath` 接受相对资源根目录的路径及完整项目路径。`ToJsonData()`、`ToBinaryData()` 保留原地转换方式，会将原对象改成存储表示；应将写出视为该对象本轮使用的结束，不继续用它查询或重复输出。需要再次输出时，应使用重新收集或重新读取并恢复的对象。
