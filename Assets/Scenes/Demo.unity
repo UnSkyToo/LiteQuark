@@ -219,6 +219,7 @@ MonoBehaviour:
       BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
+      TaskConcurrencyLimit: 20
       BundleDownloadRetry:
         Timeout: 60
         MaxRetries: 3
@@ -266,6 +267,7 @@ MonoBehaviour:
       BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
+      TaskConcurrencyLimit: 20
       BundleDownloadRetry:
         Timeout: 60
         MaxRetries: 3

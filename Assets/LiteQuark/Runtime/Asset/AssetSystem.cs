@@ -37,6 +37,9 @@ namespace LiteQuark.Runtime
 
         public UniTask<bool> Initialize()
         {
+            var concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Asset.TaskConcurrencyLimit);
+            LiteRuntime.Task.RegisterGroup(LiteConst.TaskGroupId.Asset, concurrencyLimit);
+
             return _provider.Initialize();
         }
 

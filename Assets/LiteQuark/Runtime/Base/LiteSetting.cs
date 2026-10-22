@@ -86,8 +86,13 @@ namespace LiteQuark.Runtime
             [Tooltip("远程资源根目录，根据主版本和平台动态分目录\n例如:https://localhost:8000/webgl/1.0/version_1.0.txt")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public string BundleRemoteUri = "https://localhost:8000/";
 
-            [Tooltip("并发加载数量限制")] [Range(1, 30), SerializeField]
+            [Tooltip("BundleLoader 同时提交的 Bundle 加载任务数量限制")]
+            [Range(1, 30), SerializeField]
             public int ConcurrencyLimit = 5;
+
+            [Tooltip("Asset 任务组的并发数量限制，包含版本包、Bundle、Asset 和 Scene 加载任务")]
+            [Range(1, 50), SerializeField]
+            public int TaskConcurrencyLimit = 20;
 
             [Tooltip("远程资源下载重试设置")] [ConditionalShow(nameof(AssetMode), (int)AssetProviderMode.Bundle, nameof(BundleLocater), (int)BundleLocaterMode.Remote), SerializeField]
             public RetryParam BundleDownloadRetry;

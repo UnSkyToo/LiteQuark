@@ -15,11 +15,14 @@
 | `AssetMode` | `Editor` 直接访问项目资源；`Bundle` 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
 | `BundleLocater` | `BuiltIn` 优先读取 persistentDataPath/LiteQuark，再回退到 StreamingAssets/LiteQuark；`Remote` 使用远端资源包 |
 | `BundleRemoteUri` | 远程基础地址；运行时拼接小写平台名和版本号前两段（如 `0.4`）目录 |
-| `ConcurrencyLimit` | Bundle 加载并发，默认 5 |
+| `ConcurrencyLimit` | BundleLoader 同时提交的 Bundle 加载任务数量限制，默认 5 |
+| `TaskConcurrencyLimit` | 独立 Asset 任务组的并发额度，默认 20，包含版本包、Bundle、Asset 和 Scene 加载任务 |
 | `EnableRetain` | 启用 Bundle 保留缓存，默认 true |
 | `BundleRetainTime` | Bundle 引用归零后的保留时间，默认 300 秒 |
 
 发布前使用 `Lite > Builder` 生成 Bundle 和版本文件；资源随包发布时放入对应 StreamingAssets。在编辑器中测试 BuiltIn 模式时，`EditorForceStreamingAssets` 默认为 true，会强制从 StreamingAssets 读取。Bundle 初始化会检测依赖环，检测失败或版本文件加载失败时不会完成系统初始化。Resource 模式已移除。
+
+AssetSystem 在 Provider 初始化前注册 `LiteConst.TaskGroupId.Asset`（-2），因此版本包加载也使用该组。Asset 组与普通业务的 Default 组额度独立；BundleLoader 仍管理自己的队列、并发和共享请求提权，两层限制各自生效。Loader 已提交但尚未获 Asset 组准入的任务也占用 Loader 的提交名额。额度统计逻辑任务占位，不保证取消后的 Unity 原生操作已经停止。Editor 模式也注册该组，但直接加载路径不通过该组排队。
 
 ## 加载与所有权
 
@@ -102,7 +105,7 @@ var window = LiteRuntime.Asset.InstantiateHandle(
 - 优先级只决定 Bundle Loader 尚未提交到底层 TaskSystem 的任务顺序。优先级高的先出队；同级按首次入队顺序执行，提权保留原入队序号。已提交的加载不抢占、不重启，也不因提权突破 Asset 设置的 `ConcurrencyLimit`。
 - 请求优先级传给主 Bundle 及全部依赖。共享加载在本轮收到更高优先级请求时会向尚未就绪的依赖传播提权，即使主 Bundle 自身已启动或物理加载已完成。依赖不额外提高一级；读取 Asset 或加载 Scene 前仍等待全部必要 Bundle 成功。
 - 本轮有效优先级只升不降。后来的低优先级请求，以及高优先级 Handle 的取消或释放，都不会降低本轮优先级。加载失败后重试会以新请求重新初始化优先级；取消和迟到结果的所有权规则不变。
-- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。TaskSystem 另按任务组限制并发，没有跨组总上限；当前版本包和 Bundle 任务以 `TaskPriority.Urgent` 提交到默认组，Bundle 就绪后的 Asset/Scene 任务以 `Normal` 提交到同一组，均受默认组额度约束。Bundle Loader 自身的并发限制仍然保留。`AssetLoadPriority` 不等同于 `TaskPriority`，不会改变已提交任务的固定优先级或获得绕限权限，也不保证整条加载链优先。持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。参见 [TaskSystem 分组调度](../Core/Async/Task/README.md)。
+- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。TaskSystem 另按任务组限制并发，没有跨组总上限；版本包和 Bundle 任务以 `TaskPriority.Urgent` 提交到独立 Asset 组，Bundle 就绪后的 Asset/Scene 任务以 `Normal` 提交到同一组，均受 `TaskConcurrencyLimit` 约束，不占用 Default 额度。Bundle Loader 自身的并发限制仍然保留。`AssetLoadPriority` 不等同于 `TaskPriority`，不会改变已提交任务的固定优先级或获得绕限权限，也不保证整条加载链优先。Asset 组内部仍共享额度；持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。参见 [TaskSystem 分组调度](../Core/Async/Task/README.md)。
 - Editor 直读模式接受该参数，但不模拟 Bundle 优先级队列。验证调度顺序时使用 Bundle 模式，并观察 Loader 实际提交任务的时机；Profiler 的 Bundle Begin 事件表示 Cache 接受加载，不能用来判断实际开始顺序。
 
 资源加载 Profiler 事件只用于编辑器观测，订阅者不得在事件中发起加载、释放或修改资源生命周期。

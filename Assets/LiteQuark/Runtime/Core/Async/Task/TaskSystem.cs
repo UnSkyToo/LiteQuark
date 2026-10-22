@@ -9,9 +9,6 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class TaskSystem : ISystem, ITick
     {
-        public const int DefaultGroupId = 0;
-        public const int FlowGroupId = int.MaxValue;
-
         public int PendingTaskCount
         {
             get
@@ -50,9 +47,9 @@ namespace LiteQuark.Runtime
             _mainThreadSynchronizationContext = SynchronizationContext.Current;
 
             var defaultLimit = Math.Max(1, LiteRuntime.Setting.Task.ConcurrencyLimit);
-            RegisterGroup(DefaultGroupId, defaultLimit);
+            RegisterGroup(LiteConst.TaskGroupId.Default, defaultLimit);
 
-            RegisterGroup(FlowGroupId, null);
+            RegisterGroup(LiteConst.TaskGroupId.Flow, null);
         }
 
         public UniTask<bool> Initialize()
@@ -243,7 +240,7 @@ namespace LiteQuark.Runtime
             return false;
         }
 
-        public void AddTask(ITask task, int groupId = DefaultGroupId, TaskPriority priority = TaskPriority.Normal)
+        public void AddTask(ITask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)
         {
             if (task == null)
             {
@@ -281,14 +278,14 @@ namespace LiteQuark.Runtime
         public AsyncOperationTask AddTask(UnityEngine.AsyncOperation asyncOperation, Action callback = null)
         {
             var task = new AsyncOperationTask(asyncOperation, callback);
-            AddTask(task, FlowGroupId);
+            AddTask(task, LiteConst.TaskGroupId.Flow);
             return task;
         }
 
         public AsyncResultTask AddTask(IAsyncResult asyncResult, Action callback = null)
         {
             var task = new AsyncResultTask(asyncResult, callback);
-            AddTask(task, FlowGroupId);
+            AddTask(task, LiteConst.TaskGroupId.Flow);
             return task;
         }
 
@@ -302,7 +299,7 @@ namespace LiteQuark.Runtime
         public MainThreadTask AddMainThreadTask(Action<object> func, object param)
         {
             var task = new MainThreadTask(func, param);
-            AddTask(task, FlowGroupId);
+            AddTask(task, LiteConst.TaskGroupId.Flow);
             return task;
         }
 
@@ -323,35 +320,35 @@ namespace LiteQuark.Runtime
         internal LoadVersionPackTask AddLoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
         {
             var task = new LoadVersionPackTask(uri, callback);
-            AddTask(task, priority: TaskPriority.Urgent);
+            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
             return task;
         }
 
         internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadLocalBundleTask(bundleUri, callback);
-            AddTask(task, priority: TaskPriority.Urgent);
+            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
             return task;
         }
 
         internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
         {
             var task = new LoadRemoteBundleTask(bundleUri, hash, callback);
-            AddTask(task, priority: TaskPriority.Urgent);
+            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
             return task;
         }
 
         internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<T> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, assetName, callback);
-            AddTask(task);
+            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);
             return task;
         }
 
         internal LoadSceneTask AddLoadSceneTask(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
         {
             var task = new LoadSceneTask(sceneName, parameters, callback);
-            AddTask(task);
+            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);
             return task;
         }
 

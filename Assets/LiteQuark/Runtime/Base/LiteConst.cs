@@ -25,6 +25,13 @@ namespace LiteQuark.Runtime
             { typeof(ObjectPoolSystem).AssemblyQualifiedName, 99400 },
             { typeof(ActionSystem).AssemblyQualifiedName, 99300 },
         };
+
+        public static class TaskGroupId
+        {
+            public const int Default = 0;
+            public const int Flow = -1;
+            public const int Asset = -2;
+        }
     }
 
     public enum FrameworkErrorCode
