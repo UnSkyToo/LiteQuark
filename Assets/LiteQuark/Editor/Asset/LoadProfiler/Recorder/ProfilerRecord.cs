@@ -10,6 +10,7 @@ namespace LiteQuark.Editor.LoadProfiler
     {
         public long RecordId { get; internal set; }
         public string AssetPath { get; internal set; }
+        public Type AssetType { get; internal set; }
         public string BundlePath { get; internal set; }
         public AssetLoadEventSource Source { get; internal set; }
         public AssetLoadEventType Type { get; internal set; }
@@ -31,6 +32,7 @@ namespace LiteQuark.Editor.LoadProfiler
         {
             RecordId = 0;
             AssetPath = string.Empty;
+            AssetType = null;
             BundlePath = string.Empty;
             Source = AssetLoadEventSource.Unknown;
             Type = AssetLoadEventType.Bundle;

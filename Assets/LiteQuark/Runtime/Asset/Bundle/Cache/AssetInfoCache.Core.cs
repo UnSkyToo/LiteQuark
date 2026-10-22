@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
         public bool IsLoaded => Stage == AssetCacheStage.Loaded;
 
         private readonly string _assetPath;
+        private readonly Type _assetType;
         private readonly AssetBundleCache _cache;
         private readonly List<Action<bool>> _assetLoaderCallbackList = new();
         private AssetBundleCache.Lease _mainLease;
@@ -18,12 +19,13 @@ namespace LiteQuark.Runtime
         private int _refCount;
         private BaseTask _loadAssetTask;
 
-        public AssetInfoCache(AssetBundleCache cache, string assetPath)
+        public AssetInfoCache(AssetBundleCache cache, string assetPath, Type assetType)
         {
             Stage = AssetCacheStage.Idle;
             Asset = null;
 
             _assetPath = assetPath;
+            _assetType = assetType;
             _cache = cache;
             _refCount = 0;
         }

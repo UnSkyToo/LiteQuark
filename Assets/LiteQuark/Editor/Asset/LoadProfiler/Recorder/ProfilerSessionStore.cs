@@ -20,7 +20,7 @@ namespace LiteQuark.Editor.LoadProfiler
 
         private readonly List<ProfilerSession> _sessions = new();
         private readonly Dictionary<long, ProfilerSession> _sessionMap = new();
-        private readonly Dictionary<string, ProfilerSession> _activeSessionMap = new();
+        private readonly Dictionary<(string, Type), ProfilerSession> _activeSessionMap = new();
         private readonly ObjectPool<ProfilerSession> _pool;
 
         private long _idCounter;
@@ -38,9 +38,10 @@ namespace LiteQuark.Editor.LoadProfiler
         /// <summary>
         /// 创建新的 Session
         /// </summary>
-        public ProfilerSession Create(string requestPath, string mainBundlePath, long timestamp)
+        public ProfilerSession Create(string requestPath, Type assetType, string mainBundlePath, long timestamp)
         {
-            if (_activeSessionMap.ContainsKey(requestPath)) return null;
+            var key = (requestPath, assetType);
+            if (_activeSessionMap.ContainsKey(key)) return null;
 
             var session = _pool.Get();
             session.SessionId = ++_idCounter;
@@ -51,7 +52,7 @@ namespace LiteQuark.Editor.LoadProfiler
 
             _sessions.Add(session);
             _sessionMap[session.SessionId] = session;
-            _activeSessionMap[requestPath] = session;
+            _activeSessionMap[key] = session;
 
             // 清理旧会话（跳过仍在活跃状态的Session）
             while (_sessions.Count > MaxCount)
@@ -73,7 +74,6 @@ namespace LiteQuark.Editor.LoadProfiler
                 var oldSession = _sessions[indexToRemove];
                 _sessions.RemoveAt(indexToRemove);
                 _sessionMap.Remove(oldSession.SessionId);
-                _activeSessionMap.Remove(oldSession.RequestPath);
                 _pool.Release(oldSession);
             }
 
@@ -83,9 +83,9 @@ namespace LiteQuark.Editor.LoadProfiler
         /// <summary>
         /// 完成 Session
         /// </summary>
-        public ProfilerSession Complete(string requestPath, bool isSuccess, long timestamp)
+        public ProfilerSession Complete(string requestPath, Type assetType, bool isSuccess, long timestamp)
         {
-            if (!_activeSessionMap.Remove(requestPath, out var session))
+            if (!_activeSessionMap.Remove((requestPath, assetType), out var session))
             {
                 return null;
             }
@@ -99,9 +99,9 @@ namespace LiteQuark.Editor.LoadProfiler
         /// <summary>
         /// 获取活跃的 Session
         /// </summary>
-        public ProfilerSession GetActive(string requestPath)
+        public ProfilerSession GetActive(string requestPath, Type assetType)
         {
-            return _activeSessionMap.GetValueOrDefault(requestPath);
+            return _activeSessionMap.GetValueOrDefault((requestPath, assetType));
         }
 
         /// <summary>

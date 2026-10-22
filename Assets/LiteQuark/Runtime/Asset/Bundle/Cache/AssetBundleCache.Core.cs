@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         private readonly BundleInfo _bundleInfo;
         private readonly AssetBundleProvider _provider;
         private readonly List<Action<bool>> _bundleLoaderCallbackList = new();
-        private readonly Dictionary<string, AssetInfoCache> _assetCacheMap = new();
+        private readonly Dictionary<(string, Type), AssetInfoCache> _assetCacheMap = new();
         private readonly List<SceneInfoCache> _sceneCacheMap = new();
 
         public bool IsUsed => _refCount > 0;
@@ -164,15 +164,16 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private AssetInfoCache GetOrCreateAssetCache(string assetPath)
+        private AssetInfoCache GetOrCreateAssetCache(string assetPath, Type assetType)
         {
-            if (_assetCacheMap.TryGetValue(assetPath, out var cache))
+            var key = (assetPath, assetType);
+            if (_assetCacheMap.TryGetValue(key, out var cache))
             {
                 return cache;
             }
 
-            cache = new AssetInfoCache(this, assetPath);
-            _assetCacheMap.Add(assetPath, cache);
+            cache = new AssetInfoCache(this, assetPath, assetType);
+            _assetCacheMap.Add(key, cache);
             return cache;
         }
 

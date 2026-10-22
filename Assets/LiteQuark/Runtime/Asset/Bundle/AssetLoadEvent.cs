@@ -59,6 +59,7 @@ namespace LiteQuark.Runtime
         public AssetLoadEventTiming Timing { get; }
         public AssetLoadEventType TargetType { get; }
         public string AssetPath { get; }
+        public Type AssetType { get; }
         public string BundlePath { get; }
         public string[] Dependencies { get; }
         public bool IsSuccess { get; }
@@ -71,6 +72,7 @@ namespace LiteQuark.Runtime
             AssetLoadEventTiming timing,
             AssetLoadEventType targetType,
             string assetPath,
+            Type assetType,
             string bundlePath,
             string[] dependencies = null,
             bool isSuccess = true,
@@ -82,6 +84,7 @@ namespace LiteQuark.Runtime
             Timing = timing;
             TargetType = targetType;
             AssetPath = assetPath ?? string.Empty;
+            AssetType = assetType;
             BundlePath = bundlePath ?? string.Empty;
             Dependencies = dependencies ?? Array.Empty<string>();
             IsSuccess = isSuccess;
@@ -103,7 +106,7 @@ namespace LiteQuark.Runtime
 #if UNITY_EDITOR
         public static event Action<AssetLoadEventArgs> OnLoadEvent;
 
-        internal static void DispatchBegin(AssetLoadEventType targetType, string assetPath, string bundlePath,
+        internal static void DispatchBegin(AssetLoadEventType targetType, string assetPath, Type assetType, string bundlePath,
             string[] dependencies = null, bool isCached = false)
         {
             try
@@ -113,6 +116,7 @@ namespace LiteQuark.Runtime
                     AssetLoadEventTiming.Begin,
                     targetType,
                     assetPath,
+                    assetType,
                     bundlePath,
                     dependencies,
                     isCached: isCached,
@@ -124,7 +128,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal static void DispatchEnd(AssetLoadEventType targetType, string assetPath, string bundlePath,
+        internal static void DispatchEnd(AssetLoadEventType targetType, string assetPath, Type assetType, string bundlePath,
             bool isSuccess, long fileSize = 0, string errorMessage = null, bool isCached = false)
         {
             try
@@ -133,6 +137,7 @@ namespace LiteQuark.Runtime
                     AssetLoadEventTiming.End,
                     targetType,
                     assetPath,
+                    assetType,
                     bundlePath,
                     isSuccess: isSuccess,
                     fileSize: fileSize,
@@ -146,11 +151,11 @@ namespace LiteQuark.Runtime
         }
 #else
         [Conditional("UNITY_EDITOR")]
-        internal static void DispatchBegin(AssetLoadEventType targetType, string assetPath, string bundlePath,
+        internal static void DispatchBegin(AssetLoadEventType targetType, string assetPath, Type assetType, string bundlePath,
             string[] dependencies = null, bool isCached = false) { }
 
         [Conditional("UNITY_EDITOR")]
-        internal static void DispatchEnd(AssetLoadEventType targetType, string assetPath, string bundlePath,
+        internal static void DispatchEnd(AssetLoadEventType targetType, string assetPath, Type assetType, string bundlePath,
             bool isSuccess, long fileSize = 0, string errorMessage = null, bool isCached = false) { }
 #endif
     }

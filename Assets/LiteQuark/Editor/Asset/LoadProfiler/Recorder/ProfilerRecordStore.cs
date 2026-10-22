@@ -58,6 +58,11 @@ namespace LiteQuark.Editor.LoadProfiler
             return record;
         }
 
+        public bool HasPendingBundle(string bundlePath)
+        {
+            return _pendingBundleRecords.ContainsKey(bundlePath);
+        }
+
         /// <summary>
         /// 完成 Bundle 记录
         /// </summary>
@@ -78,16 +83,17 @@ namespace LiteQuark.Editor.LoadProfiler
         /// <summary>
         /// 创建 Asset/Scene 的 Pending 记录
         /// </summary>
-        public ProfilerRecord CreatePendingAssetOrScene(AssetLoadEventType type, string assetPath, string bundlePath, AssetLoadEventSource source, long timestamp)
+        public ProfilerRecord CreatePendingAssetOrScene(AssetLoadEventType type, string assetPath, Type assetType, string bundlePath, AssetLoadEventSource source, long timestamp)
         {
             var pendingRecords = type == AssetLoadEventType.Asset ? _pendingAssetRecords : _pendingSceneRecords;
-            var key = $"{bundlePath}|{assetPath}";
+            var key = $"{bundlePath}|{assetPath}|{assetType}";
 
             if (pendingRecords.ContainsKey(key)) return null;
 
             var record = _pool.Get();
             record.RecordId = ++_idCounter;
             record.AssetPath = assetPath;
+            record.AssetType = assetType;
             record.BundlePath = bundlePath;
             record.Type = type;
             record.Source = source;
@@ -100,10 +106,10 @@ namespace LiteQuark.Editor.LoadProfiler
         /// <summary>
         /// 完成 Asset/Scene 记录
         /// </summary>
-        public ProfilerRecord CompletePendingAssetOrScene(AssetLoadEventType type, string assetPath, string bundlePath, bool isSuccess, string errorMessage, bool isCached, long timestamp)
+        public ProfilerRecord CompletePendingAssetOrScene(AssetLoadEventType type, string assetPath, Type assetType, string bundlePath, bool isSuccess, string errorMessage, bool isCached, long timestamp)
         {
             var pendingRecords = type == AssetLoadEventType.Asset ? _pendingAssetRecords : _pendingSceneRecords;
-            var key = $"{bundlePath}|{assetPath}";
+            var key = $"{bundlePath}|{assetPath}|{assetType}";
 
             if (!pendingRecords.TryGetValue(key, out var record)) return null;
             pendingRecords.Remove(key);

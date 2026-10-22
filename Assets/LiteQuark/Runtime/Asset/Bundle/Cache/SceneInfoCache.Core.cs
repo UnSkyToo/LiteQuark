@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
 
         private readonly string _sceneName;
         private readonly UnityEngine.SceneManagement.LoadSceneParameters _parameters;
+        private readonly Type _assetType = typeof(UnityEngine.SceneManagement.Scene);
 
         private AssetBundleCache.Lease _bundleLease;
         private UnityEngine.SceneManagement.Scene _scene;

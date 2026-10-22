@@ -108,11 +108,29 @@ namespace LiteQuark.Editor.LoadProfiler
         {
             if (args.Timing == AssetLoadEventTiming.Begin)
             {
-                _sessionStore.Create(args.AssetPath, args.BundlePath, GetTimestamp());
+                var session = _sessionStore.Create(args.AssetPath, args.AssetType, args.BundlePath, GetTimestamp());
+                if (session != null && _recordStore.HasPendingBundle(args.BundlePath))
+                {
+                    // 加入同一轮 Bundle 加载，补齐此前已发出的依赖信息和记录。
+                    foreach (var activeSession in _sessionStore.GetActiveSessions())
+                    {
+                        if (activeSession == session || activeSession.MainBundlePath != args.BundlePath) continue;
+
+                        session.RequiredBundles.UnionWith(activeSession.RequiredBundles);
+                        foreach (var record in activeSession.Records)
+                        {
+                            if (record.Type == AssetLoadEventType.Bundle)
+                            {
+                                session.AddRecord(record);
+                            }
+                        }
+                        break;
+                    }
+                }
             }
             else
             {
-                _sessionStore.Complete(args.AssetPath, args.IsSuccess, GetTimestamp());
+                _sessionStore.Complete(args.AssetPath, args.AssetType, args.IsSuccess, GetTimestamp());
             }
         }
 
@@ -142,11 +160,11 @@ namespace LiteQuark.Editor.LoadProfiler
             if (args.Timing == AssetLoadEventTiming.Begin)
             {
                 var source = args.IsCached ? AssetLoadEventSource.Cached : AssetLoadEventSource.Local;
-                _recordStore.CreatePendingAssetOrScene(args.TargetType, args.AssetPath, args.BundlePath, source, GetTimestamp());
+                _recordStore.CreatePendingAssetOrScene(args.TargetType, args.AssetPath, args.AssetType, args.BundlePath, source, GetTimestamp());
             }
             else
             {
-                var record = _recordStore.CompletePendingAssetOrScene(args.TargetType, args.AssetPath, args.BundlePath, args.IsSuccess, args.ErrorMessage, args.IsCached, GetTimestamp());
+                var record = _recordStore.CompletePendingAssetOrScene(args.TargetType, args.AssetPath, args.AssetType, args.BundlePath, args.IsSuccess, args.ErrorMessage, args.IsCached, GetTimestamp());
                 if (record != null)
                 {
                     TryAssociateRecordToSession(record);
@@ -169,7 +187,7 @@ namespace LiteQuark.Editor.LoadProfiler
         {
             if (record.Type == AssetLoadEventType.Asset || record.Type == AssetLoadEventType.Scene)
             {
-                var session = _sessionStore.GetActive(record.AssetPath);
+                var session = _sessionStore.GetActive(record.AssetPath, record.AssetType);
                 session?.AddRecord(record);
                 return;
             }
@@ -191,11 +209,11 @@ namespace LiteQuark.Editor.LoadProfiler
         #region Public Query API
 
         // Session 查询
-        public ProfilerSession GetSessionByPath(string requestPath)
+        public ProfilerSession GetSessionByPath(string requestPath, Type assetType)
         {
             lock (_lockObj)
             {
-                return _sessionStore.GetActive(requestPath);
+                return _sessionStore.GetActive(requestPath, assetType);
             }
         }
 

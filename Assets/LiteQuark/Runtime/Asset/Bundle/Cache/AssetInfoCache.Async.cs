@@ -16,9 +16,8 @@ namespace LiteQuark.Runtime
             if (IsLoaded)
             {
                 var success = lease.TryBindAsset(Asset);
-                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isCached: true);
-                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, success,
-                    errorMessage: success ? null : "Asset type mismatch", isCached: true);
+                AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath, isCached: true);
+                AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath, success, errorMessage: success ? null : "Asset type mismatch", isCached: true);
                 if (!success)
                 {
                     lease.Dispose();
@@ -46,7 +45,7 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loading;
             var name = PathUtils.GetFileName(_assetPath);
 
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath);
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath);
 
             try
             {
@@ -73,7 +72,7 @@ namespace LiteQuark.Runtime
             var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
 
             foreach (var loader in callbacks)
             {
