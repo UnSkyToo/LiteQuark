@@ -15,6 +15,7 @@ namespace LiteQuark.Editor
         private readonly string _defaultBundlePath = $"default{LiteConst.BundleFileExt}";
         private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new();
         private readonly Dictionary<string, string[]> _dependencyCache = new();
+        private readonly Dictionary<string, string> _assetSourcePathMap = new(StringComparer.Ordinal);
         private ResCollectorSetting _setting = null;
         private VersionPackInfo _packInfo = null;
         private int _bundleID = 1;
@@ -31,23 +32,30 @@ namespace LiteQuark.Editor
                 _setting = ResCollectorSetting.GetOrCreateSetting();
                 _bundleInfoCache.Clear();
                 _dependencyCache.Clear();
+                _assetSourcePathMap.Clear();
                 _bundleID = 1;
                 CollectBundleInfo(LiteConst.AssetRootPath);
-                _packInfo = new VersionPackInfo(version, target.ToString(), hashMode, flatMode, _bundleInfoCache.Values.ToArray());
+                var packInfo = new VersionPackInfo(version, target.ToString(), hashMode, flatMode, _bundleInfoCache.Values.ToArray());
 
-                var cycles = AssetBundleDependencyValidator.FindUniqueCycles(_packInfo);
+                var cycles = AssetBundleDependencyValidator.FindUniqueCycles(packInfo);
                 if (cycles.Count > 0)
                 {
                     var message = $"发现循环依赖:{Environment.NewLine}{AssetBundleDependencyValidator.FormatCycles(cycles)}";
                     LEditorLog.Error(message);
                     throw new InvalidOperationException(message);
                 }
+
+                _packInfo = packInfo;
             }
             return _packInfo;
         }
 
         public void CleanVersionPackInfo()
         {
+            _bundleInfoCache.Clear();
+            _dependencyCache.Clear();
+            _assetSourcePathMap.Clear();
+            _bundleID = 1;
             _setting = null;
             _packInfo = null;
             Manifest = null;
@@ -106,30 +114,40 @@ namespace LiteQuark.Editor
 
         private void CreateBundleInfo(string bundleFullPath, string[] filePathList)
         {
-            var assetPathList = filePathList.Where(AssetFilter).ToArray();
+            var assetList = new List<string>();
+            var dependencySet = new HashSet<string>();
 
-            if (assetPathList.Length > 0)
+            foreach (var filePath in filePathList)
             {
-                var assetList = new List<string>();
-                var dependencySet = new HashSet<string>();
-
-                foreach (var assetPath in assetPathList)
+                if (!AssetFilter(filePath))
                 {
-                    assetList.Add(PathUtils.FormatAssetPath(PathUtils.GetRelativeAssetRootPath(assetPath)));
-
-                    foreach (var dep in GetDependencyList(assetPath))
-                    {
-                        if (!dependencySet.Contains(dep))
-                        {
-                            dependencySet.Add(dep);
-                        }
-                    }
+                    continue;
                 }
 
-                var bundlePath = GetBundlePathFromFullPath(bundleFullPath);
-                dependencySet.Remove(bundlePath);
-                AddToBundleInfoCache(bundlePath, assetList.ToArray(), dependencySet.ToArray());
+                var sourcePath = AssetPath.NormalizeProjectPath(filePath);
+
+                if (!TryRegisterAssetSourcePath(sourcePath, out var assetKey))
+                {
+                    continue;
+                }
+
+                assetList.Add(GetManifestAssetPath(assetKey));
+
+                foreach (var dependency in GetDependencyList(sourcePath))
+                {
+                    dependencySet.Add(dependency);
+                }
             }
+
+            if (assetList.Count == 0)
+            {
+                return;
+            }
+
+            var bundlePath = GetBundlePathFromFullPath(bundleFullPath);
+            dependencySet.Remove(bundlePath);
+
+            AddToBundleInfoCache(bundlePath, assetList.ToArray(), dependencySet.ToArray());
         }
 
         private string[] GetDependencyList(string assetPath)
@@ -144,20 +162,16 @@ namespace LiteQuark.Editor
 
             foreach (var dependencyPath in dependencyPathList)
             {
-                if (string.Compare(dependencyPath, assetPath, StringComparison.OrdinalIgnoreCase) == 0 || !AssetFilter(dependencyPath))
+                if (string.Equals(dependencyPath, assetPath, StringComparison.OrdinalIgnoreCase) || !AssetFilter(dependencyPath) || !PathUtils.PathIsFile(dependencyPath))
                 {
                     continue;
                 }
 
-                var path = GetBundlePathFromFullPath(dependencyPath);
-                if (!result.Contains(path))
-                {
-                    if (PathUtils.PathIsFile(dependencyPath))
-                    {
-                        CreateBundleInfo(dependencyPath, new[] { PathUtils.FormatAssetPath(PathUtils.GetRelativeAssetRootPath(dependencyPath)) });
-                    }
-                    result.Add(path);
-                }
+                var sourcePath = AssetPath.NormalizeProjectPath(dependencyPath);
+                // 每个依赖资源都尝试收集，资源去重由登记字典负责。
+                CreateBundleInfo(sourcePath, new[] { sourcePath });
+                // 这里仅对 Bundle 依赖边去重。
+                result.Add(GetBundlePathFromFullPath(sourcePath));
             }
 
             return result.ToArray();
@@ -166,16 +180,21 @@ namespace LiteQuark.Editor
         private string GetBundlePathFromFullPath(string fullPath)
         {
             var realPath = GetRealBundlePathBySetting(fullPath);
-            var bundlePath = PathUtils.GetRelativeAssetRootPath(realPath);
 
-            if (string.IsNullOrWhiteSpace(bundlePath))
+            if (string.Equals(realPath, LiteConst.AssetRootPath, StringComparison.OrdinalIgnoreCase))
             {
                 return _defaultBundlePath;
             }
 
+            var bundlePath = AssetPath.TryGetRelativeToRoot(realPath, LiteConst.AssetRootPath, out var relativePath) ? relativePath : realPath;
             bundlePath = PathUtils.GetPathFromFullPath(bundlePath);
-            bundlePath = PathUtils.FormatAssetPath(bundlePath);
 
+            if (string.IsNullOrEmpty(bundlePath))
+            {
+                return _defaultBundlePath;
+            }
+
+            bundlePath = PathUtils.FormatAssetPath(bundlePath);
             return $"{bundlePath}{LiteConst.BundleFileExt}";
         }
 
@@ -202,6 +221,41 @@ namespace LiteQuark.Editor
             }
 
             return lastIndividualPath;
+        }
+
+        private bool TryRegisterAssetSourcePath(string sourcePath, out string assetKey)
+        {
+            assetKey = AssetPath.Resolve(sourcePath);
+
+            if (_assetSourcePathMap.TryGetValue(assetKey, out var existingPath))
+            {
+                if (!string.Equals(existingPath, sourcePath, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"Asset path collision: {existingPath} <-> {sourcePath}");
+                }
+
+                return false;
+            }
+
+            _assetSourcePathMap.Add(assetKey, sourcePath);
+            return true;
+        }
+
+        private static string GetManifestAssetPath(string assetKey)
+        {
+            return AssetPath.TryGetRelativeToRoot(assetKey, LiteConst.AssetRootPath, out var relativePath) ? relativePath : assetKey;
+        }
+
+        internal string GetAssetSourcePath(string assetPath)
+        {
+            var assetKey = AssetPath.Resolve(assetPath);
+
+            if (_assetSourcePathMap.TryGetValue(assetKey, out var sourcePath))
+            {
+                return sourcePath;
+            }
+
+            throw new InvalidOperationException($"Asset source path was not collected: {assetPath}");
         }
 
         private bool AssetFilter(string filePath)

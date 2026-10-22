@@ -29,9 +29,7 @@ namespace LiteQuark.Editor
 
                 for (var j = 0; j < bundleInfo.AssetList.Length; j++)
                 {
-                    var assetPath = bundleInfo.AssetList[j];
-                    var fullPath = assetPath.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase) ? assetPath : PathUtils.GetFullPathInAssetRoot(assetPath);
-                    assetPaths[j] = fullPath;
+                    assetPaths[j] = builder.Collector.GetAssetSourcePath(bundleInfo.AssetList[j]);
                 }
 
                 builder.Collector.Builds[i] = new AssetBundleBuild()
