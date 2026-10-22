@@ -6,18 +6,18 @@ namespace LiteQuark.Runtime
 {
     internal sealed class LoadSceneTask : BaseTask
     {
-        public override string DebugName => $"LoadScene:{_sceneName}";
+        public override string DebugName => $"LoadScene:{_scenePath}";
 
-        private readonly string _sceneName;
+        private readonly string _scenePath;
         private readonly LoadSceneParameters _parameters;
         private Action<bool, Scene> _callback;
         private AsyncOperation _sceneRequest;
         private Scene _scene;
 
-        public LoadSceneTask(string sceneName, LoadSceneParameters parameters, Action<bool, Scene> callback)
+        public LoadSceneTask(string scenePath, LoadSceneParameters parameters, Action<bool, Scene> callback)
             : base()
         {
-            _sceneName = sceneName;
+            _scenePath = scenePath;
             _parameters = parameters;
             _callback = callback;
             _sceneRequest = null;
@@ -60,7 +60,7 @@ namespace LiteQuark.Runtime
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            _sceneRequest = SceneManager.LoadSceneAsync(_sceneName, _parameters);
+            _sceneRequest = SceneManager.LoadSceneAsync(_scenePath, _parameters);
 
             if (_sceneRequest == null)
             {
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (string.Equals(scene.name, _sceneName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(scene.path, _scenePath, StringComparison.OrdinalIgnoreCase))
             {
                 _scene = scene;
             }

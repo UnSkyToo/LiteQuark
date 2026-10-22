@@ -128,9 +128,9 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
-        public bool HasAsset(string assetPath)
+        public bool HasAsset(string assetKey)
         {
-            return _packInfo?.GetBundleInfoFromAssetPath(assetPath) != null;
+            return _packInfo?.TryGetBundleInfoByAssetKey(assetKey, out _) ?? false;
         }
 
         public void UnloadUnusedAssets(int maxDepth)

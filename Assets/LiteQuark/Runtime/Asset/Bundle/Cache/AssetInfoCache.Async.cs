@@ -43,13 +43,12 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Loading;
-            var name = PathUtils.GetFileName(_assetPath);
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath);
 
             try
             {
-                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, name, HandleAssetLoadCompleted);
+                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, _assetPath, HandleAssetLoadCompleted);
             }
             catch
             {

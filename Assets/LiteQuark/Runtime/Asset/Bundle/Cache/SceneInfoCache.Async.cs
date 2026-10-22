@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
             _sceneLoaderCallback = callback;
             Stage = AssetCacheStage.Loading;
 
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneName, _assetType, _bundleLease?.BundlePath ?? string.Empty);
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease?.BundlePath ?? string.Empty);
             HandleSceneLoadCompleted(true, scene);
         }
 #endif
@@ -30,11 +30,11 @@ namespace LiteQuark.Runtime
             _sceneLoaderCallback = callback;
             Stage = AssetCacheStage.Loading;
 
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneName, _assetType, _bundleLease.BundlePath);
+            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease.BundlePath);
 
             try
             {
-                _loadSceneTask = LiteRuntime.Task.AddLoadSceneTask(_sceneName, _parameters, HandleSceneLoadCompleted);
+                _loadSceneTask = LiteRuntime.Task.AddLoadSceneTask(_loadPath, _parameters, HandleSceneLoadCompleted);
             }
             catch
             {
@@ -54,7 +54,7 @@ namespace LiteQuark.Runtime
 
             var isLoaded = OnSceneLoaded(success, scene);
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneName, _assetType, _bundleLease?.BundlePath ?? string.Empty, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease?.BundlePath ?? string.Empty, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
 
             var lease = isLoaded ? AcquireLease() : null;
             NotifyCompleted(lease);

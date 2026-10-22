@@ -4,7 +4,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        public void LoadAssetAsync<T>(string assetPath, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
             if (_isDisposed)
             {
@@ -12,18 +12,17 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(assetPath);
-            if (bundleInfo == null)
+            if (!_packInfo.TryGetBundleInfoByAssetKey(assetKey, out var bundleInfo))
             {
                 LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
             var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-            cache.LoadAssetAsync(assetPath, priority, callback);
+            cache.LoadAssetAsync(assetKey, priority, callback);
         }
 
-        public void LoadSceneAsync(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
+        public void LoadSceneAsync(string sceneKey, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
         {
             if (_isDisposed)
             {
@@ -31,36 +30,32 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            if (!_loadingSceneSet.Add(sceneName))
+            if (!_loadingSceneSet.Add(sceneKey))
             {
-                LLog.Error("Scene is already loading: {0}", sceneName);
+                LLog.Error("Scene is already loading: {0}", sceneKey);
                 LiteUtils.SafeInvoke(callback, null);
                 return;
             }
 
-            var formatPath = PathUtils.FormatAssetPath(scenePath);
-
             try
             {
-                var bundleInfo = _packInfo.GetBundleInfoFromAssetPath(formatPath);
-                if (bundleInfo == null)
+                if (!_packInfo.TryGetBundleInfoByAssetKey(sceneKey, out var bundleInfo))
                 {
-                    _loadingSceneSet.Remove(sceneName);
+                    _loadingSceneSet.Remove(sceneKey);
                     LiteUtils.SafeInvoke(callback, null);
                     return;
                 }
 
                 var cache = GetOrCreateBundleCache(bundleInfo.BundlePath);
-                cache.LoadSceneAsync(sceneName, parameters, priority, lease =>
+                cache.LoadSceneAsync(sceneKey, parameters, priority, lease =>
                 {
-                    _loadingSceneSet.Remove(sceneName);
+                    _loadingSceneSet.Remove(sceneKey);
                     LiteUtils.SafeInvoke(callback, lease);
                 });
             }
             catch
             {
-                _loadingSceneSet.Remove(sceneName);
+                _loadingSceneSet.Remove(sceneKey);
                 throw;
             }
         }

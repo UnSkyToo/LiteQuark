@@ -4,7 +4,7 @@
     {
         internal SceneVisitorInfo GetVisitorInfo()
         {
-            var info = new SceneVisitorInfo(_sceneName);
+            var info = new SceneVisitorInfo(_sceneKey);
             return info;
         }
     }

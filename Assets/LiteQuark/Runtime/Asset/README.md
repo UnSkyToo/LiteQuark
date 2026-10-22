@@ -6,7 +6,13 @@
 
 ## 路径与模式
 
-资源放在 `Assets/StandaloneAssets`，调用时使用相对该目录的完整文件路径，例如 `Prefabs/Player.prefab`。路径统一为小写和 `/`，不会自动补扩展名。
+资源默认放在 `Assets/StandaloneAssets`。加载、实例化、预加载、场景加载和 `HasAsset` 接受两种路径：相对该目录的文件路径，例如 `Prefabs/Player.prefab`；或者以 `Assets/` 开头的完整项目路径，例如 `Assets/StandaloneAssets/Prefabs/Player.prefab`。这里的完整项目路径不是磁盘绝对路径。显式的根目录外项目路径（如 `Assets/Shared/Material.mat`）也可表达；Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
+
+入口通过 [AssetPath](AssetPath.cs) 将资源身份统一为小写、使用 `/` 的完整项目路径。相对路径、完整路径以及大小写或斜杠不同的写法，会得到同一个 key；重复斜杠和 `.` 路径段会被归一化。必须包含文件扩展名，不会自动补全；场景路径必须以 `.unity` 结尾。空路径、`..`、磁盘绝对路径、URL、显式目录路径及不支持的 `Packages/` 路径等非法输入会使加载入口同步抛出 `ArgumentException`；`HasAsset` 对非法输入返回 `false`。合法但不存在的资源仍按加载失败处理，不能将路径校验通过视为资源存在。
+
+普通 Bundle 资源按完整资源路径加载，不按短文件名查找。场景使用规范 key 定位资源和限制并发，再使用 Bundle 或 AssetDatabase 返回的实际项目路径加载，保留实际加载路径的大小写。资源 key 的小写规则不适用于任意磁盘路径、远端 URL 或 Bundle 文件位置。
+
+版本文件仍沿用现有格式；读入后仅在建立运行时资源索引时生成规范 key，不改写 `BundleInfo.AssetList`。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath` 同样接受上述两种资源路径。此路径调整不更改收集器、分包规则或构建选项。
 
 在 Launcher 的 Asset 设置中配置：
 
@@ -65,9 +71,11 @@ if (sceneHandle.Result == null)
 sceneHandle.Dispose();
 ```
 
-`SceneHandle.Result` 为 `Scene?`，加载失败、Handle 已释放或场景已失效时返回 `null`；非空时可通过 `.Value` 取得实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同名场景的并发加载会被拒绝；前一次加载完成后再次以 Additive 加载同一路径，会创建独立实例。通过 Single 模式或外部调用卸载场景后，框架会监听实际卸载事件，自动结束对应场景条目并归还其 Bundle 引用，`SceneHandle.Result` 返回 `null`。业务仍应在持有者生命周期结束时调用 `Dispose()`；此时不会重复卸载场景或释放资源引用。归还引用不代表共享 Bundle 立即卸载，实际回收仍遵循引用计数和缓存策略。Editor 和 Bundle 模式共用这一场景收尾逻辑。
+`SceneHandle.Result` 为 `Scene?`，加载失败、Handle 已释放或场景已失效时返回 `null`；非空时可通过 `.Value` 取得实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同一 Provider 内，规范化后同一路径的并发加载会被拒绝，包括相对路径与完整路径混用的请求；不同目录下的同名场景可以区分。前一次加载完成后再次以 Additive 加载同一路径，会创建独立实例，各 Handle 持有并卸载自己的 Scene 实例。并发限制不覆盖外部直接调用 Unity 场景加载 API 的请求。通过 Single 模式或外部调用卸载场景后，框架会监听实际卸载事件，自动结束对应场景条目并归还其 Bundle 引用，`SceneHandle.Result` 返回 `null`。业务仍应在持有者生命周期结束时调用 `Dispose()`；此时不会重复卸载场景或释放资源引用。归还引用不代表共享 Bundle 立即卸载，实际回收仍遵循引用计数和缓存策略。Editor 和 Bundle 模式共用这一场景收尾逻辑。
 
 场景卸载先启动 Unity 的卸载操作，再通过 TaskSystem 的 `AsyncOperation` 便利入口观察完成；该包装任务进入无限额的 Flow 组，不等待默认组空位。Flow 不改变底层卸载的异步完成语义。
+
+框架能区分同名场景的完整路径，不代表底层 Bundle 可以同时装载。Unity `2022.3.62f3` 的本地验证中，将两个 `Battle.unity` 放入同一个 Bundle 会因内部 `BuildPlayer-Battle.sharedAssets` 重名而构建失败；拆到不同 Bundle 后，同时装载仍触发“另一个包含相同文件的 AssetBundle 已加载”的错误。需要同时加载的 Bundle 场景应使用不同文件名。Editor 直读模式下不同目录同名场景可以并发加载；Bundle 构建层的限制与校验另行处理，不能仅靠完整路径解析消除。
 
 ```csharp
 var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
@@ -83,7 +91,7 @@ if (!preload.Result)
 // 将 preload 保留到预加载资源不再需要；使用资源时另取自己的 AssetHandle。
 ```
 
-预加载会对规范化后的路径去重，提供 `TotalCount`、`LoadedCount`、`FailedCount` 和 `FailedPaths`。它持有批量资源引用，不直接提供资源对象；释放它会释放内部 Handle。
+预加载先解析整批输入，再对规范化后的完整路径去重并开始加载；任意输入非法时同步抛出异常，不会启动这批预加载。提供 `TotalCount`、`LoadedCount`、`FailedCount` 和 `FailedPaths`，其中失败路径使用规范化后的完整 key。它持有批量资源引用，不直接提供资源对象；释放它会释放内部 Handle。
 
 ## 加载优先级
 

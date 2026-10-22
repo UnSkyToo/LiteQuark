@@ -64,35 +64,32 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public bool HasAsset(string assetPath)
+        public bool HasAsset(string assetKey)
         {
-            var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
-            return AssetDatabase.GetMainAssetTypeAtPath(fullPath) != null;
+            return AssetDatabase.GetMainAssetTypeAtPath(assetKey) != null;
         }
 
-        public void LoadAssetAsync<T>(string assetPath, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetInfoCache.Lease<T>> callback) where T : UnityEngine.Object
         {
-            SimulateAsync(callback, LoadAssetSync<T>(assetPath));
+            SimulateAsync(callback, LoadAssetSync<T>(assetKey));
         }
 
-        public AssetInfoCache.Lease<T> LoadAssetSync<T>(string assetPath) where T : UnityEngine.Object
+        public AssetInfoCache.Lease<T> LoadAssetSync<T>(string assetKey) where T : UnityEngine.Object
         {
-            var fullPath = PathUtils.GetFullPathInAssetRoot(assetPath);
-            var asset = AssetDatabase.LoadAssetAtPath<T>(fullPath);
+            var asset = AssetDatabase.LoadAssetAtPath<T>(assetKey);
             if (asset == null)
             {
-                LLog.Error("Can't load asset : {0}", fullPath);
+                LLog.Error("Can't load asset : {0}", assetKey);
                 return null;
             }
             return AssetInfoCache.Lease<T>.CreateUncached(asset);
         }
 
-        public void LoadSceneAsync(string scenePath, LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
+        public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority, Action<SceneInfoCache.Lease> callback)
         {
-            var sceneName = PathUtils.GetFileNameWithoutExt(scenePath);
-            if (!_loadingSceneSet.Add(sceneName))
+            if (!_loadingSceneSet.Add(sceneKey))
             {
-                LLog.Error("Scene is already loading: {0}", sceneName);
+                LLog.Error("Scene is already loading: {0}", sceneKey);
                 LiteUtils.SafeInvoke(callback, null);
                 return;
             }
@@ -103,24 +100,32 @@ namespace LiteQuark.Runtime
             {
                 try
                 {
-                    var fullPath = PathUtils.GetFullPathInAssetRoot(scenePath);
-                    var loadScene = EditorSceneManager.LoadSceneInPlayMode(fullPath, parameters);
+                    var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(sceneKey);
+                    if (sceneAsset == null)
+                    {
+                        _loadingSceneSet.Remove(sceneKey);
+                        LiteUtils.SafeInvoke(callback, null);
+                        return;
+                    }
+
+                    var loadPath = AssetDatabase.GetAssetPath(sceneAsset);
+                    var loadScene = EditorSceneManager.LoadSceneInPlayMode(loadPath, parameters);
                     await UniTask.WaitUntil(() => !loadScene.IsValid() || loadScene.isLoaded);
 
                     SimulateAsync(scene =>
                     {
                         if (!scene.IsValid() || !scene.isLoaded)
                         {
-                            LLog.Error("Can't load scene : {0}", fullPath);
-                            _loadingSceneSet.Remove(sceneName);
+                            LLog.Error("Can't load scene : {0}", loadPath);
+                            _loadingSceneSet.Remove(sceneKey);
                             LiteUtils.SafeInvoke(callback, null);
                             return;
                         }
 
-                        var cache = new SceneInfoCache(null, sceneName, parameters);
+                        var cache = new SceneInfoCache(null, sceneKey, loadPath, parameters);
                         cache.LoadSceneForEditor(scene, lease =>
                         {
-                            _loadingSceneSet.Remove(sceneName);
+                            _loadingSceneSet.Remove(sceneKey);
 
                             if (!scene.IsValid() || !scene.isLoaded)
                             {
@@ -135,8 +140,8 @@ namespace LiteQuark.Runtime
                 }
                 catch (Exception ex)
                 {
-                    _loadingSceneSet.Remove(sceneName);
-                    LLog.Exception(ex, "Load scene failed : {0}", scenePath);
+                    _loadingSceneSet.Remove(sceneKey);
+                    LLog.Exception(ex, "Load scene failed : {0}", sceneKey);
                     LiteUtils.SafeInvoke(callback, null);
                 }
             }

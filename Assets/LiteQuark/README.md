@@ -75,7 +75,7 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 ## 资源与构建
 
-资源根目录为 `Assets/StandaloneAssets`。例如实际文件 `Assets/StandaloneAssets/Prefabs/Player.prefab` 的加载路径是 `Prefabs/Player.prefab`，包含扩展名。路径会统一斜杠和大小写。
+资源根目录为 `Assets/StandaloneAssets`。例如实际文件 `Assets/StandaloneAssets/Prefabs/Player.prefab` 可以使用 `Prefabs/Player.prefab` 或完整的 `Assets/...` 项目路径加载，均须包含扩展名。入口将其统一为小写、使用 `/` 的完整资源 key；磁盘绝对路径、URL 和 `..` 等非法输入会使加载入口同步抛出 `ArgumentException`，`HasAsset` 则返回 `false`。Bundle 内按完整资源路径寻址；场景保留实际加载路径，并区分不同目录下的同名场景。
 
 Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发布前通过 `Lite > Builder` 生成资源包和版本文件，使用 BuiltIn 或 Remote 定位模式。资源的加载、实例化和卸载统一由 Handle 管理，详见 [Asset 指南](Runtime/Asset/README.md)。
 

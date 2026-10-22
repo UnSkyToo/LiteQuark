@@ -48,7 +48,14 @@ namespace LiteQuark.Runtime
 
                 foreach (var assetPath in bundle.AssetList)
                 {
-                    _assetPathToBundleCache.Add(assetPath, bundle);
+                    var assetKey = AssetPath.Resolve(assetPath);
+
+                    if (_assetPathToBundleCache.TryGetValue(assetKey, out var existing))
+                    {
+                        throw new InvalidOperationException($"Duplicate asset key: {assetKey}, bundles: {existing.BundlePath}, {bundle.BundlePath}");
+                    }
+
+                    _assetPathToBundleCache.Add(assetKey, bundle);
                 }
             }
         }
@@ -153,13 +160,19 @@ namespace LiteQuark.Runtime
 
         public BundleInfo GetBundleInfoFromAssetPath(string assetPath)
         {
-            if (_assetPathToBundleCache.TryGetValue(assetPath, out var info))
+            var assetKey = AssetPath.Resolve(assetPath);
+            if (_assetPathToBundleCache.TryGetValue(assetKey, out var info))
             {
                 return info;
             }
 
             LLog.Error("Can't get bundle info : {0}", assetPath);
             return null;
+        }
+
+        internal bool TryGetBundleInfoByAssetKey(string assetKey, out BundleInfo bundleInfo)
+        {
+            return _assetPathToBundleCache.TryGetValue(assetKey, out bundleInfo);
         }
 
         public string GetBundleFileLoadPath(BundleInfo bundleInfo)

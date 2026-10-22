@@ -61,21 +61,38 @@ namespace LiteQuark.Runtime
             return _provider?.GetVersion();
         }
 
-        private string FormatPath(string path)
-        {
-            return PathUtils.FormatAssetPath(path);
-        }
-
         public bool HasAsset(string assetPath)
         {
-            var formatPath = FormatPath(assetPath);
-            return _provider?.HasAsset(formatPath) ?? false;
+            if (!AssetPath.TryResolve(assetPath, out var assetKey))
+            {
+                return false;
+            }
+
+            return _provider?.HasAsset(assetKey) ?? false;
         }
 
         public AssetHandle<T> LoadAssetHandle<T>(string assetPath, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
         {
-            var formatPath = FormatPath(assetPath);
-            return new AssetHandle<T>(cb => _provider?.LoadAssetAsync(formatPath, priority, cb), ct);
+            var assetKey = AssetPath.Resolve(assetPath);
+            return LoadAssetHandleInternal<T>(assetKey, priority, ct);
+        }
+
+        private AssetHandle<T> LoadAssetHandleInternal<T>(
+            string assetKey,
+            AssetLoadPriority priority,
+            CancellationToken ct)
+            where T : UnityEngine.Object
+        {
+            return new AssetHandle<T>(callback =>
+            {
+                if (_provider == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+
+                _provider.LoadAssetAsync(assetKey, priority, callback);
+            }, ct);
         }
 
         public PreloadHandle<T> PreloadAssetHandle<T>(IEnumerable<string> assetPaths, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
@@ -85,19 +102,19 @@ namespace LiteQuark.Runtime
                 throw new ArgumentNullException(nameof(assetPaths));
             }
 
-            var formatPaths = new List<string>();
-            var pathSet = new HashSet<string>();
+            var assetKeys = new List<string>();
+            var keySet = new HashSet<string>(StringComparer.Ordinal);
 
             foreach (var assetPath in assetPaths)
             {
-                var formatPath = FormatPath(assetPath);
-                if (pathSet.Add(formatPath))
+                var assetKey = AssetPath.Resolve(assetPath);
+                if (keySet.Add(assetKey))
                 {
-                    formatPaths.Add(formatPath);
+                    assetKeys.Add(assetKey);
                 }
             }
 
-            return new PreloadHandle<T>(formatPaths, (path, token) => LoadAssetHandle<T>(path, priority, token), ct);
+            return new PreloadHandle<T>(assetKeys, (assetKey, token) => LoadAssetHandleInternal<T>(assetKey, priority, token), ct);
         }
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
@@ -109,7 +126,20 @@ namespace LiteQuark.Runtime
                 asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
         public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
-            => new SceneHandle(cb => _provider?.LoadSceneAsync(scenePath, parameters, priority, cb), ct);
+        {
+            var sceneKey = AssetPath.ResolveScene(scenePath);
+
+            return new SceneHandle(callback =>
+            {
+                if (_provider == null)
+                {
+                    LiteUtils.SafeInvoke(callback, null);
+                    return;
+                }
+
+                _provider?.LoadSceneAsync(sceneKey, parameters, priority, callback);
+            }, ct);
+        }
 
         /// <summary>
         /// 释放未使用的资源（包括处于Retain的缓存资源），可以在需要的时候调用

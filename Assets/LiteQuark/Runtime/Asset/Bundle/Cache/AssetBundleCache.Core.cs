@@ -164,22 +164,22 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private AssetInfoCache GetOrCreateAssetCache(string assetPath, Type assetType)
+        private AssetInfoCache GetOrCreateAssetCache(string assetKey, Type assetType)
         {
-            var key = (assetPath, assetType);
+            var key = (assetKey, assetType);
             if (_assetCacheMap.TryGetValue(key, out var cache))
             {
                 return cache;
             }
 
-            cache = new AssetInfoCache(this, assetPath, assetType);
+            cache = new AssetInfoCache(this, assetKey, assetType);
             _assetCacheMap.Add(key, cache);
             return cache;
         }
 
-        private SceneInfoCache CreateSceneCache(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters, Lease bundleLease)
+        private SceneInfoCache CreateSceneCache(string sceneKey, string loadPath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Lease bundleLease)
         {
-            var cache = new SceneInfoCache(bundleLease, sceneName, parameters);
+            var cache = new SceneInfoCache(bundleLease, sceneKey, loadPath, parameters);
             _sceneCacheMap.Add(cache);
             return cache;
         }
@@ -201,6 +201,33 @@ namespace LiteQuark.Runtime
                     dependencyCache.RaiseLoadPriority(priority);
                 }
             }
+        }
+
+        private bool TryGetSceneLoadPath(string sceneKey, out string loadPath)
+        {
+            loadPath = null;
+
+            foreach (var candidate in Bundle.GetAllScenePaths())
+            {
+                var candidateKey = AssetPath.ResolveScene(candidate);
+
+                if (!string.Equals(candidateKey, sceneKey, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (loadPath != null)
+                {
+                    LLog.Error("Duplicate scene key in bundle: {0}", sceneKey);
+                    loadPath = null;
+                    return false;
+                }
+
+                // 保留 Bundle 返回的实际大小写。
+                loadPath = candidate;
+            }
+
+            return loadPath != null;
         }
 
         private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
