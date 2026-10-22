@@ -79,6 +79,8 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发布前通过 `Lite > Builder` 生成资源包和版本文件，使用 BuiltIn 或 Remote 定位模式。资源的加载、实例化和卸载统一由 Handle 管理，详见 [Asset 指南](Runtime/Asset/README.md)。
 
+升级版本文件的路径前缀恢复逻辑时，应从源资源重新生成包含 `default.ab` 的旧清单，并与修复后的读取逻辑配套使用；旧数据可能已丢失根目录与真实 `default` 子目录的路径区别，不能靠读入旧清单再导出来修复。完整兼容说明见上述 Asset 指南。
+
 ## 依赖与版本
 
 源码工程使用 Unity `2022.3.62f3`；包版本与声明的最低 Unity 版本见 [package.json](package.json)。核心随包包含 UniTask、LitJson 和 IngameDebugConsole。Runtime 与 Editor 分属独立程序集。

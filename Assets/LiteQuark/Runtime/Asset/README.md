@@ -12,7 +12,13 @@
 
 普通 Bundle 资源按完整资源路径加载，不按短文件名查找。场景使用规范 key 定位资源和限制并发，再使用 Bundle 或 AssetDatabase 返回的实际项目路径加载，保留实际加载路径的大小写。资源 key 的小写规则不适用于任意磁盘路径、远端 URL 或 Bundle 文件位置。
 
-版本文件仍沿用现有格式；读入后仅在建立运行时资源索引时生成规范 key，不改写 `BundleInfo.AssetList`。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath` 同样接受上述两种资源路径。此路径调整不更改收集器、分包规则或构建选项。
+版本文件继续以压缩后的相对路径为主，JSON 字段、依赖 ID 字符串、UTF-8 编码和现有加密方式保持不变。普通 Bundle 使用其逻辑 `BundlePath` 去掉 `.ab` 后的目录作为前缀：例如 `a/b/c.ab` 中的 `a/b/c/d.png` 存为 `d.png`，读取时补回 `a/b/c/`。压缩只截去开头匹配的目录前缀，不删除路径中间再次出现的同名目录；不匹配的普通相对路径会报错，已有的完整 `Assets/...` 路径表示仍受支持。
+
+只有根级 `default.ab` 使用空前缀：根目录的 `config.json` 原样存储并恢复为 `config.json`；真实 `default` 子目录中的 `default/config.json` 保留该目录，二者不会混淆。`a/default.ab` 等嵌套 Bundle 仍使用普通目录前缀。这一规则与 HashMode、FlatMode 产生的物理 Bundle 文件名无关。
+
+读取时先恢复资源路径和依赖路径，再由 `Initialize()` 建立完整规范 key 索引；建立索引不会再次改写 `BundleInfo.AssetList`。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath` 接受相对资源根目录的路径及完整项目路径。`ToJsonData()`、`ToBinaryData()` 保留原地转换方式，会将原对象改成存储表示；应将写出视为该对象本轮使用的结束，不继续用它查询或重复输出。需要再次输出时，应使用重新收集或重新读取并恢复的对象。
+
+**旧 `default.ab` 清单的兼容限制：**升级到本次路径恢复逻辑时，应从源资源重新收集并生成包含 `default.ab` 的旧版本清单。旧实现可能将根目录的 `icon.png` 和真实子目录中的 `default/icon.png` 都存成 `icon.png`，已经丢失的信息无法自动恢复；仅把旧清单读入后再次导出不能修复这种歧义。旧版字符串替换误删了路径中间目录的清单同样需要从源资源重新生成。正确编码的普通 Bundle 旧清单仍可读取，但不能把字段格式未变理解为所有旧数据都可无损迁移。新生成的 `default.ab` 清单应与修复后的读取逻辑配套使用，旧读取器仍会错误补上 `default/`。
 
 在 Launcher 的 Asset 设置中配置：
 

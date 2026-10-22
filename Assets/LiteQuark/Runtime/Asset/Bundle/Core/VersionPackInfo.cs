@@ -83,15 +83,22 @@ namespace LiteQuark.Runtime
                 bundleIDMap.Add(bundle.BundlePath, bundle.BundleID.ToString());
             }
 
-            const string bundleFileExt = LiteConst.BundleFileExt;
-
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
+                var prefix = GetBundleAssetPrefix(bundle.BundlePath);
 
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
-                    bundle.AssetList[index] = PathUtils.GetRelativePath(bundlePath, bundle.AssetList[index]);
+                    var assetPath = bundle.AssetList[index];
+
+                    if (assetPath.StartsWith(prefix, StringComparison.Ordinal))
+                    {
+                        bundle.AssetList[index] = assetPath.Substring(prefix.Length);
+                    }
+                    else if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException($"Asset path does not match bundle prefix: {assetPath}, bundle: {bundle.BundlePath}");
+                    }
                 }
 
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
@@ -117,18 +124,17 @@ namespace LiteQuark.Runtime
                 bundleIDMap.Add(bundle.BundleID.ToString(), bundle.BundlePath);
             }
 
-            const string bundleFileExt = LiteConst.BundleFileExt;
-
             foreach (var bundle in BundleList)
             {
-                var bundlePath = $"{bundle.BundlePath.Substring(0, bundle.BundlePath.Length - bundleFileExt.Length)}/";
+                var prefix  = GetBundleAssetPrefix(bundle.BundlePath);
 
                 for (var index = 0; index < bundle.AssetList.Length; index++)
                 {
                     var assetPath = bundle.AssetList[index];
+
                     if (!assetPath.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase))
                     {
-                        bundle.AssetList[index] = $"{bundlePath}{assetPath}";
+                        bundle.AssetList[index] = prefix + assetPath;
                     }
                 }
 
@@ -145,6 +151,18 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
+        }
+
+        private static string GetBundleAssetPrefix(string bundlePath)
+        {
+            var defaultBundlePath = $"default{LiteConst.BundleFileExt}";
+
+            if (string.Equals(bundlePath, defaultBundlePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            return bundlePath.Substring(0, bundlePath.Length - LiteConst.BundleFileExt.Length) + "/";
         }
 
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
