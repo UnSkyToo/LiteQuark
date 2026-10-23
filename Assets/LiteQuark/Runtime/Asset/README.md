@@ -14,15 +14,17 @@
 
 普通 Bundle 资源按完整资源路径加载，不按短文件名查找。场景使用规范 key 定位资源和限制并发，再使用 Bundle 或 AssetDatabase 返回的实际项目路径加载，保留实际加载路径的大小写。资源 key 的小写规则不适用于任意磁盘路径、远端 URL 或 Bundle 文件位置。
 
-版本文件继续以压缩后的相对路径为主，JSON 字段、依赖 ID 字符串、UTF-8 编码和现有加密方式保持不变。普通 Bundle 使用其逻辑 `BundlePath` 去掉 `.ab` 后的目录作为前缀：例如 `a/b/c.ab` 中的 `a/b/c/d.png` 存为 `d.png`，读取时补回 `a/b/c/`。压缩只截去开头匹配的目录前缀，不删除路径中间再次出现的同名目录；不匹配的普通相对路径会报错，已有的完整 `Assets/...` 路径表示仍受支持。
+版本清单的 `BundleInfo.AssetList` 统一保存小写、使用 `/` 的完整项目路径（规范 key），例如 `assets/standaloneassets/data/assets/icon.png`。收集后、写入时和读回后保持同一表示，不再根据 `BundlePath` 截去或补回资源目录；`default.ab` 也不再需要资源路径恢复的特殊规则。分包归属、Bundle 名称、HashMode 和 FlatMode 的物理文件命名规则保持不变，构建时仍通过规范 key 映射回保留实际大小写的源路径。
 
-恢复时按 `Assets/` 目录边界识别完整项目路径，因此 `assets.json`、`assets_icon.png`、`assetsbackup/icon.png` 等普通相对路径会正常补回 Bundle 前缀。**已知目录歧义（暂缓处理）：**如果压缩后的相对路径本身以 `assets/` 开头（不区分大小写），仍无法与完整项目路径区分。例如 `data.ab` 中的 `data/assets/icon.png` 存为 `assets/icon.png` 后，恢复时会跳过 `data/`。本轮仅修复普通名称的前缀误判，未扩展存储表示；暂时应避免产生这类压缩路径，后续单独处理该歧义。
+**暂时放弃资源路径压缩：**本轮取消自定义路径缩写，先完成 Asset 架构与路径职责的统一。未来再根据实际清单大小、读取并建立索引的耗时和内存占用，重新考虑目录表、显式前缀编码或二进制存储等规则；编码应能无歧义地还原完整资源身份，不依赖 Bundle 名称猜测目录。本轮没有增加通用数据压缩，AssetBundle 自身的压缩选项也未改变。
 
-只有根级 `default.ab` 使用空前缀：根目录的 `config.json` 原样存储并恢复为 `config.json`；真实 `default` 子目录中的 `default/config.json` 保留该目录，二者不会混淆。`a/default.ab` 等嵌套 Bundle 仍使用普通目录前缀。这一规则与 HashMode、FlatMode 产生的物理 Bundle 文件名无关。
+依赖继续使用 Bundle ID 字符串存储，读取时恢复为 Bundle 路径。JSON 字段、UTF-8 编码及现有加密方式保持不变，暂不增加格式版本字段。`ToJsonData()`、`ToBinaryData()` 保留依赖的原地转换：`AssetList` 不变，`DependencyList` 被改成 ID；写出仍视为该对象本轮使用的结束，不继续查询或重复输出。需要再次输出时，应使用重新收集或重新读取并恢复的对象。
 
-读取时先恢复资源路径和依赖路径，再由 `Initialize()` 建立完整规范 key 索引；建立索引不会再次改写 `BundleInfo.AssetList`。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath` 接受相对资源根目录的路径及完整项目路径。`ToJsonData()`、`ToBinaryData()` 保留原地转换方式，会将原对象改成存储表示；应将写出视为该对象本轮使用的结束，不继续用它查询或重复输出。需要再次输出时，应使用重新收集或重新读取并恢复的对象。
+`Initialize()` 使用 `AssetPath.ResolveProjectAssetPath()` 校验完整资源路径并建立规范 key 索引，不改写 `AssetList`。收集登记和构建源路径映射也使用该严格入口，不将内部资源路径作为业务相对路径补全。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath()` 仍接受业务相对路径及完整项目路径。
 
-**旧 `default.ab` 清单的兼容限制：**升级到本次路径恢复逻辑时，应从源资源重新收集并生成包含 `default.ab` 的旧版本清单。旧实现可能将根目录的 `icon.png` 和真实子目录中的 `default/icon.png` 都存成 `icon.png`，已经丢失的信息无法自动恢复；仅把旧清单读入后再次导出不能修复这种歧义。旧版字符串替换误删了路径中间目录的清单同样需要从源资源重新生成。正确编码的普通 Bundle 旧清单仍可读取，但不能把字段格式未变理解为所有旧数据都可无损迁移。新生成的 `default.ab` 清单应与修复后的读取逻辑配套使用，旧读取器仍会错误补上 `default/`。
+**兼容限制：**旧相对路径清单应从源资源重新收集并生成，与新的读取逻辑配套使用。本轮不提供旧格式自动恢复，也不增加格式版本字段；普通旧相对路径在建立索引时会被拒绝，但形似 `assets/...` 的旧相对路径仍可能被当成完整项目路径，不能依靠解析成功来证明兼容。旧 `default.ab` 清单可能已丢失根目录与真实 `default/` 子目录的区别，旧字符串替换也可能误删中间目录，不能只读入旧清单再导出以迁移。
+
+完整路径清单消除了原先压缩结果以 `assets/` 开头时的存储歧义，普通 `packages`、`assets` 子目录及 `assets.json` 文件均可保留完整身份。**公共输入的 `assets/` 目录歧义继续暂缓：**业务输入 `assets/demo/icon.png` 仍按完整项目路径解释；若实际资源位于资源根目录的同名子目录，应传 `Assets/StandaloneAssets/assets/demo/icon.png`。这与清单存储无关，真正 UPM 支持也未开放。
 
 在 Launcher 的 Asset 设置中配置：
 

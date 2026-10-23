@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
 
                 foreach (var assetPath in bundle.AssetList)
                 {
-                    var assetKey = AssetPath.Resolve(assetPath);
+                    var assetKey = AssetPath.ResolveProjectAssetPath(assetPath);
 
                     if (_assetPathToBundleCache.TryGetValue(assetKey, out var existing))
                     {
@@ -75,7 +75,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void SimplifyPath()
+        private void EncodeDependencies()
         {
             var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
             foreach (var bundle in BundleList)
@@ -85,21 +85,21 @@ namespace LiteQuark.Runtime
 
             foreach (var bundle in BundleList)
             {
-                var prefix = GetBundleAssetPrefix(bundle.BundlePath);
-
-                for (var index = 0; index < bundle.AssetList.Length; index++)
-                {
-                    var assetPath = bundle.AssetList[index];
-
-                    if (assetPath.StartsWith(prefix, StringComparison.Ordinal))
-                    {
-                        bundle.AssetList[index] = assetPath.Substring(prefix.Length);
-                    }
-                    else if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new InvalidOperationException($"Asset path does not match bundle prefix: {assetPath}, bundle: {bundle.BundlePath}");
-                    }
-                }
+                // var prefix = GetBundleAssetPrefix(bundle.BundlePath);
+                //
+                // for (var index = 0; index < bundle.AssetList.Length; index++)
+                // {
+                //     var assetPath = bundle.AssetList[index];
+                //
+                //     if (assetPath.StartsWith(prefix, StringComparison.Ordinal))
+                //     {
+                //         bundle.AssetList[index] = assetPath.Substring(prefix.Length);
+                //     }
+                //     else if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
+                //     {
+                //         throw new InvalidOperationException($"Asset path does not match bundle prefix: {assetPath}, bundle: {bundle.BundlePath}");
+                //     }
+                // }
 
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
                 {
@@ -116,7 +116,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void RestorePath()
+        private void DecodeDependencies()
         {
             var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
             foreach (var bundle in BundleList)
@@ -126,17 +126,17 @@ namespace LiteQuark.Runtime
 
             foreach (var bundle in BundleList)
             {
-                var prefix  = GetBundleAssetPrefix(bundle.BundlePath);
-
-                for (var index = 0; index < bundle.AssetList.Length; index++)
-                {
-                    var assetPath = bundle.AssetList[index];
-
-                    if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        bundle.AssetList[index] = prefix + assetPath;
-                    }
-                }
+                // var prefix  = GetBundleAssetPrefix(bundle.BundlePath);
+                //
+                // for (var index = 0; index < bundle.AssetList.Length; index++)
+                // {
+                //     var assetPath = bundle.AssetList[index];
+                //
+                //     if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
+                //     {
+                //         bundle.AssetList[index] = prefix + assetPath;
+                //     }
+                // }
 
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
                 {
@@ -228,7 +228,7 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("VersionPackInfo is not valid");
             }
 
-            SimplifyPath();
+            EncodeDependencies();
             try
             {
                 var jsonText = LitJson.JsonMapper.ToJson(this);
@@ -248,7 +248,7 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("VersionPackInfo is not valid");
             }
 
-            SimplifyPath();
+            EncodeDependencies();
             try
             {
                 var jsonText = LitJson.JsonMapper.ToJson(this);
@@ -279,7 +279,7 @@ namespace LiteQuark.Runtime
                 var jsonData = LiteConst.SecurityMode ? SecurityUtils.DecryptBytes(data, LiteConst.SecurityKey) : data;
                 var jsonText = Encoding.UTF8.GetString(jsonData);
                 var packInfo = LitJson.JsonMapper.ToObject<VersionPackInfo>(jsonText);
-                packInfo.RestorePath();
+                packInfo.DecodeDependencies();
                 return packInfo;
             }
             catch (Exception ex)

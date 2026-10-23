@@ -7,6 +7,14 @@ namespace LiteQuark.Runtime
     {
         private static readonly char[] InvalidChars = { ':', '*', '?', '"', '<', '>', '|' };
 
+        // 仅接受完整 Assets/... 资源路径，返回规范 key。
+        // 不将内部路径作为业务相对路径补全。
+        public static string ResolveProjectAssetPath(string input)
+        {
+            NormalizeProjectPath(input);
+            return Resolve(input);
+        }
+
         public static bool TryResolve(string input, out string assetKey)
         {
             try

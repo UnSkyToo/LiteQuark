@@ -131,7 +131,8 @@ namespace LiteQuark.Editor
                     continue;
                 }
 
-                assetList.Add(GetManifestAssetPath(assetKey));
+                // assetList.Add(GetManifestAssetPath(assetKey));
+                assetList.Add(assetKey);
 
                 foreach (var dependency in GetDependencyList(sourcePath))
                 {
@@ -225,7 +226,7 @@ namespace LiteQuark.Editor
 
         private bool TryRegisterAssetSourcePath(string sourcePath, out string assetKey)
         {
-            assetKey = AssetPath.Resolve(sourcePath);
+            assetKey = AssetPath.ResolveProjectAssetPath(sourcePath);
 
             if (_assetSourcePathMap.TryGetValue(assetKey, out var existingPath))
             {
@@ -248,7 +249,7 @@ namespace LiteQuark.Editor
 
         internal string GetAssetSourcePath(string assetPath)
         {
-            var assetKey = AssetPath.Resolve(assetPath);
+            var assetKey = AssetPath.ResolveProjectAssetPath(assetPath);
 
             if (_assetSourcePathMap.TryGetValue(assetKey, out var sourcePath))
             {
