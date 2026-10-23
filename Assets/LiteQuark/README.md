@@ -87,13 +87,19 @@ Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发
 
 [PathUtils](Runtime/Utils/PathUtils.cs) 的 `UnifyPath()` 只将反斜杠转换为 `/`，保留根路径、末尾分隔符及大小写；需要资源 key 时仍使用 `AssetPath`。`GetParentPath()` 先转换为当前平台原生分隔符再计算父目录，输出统一使用 `/`；只裁剪根路径之外的末尾分隔符。根路径没有父目录时返回空字符串，Windows UNC 路径保留 `//server/share` 前缀。该函数按当前平台的文件路径规则工作，不用于 URL，也不承诺跨平台解析其他操作系统的盘符或 UNC 语法。`GetRelativePath()` 使用标准文件系统相对路径计算，可能返回 `../`、`.` 或不同根的完整目标路径，不能用来判定目标是否位于某个资源根目录内，也不用于 URL。
 
+`ConcatPath()` 只包装当前平台的 `System.IO.Path.Combine()` 并统一输出分隔符，不再裁剪后续参数开头的 `/`；后续参数为根路径时按标准库规则替换前面的部分，也不限制 `..`。普通磁盘路径和 Unity 项目目录继续使用它，不把它当作 URI 组合或根目录约束函数。
+
+`ConcatUri()` 将绝对基础 URI 作为目录追加路径片段，基础地址末尾有无 `/` 均可；片段的反斜杠统一为 `/`，首尾分隔符被裁剪，每个路径段独立转义，基础 URI 的查询参数和 fragment 保留。调用方传未编码的原始名称，例如 `My Icon.ab`；`My%20Icon.ab` 表示名称中包含字面 `%20`，会编码成 `My%2520Icon.ab`。URI 由标准库规范化，该函数不做文件存在性、资源身份或目录范围校验。
+
+`GetStreamingAssetsPath()` 根据 Unity 提供的位置选择文件路径或 URI 拼接，tag/path 应传相对子路径。Editor 等本地位置保持磁盘路径；URI 形式（如 `jar:file://`、HTTP URL）由 `ConcatUri()` 组合。`GetAssetDataPath()`、`GetPersistentDataPath()` 继续使用文件路径语义。本轮只区分地址组成方式，不扩展底层加载器的平台支持。
+
 `PathIsFile`、`GetPathFromFullPath`、`FileExists`、`DirectoryExists`、`CreateDirectory` 已移除。普通文件与目录操作直接使用 `System.IO.File`、`System.IO.Directory`；创建文件前由调用方明确取得父目录。编辑器打开资产通过 `AssetDatabase.IsValidFolder()` 判断目录，不根据扩展名猜测类型。资源根目录补全、作者数据相对路径转换及 Bundle 逻辑路径规范化统一由 `AssetPath` 提供；旧的 `PathUtils.GetFullPathInAssetRoot`、`GetRelativeAssetRootPath`（含数组重载）、`FormatAssetPath` 已移除。对应使用 `AssetPath.ToProjectPath`、`ToRootRelativePath`、`NormalizeBundlePath`，完整契约见 [Asset 指南](Runtime/Asset/README.md#路径与模式)。
 
 `CopyDirectory()` 递归复制通过过滤的文件，覆盖同名目标文件；只有需要复制文件时才创建其目标目录，正常完成时不产生空目录。源目录不存在时返回；全部文件被过滤时不创建目标目录，也不删除目标中已有的文件或目录。普通路径下禁止目标等于源目录或位于源目录内部，不提供符号链接目标解析保证。`RenameFile()` 会创建明确的目标父目录；源文件不存在返回 `false`，其他失败按文件系统异常处理。
 
 运行时的 persistent 优先与 StreamingAssets 回退策略已归入 `BundleBuiltInLocater`；项目旁的 `<项目>/LiteQuark/...` 工作目录统一通过编辑器程序集中的 `LiteEditorUtils.GetLiteQuarkRootPath()` 获取，Builder、Navigation 和 VersionViewer 的目录布局保持不变。旧的 `PathUtils.GetFullPathInRuntime`、`GetLiteQuarkRootPath`、`ToFlatPath` 已移除。Bundle 文件名扁平化归入 `VersionPackInfo`，构建映射阶段检查物理文件名碰撞，详见 [Asset 指南](Runtime/Asset/README.md#路径与模式)。
 
-`PathUtils` 不再依赖 `LiteConst`，仍保留 `Application.dataPath`、`persistentDataPath`、`streamingAssetsPath` 的通用路径便捷函数。`ConcatPath` 的 URL/文件路径契约、平台专用读取方式及未来的 Bundle 命名编码仍另行讨论；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
+`PathUtils` 不再依赖 `LiteConst`，仍保留 `Application.dataPath`、`persistentDataPath`、`streamingAssetsPath` 的通用路径便捷函数。文件路径与 URI 的组合入口已分开，平台专用读取方式及未来的 Bundle 命名编码仍另行讨论；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
 
 ## 依赖与版本
 

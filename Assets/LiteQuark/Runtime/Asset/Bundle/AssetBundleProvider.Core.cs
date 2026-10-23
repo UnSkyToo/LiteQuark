@@ -196,7 +196,7 @@ namespace LiteQuark.Runtime
                         EditorForceStreamingAssets = LiteRuntime.Setting.Asset.EditorForceStreamingAssets
                     };
                 case BundleLocaterMode.Remote:
-                    return new BundleRemoteLocater(PathUtils.ConcatPath(
+                    return new BundleRemoteLocater(PathUtils.ConcatUri(
                         LiteRuntime.Setting.Asset.BundleRemoteUri,
                         AppUtils.GetCurrentPlatformName().ToLowerInvariant(),
                         AppUtils.GetMainVersion()))

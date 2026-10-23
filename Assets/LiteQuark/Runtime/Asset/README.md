@@ -59,13 +59,17 @@ Bundle 的逻辑名称由 `AssetPath.NormalizeBundlePath()` 规范化；物理�
 
 BuiltIn 定位策略由 `BundleBuiltInLocater` 自身维护，版本文件与 Bundle 使用同一选择规则：编辑器强制 StreamingAssets 时直接选择该位置；否则优先使用 `persistentDataPath/LiteQuark` 中已存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按文件存在性选路径，不会在 persistent 文件损坏或加载失败时自动再回退，也不要求回退目标已经存在。本次迁移未改变底层读取方式或扩大其他平台的支持范围。
 
+Remote 地址通过 `PathUtils.ConcatUri()` 依次追加小写平台名、主版本目录和版本文件或 Bundle 文件名；基础 URI 按目录解释，保留已有查询参数和 fragment，路径片段使用未编码名称并逐段转义。版本请求在已有查询后追加转义后的 `t` 参数，没有查询时使用 `?`，已有查询时使用 `&`，参数始终位于 fragment 前。`t` 为框架保留的缓存参数，基础地址不应再配置同名参数；不提供通用查询参数覆盖或合并策略。
+
+普通构建输出和项目目录继续使用文件路径组合。StreamingAssets 的地址类型由其路径入口适配，BuiltIn 的 persistent 优先级与完整路径资源 key 不变。URI 字符串正确不等于所有 Player 平台读取链已经验证；其他平台和远程下载仍需对应环境的验证。
+
 在 Launcher 的 Asset 设置中配置：
 
 | 配置 | 含义 |
 | --- | --- |
 | `AssetMode` | `Editor` 直接访问项目资源；`Bundle` 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
 | `BundleLocater` | `BuiltIn` 优先读取 persistentDataPath/LiteQuark，再回退到 StreamingAssets/LiteQuark；`Remote` 使用远端资源包 |
-| `BundleRemoteUri` | 远程基础地址；运行时拼接小写平台名和版本号前两段（如 `0.4`）目录 |
+| `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 `0.4`）；已有查询参数保留，勿重复配置框架参数 `t` |
 | `ConcurrencyLimit` | BundleLoader 同时提交的 Bundle 加载任务数量限制，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组的并发额度，默认 20，包含版本包、Bundle、Asset 和 Scene 加载任务 |
 | `EnableRetain` | 启用 Bundle 保留缓存，默认 true |

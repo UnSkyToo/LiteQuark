@@ -21,13 +21,31 @@ namespace LiteQuark.Runtime
 
         public static string ConcatPath(string path1, string path2)
         {
-            var path = Path.Combine(path1, path2.TrimStart(DirectorySeparatorChar));
-            return UnifyPath(path);
+            return UnifyPath(Path.Combine(path1, path2));
         }
 
         public static string ConcatPath(string path1, string path2, string path3)
         {
-            return ConcatPath(ConcatPath(path1, path2), path3);
+            return UnifyPath(Path.Combine(path1, path2, path3));
+        }
+
+        public static string ConcatUri(string baseUri, string path)
+        {
+            var builder = new UriBuilder(new Uri(baseUri, UriKind.Absolute));
+            var relativePath = UnifyPath(path).Trim(DirectorySeparatorChar);
+
+            if (relativePath.Length > 0)
+            {
+                var escapedPath = string.Join(DirectorySeparatorChar, relativePath.Split(DirectorySeparatorChar).Select(Uri.EscapeDataString));
+                builder.Path = builder.Path.TrimEnd(DirectorySeparatorChar) + DirectorySeparatorChar + escapedPath;
+            }
+
+            return builder.Uri.AbsoluteUri;
+        }
+
+        public static string ConcatUri(string baseUri, string path1, string path2)
+        {
+            return ConcatUri(ConcatUri(baseUri, path1), path2);
         }
 
         public static string GetParentPath(string path)
@@ -91,7 +109,8 @@ namespace LiteQuark.Runtime
         /// </summary>
         public static string GetStreamingAssetsPath(string path)
         {
-            return ConcatPath(Application.streamingAssetsPath, path);
+            var root = Application.streamingAssetsPath;
+            return root.IndexOf("://", StringComparison.Ordinal) >= 0 ? ConcatUri(root, path) : ConcatPath(root, path);
         }
 
         /// <summary>
@@ -99,7 +118,9 @@ namespace LiteQuark.Runtime
         /// </summary>
         public static string GetStreamingAssetsPath(string tag, string path)
         {
-            return ConcatPath(Application.streamingAssetsPath, tag, path);
+            var root = Application.streamingAssetsPath;
+
+            return root.IndexOf("://", StringComparison.Ordinal) >= 0 ? ConcatUri(root, tag, path) : ConcatPath(root, tag, path);
         }
 
         public static bool RenameFile(string oldPath, string newPath)
