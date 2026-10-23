@@ -218,7 +218,7 @@ namespace LiteQuark.Runtime
 
         public string GetBundleFileBuildPath(BundleInfo bundleInfo)
         {
-            return FlatMode ? PathUtils.ToFlatPath(bundleInfo.BundlePath) : bundleInfo.BundlePath;
+            return FlatMode ? GetFlatBundlePath(bundleInfo.BundlePath) : bundleInfo.BundlePath;
         }
 
         internal string ToJsonData()
@@ -287,6 +287,17 @@ namespace LiteQuark.Runtime
                 LLog.Exception(ex, "Failed to deserialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
                 throw;
             }
+        }
+
+        private static readonly string InvalidFlatBundleChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
+        private static string GetFlatBundlePath(string bundlePath)
+        {
+            foreach (var ch in InvalidFlatBundleChars)
+            {
+                bundlePath = bundlePath.Replace(ch, '_');
+            }
+
+            return bundlePath;
         }
     }
 }

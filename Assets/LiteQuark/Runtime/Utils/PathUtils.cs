@@ -19,12 +19,6 @@ namespace LiteQuark.Runtime
             return path.Replace('\\', DirectorySeparatorChar);
         }
 
-        private static readonly string InvalidFlatChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
-        public static string ToFlatPath(string path)
-        {
-            return InvalidFlatChars.Aggregate(path, static (current, ch) => current.Replace(ch, '_'));
-        }
-
         public static string ConcatPath(string path1, string path2)
         {
             var path = Path.Combine(path1, path2.TrimStart(DirectorySeparatorChar));
@@ -106,17 +100,6 @@ namespace LiteQuark.Runtime
         public static string GetStreamingAssetsPath(string tag, string path)
         {
             return ConcatPath(Application.streamingAssetsPath, tag, path);
-        }
-
-        public static string GetFullPathInRuntime(string path)
-        {
-            var fullPath = GetPersistentDataPath(LiteConst.Tag, path);
-            if (File.Exists(fullPath))
-            {
-                return fullPath;
-            }
-
-            return GetStreamingAssetsPath(LiteConst.Tag, path);
         }
 
         public static bool RenameFile(string oldPath, string newPath)
@@ -239,13 +222,5 @@ namespace LiteQuark.Runtime
                 CopyDirectory(directoryPath, destDirectoryPath, condition);
             }
         }
-
-#if UNITY_EDITOR
-        public static string GetLiteQuarkRootPath(string subPath)
-        {
-            var projectPath = GetParentPath(Application.dataPath);
-            return ConcatPath(projectPath, LiteConst.Tag, subPath);
-        }
-#endif
     }
 }

@@ -448,7 +448,7 @@ namespace LiteQuark.Editor.VersionViewer
 
         private void SelectVersionFile(bool isOld)
         {
-            var path = EditorUtility.OpenFilePanelWithFilters("Open Version File", PathUtils.GetLiteQuarkRootPath(string.Empty), new string[] { "Version File", "txt" });
+            var path = EditorUtility.OpenFilePanelWithFilters("Open Version File", LiteEditorUtils.GetLiteQuarkRootPath(string.Empty), new string[] { "Version File", "txt" });
             if (string.IsNullOrEmpty(path))
             {
                 return;
@@ -770,7 +770,7 @@ namespace LiteQuark.Editor.VersionViewer
         {
             try
             {
-                var filePath = EditorUtility.OpenFilePanelWithFilters("Open Version File", PathUtils.GetLiteQuarkRootPath(string.Empty), new string[] { "Version File", "txt" });
+                var filePath = EditorUtility.OpenFilePanelWithFilters("Open Version File", LiteEditorUtils.GetLiteQuarkRootPath(string.Empty), new string[] { "Version File", "txt" });
                 if (File.Exists(filePath))
                 {
                     var binaryData = File.ReadAllBytes(filePath);

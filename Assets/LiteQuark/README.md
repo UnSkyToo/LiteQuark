@@ -91,7 +91,9 @@ Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发
 
 `CopyDirectory()` 递归复制通过过滤的文件，覆盖同名目标文件；只有需要复制文件时才创建其目标目录，正常完成时不产生空目录。源目录不存在时返回；全部文件被过滤时不创建目标目录，也不删除目标中已有的文件或目录。普通路径下禁止目标等于源目录或位于源目录内部，不提供符号链接目标解析保证。`RenameFile()` 会创建明确的目标父目录；源文件不存在返回 `false`，其他失败按文件系统异常处理。
 
-本阶段已集中 Asset 专属路径规则，业务相对路径仍以 `Assets/StandaloneAssets` 为根。`ConcatPath` 的 URL/文件路径契约、FlatMode 文件名碰撞、运行时定位策略及编辑器工作目录职责仍另行处理；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
+运行时的 persistent 优先与 StreamingAssets 回退策略已归入 `BundleBuiltInLocater`；项目旁的 `<项目>/LiteQuark/...` 工作目录统一通过编辑器程序集中的 `LiteEditorUtils.GetLiteQuarkRootPath()` 获取，Builder、Navigation 和 VersionViewer 的目录布局保持不变。旧的 `PathUtils.GetFullPathInRuntime`、`GetLiteQuarkRootPath`、`ToFlatPath` 已移除。Bundle 文件名扁平化归入 `VersionPackInfo`，构建映射阶段检查物理文件名碰撞，详见 [Asset 指南](Runtime/Asset/README.md#路径与模式)。
+
+`PathUtils` 不再依赖 `LiteConst`，仍保留 `Application.dataPath`、`persistentDataPath`、`streamingAssetsPath` 的通用路径便捷函数。`ConcatPath` 的 URL/文件路径契约、平台专用读取方式及未来的 Bundle 命名编码仍另行讨论；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
 
 ## 依赖与版本
 

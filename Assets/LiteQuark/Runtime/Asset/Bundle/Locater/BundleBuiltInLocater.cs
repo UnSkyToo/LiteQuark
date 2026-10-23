@@ -10,16 +10,19 @@ namespace LiteQuark.Runtime
 
         private string GetRuntimeFullPath(string path)
         {
-            var uri = PathUtils.GetFullPathInRuntime(path);
-
 #if UNITY_EDITOR
             if (EditorForceStreamingAssets)
             {
-                uri = PathUtils.GetStreamingAssetsPath(LiteConst.Tag, path);
+                return PathUtils.GetStreamingAssetsPath(LiteConst.Tag, path);
             }
 #endif
+            var persistentPath = PathUtils.GetPersistentDataPath(LiteConst.Tag, path);
+            if (System.IO.File.Exists(persistentPath))
+            {
+                return persistentPath;
+            }
 
-            return uri;
+            return PathUtils.GetStreamingAssetsPath(LiteConst.Tag, path);
         }
 
         public LoadVersionPackTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)

@@ -15,6 +15,12 @@ namespace LiteQuark.Editor
             LEditorLog.Error($"Unsupported {title} type: {type}");
         }
 
+        public static string GetLiteQuarkRootPath(string subPath)
+        {
+            var projectPath = PathUtils.GetParentPath(Application.dataPath);
+            return PathUtils.ConcatPath(projectPath, LiteConst.Tag, subPath);
+        }
+
         public static void OpenFolder(string path)
         {
 #if UNITY_EDITOR_WIN

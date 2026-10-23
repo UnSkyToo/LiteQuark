@@ -230,7 +230,7 @@ namespace LiteQuark.Editor
 
         public string GetRootOutputPath()
         {
-            return PathUtils.GetLiteQuarkRootPath($"Build/{Target}/{Version}/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}");
+            return LiteEditorUtils.GetLiteQuarkRootPath($"Build/{Target}/{Version}/{(AppConfig.IsDevelopmentBuild ? "Debug" : "Release")}");
         }
 
         public string GetIOSWorkspaceName()

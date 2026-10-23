@@ -34,14 +34,14 @@ namespace LiteQuark.Editor
 
         private void OnEnable()
         {
-            var jsonPath = PathUtils.GetLiteQuarkRootPath(SubPath);
+            var jsonPath = LiteEditorUtils.GetLiteQuarkRootPath(SubPath);
             _data = NavigationData.FromJson(jsonPath);
             _scrollPos = Vector2.zero;
         }
 
         private void OnDisable()
         {
-            var jsonPath = PathUtils.GetLiteQuarkRootPath(SubPath);
+            var jsonPath = LiteEditorUtils.GetLiteQuarkRootPath(SubPath);
             NavigationData.ToJson(_data, jsonPath);
         }
 

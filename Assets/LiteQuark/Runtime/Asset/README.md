@@ -45,6 +45,20 @@ BundleViewer 的资源行显示收集器映射得到的真实源路径，并用�
 
 完整路径清单消除了原先压缩结果以 `assets/` 开头时的存储歧义，普通 `packages`、`assets` 子目录及 `assets.json` 文件均可保留完整身份。**公共输入的 `assets/` 目录歧义继续暂缓：**业务输入 `assets/demo/icon.png` 仍按完整项目路径解释；若实际资源位于资源根目录的同名子目录，应传 `Assets/StandaloneAssets/assets/demo/icon.png`。这与清单存储无关，真正 UPM 支持也未开放。
 
+Bundle 的逻辑名称由 `AssetPath.NormalizeBundlePath()` 规范化；物理文件名由 `VersionPackInfo.GetBundleFileBuildPath()` 与 `GetBundleFileLoadPath()` 计算。扁平化实现从 `PathUtils` 移入 `VersionPackInfo`，替换字符集合及原有命名结果不变。以 `ui/icons.ab` 为例：
+
+| 配置 | 构建文件名 | 加载文件名 |
+| --- | --- | --- |
+| FlatMode、HashMode 均关闭 | `ui/icons.ab` | `ui/icons.ab` |
+| 仅 FlatMode | `ui_icons.ab` | `ui_icons.ab` |
+| 仅 HashMode | `ui/icons.ab` | `ui/icons_<hash>.ab` |
+| FlatMode、HashMode 均开启，SecurityMode 关闭 | `ui_icons.ab` | `ui_icons_<hash>.ab` |
+| FlatMode、HashMode 均开启，SecurityMode 开启 | `ui_icons.ab` | `<hash>.ab` |
+
+`ResCollectInfoStep` 在生成构建映射时检查重复物理文件名，发现冲突即抛出包含两个逻辑 Bundle 名称及目标文件名的异常，不再交给 BuildPipeline。例如 `a/b_c.ab` 与 `a_b/c.ab` 在 FlatMode 下均映射到 `a_b_c.ab`；应调整源目录/命名或关闭 FlatMode，不自动追加序号。HashMode 在构建后才应用，不能消除构建阶段的此类碰撞。此检查不改变正常分包、依赖图或清单格式。
+
+BuiltIn 定位策略由 `BundleBuiltInLocater` 自身维护，版本文件与 Bundle 使用同一选择规则：编辑器强制 StreamingAssets 时直接选择该位置；否则优先使用 `persistentDataPath/LiteQuark` 中已存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按文件存在性选路径，不会在 persistent 文件损坏或加载失败时自动再回退，也不要求回退目标已经存在。本次迁移未改变底层读取方式或扩大其他平台的支持范围。
+
 在 Launcher 的 Asset 设置中配置：
 
 | 配置 | 含义 |
