@@ -10,6 +10,21 @@
 
 入口通过 [AssetPath](AssetPath.cs) 将资源身份统一为小写、使用 `/` 的完整项目路径。相对路径、完整路径以及大小写或斜杠不同的写法，会得到同一个 key；重复斜杠和 `.` 路径段会被归一化。必须包含文件扩展名，不会自动补全；场景路径必须以 `.unity` 结尾。空路径、`..`、磁盘绝对路径、URL、显式目录路径等非法输入会使加载入口同步抛出 `ArgumentException`；`HasAsset` 对非法输入返回 `false`。合法但不存在的资源仍按加载失败处理，不能将路径校验通过视为资源存在。
 
+Asset 专属转换集中在 `AssetPath`，通用文件路径操作仍使用 `PathUtils` 或 `System.IO`：
+
+| API | 输入与输出约定 |
+| --- | --- |
+| `ToProjectPath(input)` | 接受业务相对路径或完整 `Assets` 项目路径，允许目录，保留输入大小写；相对路径补 `Assets/StandaloneAssets`，不返回磁盘绝对路径 |
+| `Resolve(input)` / `TryResolve` | 共用 `ToProjectPath` 的根目录规则，要求资源文件扩展名，返回完整规范 key |
+| `ResolveProjectAssetPath(input)` | 只接受完整 `Assets/...` 资源路径，再生成规范 key；内部路径不重新作为业务相对路径补全 |
+| `NormalizeProjectPath(input)` | 校验并规范化已知完整项目路径，允许目录，保留大小写 |
+| `ToRootRelativePath(projectPath)` | 作者数据使用：根内返回相对路径，根外保留完整 `Assets/...` 路径；保留大小写，根目录自身以及 `null`、空字符串返回空字符串；数组重载逐项转换，`null` 数组参数抛异常，空数组合法 |
+| `NormalizeBundlePath(path)` | 只规范化 Bundle 逻辑路径的斜杠、首尾分隔符和大小写，不补资源根目录，不改变现有 Bundle 命名规则 |
+
+`ToProjectPath` 保留的是输入大小写，不会凭字符串恢复源文件真实大小写。实际构建和 BundleViewer 的文件访问使用收集器的规范 key 到真实源路径映射。旧 `PathUtils.GetFullPathInAssetRoot`、`GetRelativeAssetRootPath` 两个重载及 `FormatAssetPath` 已移除，调用方应迁移到上述 API。
+
+编辑器对象字段和 Nexus 导出的作者数据继续使用根内相对路径、根外完整路径，不因 API 迁移改变文件格式。字段清空仍返回空字符串；已知完整路径可直接传给加载入口，Nexus 数据库加载不再先缩短再补全。`ToRootRelativePath` 校验项目路径，不接受磁盘绝对路径或真正的 UPM 项目路径；它不用于完整路径清单，也不消除下面记录的公共输入 `assets/` 歧义。
+
 只有以 `Assets/` 开头的输入（不区分大小写）被解释为完整项目路径，其余合法文件路径均相对资源根目录。`packages/demo/probe.txt` 和 `Packages/demo/probe.txt` 都指向 `Assets/StandaloneAssets/packages/demo/probe.txt`，普通 `packages` 子目录可以正常收集、构建和加载。`Packages/com.example/probe.txt` 同样会补上资源根目录，不表示访问真正的 UPM 包；即使 UPM 包内存在同名资源，也不会回退查找它。真正的 `Packages/...` 资源仍不支持框架显式收集或直接加载；收集器继续过滤这类源路径，符合 Unity 构建条件的引用依赖仍可由 Unity 隐式打包。
 
 普通 Bundle 资源按完整资源路径加载，不按短文件名查找。场景使用规范 key 定位资源和限制并发，再使用 Bundle 或 AssetDatabase 返回的实际项目路径加载，保留实际加载路径的大小写。资源 key 的小写规则不适用于任意磁盘路径、远端 URL 或 Bundle 文件位置。
@@ -17,6 +32,8 @@
 版本清单的 `BundleInfo.AssetList` 统一保存小写、使用 `/` 的完整项目路径（规范 key），例如 `assets/standaloneassets/data/assets/icon.png`。收集后、写入时和读回后保持同一表示，不再根据 `BundlePath` 截去或补回资源目录；`default.ab` 也不再需要资源路径恢复的特殊规则。分包归属、Bundle 名称、HashMode 和 FlatMode 的物理文件命名规则保持不变，构建时仍通过规范 key 映射回保留实际大小写的源路径。
 
 收集器按明确的资源所在目录计算 Bundle 归属：主动扫描直接使用目录，依赖资源先取其父目录，再应用现有 IgnorePathList 合并规则。普通目录、根目录 `default.ab` 及共享依赖规则保持不变；带点号的目录不再被误判为文件而归入父 Bundle。这类此前被错误分包的资源需要重新构建。构建源文件存在性直接使用 `System.IO.File.Exists()`，不再使用路径外观猜测函数。通用路径 API 的变更见 [框架指南](../../README.md#通用路径与文件操作)。
+
+BundleViewer 的资源行显示收集器映射得到的真实源路径，并用该路径读取文件大小和图标；不将规范 key 强制当作磁盘路径。Bundle 节点显示逻辑 Bundle 名称（合并模式的目录节点显示对应逻辑前缀），不伪造源资源路径。Alt 选择资源行定位该资源，Alt 选择 Bundle 节点定位其首个资源所在目录；该目标不保证等于合并前的分包目录，空节点不执行定位。
 
 **暂时放弃资源路径压缩：**本轮取消自定义路径缩写，先完成 Asset 架构与路径职责的统一。未来再根据实际清单大小、读取并建立索引的耗时和内存占用，重新考虑目录表、显式前缀编码或二进制存储等规则；编码应能无歧义地还原完整资源身份，不依赖 Bundle 名称猜测目录。本轮没有增加通用数据压缩，AssetBundle 自身的压缩选项也未改变。
 

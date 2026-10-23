@@ -168,11 +168,11 @@ namespace LiteBattle.Editor
 
                 foreach (var timelineFullPath in timelineFullPathList)
                 {
-                    var timelinePath = PathUtils.GetRelativeAssetRootPath(timelineFullPath);
+                    var timelinePath = AssetPath.ToRootRelativePath(timelineFullPath);
                     timelineList.Add(timelinePath);
                 }
 
-                var unitConfigPath = PathUtils.GetRelativeAssetRootPath(unitConfigFullPath);
+                var unitConfigPath = AssetPath.ToRootRelativePath(unitConfigFullPath);
                 unitList.Add(unitConfigPath);
                 stateMap.Add(unitConfig.name, timelineList);
             }

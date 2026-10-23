@@ -291,7 +291,7 @@ namespace LiteBattle.Editor
 
         private GameObject InstantiateGo(string path)
         {
-            var fullPath = PathUtils.GetFullPathInAssetRoot(path);
+            var fullPath = AssetPath.ToProjectPath(path);
             var origin = AssetDatabase.LoadAssetAtPath<GameObject>(fullPath);
             if (origin == null)
             {

@@ -19,16 +19,6 @@ namespace LiteQuark.Runtime
             return path.Replace('\\', DirectorySeparatorChar);
         }
 
-        public static string FormatAssetPath(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                return string.Empty;
-            }
-
-            return UnifyPath(path).Trim(DirectorySeparatorChar).ToLowerInvariant();
-        }
-
         private static readonly string InvalidFlatChars = "/ \\:*?\"\'<>|~#%&@+{}[]";
         public static string ToFlatPath(string path)
         {
@@ -75,51 +65,6 @@ namespace LiteQuark.Runtime
         public static string GetRelativePath(string rootPath, string fullPath)
         {
             return UnifyPath(Path.GetRelativePath(UnifyPath(rootPath), UnifyPath(fullPath)));
-        }
-
-        public static string GetRelativeAssetRootPath(string path)
-        {
-            path = UnifyPath(path).TrimEnd(DirectorySeparatorChar);
-            var root = UnifyPath(LiteConst.AssetRootPath).TrimEnd(DirectorySeparatorChar);
-
-            if (string.Equals(path, root, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Empty;
-            }
-
-            var prefix = root + DirectorySeparatorChar;
-            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return path.Substring(prefix.Length);
-            }
-
-            return path;
-        }
-
-        public static string[] GetRelativeAssetRootPath(string[] pathList)
-        {
-            var result = new string[pathList.Length];
-
-            for (var index = 0; index < pathList.Length; ++index)
-            {
-                result[index] = GetRelativeAssetRootPath(pathList[index]);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Get the full path in the standalone root.
-        /// </summary>
-        /// <returns>Assets/StandaloneAssets/{path}</returns>
-        public static string GetFullPathInAssetRoot(string path)
-        {
-            if (path.StartsWith(LiteConst.AssetRootName, StringComparison.OrdinalIgnoreCase))
-            {
-                return path;
-            }
-
-            return ConcatPath(LiteConst.AssetRootPath, path);
         }
 
         /// <summary>

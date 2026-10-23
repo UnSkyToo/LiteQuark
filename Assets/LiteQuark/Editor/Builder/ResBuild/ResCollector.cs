@@ -198,7 +198,7 @@ namespace LiteQuark.Editor
                 return _defaultBundlePath;
             }
 
-            bundlePath = PathUtils.FormatAssetPath(bundlePath);
+            bundlePath = AssetPath.NormalizeBundlePath(bundlePath);
             return $"{bundlePath}{LiteConst.BundleFileExt}";
         }
 

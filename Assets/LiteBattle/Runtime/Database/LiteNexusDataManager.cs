@@ -48,7 +48,7 @@ namespace LiteBattle.Runtime
                 return false;
             }
 
-            var jsonPath = PathUtils.GetRelativeAssetRootPath(config.GetDatabaseJsonPath());
+            var jsonPath = config.GetDatabaseJsonPath();
             using var jsonHandle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(jsonPath);
             await jsonHandle;
             var text = jsonHandle.Result;

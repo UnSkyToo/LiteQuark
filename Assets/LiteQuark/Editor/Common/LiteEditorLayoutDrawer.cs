@@ -211,7 +211,7 @@ namespace LiteQuark.Editor
                 }
                 else
                 {
-                    var goPath = PathUtils.GetFullPathInAssetRoot(v);
+                    var goPath = AssetPath.ToProjectPath(v);
                     go = AssetDatabase.LoadAssetAtPath<GameObject>(goPath);
                     if (go != null)
                     {
@@ -224,7 +224,7 @@ namespace LiteQuark.Editor
             go = EditorGUILayout.ObjectField(title, go, typeof(GameObject), true) as GameObject;
             if (EditorGUI.EndChangeCheck())
             {
-                var path = PathUtils.GetRelativeAssetRootPath(AssetDatabase.GetAssetPath(go));
+                var path = AssetPath.ToRootRelativePath(AssetDatabase.GetAssetPath(go));
                 return path;
             }
 

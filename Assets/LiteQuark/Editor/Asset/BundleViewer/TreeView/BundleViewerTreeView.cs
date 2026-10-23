@@ -23,6 +23,7 @@ namespace LiteQuark.Editor.BundleViewer
         private readonly Dictionary<string, BundleViewerTreeItem> _bundlePathCacheMap = new();
         private int _idGenerator = 1;
         private int _sizeSortedAscendingType = 0;
+        private ResCollector _collector;
 
         public BundleViewerTreeView(TreeViewState state)
             : base(state, CreateHeader())
@@ -69,8 +70,8 @@ namespace LiteQuark.Editor.BundleViewer
             var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
             _idGenerator = 1;
 
-            var collector = new ResCollector();
-            var packInfo = collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false, false);
+            _collector = new ResCollector();
+            var packInfo = _collector.GetVersionPackInfo(PlayerSettings.bundleVersion, EditorUserBuildSettings.activeBuildTarget, false, false);
 
             var items = CombineMode ? BuildWithCombineMode(packInfo) : BuildWithNormalMode(packInfo);
             BundleViewerUtils.SortTreeItemList(items, _sizeSortedAscendingType);
@@ -178,8 +179,6 @@ namespace LiteQuark.Editor.BundleViewer
 
         private BundleViewerTreeItem CreateBundleItem(string bundlePath, string displayName, int depth)
         {
-            var bundleFullPath = PathUtils.GetFullPathInAssetRoot(bundlePath).ToLower();
-
             var bundleItem = new BundleViewerTreeItem
             {
                 id = _idGenerator++,
@@ -188,7 +187,7 @@ namespace LiteQuark.Editor.BundleViewer
                 TypeIcon = null,
                 Type = BundleType,
                 Size = 0,
-                Path = bundleFullPath,
+                Path = bundlePath,
                 DependencyList = Array.Empty<string>(),
             };
 
@@ -197,7 +196,7 @@ namespace LiteQuark.Editor.BundleViewer
 
         private BundleViewerTreeItem CreateAssetItem(string assetPath, int depth)
         {
-            var assetFullPath = PathUtils.GetFullPathInAssetRoot(assetPath).ToLower();
+            var assetFullPath = _collector.GetAssetSourcePath(assetPath);
             var info = new FileInfo(assetFullPath);
             if (!info.Exists)
             {
@@ -284,14 +283,15 @@ namespace LiteQuark.Editor.BundleViewer
 
                 if (Event.current.alt)
                 {
-                    if (item.Type == BundleType)
+                    var targetPath = item.Type == BundleType ? FindFirstAssetPath(item) : item.Path;
+                    if (!string.IsNullOrEmpty(targetPath))
                     {
-                        var folderPath = item.Path.Replace(LiteConst.BundleFileExt, string.Empty);
-                        LiteEditorUtils.Ping(folderPath);
-                    }
-                    else
-                    {
-                        LiteEditorUtils.Ping(item.Path);
+                        if (item.Type == BundleType)
+                        {
+                            targetPath = PathUtils.GetParentPath(targetPath);
+                        }
+
+                        LiteEditorUtils.Ping(targetPath);
                     }
                 }
             }
@@ -300,6 +300,29 @@ namespace LiteQuark.Editor.BundleViewer
         public BundleViewerTreeItem GetDependencyTreeItem(string path)
         {
             return _bundlePathCacheMap.GetValueOrDefault(path);
+        }
+
+        private static string FindFirstAssetPath(TreeViewItem item)
+        {
+            if (item is BundleViewerTreeItem assetItem &&
+                assetItem.Type != BundleType)
+            {
+                return assetItem.Path;
+            }
+
+            if (item.children != null)
+            {
+                foreach (var child in item.children)
+                {
+                    var path = FindFirstAssetPath(child);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        return path;
+                    }
+                }
+            }
+
+            return null;
         }
     }
 }
