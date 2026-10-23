@@ -48,7 +48,7 @@ namespace LiteQuark.Editor
             }
 
             var jsonData = versionPack.ToBinaryData();
-            PathUtils.CreateDirectory(builder.GetResOutputPath());
+            System.IO.Directory.CreateDirectory(builder.GetResOutputPath());
             System.IO.File.WriteAllBytes(PathUtils.ConcatPath(builder.GetResOutputPath(), AppUtils.GetVersionFileName()), jsonData);
         }
     }

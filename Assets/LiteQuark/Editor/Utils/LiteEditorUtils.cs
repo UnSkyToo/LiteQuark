@@ -1,18 +1,16 @@
 #if UNITY_EDITOR
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace LiteQuark.Editor
 {
     public static class LiteEditorUtils
     {
-        public static void UnsupportedType(string title, Type type)
+        public static void UnsupportedType(string title, System.Type type)
         {
             LEditorLog.Error($"Unsupported {title} type: {type}");
         }
@@ -101,17 +99,21 @@ namespace LiteQuark.Editor
 
         public static void OpenAsset(string path)
         {
-            if (PathUtils.PathIsFile(path))
+            if (string.IsNullOrEmpty(path))
             {
-                var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
-                if (obj != null)
-                {
-                    AssetDatabase.OpenAsset(obj);
-                }
+                return;
             }
-            else
+
+            if (AssetDatabase.IsValidFolder(path))
             {
                 OpenFolder(path);
+                return;
+            }
+
+            var obj = AssetDatabase.LoadAssetAtPath<Object>(path);
+            if (obj != null)
+            {
+                AssetDatabase.OpenAsset(obj);
             }
         }
 
@@ -186,9 +188,9 @@ namespace LiteQuark.Editor
             return title;
         }
 
-        public static List<Type> GetTypeListWithBaseType(Type baseType)
+        public static List<System.Type> GetTypeListWithBaseType(System.Type baseType)
         {
-            var results = new List<Type>();
+            var results = new List<System.Type>();
 
             results.AddRange(TypeCache.GetTypesDerivedFrom(baseType));
             // 剔除不能实例化的类型

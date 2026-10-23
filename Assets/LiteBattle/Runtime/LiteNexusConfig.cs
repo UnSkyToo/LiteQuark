@@ -32,7 +32,7 @@ namespace LiteBattle.Runtime
                 {
 #if UNITY_EDITOR
                     var configPath = PathUtils.ConcatPath(ConfigPath, ConfigName);
-                    if (!PathUtils.FileExists(configPath))
+                    if (!System.IO.File.Exists(configPath))
                     {
                         CreateNexusConfig();
                     }

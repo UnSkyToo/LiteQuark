@@ -1,4 +1,3 @@
-using LiteQuark.Runtime;
 using UnityEditor;
 
 namespace LiteQuark.Editor
@@ -13,7 +12,7 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var outputPath = builder.GetResOutputPath();
-            PathUtils.CreateDirectory(outputPath);
+            System.IO.Directory.CreateDirectory(outputPath);
             var buildOptions = builder.ResConfig.Options;
             buildOptions &= ~BuildAssetBundleOptions.AppendHashToAssetBundleName;
             builder.Collector.Manifest = BuildPipeline.BuildAssetBundles(outputPath, builder.Collector.Builds, buildOptions, builder.Target);

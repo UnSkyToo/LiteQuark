@@ -86,7 +86,11 @@ namespace LiteQuark.Editor
 
             data.FlushWhenSave();
             var jsonText = EditorJsonUtility.ToJson(data, true);
-            PathUtils.CreateDirectory(jsonPath);
+            var directoryPath = PathUtils.GetParentPath(jsonPath);
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
             File.WriteAllText(jsonPath, jsonText);
         }
     }

@@ -1,5 +1,4 @@
 using System;
-using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 
@@ -15,7 +14,7 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var outputPath = builder.GetAppOutputPath();
-            PathUtils.CreateDirectory(outputPath);
+            System.IO.Directory.CreateDirectory(outputPath);
 
             switch (builder.Target)
             {

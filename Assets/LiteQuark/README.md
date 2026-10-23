@@ -83,6 +83,16 @@ Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发
 
 版本清单统一保存完整规范资源路径，本阶段暂时取消路径压缩，未来再重新考虑紧凑编码规则；依赖 ID 字符串、原地依赖转换及分包规则保持不变。暂不增加格式版本字段，旧相对路径清单应从源资源重新生成并与新读取器配套使用，不能依靠读取成功判断兼容，也不能靠读入旧清单再导出修复历史路径丢失。公共输入的 `assets/` 歧义继续暂缓，完整规则与兼容说明见上述 Asset 指南。
 
+## 通用路径与文件操作
+
+[PathUtils](Runtime/Utils/PathUtils.cs) 的 `UnifyPath()` 只将反斜杠转换为 `/`，保留根路径、末尾分隔符及大小写；需要资源 key 时仍使用 `AssetPath`。`GetParentPath()` 先转换为当前平台原生分隔符再计算父目录，输出统一使用 `/`；只裁剪根路径之外的末尾分隔符。根路径没有父目录时返回空字符串，Windows UNC 路径保留 `//server/share` 前缀。该函数按当前平台的文件路径规则工作，不用于 URL，也不承诺跨平台解析其他操作系统的盘符或 UNC 语法。`GetRelativePath()` 使用标准文件系统相对路径计算，可能返回 `../`、`.` 或不同根的完整目标路径，不能用来判定目标是否位于某个资源根目录内，也不用于 URL。
+
+`PathIsFile`、`GetPathFromFullPath`、`FileExists`、`DirectoryExists`、`CreateDirectory` 已移除。普通文件与目录操作直接使用 `System.IO.File`、`System.IO.Directory`；创建文件前由调用方明确取得父目录。编辑器打开资产通过 `AssetDatabase.IsValidFolder()` 判断目录，不根据扩展名猜测类型。`GetRelativeAssetRootPath()` 暂留原位置，仅按目录边界裁剪资源根目录前缀，根外路径保留原表示，空字段仍为空；它不是完整路径合法性校验器。
+
+`CopyDirectory()` 递归复制通过过滤的文件，覆盖同名目标文件；只有需要复制文件时才创建其目标目录，正常完成时不产生空目录。源目录不存在时返回；全部文件被过滤时不创建目标目录，也不删除目标中已有的文件或目录。普通路径下禁止目标等于源目录或位于源目录内部，不提供符号链接目标解析保证。`RenameFile()` 会创建明确的目标父目录；源文件不存在返回 `false`，其他失败按文件系统异常处理。
+
+本阶段不迁移工具职责，不改变 Asset 业务输入规则。`ConcatPath` 的 URL/文件路径契约、旧 Asset 根目录入口统一及 FlatMode 文件名碰撞另行处理；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
+
 ## 依赖与版本
 
 源码工程使用 Unity `2022.3.62f3`；包版本与声明的最低 Unity 版本见 [package.json](package.json)。核心随包包含 UniTask、LitJson 和 IngameDebugConsole。Runtime 与 Editor 分属独立程序集。

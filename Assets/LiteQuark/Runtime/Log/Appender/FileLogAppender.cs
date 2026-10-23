@@ -90,7 +90,7 @@ namespace LiteQuark.Runtime
         private void EnsureFilePath(string path)
         {
             var directoryPath = Path.GetDirectoryName(path);
-            PathUtils.CreateDirectory(directoryPath);
+            Directory.CreateDirectory(directoryPath);
         }
     }
 }
