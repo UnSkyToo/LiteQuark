@@ -29,9 +29,8 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
 
-            Cancel();
             LiteUtils.SafeInvoke(_callback, null);
-            LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, "VersionPack download failed");
+            LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, Error.Message);
         }
 
         protected override void OnSuccess(UnityWebRequest request)
@@ -68,9 +67,7 @@ namespace LiteQuark.Runtime
                 LLog.Error(message);
             }
 
-            Cancel();
-            LiteUtils.SafeInvoke(_callback, null);
-            LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, message);
+            Fail(ex ?? new InvalidOperationException(message));
         }
     }
 }

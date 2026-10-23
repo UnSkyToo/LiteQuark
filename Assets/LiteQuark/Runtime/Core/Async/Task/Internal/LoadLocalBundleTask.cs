@@ -25,6 +25,16 @@ namespace LiteQuark.Runtime
             _callback = null;
         }
 
+        protected override void OnTerminated()
+        {
+            if (State == TaskState.Failed)
+            {
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, null);
+            }
+        }
+
         protected override void OnTick(float deltaTime)
         {
             Progress = _bundleRequest?.progress ?? 0f;
@@ -33,6 +43,11 @@ namespace LiteQuark.Runtime
         protected override void OnExecute()
         {
             _bundleRequest = AssetBundle.LoadFromFileAsync(_bundleUri);
+            if (_bundleRequest == null)
+            {
+                Fail(new InvalidOperationException($"Could not start bundle load: {_bundleUri}"));
+                return;
+            }
             _bundleRequest.completed += OnBundleRequestCompleted;
         }
 
@@ -45,9 +60,27 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            _bundle = _bundleRequest.assetBundle;
-            Complete(_bundle);
-            LiteUtils.SafeInvoke(_callback, _bundle);
+            try
+            {
+                _bundle = _bundleRequest.assetBundle;
+                if (_bundle == null)
+                {
+                    Fail(new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Fail(ex);
+                return;
+            }
+
+            if (Complete(_bundle))
+            {
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, _bundle);
+            }
         }
 
         public AssetBundle GetBundle() => _bundle;

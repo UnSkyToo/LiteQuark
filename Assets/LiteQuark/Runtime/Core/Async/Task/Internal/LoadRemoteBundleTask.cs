@@ -42,7 +42,6 @@ namespace LiteQuark.Runtime
             base.OnFailed();
 
             _bundle = null;
-            Cancel();
             LiteUtils.SafeInvoke(_callback, null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }
@@ -52,6 +51,11 @@ namespace LiteQuark.Runtime
             base.OnSuccess(request);
 
             _bundle = DownloadHandlerAssetBundle.GetContent(request);
+            if (_bundle == null)
+            {
+                Fail(new InvalidOperationException($"Bundle download returned no bundle: {_bundleUri}"));
+                return;
+            }
             Complete(_bundle);
             LiteUtils.SafeInvoke(_callback, _bundle);
             LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, request.downloadedBytes / 1024);

@@ -35,16 +35,9 @@ namespace LiteQuark.Runtime
             return _scene;
         }
 
-        public override void Cancel()
+        protected override void OnTerminated()
         {
-            if (IsDone)
-            {
-                return;
-            }
-
-            base.Cancel();
-
-            if (_sceneRequest == null)
+            if (State != TaskState.Completed && (_sceneRequest == null || _sceneRequest.isDone))
             {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
                 NotifyCompleted(false, default);
@@ -64,7 +57,7 @@ namespace LiteQuark.Runtime
 
             if (_sceneRequest == null)
             {
-                Cancel();
+                Fail(new InvalidOperationException($"Could not start scene load: {_scenePath}"));
                 return;
             }
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
@@ -93,9 +86,24 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var success = _scene.IsValid() && _scene.isLoaded;
-            Complete(success ? _scene : default);
-            NotifyCompleted(success, _scene);
+            try
+            {
+                if (!_scene.IsValid() || !_scene.isLoaded)
+                {
+                    Fail(new InvalidOperationException($"Scene load returned no valid scene: {_scenePath}"));
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Fail(ex);
+                return;
+            }
+
+            if (Complete(_scene))
+            {
+                NotifyCompleted(true, _scene);
+            }
         }
 
         private void NotifyCompleted(bool success, Scene scene)

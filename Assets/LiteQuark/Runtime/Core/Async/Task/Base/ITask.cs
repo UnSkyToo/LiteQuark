@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Cysharp.Threading.Tasks;
 
@@ -9,10 +10,12 @@ namespace LiteQuark.Runtime
         public bool IsExecuted { get; }
         public bool IsDone { get; }
         public object Result { get; }
+        public Exception Error { get; }
         public TaskState State { get; }
         public UniTask<object> Task { get; }
 
         public void Execute();
         public void Cancel();
+        public void Fail(Exception error);
     }
 }

@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            _provider?.Tick(deltaTime);
+            _provider?.Tick(LiteTime.UnscaledDeltaTime);
         }
 
         public string GetVersion()

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Cysharp.Threading.Tasks;
 
@@ -8,10 +9,13 @@ namespace LiteQuark.Runtime
         public override string DebugName => GetType().Name;
 
         public float Progress { get; protected set; }
-        public bool IsDone => State is TaskState.Completed or TaskState.Cancelled;
         public bool IsExecuted { get; private set; }
-        public object Result { get; protected set; }
-        public TaskState State { get; protected set; }
+
+        public TaskState State { get; private set; }
+        public object Result { get; private set; }
+        public Exception Error { get; private set; }
+
+        public bool IsDone => State is TaskState.Completed or TaskState.Failed or TaskState.Cancelled;
 
         public UniTask<object> Task
         {
@@ -22,7 +26,7 @@ namespace LiteQuark.Runtime
                     _tcs = new UniTaskCompletionSource<object>();
                     if (IsDone)
                     {
-                        _tcs.TrySetResult(Result);
+                        PublishResult();
                     }
                 }
                 return _tcs.Task;
@@ -63,28 +67,74 @@ namespace LiteQuark.Runtime
             OnTick(deltaTime);
         }
 
-        protected void Complete(object result)
+        protected bool Complete(object result)
         {
-            if (!IsDone)
+            if (State != TaskState.InProgress)
             {
-                Progress = 1f;
-                State = TaskState.Completed;
-                Result = result;
-                _tcs?.TrySetResult(result);
+                return false;
             }
+
+            return TryTerminate(TaskState.Completed, result, null);
         }
 
-        public virtual void Cancel()
+        public void Fail(Exception error)
         {
-            if (!IsDone)
+            if (error == null)
             {
-                State = TaskState.Cancelled;
-                Result = null;
-                _tcs?.TrySetResult(null);
+                throw new ArgumentNullException(nameof(error));
             }
+
+            TryTerminate(TaskState.Failed, null, error);
+        }
+
+        public void Cancel()
+        {
+            TryTerminate(TaskState.Cancelled, null, null);
+        }
+
+        private bool TryTerminate(TaskState state, object result, Exception error)
+        {
+            if (IsDone)
+            {
+                return false;
+            }
+
+            Result = result;
+            Error = error;
+
+            if (state == TaskState.Completed)
+            {
+                Progress = 1f;
+            }
+
+            State = state;
+
+            try
+            {
+                OnTerminated();
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Task {0} termination failed", DebugName);
+            }
+            finally
+            {
+                PublishResult();
+            }
+
+            return true;
+        }
+
+        private void PublishResult()
+        {
+            _tcs?.TrySetResult(Result);
         }
 
         protected abstract void OnExecute();
+
+        protected virtual void OnTerminated()
+        {
+        }
 
         protected virtual void OnTick(float deltaTime)
         {

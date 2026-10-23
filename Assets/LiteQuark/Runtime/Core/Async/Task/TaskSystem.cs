@@ -123,7 +123,7 @@ namespace LiteQuark.Runtime
             catch (Exception ex)
             {
                 LLog.Exception(ex, "Task {0} tick failed", record.Task.GetType().Name);
-                Retire(record, cancel: true);
+                Retire(record, cancel: false, error: ex);
             }
         }
 
@@ -144,11 +144,11 @@ namespace LiteQuark.Runtime
             catch (Exception ex)
             {
                 LLog.Exception(ex, "Task {0} execute failed", record.Task.GetType().Name);
-                Retire(record, cancel: true);
+                Retire(record, cancel: false, error: ex);
             }
         }
 
-        private void Retire(TaskRecord record, bool cancel)
+        private void Retire(TaskRecord record, bool cancel, Exception error = null)
         {
             if (record.Phase == TaskSchedulePhase.Retired)
             {
@@ -157,25 +157,34 @@ namespace LiteQuark.Runtime
 
             record.Group.Detach(record);
 
-            if (cancel)
-            {
-                try
-                {
-                    record.Task.Cancel();
-                }
-                catch(Exception ex)
-                {
-                    LLog.Exception(ex, "Task {0} cancel failed", record.Task.GetType().Name);
-                }
-            }
-
             try
             {
-                record.Task.Dispose();
+                if (!record.Task.IsDone)
+                {
+                    if (error != null)
+                    {
+                        record.Task.Fail(error);
+                    }
+                    else if (cancel)
+                    {
+                        record.Task.Cancel();
+                    }
+                }
             }
             catch (Exception ex)
             {
-                LLog.Exception(ex, "Task {0} dispose failed", record.Task.GetType().Name);
+                LLog.Exception(ex, "Task {0} termination failed", record.Task.GetType().Name);
+            }
+            finally
+            {
+                try
+                {
+                    record.Task.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    LLog.Exception(ex, "Task {0} dispose failed", record.Task.GetType().Name);
+                }
             }
         }
 

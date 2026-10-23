@@ -42,10 +42,24 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public override void Cancel()
+        protected override void OnTerminated()
         {
-            base.Cancel();
-            _request?.Abort();
+            base.OnTerminated();
+
+            try
+            {
+                if (State is TaskState.Failed or TaskState.Cancelled)
+                {
+                    _request?.Abort();
+                }
+            }
+            finally
+            {
+                if (State == TaskState.Failed)
+                {
+                    OnFailed();
+                }
+            }
         }
 
         protected override void OnTick(float deltaTime)
@@ -57,7 +71,7 @@ namespace LiteQuark.Runtime
         {
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
-                OnFailed();
+                Fail(new InvalidOperationException($"Network is not reachable: {Uri}"));
                 return;
             }
 
@@ -67,23 +81,36 @@ namespace LiteQuark.Runtime
         private void StartDownload()
         {
             _retryTimerID = 0;
-            _request = CreateRequest();
 
-            if (_forceNoCache)
+            if (IsDone)
             {
-                _request.SetRequestHeader("Cache-Control", "no-cache");
-                _request.SetRequestHeader("Pragma", "no-cache");
+                return;
             }
 
-            if (_timeout > 0)
+            try
             {
-                _request.timeout = _timeout;
+                _request = CreateRequest();
+
+                if (_forceNoCache)
+                {
+                    _request.SetRequestHeader("Cache-Control", "no-cache");
+                    _request.SetRequestHeader("Pragma", "no-cache");
+                }
+
+                if (_timeout > 0)
+                {
+                    _request.timeout = _timeout;
+                }
+
+                var asyncOperation = _request.SendWebRequest();
+                asyncOperation.completed += OnRequestCompleted;
+
+                LLog.Info("GET : {0}", Uri);
             }
-
-            var asyncOperation = _request.SendWebRequest();
-            asyncOperation.completed += OnRequestCompleted;
-
-            LLog.Info("GET : {0}", Uri);
+            catch (Exception ex)
+            {
+                Fail(ex);
+            }
         }
 
         protected virtual UnityWebRequest CreateRequest()
@@ -105,27 +132,42 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var downloadHandler = _request.downloadHandler;
-            if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
+            try
             {
-                var error = _request.error;
-                LLog.Error("{0} error : {1} - {2}\n{3}", GetType().Name, Uri, _request.result, error);
-
-                if (_retryCount > 0 && RetryParam.IsCanRetryError(error))
+                var downloadHandler = _request.downloadHandler;
+                if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
                 {
-                    _retryCount--;
-                    _request?.Dispose();
-                    _request = null;
-                    _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
+                    var error = _request.error;
+                    var message = $"{GetType().Name} failed: {Uri}, {_request.result}, HTTP {_request.responseCode}, {error}";
+                    LLog.Error(message);
+
+                    if (_retryCount > 0 && RetryParam.IsCanRetryError(error ?? string.Empty))
+                    {
+                        _retryCount--;
+                        _request.Dispose();
+                        _request = null;
+                        _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
+                    }
+                    else
+                    {
+                        Fail(new InvalidOperationException(message));
+                    }
                 }
                 else
                 {
-                    OnFailed();
+                    OnSuccess(_request);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                OnSuccess(_request);
+                if (IsDone)
+                {
+                    LLog.Exception(ex);
+                }
+                else
+                {
+                    Fail(ex);
+                }
             }
         }
 

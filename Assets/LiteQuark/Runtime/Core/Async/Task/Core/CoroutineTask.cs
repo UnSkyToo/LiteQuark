@@ -22,23 +22,15 @@ namespace LiteQuark.Runtime
 
         protected override IEnumerator ExecuteInternal()
         {
-            while (State == TaskState.InProgress)
+            if (_item != null)
             {
-                /*if (IsPause)
-                {
-                    yield return null;
-                }
-                else */if (_item != null && _item.MoveNext())
-                {
-                    yield return _item.Current;
-                }
-                else
-                {
-                    Complete(null);
-                }
+                yield return _item;
             }
 
-            LiteUtils.SafeInvoke(_callback);
+            if (Complete(null))
+            {
+                LiteUtils.SafeInvoke(_callback);
+            }
         }
     }
 }

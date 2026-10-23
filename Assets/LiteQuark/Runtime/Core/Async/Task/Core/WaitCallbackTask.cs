@@ -9,7 +9,7 @@ namespace LiteQuark.Runtime
         public WaitCallbackTask(Action<Action<bool>> func)
             : base()
         {
-            _func = func;
+            _func = func ?? throw new ArgumentNullException(nameof(func));
         }
 
         public override void Dispose()
@@ -18,18 +18,23 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            LiteUtils.SafeInvoke(_func, OnCallback);
+            _func(OnCallback);
         }
 
-        private void OnCallback(bool isCompleted)
+        private void OnCallback(bool success)
         {
-            if (isCompleted)
+            if (IsDone)
+            {
+                return;
+            }
+
+            if (success)
             {
                 Complete(true);
             }
             else
             {
-                Cancel();
+                Fail(new InvalidOperationException("The callback reported task failure."));
             }
         }
     }

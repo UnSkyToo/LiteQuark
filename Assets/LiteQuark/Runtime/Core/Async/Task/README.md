@@ -14,7 +14,11 @@ var task = new WaitCallbackTask(done =>
 });
 LiteRuntime.Task.AddTask(task, priority: TaskPriority.High);
 await task.Task;
-if (task.State == TaskState.Cancelled)
+if (task.State == TaskState.Failed)
+{
+    LLog.Exception(task.Error);
+}
+else if (task.State == TaskState.Cancelled)
 {
     LLog.Warning("Task cancelled");
 }
@@ -31,9 +35,17 @@ if (task.State == TaskState.Cancelled)
 
 需要指定组或优先级时，先构造任务对象，再调用 `AddTask(ITask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。通用入口只按传入的组登记，不根据任务类型自动分组；例如自行构造 `AsyncOperationTask` 后通过该入口提交，若不指定组仍进入 Default。
 
-自定义任务一般继承 `BaseTask`，实现 `OnExecute()`、`Dispose()`，按需重写 `OnTick()`，结束时调用 `Complete(result)`。任务是一次性对象：只提交尚未执行的 Pending 任务，不重复提交、跨组重复提交或在外部调用其 `Execute()`。成功提交后，由 TaskSystem 负责最终释放。
+自定义任务一般继承 `BaseTask`，实现 `OnExecute()`、`Dispose()`，按需重写 `OnTick()`，成功时调用 `Complete(result)`，失败时调用 `Fail(exception)`。任务是一次性对象：只提交尚未执行的 Pending 任务，不重复提交、跨组重复提交或在外部调用其 `Execute()`。成功提交后，由 TaskSystem 负责最终释放。
 
-状态为 `Pending → InProgress → Completed`，也可以进入 `Cancelled`。`IsDone` 同时包含完成和取消。`BaseTask.Task` 的类型是 `UniTask<object>`；取消使它以 null 完成，不会抛出取消异常，因此需要检查 `State`。TaskSystem 移除终态任务时自动调用 `Dispose()`。
+状态为 `Pending → InProgress → Completed`，Pending 或 InProgress 也可以进入 `Failed` / `Cancelled`。Completed 表示该任务按自身契约成功，结果允许为 null；Failed 的 `Error` 保存非空异常，取消的 `Error` 为 null。`IsDone` 包含这三个终态。`BaseTask.Task` 的类型是 `UniTask<object>`；失败和取消均以 null 完成，不会因这两种终态抛异常，因此需要检查 `State` / `Error`。终态前后取得 Task 的结果语义一致。成功将 Progress 设为 1，失败或取消保留最后进度；进度不能用来判断成功。
+
+终态不可逆。`Complete(result)` 仅在 InProgress 时接受结果，并返回是否成功提交；重复 Complete/Fail/Cancel 不再通知。`Fail(null)` 抛出参数异常。State、Result、Error 由 BaseTask 维护，先写入完整终态，再执行一次 `OnTerminated()` 并结束已有等待。该钩子用于停止操作和终态通知，不承担尚未完成的结果计算。TaskSystem 移除终态任务时自动调用 `Dispose()`；子类释放包装器资源时不得改写已发布的结果和错误。终态通知或 Dispose 的异常单独记录，不覆盖原始失败。
+
+Execute/Tick 的异常由 TaskSystem 转为 Failed，并在收尾前归还调度额度。异步原生回调、重试定时回调中的执行异常由对应任务捕获；执行主体不能用 `SafeInvoke` 吞掉异常，已经结束后的观察回调则可以隔离异常。`WaitCallbackTask` 的 false 回调表示 Failed。下载的失败通知 `OnFailed()` 在 Failed 终态确定后调用，重试期间仍为 InProgress。
+
+CoroutineTask 及其基类捕获自有 IEnumerator 的 MoveNext/Current 异常，并释放自有的嵌套迭代器；取消不会调用成功回调。被 yield 的其他 ITask 只被等待，仍由其原调度器管理，不传播它的失败或接管其释放。Unity 原生 yield 操作仍由 Unity 推进，不将通用 AsyncOperation 的结束解释为其业务成功。
+
+迁移自定义任务时，原 Cancel override 改为 `OnTerminated()` 并检查 State；该钩子执行时 IsDone 已为 true，不能用 `if (IsDone) return` 跳过收尾。终态方法及完成回调沿用主线程约定，后台回调应先投递主线程。取消只结束逻辑任务，不保证原生操作已停止；迟到结果仍由具体适配器按原有所有权规则处理。
 
 ## 分组与并发
 

@@ -35,16 +35,9 @@ namespace LiteQuark.Runtime
             return _asset;
         }
 
-        public override void Cancel()
+        protected override void OnTerminated()
         {
-            if (IsDone)
-            {
-                return;
-            }
-
-            base.Cancel();
-
-            if (_assetRequest == null)
+            if (State != TaskState.Completed && (_assetRequest == null || _assetRequest.isDone))
             {
                 NotifyCompleted(null);
             }
@@ -61,7 +54,7 @@ namespace LiteQuark.Runtime
 
             if (_assetRequest == null)
             {
-                Cancel();
+                Fail(new InvalidOperationException($"Could not start asset load: {_assetName}"));
                 return;
             }
 
@@ -77,9 +70,25 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            _asset = _assetRequest.asset as T;
-            Complete(_asset);
-            NotifyCompleted(_asset);
+            try
+            {
+                _asset = _assetRequest.asset as T;
+                if (_asset == null)
+                {
+                    Fail(new InvalidOperationException($"Asset load returned no {typeof(T).Name}: {_assetName}"));
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Fail(ex);
+                return;
+            }
+
+            if (Complete(_asset))
+            {
+                NotifyCompleted(_asset);
+            }
         }
 
         private void NotifyCompleted(T asset)

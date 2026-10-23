@@ -6,5 +6,6 @@ namespace LiteQuark.Runtime
         InProgress,
         Completed,
         Cancelled,
+        Failed,
     }
 }

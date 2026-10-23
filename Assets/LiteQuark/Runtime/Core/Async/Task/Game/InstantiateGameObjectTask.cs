@@ -24,24 +24,39 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
-            if (_task != null)
-            {
-                _task.Cancel();
-                _task.WaitForCompletion();
-                _task = null;
-            }
+            StopOperation();
             _callback = null;
         }
 
-        public override void Cancel()
+        protected override void OnTerminated()
         {
-            base.Cancel();
-
-            if (_task != null)
+            try
             {
-                _task.Cancel();
-                _task.WaitForCompletion();
-                _task = null;
+                if (State is TaskState.Failed or TaskState.Cancelled)
+                {
+                    StopOperation();
+                }
+            }
+            finally
+            {
+                if (State == TaskState.Failed)
+                {
+                    var callback = _callback;
+                    _callback = null;
+                    LiteUtils.SafeInvoke(callback, Array.Empty<GameObject>());
+                }
+            }
+        }
+
+        private void StopOperation()
+        {
+            var task = _task;
+            _task = null;
+            if (task != null)
+            {
+                task.completed -= OnInstantiateComplete;
+                task.Cancel();
+                task.WaitForCompletion();
             }
         }
 
@@ -53,23 +68,40 @@ namespace LiteQuark.Runtime
 
         private void OnInstantiateComplete(AsyncOperation operation)
         {
+            operation.completed -= OnInstantiateComplete;
             _task = null;
 
-            if (operation.isDone && operation is AsyncInstantiateOperation { Result: not null } asyncOperation)
+            if (IsDone)
             {
-                var result = new GameObject[asyncOperation.Result.Length];
+                return;
+            }
+
+            GameObject[] result;
+            try
+            {
+                if (!operation.isDone || operation is not AsyncInstantiateOperation { Result: not null } asyncOperation)
+                {
+                    Fail(new InvalidOperationException("Instantiation returned no result."));
+                    return;
+                }
+
+                result = new GameObject[asyncOperation.Result.Length];
                 for (var i = 0; i < asyncOperation.Result.Length; ++i)
                 {
                     result[i] = asyncOperation.Result[i] as GameObject;
                 }
-
-                Complete(result);
-                LiteUtils.SafeInvoke(_callback, result);
             }
-            else
+            catch (Exception ex)
             {
-                Cancel();
-                LiteUtils.SafeInvoke(_callback, Array.Empty<GameObject>());
+                Fail(ex);
+                return;
+            }
+
+            if (Complete(result))
+            {
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, result);
             }
         }
     }
