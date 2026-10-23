@@ -5,9 +5,9 @@ namespace LiteQuark.Runtime
 {
     public sealed class UnityWebGetRequestTask : UnityDownloadBaseTask
     {
-        private Action<DownloadHandler> _callback;
+        private Action<byte[]> _callback;
 
-        public UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<DownloadHandler> callback)
+        public UnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<byte[]> callback)
             : base(uri, retry, forceNoCache)
         {
             _callback = callback;
@@ -30,18 +30,24 @@ namespace LiteQuark.Runtime
         {
             base.OnSuccess(request);
 
-            var handler = request.downloadHandler;
-            if (Complete(handler))
+            if (IsDone)
             {
-                NotifyCompleted(handler);
+                return;
+            }
+
+            var handler = request.downloadHandler ?? throw new InvalidOperationException("Download handler is missing.");
+            var data = handler.data ?? Array.Empty<byte>();
+            if (Complete(data))
+            {
+                NotifyCompleted(data);
             }
         }
 
-        private void NotifyCompleted(DownloadHandler handler)
+        private void NotifyCompleted(byte[] data)
         {
             var callback = _callback;
             _callback = null;
-            LiteUtils.SafeInvoke(callback, handler);
+            LiteUtils.SafeInvoke(callback, data);
         }
     }
 }

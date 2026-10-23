@@ -59,7 +59,11 @@ Result 是任务已经提交的最终结果，Task 提供等待并返回该结�
 
 完成回调在调用前取出并清空，成功路径仅在 Complete 接受结果后通知，最多发送一次。通知顺序保持原样：成功路径通常先发布 Task 等待结果，再调用 callback；失败回调通常发生在 OnTerminated 内、已有 Task 等待被发布之前。UniTask 续体可能同步重入；await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理也已结束。首次在终态回调内取得 Task 时，它可以立即完成。取消、关闭和迟到原生结果仍沿用各适配器原有规则，不承诺所有终态都调用 callback。实例化失败回调仍返回空数组，Task / Result 仍返回 null；回调异常被记录，不改写任务终态。WaitCallbackTask 的 done(bool) 是结果生产入口，不属于这里的观察回调。
 
-结果引用不代表独立所有权，也不延长 Unity 资源寿命。UnityWebGetRequestTask 仍返回 DownloadHandler，其生命周期受内部 UnityWebRequest 限制；包装器清理会释放请求及默认随请求释放的 handler。需要数据时应在请求清理前同步读取并复制，不能依赖晚些时候 await 或跨帧保留 handler 后继续读取。当前不改变 WebGet 返回类型或移交 handler 所有权。
+结果引用不代表独立所有权，也不延长 Unity 资源寿命。UnityWebGetRequestTask 的成功结果是独立于原生请求的 byte[] 快照：在发布成功前读取一次 DownloadHandler.data，callback、Result 和 await 返回同一个数组。请求和 handler 仍由任务清理，数组由托管引用维持，因此包装器清理后、跨帧或晚些时候 await 仍可读取。成功的空响应返回空数组，失败和取消的 Result / Task 仍返回 null；失败回调仍传 null，取消仍不发送完成回调。
+
+WebGet 快照约定按只读数据使用，并非不可变数组；需要修改的消费者应自行复制，避免影响其他观察者。一次数据复制会增加托管分配和复制期间的内存峰值，不再暴露 DownloadHandler.nativeData 等原生接口。文本解码由业务按协议选择编码，任务不再通过 handler.text 按响应 charset 自动解码。
+
+迁移 WebGet 时，构造函数及 AddUnityWebGetRequestTask 的回调从 Action<DownloadHandler> 改为 Action<byte[]>；原先的 handler.data 直接改用数组，handler.text 改为业务解码。Task 仍为 UniTask<object>，Result 仍为 object，但成功值的实际类型已改为 byte[]，旧的 DownloadHandler 强转也必须更新。额度、重试、取消和通知顺序不变；不移交 handler 所有权，也不需要业务 Dispose 数据快照。
 
 ## 分组与并发
 

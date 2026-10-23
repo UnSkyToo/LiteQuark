@@ -324,7 +324,7 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        public UnityWebGetRequestTask AddUnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<UnityEngine.Networking.DownloadHandler> callback)
+        public UnityWebGetRequestTask AddUnityWebGetRequestTask(string uri, RetryParam retry, bool forceNoCache, Action<byte[]> callback)
         {
             var task = new UnityWebGetRequestTask(uri, retry, forceNoCache, callback);
             AddTask(task);
