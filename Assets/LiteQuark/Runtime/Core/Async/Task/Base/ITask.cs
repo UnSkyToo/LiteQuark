@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    public interface ITask : ITick, IDispose, IEnumerator
+    public interface ITask : IEnumerator
     {
         public float Progress { get; }
         public bool IsExecuted { get; }
@@ -14,8 +14,6 @@ namespace LiteQuark.Runtime
         public TaskState State { get; }
         public UniTask<object> Task { get; }
 
-        public void Execute();
         public void Cancel();
-        public void Fail(Exception error);
     }
 }

@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
             _param = param;
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
         }
 

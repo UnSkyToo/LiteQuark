@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             _callback = callback;
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
             _callback = null;
         }

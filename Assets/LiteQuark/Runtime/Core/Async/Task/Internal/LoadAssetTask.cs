@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
             _asset = null;
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
             _callback = null;
             _assetRequest = null;

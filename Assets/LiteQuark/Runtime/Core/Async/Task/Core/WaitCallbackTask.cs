@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
             _func = func ?? throw new ArgumentNullException(nameof(func));
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
         }
 

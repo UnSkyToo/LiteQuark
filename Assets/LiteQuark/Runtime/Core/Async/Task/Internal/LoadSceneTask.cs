@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
             _sceneRequest = null;
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             _callback = null;

@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
             _retryTimerID = 0;
         }
 
-        public override void Dispose()
+        protected override void OnDispose()
         {
             if (_retryTimerID != 0)
             {

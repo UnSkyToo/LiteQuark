@@ -9,12 +9,12 @@
 
     internal sealed class TaskRecord
     {
-        public ITask Task { get; }
+        public BaseTask Task { get; }
         public TaskGroup Group { get; }
         public TaskPriority Priority { get; }
         public TaskSchedulePhase Phase { get; set; }
 
-        public TaskRecord(ITask task, TaskGroup group, TaskPriority priority)
+        public TaskRecord(BaseTask task, TaskGroup group, TaskPriority priority)
         {
             Task = task;
             Group = group;

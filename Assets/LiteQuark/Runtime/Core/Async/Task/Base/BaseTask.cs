@@ -34,6 +34,7 @@ namespace LiteQuark.Runtime
         }
 
         private UniTaskCompletionSource<object> _tcs;
+        private bool _isDisposed;
 
         protected BaseTask()
             : base()
@@ -41,9 +42,18 @@ namespace LiteQuark.Runtime
             State = TaskState.Pending;
         }
 
-        public abstract void Dispose();
+        internal void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
 
-        public void Execute()
+            _isDisposed = true;
+            OnDispose();
+        }
+
+        internal void Execute()
         {
             if (State != TaskState.Pending)
             {
@@ -57,7 +67,7 @@ namespace LiteQuark.Runtime
             OnExecute();
         }
 
-        public void Tick(float deltaTime)
+        internal void Tick(float deltaTime)
         {
             if (State != TaskState.Running)
             {
@@ -77,7 +87,7 @@ namespace LiteQuark.Runtime
             return TryTerminate(TaskState.Succeeded, result, null);
         }
 
-        public void Fail(Exception error)
+        protected internal void Fail(Exception error)
         {
             if (error == null)
             {
@@ -131,6 +141,10 @@ namespace LiteQuark.Runtime
         }
 
         protected abstract void OnExecute();
+
+        protected virtual void OnDispose()
+        {
+        }
 
         protected virtual void OnTerminated()
         {
