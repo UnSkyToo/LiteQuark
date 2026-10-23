@@ -11,7 +11,6 @@ namespace LiteQuark.Runtime
         private readonly string _assetName;
         private Action<T> _callback;
         private AssetBundleRequest _assetRequest;
-        private T _asset;
 
         public LoadAssetTask(AssetBundle bundle, string assetName, Action<T> callback)
             : base()
@@ -20,19 +19,17 @@ namespace LiteQuark.Runtime
             _assetName = assetName;
             _callback = callback;
             _assetRequest = null;
-            _asset = null;
         }
 
         protected override void OnDispose()
         {
             _callback = null;
             _assetRequest = null;
-            _asset = null;
         }
 
         public T GetAsset()
         {
-            return _asset;
+            return Result as T;
         }
 
         protected override void OnTerminated()
@@ -70,10 +67,11 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            T asset;
             try
             {
-                _asset = _assetRequest.asset as T;
-                if (_asset == null)
+                asset = _assetRequest.asset as T;
+                if (asset == null)
                 {
                     Fail(new InvalidOperationException($"Asset load returned no {typeof(T).Name}: {_assetName}"));
                     return;
@@ -85,9 +83,9 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (Complete(_asset))
+            if (Complete(asset))
             {
-                NotifyCompleted(_asset);
+                NotifyCompleted(asset);
             }
         }
 

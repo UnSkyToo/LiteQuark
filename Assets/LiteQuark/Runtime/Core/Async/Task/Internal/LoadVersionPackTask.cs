@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
 
-            LiteUtils.SafeInvoke(_callback, null);
+            NotifyCompleted(null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, Error.Message);
         }
 
@@ -47,13 +47,22 @@ namespace LiteQuark.Runtime
                 }
 
                 info.Initialize();
-                Complete(info);
-                LiteUtils.SafeInvoke(_callback, info);
+                if (Complete(info))
+                {
+                    NotifyCompleted(info);
+                }
             }
             catch (Exception ex)
             {
                 FailVersionPack("VersionPack parse failed", ex);
             }
+        }
+
+        private void NotifyCompleted(VersionPackInfo info)
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, info);
         }
 
         private void FailVersionPack(string message, Exception ex = null)

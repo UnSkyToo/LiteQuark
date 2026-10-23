@@ -8,7 +8,6 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"LoadBundle {PathUtils.GetFileName(_bundleUri)}";
 
         private readonly string _bundleUri;
-        private AssetBundle _bundle;
         private Action<AssetBundle> _callback;
         private AssetBundleCreateRequest _bundleRequest;
 
@@ -16,7 +15,6 @@ namespace LiteQuark.Runtime
             : base()
         {
             _bundleUri = bundleUri;
-            _bundle = null;
             _callback = callback;
         }
 
@@ -60,10 +58,11 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            AssetBundle bundle;
             try
             {
-                _bundle = _bundleRequest.assetBundle;
-                if (_bundle == null)
+                bundle = _bundleRequest.assetBundle;
+                if (bundle == null)
                 {
                     Fail(new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
                     return;
@@ -75,14 +74,14 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (Complete(_bundle))
+            if (Complete(bundle))
             {
                 var callback = _callback;
                 _callback = null;
-                LiteUtils.SafeInvoke(callback, _bundle);
+                LiteUtils.SafeInvoke(callback, bundle);
             }
         }
 
-        public AssetBundle GetBundle() => _bundle;
+        public AssetBundle GetBundle() => Result as AssetBundle;
     }
 }

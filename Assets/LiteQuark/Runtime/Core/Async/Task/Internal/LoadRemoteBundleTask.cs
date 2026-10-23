@@ -10,7 +10,6 @@ namespace LiteQuark.Runtime
 
         private readonly string _bundleUri;
         private readonly string _hash;
-        private AssetBundle _bundle;
         private Action<AssetBundle> _callback;
 
         public LoadRemoteBundleTask(string bundleUri, string hash, Action<AssetBundle> callback)
@@ -41,8 +40,7 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
 
-            _bundle = null;
-            LiteUtils.SafeInvoke(_callback, null);
+            NotifyCompleted(null);
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }
 
@@ -50,17 +48,26 @@ namespace LiteQuark.Runtime
         {
             base.OnSuccess(request);
 
-            _bundle = DownloadHandlerAssetBundle.GetContent(request);
-            if (_bundle == null)
+            var bundle = DownloadHandlerAssetBundle.GetContent(request);
+            if (bundle == null)
             {
                 Fail(new InvalidOperationException($"Bundle download returned no bundle: {_bundleUri}"));
                 return;
             }
-            Complete(_bundle);
-            LiteUtils.SafeInvoke(_callback, _bundle);
-            LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, request.downloadedBytes / 1024);
+            if (Complete(bundle))
+            {
+                NotifyCompleted(bundle);
+                LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, request.downloadedBytes / 1024);
+            }
         }
 
-        public AssetBundle GetBundle() => _bundle;
+        private void NotifyCompleted(AssetBundle bundle)
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, bundle);
+        }
+
+        public AssetBundle GetBundle() => Result as AssetBundle;
     }
 }

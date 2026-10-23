@@ -23,7 +23,7 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
 
-            LiteUtils.SafeInvoke(_callback, null);
+            NotifyCompleted(null);
         }
 
         protected override void OnSuccess(UnityWebRequest request)
@@ -31,8 +31,17 @@ namespace LiteQuark.Runtime
             base.OnSuccess(request);
 
             var handler = request.downloadHandler;
-            Complete(handler);
-            LiteUtils.SafeInvoke(_callback, handler);
+            if (Complete(handler))
+            {
+                NotifyCompleted(handler);
+            }
+        }
+
+        private void NotifyCompleted(DownloadHandler handler)
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, handler);
         }
     }
 }

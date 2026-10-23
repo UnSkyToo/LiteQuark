@@ -36,7 +36,9 @@ namespace LiteQuark.Runtime
 
             if (State == TaskState.Succeeded)
             {
-                LiteUtils.SafeInvoke(_callback);
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback);
             }
         }
     }

@@ -29,7 +29,9 @@ namespace LiteQuark.Runtime
 
             if (Complete(null))
             {
-                LiteUtils.SafeInvoke(_callback);
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback);
             }
         }
     }

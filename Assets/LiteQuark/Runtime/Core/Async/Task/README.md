@@ -53,6 +53,14 @@ CoroutineTask 及其基类捕获自有 IEnumerator 的 MoveNext/Current 异常�
 
 生命周期入口迁移：原 `public override void Dispose()` 改为 `protected override void OnDispose()`，继承链中的 `base.Dispose()` 改为 `base.OnDispose()`，保持原有清理顺序。外部不再对任务使用 using、手动 Dispose 或 ITick 驱动，也不能直接调用 Execute / Fail；通过 TaskSystem 提交并以 Cancel 请求取消。独立 ITask 实现需迁移为 BaseTask 派生类后才能提交。AssetHandle / SceneHandle 等 Handle 的公开 Dispose 不受影响，仍由业务释放其资源所有权。
 
+## 结果与完成通知
+
+Result 是任务已经提交的最终结果，Task 提供等待并返回该结果，callback 提供主动通知。Bundle / Asset 加载任务不再另存一份最终结果，GetBundle / GetAsset 从 Result 读取，成功时与回调参数指向同一对象。包装器清理不清空 Result；GetAsset 在清理后也保留相同引用，不再单独变成 null。加载 Scene 时用于事件匹配的候选场景及 GetScene 保持原有语义。
+
+完成回调在调用前取出并清空，成功路径仅在 Complete 接受结果后通知，最多发送一次。通知顺序保持原样：成功路径通常先发布 Task 等待结果，再调用 callback；失败回调通常发生在 OnTerminated 内、已有 Task 等待被发布之前。UniTask 续体可能同步重入；await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理也已结束。首次在终态回调内取得 Task 时，它可以立即完成。取消、关闭和迟到原生结果仍沿用各适配器原有规则，不承诺所有终态都调用 callback。实例化失败回调仍返回空数组，Task / Result 仍返回 null；回调异常被记录，不改写任务终态。WaitCallbackTask 的 done(bool) 是结果生产入口，不属于这里的观察回调。
+
+结果引用不代表独立所有权，也不延长 Unity 资源寿命。UnityWebGetRequestTask 仍返回 DownloadHandler，其生命周期受内部 UnityWebRequest 限制；包装器清理会释放请求及默认随请求释放的 handler。需要数据时应在请求清理前同步读取并复制，不能依赖晚些时候 await 或跨帧保留 handler 后继续读取。当前不改变 WebGet 返回类型或移交 handler 所有权。
+
 ## 分组与并发
 
 在 Launcher 的 Task 设置中配置：
