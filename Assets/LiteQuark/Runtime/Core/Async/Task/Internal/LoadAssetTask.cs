@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnTerminated()
         {
-            if (State != TaskState.Completed && (_assetRequest == null || _assetRequest.isDone))
+            if (State != TaskState.Succeeded && (_assetRequest == null || _assetRequest.isDone))
             {
                 NotifyCompleted(null);
             }

@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnTerminated()
         {
-            if (State != TaskState.Completed && (_sceneRequest == null || _sceneRequest.isDone))
+            if (State != TaskState.Succeeded && (_sceneRequest == null || _sceneRequest.isDone))
             {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
                 NotifyCompleted(false, default);

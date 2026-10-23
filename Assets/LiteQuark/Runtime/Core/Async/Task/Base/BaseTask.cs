@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         public object Result { get; private set; }
         public Exception Error { get; private set; }
 
-        public bool IsDone => State is TaskState.Completed or TaskState.Failed or TaskState.Cancelled;
+        public bool IsDone => State is TaskState.Succeeded or TaskState.Failed or TaskState.Cancelled;
 
         public UniTask<object> Task
         {
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             }
 
             IsExecuted = true;
-            State = TaskState.InProgress;
+            State = TaskState.Running;
             Progress = 0;
             Result = null;
             OnExecute();
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            if (State != TaskState.InProgress)
+            if (State != TaskState.Running)
             {
                 return;
             }
@@ -69,12 +69,12 @@ namespace LiteQuark.Runtime
 
         protected bool Complete(object result)
         {
-            if (State != TaskState.InProgress)
+            if (State != TaskState.Running)
             {
                 return false;
             }
 
-            return TryTerminate(TaskState.Completed, result, null);
+            return TryTerminate(TaskState.Succeeded, result, null);
         }
 
         public void Fail(Exception error)
@@ -102,7 +102,7 @@ namespace LiteQuark.Runtime
             Result = result;
             Error = error;
 
-            if (state == TaskState.Completed)
+            if (state == TaskState.Succeeded)
             {
                 Progress = 1f;
             }

@@ -22,13 +22,9 @@ namespace LiteQuark.Runtime
 
         protected override IEnumerator ExecuteInternal()
         {
-            while (State == TaskState.InProgress)
+            while (State == TaskState.Running)
             {
-                /*if (IsPause)
-                {
-                    yield return null;
-                }
-                else */if (_asyncResult is { IsCompleted: false })
+                if (_asyncResult is { IsCompleted: false })
                 {
                     yield return null;
                 }
@@ -38,7 +34,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            if (State == TaskState.Completed)
+            if (State == TaskState.Succeeded)
             {
                 LiteUtils.SafeInvoke(_callback);
             }
