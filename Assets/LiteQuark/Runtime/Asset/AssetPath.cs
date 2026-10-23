@@ -35,9 +35,7 @@ namespace LiteQuark.Runtime
             if (IsProjectPath(path))
             {
             }
-            else if (path.Equals("Assets", StringComparison.OrdinalIgnoreCase) ||
-                     path.Equals("Packages", StringComparison.OrdinalIgnoreCase) ||
-                     path.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase))
+            else if (path.Equals("Assets", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException($"Unsupported asset path: {input}", nameof(input));
             }

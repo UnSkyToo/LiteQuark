@@ -77,6 +77,8 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 资源根目录为 `Assets/StandaloneAssets`。例如实际文件 `Assets/StandaloneAssets/Prefabs/Player.prefab` 可以使用 `Prefabs/Player.prefab` 或完整的 `Assets/...` 项目路径加载，均须包含扩展名。入口将其统一为小写、使用 `/` 的完整资源 key；磁盘绝对路径、URL 和 `..` 等非法输入会使加载入口同步抛出 `ArgumentException`，`HasAsset` 则返回 `false`。Bundle 内按完整资源路径寻址；场景保留实际加载路径，并区分不同目录下的同名场景。
 
+`packages/...` 也按资源根目录相对路径处理，可用于普通 `packages` 子目录；它不表示访问 Unity Package Manager 的包目录。真正的 UPM 资源显式管理与直接加载暂不支持。
+
 Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发布前通过 `Lite > Builder` 生成资源包和版本文件，使用 BuiltIn 或 Remote 定位模式。资源的加载、实例化和卸载统一由 Handle 管理，详见 [Asset 指南](Runtime/Asset/README.md)。
 
 升级版本文件的路径前缀恢复逻辑时，应从源资源重新生成包含 `default.ab` 的旧清单，并与修复后的读取逻辑配套使用；旧数据可能已丢失根目录与真实 `default` 子目录的路径区别，不能靠读入旧清单再导出来修复。完整兼容说明见上述 Asset 指南。
