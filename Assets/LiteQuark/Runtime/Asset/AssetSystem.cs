@@ -83,11 +83,12 @@ namespace LiteQuark.Runtime
             CancellationToken ct)
             where T : UnityEngine.Object
         {
-            return new AssetHandle<T>(callback =>
+            return new AssetHandle<T>(assetKey, callback =>
             {
                 if (_provider == null)
                 {
-                    LiteUtils.SafeInvoke(callback, null);
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(
+                        new AssetError(assetKey, "Asset provider is unavailable")));
                     return;
                 }
 
@@ -133,7 +134,8 @@ namespace LiteQuark.Runtime
             {
                 if (_provider == null)
                 {
-                    LiteUtils.SafeInvoke(callback, null);
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(
+                        new AssetError(sceneKey, "Asset provider is unavailable")));
                     return;
                 }
 

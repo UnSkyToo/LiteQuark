@@ -5,7 +5,10 @@ namespace LiteQuark.Runtime
     /// </summary>
     public interface IAssetHandle<T> : IDispose
     {
+        public AssetHandleState State { get; }
+        public AssetError Error { get; }
         public bool IsDone { get; }
+        public bool IsDisposed { get; }
         public T Result { get; }
     }
 }

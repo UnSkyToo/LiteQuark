@@ -14,47 +14,70 @@ namespace LiteQuark.Runtime
         private AssetInfoCache.Lease<T> _lease;
         private bool _isDisposed;
 
-        public bool IsDone { get; private set; }
+        public AssetHandleState State { get; private set; }
+        public AssetError Error { get; private set; }
+        public bool IsDone => State != AssetHandleState.Pending;
+        public bool IsDisposed => _isDisposed;
         public T Result => _lease?.Asset;
+        internal string AssetKey { get; }
         internal UniTask<T> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal AssetHandle(Action<Action<AssetInfoCache.Lease<T>>> invoke, CancellationToken ct)
+        internal AssetHandle(string assetKey, Action<Action<AssetLoadResult<AssetInfoCache.Lease<T>>>> invoke, CancellationToken ct)
         {
+            AssetKey = assetKey;
             if (ct.IsCancellationRequested)
             {
-                IsDone = true;
-                _tcs.TrySetCanceled(ct);
+                Cancel(ct);
                 return;
             }
 
             if (ct.CanBeCanceled)
             {
-                _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
+                _ctr = ct.Register(() => Cancel(ct));
             }
 
             invoke(OnCompleted);
         }
 
-        private void OnCompleted(AssetInfoCache.Lease<T> lease)
+        private void OnCompleted(AssetLoadResult<AssetInfoCache.Lease<T>> result)
         {
-            _ctr.Dispose();
-            _lease = lease;
-            IsDone = true;
-
-            if (!_tcs.TrySetResult(_lease?.Asset))
+            if (!TryComplete(result.Succeeded ? AssetHandleState.Succeeded : AssetHandleState.Failed, result.Error))
             {
-                if (_lease != null)
-                {
-                    ReleaseResult();
-                }
+                result.Value?.Dispose();
+                return;
+            }
+
+            _lease = result.Value;
+            _tcs.TrySetResult(_lease?.Asset);
+        }
+
+        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        {
+            if (IsDone)
+            {
+                return false;
+            }
+
+            State = state;
+            Error = error;
+            _ctr.Dispose();
+            return true;
+        }
+
+        private void Cancel(CancellationToken ct = default)
+        {
+            if (TryComplete(AssetHandleState.Cancelled))
+            {
+                _tcs.TrySetCanceled(ct);
             }
         }
 
         private void ReleaseResult()
         {
-            _lease?.Dispose();
+            var lease = _lease;
             _lease = null;
+            lease?.Dispose();
         }
 
         public void Dispose()
@@ -69,7 +92,7 @@ namespace LiteQuark.Runtime
 
             if (!IsDone)
             {
-                _tcs.TrySetCanceled();
+                Cancel();
                 return;
             }
 

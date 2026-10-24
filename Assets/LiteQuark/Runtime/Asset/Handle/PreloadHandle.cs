@@ -12,17 +12,22 @@ namespace LiteQuark.Runtime
     {
         private readonly List<Entry> _entries = new();
         private readonly List<string> _failedPaths = new();
+        private readonly List<AssetError> _errors = new();
         private readonly UniTaskCompletionSource<bool> _tcs = new();
         private CancellationTokenRegistration _ctr;
         private bool _isDisposed;
         private bool _result;
         private int _loadedCount;
 
-        public bool IsDone { get; private set; }
+        public AssetHandleState State { get; private set; }
+        public AssetError Error { get; private set; }
+        public bool IsDone => State != AssetHandleState.Pending;
+        public bool IsDisposed => _isDisposed;
         public bool Result => _result;
         internal UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
         public IReadOnlyList<string> FailedPaths => _failedPaths;
+        public IReadOnlyList<AssetError> Errors => _errors;
         public int TotalCount => _entries.Count;
         public int LoadedCount => _loadedCount;
         public int FailedCount => _failedPaths.Count;
@@ -52,10 +57,12 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => Cancel(ct));
             }
 
+            string currentPath = null;
             try
             {
                 foreach (var assetPath in assetPaths)
                 {
+                    currentPath = assetPath;
                     if (ct.IsCancellationRequested)
                     {
                         Cancel(ct);
@@ -63,14 +70,21 @@ namespace LiteQuark.Runtime
                     }
 
                     _entries.Add(new Entry(assetPath, loadFunc(assetPath, ct)));
+                    if (IsDone)
+                    {
+                        DisposeEntries();
+                        return;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                DisposeEntries();
-                IsDone = true;
-                _ctr.Dispose();
-                _tcs.TrySetException(ex);
+                var error = new AssetError(currentPath, ex.Message, ex);
+                if (TryComplete(AssetHandleState.Failed, error))
+                {
+                    DisposeEntries();
+                    _tcs.TrySetException(ex);
+                }
                 return;
             }
 
@@ -89,7 +103,7 @@ namespace LiteQuark.Runtime
 
             foreach (var entry in _entries)
             {
-                if (_isDisposed)
+                if (IsDone)
                 {
                     return;
                 }
@@ -97,7 +111,7 @@ namespace LiteQuark.Runtime
                 try
                 {
                     var asset = await entry.Handle.Task;
-                    if (_isDisposed)
+                    if (IsDone)
                     {
                         return;
                     }
@@ -111,7 +125,7 @@ namespace LiteQuark.Runtime
                     if (asset == null)
                     {
                         success = false;
-                        _failedPaths.Add(entry.Path);
+                        AddError(entry, entry.Handle.Error ?? new AssetError(entry.Path, "Asset load returned no result"));
                     }
                     else
                     {
@@ -120,28 +134,34 @@ namespace LiteQuark.Runtime
                 }
                 catch (OperationCanceledException)
                 {
-                    if (_isDisposed)
+                    if (IsDone)
                     {
                         return;
                     }
 
+                    if (ct.IsCancellationRequested)
+                    {
+                        Cancel(ct);
+                        return;
+                    }
+
                     success = false;
-                    _failedPaths.Add(entry.Path);
+                    AddError(entry, new AssetError(entry.Path, "Preload child request was cancelled"));
                 }
                 catch (Exception ex)
                 {
-                    if (_isDisposed)
+                    if (IsDone)
                     {
                         return;
                     }
 
                     success = false;
-                    _failedPaths.Add(entry.Path);
+                    AddError(entry, entry.Handle.Error ?? new AssetError(entry.Path, ex.Message, ex));
                     LLog.Exception(ex, "Preload asset failed : {0}", entry.Path);
                 }
             }
 
-            if (_isDisposed)
+            if (IsDone)
             {
                 return;
             }
@@ -151,24 +171,42 @@ namespace LiteQuark.Runtime
 
         private void Complete(bool success)
         {
-            IsDone = true;
-            _result = success;
-            _ctr.Dispose();
-            _tcs.TrySetResult(success);
-        }
-
-        private void Cancel(CancellationToken ct)
-        {
-            if (_isDisposed)
+            if (!TryComplete(success ? AssetHandleState.Succeeded : AssetHandleState.Failed,
+                success ? null : _errors[0]))
             {
                 return;
             }
 
-            _isDisposed = true;
-            IsDone = true;
+            _result = success;
+            _tcs.TrySetResult(success);
+        }
+
+        private void AddError(Entry entry, AssetError error)
+        {
+            _failedPaths.Add(entry.Path);
+            _errors.Add(error);
+        }
+
+        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        {
+            if (IsDone)
+            {
+                return false;
+            }
+
+            State = state;
+            Error = error;
             _ctr.Dispose();
-            DisposeEntries();
-            _tcs.TrySetCanceled(ct);
+            return true;
+        }
+
+        private void Cancel(CancellationToken ct = default)
+        {
+            if (TryComplete(AssetHandleState.Cancelled))
+            {
+                DisposeEntries();
+                _tcs.TrySetCanceled(ct);
+            }
         }
 
         private void DisposeEntries()
@@ -188,13 +226,8 @@ namespace LiteQuark.Runtime
 
             _isDisposed = true;
             _ctr.Dispose();
+            Cancel();
             DisposeEntries();
-
-            if (!IsDone)
-            {
-                IsDone = true;
-                _tcs.TrySetCanceled();
-            }
         }
 
         private readonly struct Entry

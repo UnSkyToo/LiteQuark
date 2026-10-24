@@ -176,7 +176,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        internal void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<UnityEngine.AssetBundle> callback)
+        internal void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<UnityEngine.AssetBundle>> callback)
         {
             _bundleLoader.LoadBundle(bundleInfo, priority, callback);
         }

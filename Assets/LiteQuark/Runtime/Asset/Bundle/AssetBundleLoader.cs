@@ -62,11 +62,11 @@ namespace LiteQuark.Runtime
             _runningTasks.Clear();
         }
 
-        public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetBundle> callback)
+        public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<AssetBundle>> callback)
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, null);
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetBundle>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle loader is disposed")));
                 return;
             }
 
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
 
             if (string.IsNullOrEmpty(bundlePath))
             {
-                LiteUtils.SafeInvoke(callback, null);
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetBundle>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle load path is missing")));
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            task = new PendingTask(bundlePath, bundleInfo.Hash, priority, callback);
+            task = new PendingTask(bundlePath, bundleInfo.BundlePath, bundleInfo.Hash, priority, callback);
             _taskMap.Add(bundlePath, task);
             _pendingTaskQueue.Enqueue(task);
         }
@@ -138,9 +138,14 @@ namespace LiteQuark.Runtime
                     var bundle = runningTask.LoadTask.GetBundle();
                     if (_taskMap.Remove(runningTask.Path, out var pendingTask))
                     {
+                        var task = runningTask.LoadTask;
+                        var result = task.State == TaskState.Succeeded && bundle != null
+                            ? AssetLoadResult<AssetBundle>.Success(bundle)
+                            : AssetLoadResult<AssetBundle>.Failure(new AssetError(pendingTask.BundlePath,
+                                task.Error?.Message ?? "Bundle load returned no result", task.Error));
                         foreach (var callback in pendingTask.CallbackList)
                         {
-                            LiteUtils.SafeInvoke(callback, bundle);
+                            LiteUtils.SafeInvoke(callback, result);
                         }
                     }
                 }
@@ -158,7 +163,7 @@ namespace LiteQuark.Runtime
                 catch (Exception ex)
                 {
                     LLog.Exception(ex, "Create bundle load task failed : {0}", info.Path);
-                    FailPendingTask(info.Path);
+                    FailPendingTask(info.Path, new AssetError(info.BundlePath, ex.Message, ex));
                     break;
                 }
 
@@ -166,32 +171,35 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void FailPendingTask(string bundlePath)
+        private void FailPendingTask(string bundlePath, AssetError error)
         {
             if (!_taskMap.Remove(bundlePath, out var pendingTask))
             {
                 return;
             }
 
+            var result = AssetLoadResult<AssetBundle>.Failure(error);
             foreach (var callback in pendingTask.CallbackList)
             {
-                LiteUtils.SafeInvoke(callback, null);
+                LiteUtils.SafeInvoke(callback, result);
             }
         }
 
         private class PendingTask
         {
             public string Path { get; }
+            public string BundlePath { get; }
             public string Hash { get; }
             public AssetLoadPriority Priority { get; set; }
-            public List<Action<AssetBundle>> CallbackList { get; set; }
+            public List<Action<AssetLoadResult<AssetBundle>>> CallbackList { get; set; }
 
-            public PendingTask(string path, string hash, AssetLoadPriority priority, Action<AssetBundle> callback)
+            public PendingTask(string path, string bundlePath, string hash, AssetLoadPriority priority, Action<AssetLoadResult<AssetBundle>> callback)
             {
                 Path = path;
+                BundlePath = bundlePath;
                 Hash = hash;
                 Priority = priority;
-                CallbackList = new List<Action<AssetBundle>> { callback };
+                CallbackList = new List<Action<AssetLoadResult<AssetBundle>>> { callback };
             }
         }
 

@@ -1,6 +1,9 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐；取消或等待中 Dispose 后 IsDone 立即为 true，不代表底层清理完成，终态后 Dispose 保留 State/Error
+- 破坏：AssetError 删除 Code、Stage、Cause 及 AssetErrorCode / AssetErrorStage 枚举，构造函数收缩为资源标识、说明、可选原始异常；错误直接向上传递，ResourceKey 指向实际失败的资源或 Bundle，不保证等于请求路径
+- 新增：PreloadHandle.Errors 保存与 FailedPaths 按索引对应的原始错误；依赖失败时错误资源标识与请求路径可以不同，保留现有 await 和 Handle/Lease 所有权语义
 - 破坏：四种资源 Handle 的 `Task` 属性改为 internal，业务统一使用 `await handle` 和 `Result`；战斗配置改为初始化时异步加载、初始化失败或关闭时释放
 - 破坏：AssetSystem 对外统一为 Handle API，移除旧的回调加载、非 Handle 加载及按路径/对象释放接口；使用 `Dispose()` 管理所有权
 - 新增：`PreloadAssetHandle<T>` 批量预加载，提供成功状态、计数和失败路径；移除旧预加载接口

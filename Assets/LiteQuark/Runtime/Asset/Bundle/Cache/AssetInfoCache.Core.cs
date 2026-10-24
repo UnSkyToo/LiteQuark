@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         private readonly string _assetPath;
         private readonly Type _assetType;
         private readonly AssetBundleCache _cache;
-        private readonly List<Action<bool>> _assetLoaderCallbackList = new();
+        private readonly List<Action<AssetLoadResult<UnityEngine.Object>>> _assetLoaderCallbackList = new();
         private AssetBundleCache.Lease _mainLease;
 
         public bool IsUsed => _refCount > 0;
@@ -38,11 +38,18 @@ namespace LiteQuark.Runtime
             _loadAssetTask = null;
             Asset = null;
 
-            var callbacks = new List<Action<bool>>(_assetLoaderCallbackList);
+            if (_assetLoaderCallbackList.Count == 0)
+            {
+                return;
+            }
+
+            var callbacks = new List<Action<AssetLoadResult<UnityEngine.Object>>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
+            var error = new AssetError(_assetPath, "Asset cache was disposed before delivery");
+            var result = AssetLoadResult<UnityEngine.Object>.Failure(error);
             foreach (var cb in callbacks)
             {
-                LiteUtils.SafeInvoke(cb, false);
+                LiteUtils.SafeInvoke(cb, result);
             }
         }
 

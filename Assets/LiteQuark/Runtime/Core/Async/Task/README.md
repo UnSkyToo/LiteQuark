@@ -55,7 +55,7 @@ CoroutineTask 及其基类捕获自有 IEnumerator 的 MoveNext/Current 异常�
 
 ## 结果与完成通知
 
-Result 是任务已经提交的最终结果，Task 提供等待并返回该结果，callback 提供主动通知。Bundle / Asset 加载任务不再另存一份最终结果，GetBundle / GetAsset 从 Result 读取，成功时与回调参数指向同一对象。包装器清理不清空 Result；GetAsset 在清理后也保留相同引用，不再单独变成 null。加载 Scene 时用于事件匹配的候选场景及 GetScene 保持原有语义。
+Result 是任务已经提交的最终结果，Task 提供等待并返回该结果，callback 提供主动通知。Bundle / Asset 加载任务不再另存一份最终结果，GetBundle / GetAsset 从 Result 读取。Bundle 成功回调仍直接携带资源；内部 Asset / Scene 加载回调携带已有 `ITask`，由 Cache 同时读取 State、Result、Error，避免将失败原因压缩成 null / false。Core Task 不依赖 AssetError，也不改变失败和取消的 await 语义。包装器清理不清空 Result；GetAsset 在清理后也保留相同引用，不再单独变成 null。加载 Scene 时用于事件匹配的候选场景及 GetScene 保持原有语义。
 
 本地 Bundle 任务取消或失败后，原生请求仍可能完成；完成回调负责释放尚未交付的迟到 Bundle，保持原终态及空结果。成功结果若仍未由 Bundle Loader 分发，则由 Loader 关闭路径释放；普通 Task 包装器清理不会卸载成功 Bundle。原生资源后来被所有者卸载，不会把历史 Succeeded 改成 Cancelled 或清空 Result 引用。
 

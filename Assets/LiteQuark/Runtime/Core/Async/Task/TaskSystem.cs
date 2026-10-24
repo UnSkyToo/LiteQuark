@@ -352,14 +352,14 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<T> callback) where T : UnityEngine.Object
+        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<ITask> callback) where T : UnityEngine.Object
         {
             var task = new LoadAssetTask<T>(bundle, assetName, callback);
             AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);
             return task;
         }
 
-        internal LoadSceneTask AddLoadSceneTask(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<bool, UnityEngine.SceneManagement.Scene> callback)
+        internal LoadSceneTask AddLoadSceneTask(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<ITask> callback)
         {
             var task = new LoadSceneTask(scenePath, parameters, callback);
             AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);

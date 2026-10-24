@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
 
         private readonly BundleInfo _bundleInfo;
         private readonly AssetBundleProvider _provider;
-        private readonly List<Action<bool>> _bundleLoaderCallbackList = new();
+        private readonly List<Action<AssetLoadResult<UnityEngine.AssetBundle>>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<(string, Type), AssetInfoCache> _assetCacheMap = new();
         private readonly List<SceneInfoCache> _sceneCacheMap = new();
 
@@ -43,11 +43,16 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                var callbacks = new List<Action<bool>>(_bundleLoaderCallbackList);
-                _bundleLoaderCallbackList.Clear();
-                foreach (var callback in callbacks)
+                if (_bundleLoaderCallbackList.Count > 0)
                 {
-                    LiteUtils.SafeInvoke(callback, false);
+                    var callbacks = new List<Action<AssetLoadResult<UnityEngine.AssetBundle>>>(_bundleLoaderCallbackList);
+                    _bundleLoaderCallbackList.Clear();
+                    var error = new AssetError(BundlePath, "Bundle cache was disposed before delivery");
+                    var result = AssetLoadResult<UnityEngine.AssetBundle>.Failure(error);
+                    foreach (var callback in callbacks)
+                    {
+                        LiteUtils.SafeInvoke(callback, result);
+                    }
                 }
             }
         }
@@ -203,9 +208,10 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private bool TryGetSceneLoadPath(string sceneKey, out string loadPath)
+        private bool TryGetSceneLoadPath(string sceneKey, out string loadPath, out AssetError error)
         {
             loadPath = null;
+            error = null;
 
             foreach (var candidate in Bundle.GetAllScenePaths())
             {
@@ -220,6 +226,7 @@ namespace LiteQuark.Runtime
                 {
                     LLog.Error("Duplicate scene key in bundle: {0}", sceneKey);
                     loadPath = null;
+                    error = new AssetError(sceneKey, "Duplicate scene key in bundle");
                     return false;
                 }
 
@@ -227,6 +234,10 @@ namespace LiteQuark.Runtime
                 loadPath = candidate;
             }
 
+            if (loadPath == null)
+            {
+                error = new AssetError(sceneKey, "Scene path not found in bundle");
+            }
             return loadPath != null;
         }
 

@@ -4,12 +4,12 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : IDispose
     {
-        public void LoadAssetAsync<T>(Lease<T> lease, Action<Lease<T>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Lease<T> lease, Action<AssetLoadResult<Lease<T>>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 lease.Dispose();
-                LiteUtils.SafeInvoke(callback, null);
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(new AssetError(_assetPath, "Asset cache is unloading or unloaded")));
                 return;
             }
 
@@ -21,21 +21,26 @@ namespace LiteQuark.Runtime
                 if (!success)
                 {
                     lease.Dispose();
-                    lease = null;
+                    var error = new AssetError(_assetPath, $"Asset is unavailable or does not match {typeof(T).Name}");
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(error));
+                    return;
                 }
-                LiteUtils.SafeInvoke(callback, lease);
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Success(lease));
                 return;
             }
 
-            _assetLoaderCallbackList.Add(isLoaded =>
+            _assetLoaderCallbackList.Add(result =>
             {
-                var success = isLoaded && lease.TryBindAsset(Asset);
+                var asset = result.Value;
+                var success = result.Succeeded && lease.TryBindAsset(asset);
                 if (!success)
                 {
+                    var error = result.Error ?? new AssetError(_assetPath, $"Asset is unavailable or does not match {typeof(T).Name}");
                     lease.Dispose();
-                    lease = null;
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(error));
+                    return;
                 }
-                LiteUtils.SafeInvoke(callback, lease);
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Success(lease));
             });
             if (Stage != AssetCacheStage.Idle)
             {
@@ -50,14 +55,23 @@ namespace LiteQuark.Runtime
             {
                 _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, _assetPath, HandleAssetLoadCompleted);
             }
-            catch
+            catch (Exception ex)
             {
-                HandleAssetLoadCompleted(null);
+                CompleteAssetLoad(AssetLoadResult<UnityEngine.Object>.Failure(new AssetError(_assetPath, ex.Message, ex)));
                 throw;
             }
         }
 
-        private void HandleAssetLoadCompleted(UnityEngine.Object asset)
+        private void HandleAssetLoadCompleted(ITask task)
+        {
+            var asset = task.Result as UnityEngine.Object;
+            var result = task.State == TaskState.Succeeded && asset != null
+                ? AssetLoadResult<UnityEngine.Object>.Success(asset)
+                : AssetLoadResult<UnityEngine.Object>.Failure(new AssetError(_assetPath, task.Error?.Message ?? "Asset load returned no result", task.Error));
+            CompleteAssetLoad(result);
+        }
+
+        private void CompleteAssetLoad(AssetLoadResult<UnityEngine.Object> result)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
@@ -66,16 +80,16 @@ namespace LiteQuark.Runtime
 
             _loadAssetTask = null;
 
-            var isLoaded = OnAssetLoaded(asset);
+            var isLoaded = OnAssetLoaded(result.Value);
 
-            var callbacks = new System.Collections.Generic.List<Action<bool>>(_assetLoaderCallbackList);
+            var callbacks = new System.Collections.Generic.List<Action<AssetLoadResult<UnityEngine.Object>>>(_assetLoaderCallbackList);
             _assetLoaderCallbackList.Clear();
 
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Asset, _assetPath, _assetType, _cache.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Asset load failed");
 
             foreach (var loader in callbacks)
             {
-                LiteUtils.SafeInvoke(loader, isLoaded);
+                LiteUtils.SafeInvoke(loader, result);
             }
         }
     }

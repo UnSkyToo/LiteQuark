@@ -17,7 +17,10 @@ namespace LiteQuark.Runtime
         private GameObject _instance;
         private bool _isDisposed;
 
-        public bool IsDone { get; private set; }
+        public AssetHandleState State { get; private set; }
+        public AssetError Error { get; private set; }
+        public bool IsDone => State != AssetHandleState.Pending;
+        public bool IsDisposed => _isDisposed;
         public GameObject Result => _instance;
         internal UniTask<GameObject> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
@@ -31,15 +34,13 @@ namespace LiteQuark.Runtime
 
             if (ct.IsCancellationRequested)
             {
-                IsDone = true;
-                _tcs.TrySetCanceled(ct);
-                _prefabHandle.Dispose();
+                Cancel(ct);
                 return;
             }
 
             if (ct.CanBeCanceled)
             {
-                _ctr = ct.Register(() => _tcs.TrySetCanceled(ct));
+                _ctr = ct.Register(() => Cancel(ct));
             }
 
             InstantiateAsync(ct).Forget();
@@ -50,14 +51,10 @@ namespace LiteQuark.Runtime
             try
             {
                 var prefab = await _prefabHandle.Task;
-                if (_isDisposed || ct.IsCancellationRequested)
+                if (IsDone || ct.IsCancellationRequested)
                 {
                     _prefabHandle.Dispose();
-                    if (ct.IsCancellationRequested)
-                    {
-                        IsDone = true;
-                    }
-                    _tcs.TrySetCanceled(ct);
+                    Cancel(ct);
                     return;
                 }
 
@@ -66,28 +63,59 @@ namespace LiteQuark.Runtime
                     _instance = _instantiateFunc(prefab);
                 }
 
-                IsDone = true;
-                if (!_tcs.TrySetResult(_instance))
+                var error = prefab == null ? _prefabHandle.Error : null;
+                if (_instance == null && error == null)
+                {
+                    error = new AssetError(_prefabHandle.AssetKey, "Instantiation returned no GameObject");
+                }
+
+                if (!TryComplete(_instance != null ? AssetHandleState.Succeeded : AssetHandleState.Failed, error))
                 {
                     ReleaseInstance();
                     _prefabHandle.Dispose();
+                    return;
                 }
+
+                _tcs.TrySetResult(_instance);
             }
             catch (OperationCanceledException)
             {
-                _prefabHandle.Dispose();
-                IsDone = true;
-                _tcs.TrySetCanceled(ct);
+                Cancel(ct);
             }
             catch (Exception ex)
             {
-                _prefabHandle.Dispose();
-                IsDone = true;
-                _tcs.TrySetException(ex);
+                var error = new AssetError(_prefabHandle.AssetKey, ex.Message, ex);
+                if (TryComplete(AssetHandleState.Failed, error))
+                {
+                    _prefabHandle.Dispose();
+                    _tcs.TrySetException(ex);
+                }
             }
             finally
             {
                 _ctr.Dispose();
+            }
+        }
+
+        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        {
+            if (IsDone)
+            {
+                return false;
+            }
+
+            State = state;
+            Error = error;
+            _ctr.Dispose();
+            return true;
+        }
+
+        private void Cancel(CancellationToken ct = default)
+        {
+            if (TryComplete(AssetHandleState.Cancelled))
+            {
+                _prefabHandle.Dispose();
+                _tcs.TrySetCanceled(ct);
             }
         }
 
@@ -109,13 +137,9 @@ namespace LiteQuark.Runtime
             _isDisposed = true;
 
             _ctr.Dispose();
+            Cancel();
             ReleaseInstance();
             _prefabHandle.Dispose();
-
-            if (!IsDone)
-            {
-                _tcs.TrySetCanceled();
-            }
         }
     }
 }

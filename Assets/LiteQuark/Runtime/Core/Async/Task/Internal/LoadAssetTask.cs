@@ -9,10 +9,10 @@ namespace LiteQuark.Runtime
 
         private readonly AssetBundle _bundle;
         private readonly string _assetName;
-        private Action<T> _callback;
+        private Action<ITask> _callback;
         private AssetBundleRequest _assetRequest;
 
-        public LoadAssetTask(AssetBundle bundle, string assetName, Action<T> callback)
+        public LoadAssetTask(AssetBundle bundle, string assetName, Action<ITask> callback)
             : base()
         {
             _bundle = bundle;
@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
         {
             if (State != TaskState.Succeeded && (_assetRequest == null || _assetRequest.isDone))
             {
-                NotifyCompleted(null);
+                NotifyCompleted();
             }
         }
 
@@ -85,15 +85,15 @@ namespace LiteQuark.Runtime
 
             if (Complete(asset))
             {
-                NotifyCompleted(asset);
+                NotifyCompleted();
             }
         }
 
-        private void NotifyCompleted(T asset)
+        private void NotifyCompleted()
         {
             var callback = _callback;
             _callback = null;
-            LiteUtils.SafeInvoke(callback, asset);
+            LiteUtils.SafeInvoke(callback, this);
         }
     }
 }

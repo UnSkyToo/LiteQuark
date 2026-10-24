@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace LiteQuark.Runtime
 {
@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
         private BaseTask _loadSceneTask;
         private UnityEngine.AsyncOperation _unloadOperation;
         private bool _isRequestingUnload;
-        private Action<Lease> _sceneLoaderCallback;
+        private Action<AssetLoadResult<Lease>> _sceneLoaderCallback;
 
         public SceneInfoCache(AssetBundleCache.Lease bundleLease, string sceneKey, string loadPath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
@@ -39,7 +39,10 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                NotifyCompleted(null);
+                if (_sceneLoaderCallback != null)
+                {
+                    NotifyCompleted(AssetLoadResult<Lease>.Failure(new AssetError(_sceneKey, "Scene cache was disposed before delivery")));
+                }
             }
         }
 

@@ -10,11 +10,11 @@ namespace LiteQuark.Runtime
 
         private readonly string _scenePath;
         private readonly LoadSceneParameters _parameters;
-        private Action<bool, Scene> _callback;
+        private Action<ITask> _callback;
         private AsyncOperation _sceneRequest;
         private Scene _scene;
 
-        public LoadSceneTask(string scenePath, LoadSceneParameters parameters, Action<bool, Scene> callback)
+        public LoadSceneTask(string scenePath, LoadSceneParameters parameters, Action<ITask> callback)
             : base()
         {
             _scenePath = scenePath;
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
             if (State != TaskState.Succeeded && (_sceneRequest == null || _sceneRequest.isDone))
             {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
-                NotifyCompleted(false, default);
+                NotifyCompleted();
             }
         }
 
@@ -102,15 +102,15 @@ namespace LiteQuark.Runtime
 
             if (Complete(_scene))
             {
-                NotifyCompleted(true, _scene);
+                NotifyCompleted();
             }
         }
 
-        private void NotifyCompleted(bool success, Scene scene)
+        private void NotifyCompleted()
         {
             var callback = _callback;
             _callback = null;
-            LiteUtils.SafeInvoke(callback, success, scene);
+            LiteUtils.SafeInvoke(callback, this);
         }
     }
 }

@@ -4,6 +4,42 @@
 
 `AssetHandle<T>`、`GameObjectHandle`、`SceneHandle` 和 `PreloadHandle<T>` 的 `Task` 属性为 `internal`，仅供框架内部组合加载流程。业务代码统一保存 Handle，通过 `await handle` 等待、`Result` 读取结果，并在使用结束后调用 `Dispose()`；等待完成不会转移资源所有权。
 
+## 请求状态与错误
+
+四类 Handle 都提供 `State`、`Error`、`IsDone`、`IsDisposed` 和 `Result`。`State` 使用 [AssetHandleState](Handle/AssetHandleState.cs)，从 `Pending` 单次进入 `Succeeded`、`Failed` 或 `Cancelled`；缓存命中可能在入口返回前完成。`IsDone` 等价于 `State != Pending`，表示本次请求已经结束，不表示底层原生操作或迟到资源清理已经结束。
+
+| 情况 | 状态与结果 |
+| --- | --- |
+| 加载成功 | `Succeeded`，`Error == null`，Handle 持有结果的所有权 |
+| 普通加载失败 | `Failed`，`Error` 非空；await 正常结束，结果为 `null` / `false` |
+| token 取消、等待中 Dispose | 立即成为 `Cancelled`，`Error == null`；await 抛 `OperationCanceledException` |
+| 成功或失败后 Dispose | 原 State/Error 保留，`IsDisposed` 变为 true；释放所持有的资源 |
+| 成功后 token 取消 | 保留成功和所有权；业务仍需 Dispose |
+
+`IsDisposed` 只表示显式 Dispose，token 取消本身不将它设为 true。资源、实例和场景 Handle 释放后 Result 为空；Preload 的 bool Result 保留批次完成结论。场景被外部卸载后 Result 也会为空，但加载成功的历史状态不改变。不要用 State 代替当前资源有效性或所有权检查。
+
+[AssetError](AssetError.cs) 只保留不可变的 `ResourceKey`、`Message` 和 `Exception`。`ResourceKey` 表示错误发生的资源或 Bundle 标识，不保证等于加载入口传入的 Asset 路径；例如依赖 Bundle 加载失败时，它指向失败的依赖 Bundle。`Message` 提供诊断说明，`Exception` 保留原始异常，没有底层异常时为空。错误直接向上传递，不逐层包装，也不提供分类枚举或依赖经过路径；Message 不作为稳定的分类标识。
+
+```csharp
+using var handle = LiteRuntime.Asset.LoadAssetHandle<UnityEngine.Sprite>("UI/Icon.png");
+await handle;
+if (handle.State == AssetHandleState.Failed)
+{
+    LLog.Error("Load failed: {0}, {1}",
+        handle.Error.ResourceKey, handle.Error.Message);
+    return;
+}
+// 在 handle 所有权有效期间使用 handle.Result。
+```
+
+共享加载失败时，多个请求可以取得同一个原始错误对象；已取消请求保持 Cancelled，不被底层失败覆盖。重新加载创建新 Handle，旧 Handle 的错误不会随缓存重试改变。普通加载失败仍不从 await 抛异常；实例化过程中原本抛出的异常仍由 await 抛出，并同时保存在 Error 中。非法入口参数仍同步抛异常，TaskSystem 的失败/取消等待仍返回 null。
+
+取消只结束本 Handle 的等待，不直接取消共享 Task。待交付的内部 Lease 仍保留到原有完成或关闭路径：失败先归还 Lease 再通知；成功时转交 Handle，已取消或已释放的 Handle 拒收并释放迟到 Lease。成功状态和所有权在恢复 await 续体前确定，续体可以立即 Dispose 或发起新请求。调用沿用框架主线程约定，不新增跨线程调度。
+
+`PreloadHandle<T>.Errors` 保存逐项失败信息，与 `FailedPaths` 按索引对应：FailedPaths 是请求的 Asset 路径，Errors 中的 ResourceKey 可能是失败的依赖 Bundle，两者不一定相等。普通批次失败的 `Error` 为首个失败原因。部分失败时仍持有成功项，直到 Dispose；取消后不再把迟到子结果加入计数或错误列表。`FailedPaths`、`LoadedCount`、`FailedCount` 等原有属性保留。实现自定义 `IAssetHandle<T>` 的代码需要补充新增属性。
+
+兼容变更：`AssetErrorCode`、`AssetErrorStage` 及 AssetError 的 Code、Stage、Cause 已移除；构造函数改为 `AssetError(string resourceKey, string message, Exception exception = null)`。依赖失败直接暴露原始错误，调用方不再遍历 Cause，也不能假定 Error.ResourceKey 是本次请求路径。
+
 ## 路径与模式
 
 资源默认放在 `Assets/StandaloneAssets`。加载、实例化、预加载、场景加载和 `HasAsset` 接受两种路径：相对该目录的文件路径，例如 `Prefabs/Player.prefab`；或者以 `Assets/` 开头的完整项目路径，例如 `Assets/StandaloneAssets/Prefabs/Player.prefab`。这里的完整项目路径不是磁盘绝对路径。显式的根目录外项目路径（如 `Assets/Shared/Material.mat`）也可表达；Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
