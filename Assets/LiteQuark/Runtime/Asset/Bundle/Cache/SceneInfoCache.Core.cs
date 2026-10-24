@@ -15,6 +15,8 @@ namespace LiteQuark.Runtime
         private AssetBundleCache.Lease _bundleLease;
         private UnityEngine.SceneManagement.Scene _scene;
         private BaseTask _loadSceneTask;
+        private UnityEngine.AsyncOperation _unloadOperation;
+        private bool _isRequestingUnload;
         private Action<Lease> _sceneLoaderCallback;
 
         public SceneInfoCache(AssetBundleCache.Lease bundleLease, string sceneKey, string loadPath, UnityEngine.SceneManagement.LoadSceneParameters parameters)
@@ -43,7 +45,7 @@ namespace LiteQuark.Runtime
 
         public void Unload()
         {
-            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            if (Stage == AssetCacheStage.Unloaded || _isRequestingUnload || _unloadOperation is { isDone: false })
             {
                 return;
             }
@@ -63,16 +65,37 @@ namespace LiteQuark.Runtime
         private void RequestUnload()
         {
             var targetScene = _scene;
+            _unloadOperation = null;
+
+            UnityEngine.AsyncOperation op;
+            _isRequestingUnload = true;
+            try
+            {
+                op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(targetScene);
+                if (Stage == AssetCacheStage.Unloaded)
+                {
+                    return;
+                }
+                _unloadOperation = op;
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Start scene unload failed : {0}", _sceneKey);
+                return;
+            }
+            finally
+            {
+                _isRequestingUnload = false;
+            }
+
+            if (op == null)
+            {
+                LLog.Error("Start scene unload failed : {0}", _sceneKey);
+                return;
+            }
 
             try
             {
-                var op = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(targetScene);
-                if (op == null)
-                {
-                    LLog.Error("Start scene unload failed : {0}", _sceneKey);
-                    return;
-                }
-
                 LiteRuntime.Task.AddTask(op, () =>
                 {
                     if (!targetScene.isLoaded || !targetScene.IsValid())
@@ -81,9 +104,9 @@ namespace LiteQuark.Runtime
                     }
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                LLog.Exception(ex, "Start scene unload failed : {0}", _sceneKey);
+                LLog.Exception(ex, "Observe scene unload failed : {0}", _sceneKey);
             }
         }
 
@@ -95,9 +118,12 @@ namespace LiteQuark.Runtime
             }
 
             Stage = AssetCacheStage.Unloaded;
+            _unloadOperation = null;
             UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= OnSceneUnloaded;
 
-            _bundleLease?.Dispose();
+            var lease = _bundleLease;
+            _bundleLease = null;
+            lease?.Dispose();
         }
 
         private bool OnSceneLoaded(bool success, UnityEngine.SceneManagement.Scene scene)

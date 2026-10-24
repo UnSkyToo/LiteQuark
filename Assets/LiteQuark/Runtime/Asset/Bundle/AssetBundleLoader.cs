@@ -13,6 +13,7 @@ namespace LiteQuark.Runtime
         private readonly Dictionary<string, PendingTask> _taskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
+        private bool _isDisposed;
 
         public AssetBundleLoader(IBundleLocater locater, VersionPackInfo packInfo, int concurrencyLimit)
         {
@@ -27,18 +28,48 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+            _isDisposed = true;
+
             _taskMap.Clear();
             _pendingTaskQueue.Clear();
 
             foreach (var task in _runningTasks)
             {
-                task.LoadTask.Cancel();
+                try
+                {
+                    if (task.LoadTask.State == TaskState.Succeeded)
+                    {
+                        var bundle = task.LoadTask.GetBundle();
+                        if (bundle != null)
+                        {
+                            bundle.Unload(true);
+                        }
+                    }
+                    else if (task.LoadTask.State is TaskState.Pending or TaskState.Running)
+                    {
+                        task.LoadTask.Cancel();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LLog.Exception(ex, "Release undelivered bundle failed : {0}", task.Path);
+                }
             }
             _runningTasks.Clear();
         }
 
         public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetBundle> callback)
         {
+            if (_isDisposed)
+            {
+                LiteUtils.SafeInvoke(callback, null);
+                return;
+            }
+
             var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
 
             if (string.IsNullOrEmpty(bundlePath))
@@ -61,6 +92,11 @@ namespace LiteQuark.Runtime
 
         public void RaiseBundlePriority(BundleInfo bundleInfo, AssetLoadPriority priority)
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+
             var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
 
             if (string.IsNullOrEmpty(bundlePath))
@@ -92,7 +128,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            for (var i = _runningTasks.Count - 1; i >= 0; i--)
+            for (var i = _runningTasks.Count - 1; i >= 0 && !_isDisposed; i--)
             {
                 var runningTask = _runningTasks[i];
                 if (runningTask.LoadTask.IsDone)
@@ -110,7 +146,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            while (_runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
+            while (!_isDisposed && _runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
                 ILoadBundleTask task;

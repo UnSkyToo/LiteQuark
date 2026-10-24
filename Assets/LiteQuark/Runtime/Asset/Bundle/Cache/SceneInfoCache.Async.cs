@@ -52,9 +52,10 @@ namespace LiteQuark.Runtime
 
             _loadSceneTask = null;
 
+            var bundlePath = _bundleLease?.BundlePath ?? string.Empty;
             var isLoaded = OnSceneLoaded(success, scene);
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease?.BundlePath ?? string.Empty, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, bundlePath, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
 
             var lease = isLoaded ? AcquireLease() : null;
             NotifyCompleted(lease);

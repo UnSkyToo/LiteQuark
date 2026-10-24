@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnBundleRequestCompleted;
 
-            if (IsDone)
+            if (State == TaskState.Succeeded)
             {
                 return;
             }
@@ -62,6 +62,15 @@ namespace LiteQuark.Runtime
             try
             {
                 bundle = _bundleRequest.assetBundle;
+                if (IsDone)
+                {
+                    if (bundle != null)
+                    {
+                        bundle.Unload(true);
+                    }
+                    return;
+                }
+
                 if (bundle == null)
                 {
                     Fail(new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
@@ -70,7 +79,14 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                Fail(ex);
+                if (IsDone)
+                {
+                    LLog.Exception(ex, "Release late bundle failed : {0}", _bundleUri);
+                }
+                else
+                {
+                    Fail(ex);
+                }
                 return;
             }
 

@@ -124,6 +124,8 @@ sceneHandle.Dispose();
 
 场景卸载先启动 Unity 的卸载操作，再通过 TaskSystem 的 `AsyncOperation` 便利入口观察完成；该包装任务进入无限额的 Flow 组，不等待默认组空位。Flow 不改变底层卸载的异步完成语义。
 
+场景条目记录实际卸载操作；提交请求期间以及原生操作尚未完成时，重复请求不会再次提交。原生拒绝卸载（例如最后一个已加载场景）、返回 null 或抛异常后，条目保留 Unloading 和 Bundle Lease，内部再次调用 Unload 可重试；没有自动逐帧重试。已释放的 Handle / Scene Lease 仍保持幂等，不恢复所有权，也不新增公开重试入口。原生卸载已经启动但观察任务登记失败时，继续保留该操作，现有 sceneUnloaded 事件仍可完成收尾。只有确认实际卸载后才归还引用，重复通知不重复归还。
+
 框架能区分同名场景的完整路径，不代表底层 Bundle 可以同时装载。Unity `2022.3.62f3` 的本地验证中，将两个 `Battle.unity` 放入同一个 Bundle 会因内部 `BuildPlayer-Battle.sharedAssets` 重名而构建失败；拆到不同 Bundle 后，同时装载仍触发“另一个包含相同文件的 AssetBundle 已加载”的错误。需要同时加载的 Bundle 场景应使用不同文件名。Editor 直读模式下不同目录同名场景可以并发加载；Bundle 构建层的限制与校验另行处理，不能仅靠完整路径解析消除。
 
 ```csharp
@@ -173,6 +175,8 @@ var window = LiteRuntime.Asset.InstantiateHandle(
 - Bundle 模式的 Asset 请求在被接受时取得内部 Lease，覆盖等待 Bundle 和资源加载的阶段；加载成功后将同一份 Asset Lease 转交给 Handle，失败时归还引用。场景请求提前取得的 Bundle Lease 则在 Bundle 加载成功后转交场景条目，按场景生命周期归还。
 - `UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 也由调用者保管，在图片不再使用时释放；不要忽略返回值。
 - 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；内部请求引用保留到加载完成通知，再由失败路径或 Handle 对迟到结果的清理归还。用 `try/finally` 或 `using` 保证退出时释放。
+- Bundle Loader 关闭时先结束自身登记，再取消未完成任务并卸载尚未分发的成功结果；重复或重入关闭不重复释放。已开始分发的结果继续由原有 Cache / 依赖汇总流程接管。本地 Bundle 任务在取消或失败后仍观察原生完成，并卸载未交付的迟到 Bundle，不依赖 Loader 继续 Tick，不补发成功回调。清理资源不改写 Task 的终态或 Result；正常任务包装器收尾也不会卸载已经交付的成功 Bundle。
+- Loader 按状态关闭：Pending / Running 只取消，Succeeded 只卸载尚未分发的 Bundle，Failed / Cancelled 不再处理。远端请求保持 Bundle 按需创建；取消后的下载完成回调不提取 Bundle，请求和 handler 由任务清理。不能假定取消后必然有 Bundle，也不通过读取远端 handler 的 `assetBundle` 创建资源再释放。
 - Bundle 模式仅在 Bundle 层计算保留时间。最后一份 Asset Lease 释放、资源引用归零时，资源条目立即归还主 Bundle 引用，不再等待当前回调派发结束，并保留已加载对象的索引；条目和索引随所属 Bundle 卸载一起清除。仍有未交付请求或有效 Handle 的资源会继续持有 Bundle 引用。回调中释放最后一份引用后调用 `UnloadUnusedAssets()`，可以在该回调返回前回收 Bundle。
 - Bundle 引用归零后进入保留期；期间再次以相同路径和相同请求类型加载已缓存资源，会重新取得引用并直接交付已有对象，无需再次发起 Asset 加载。不同请求类型使用独立的资源缓存条目，包括存在继承关系的类型，但仍共享所属 Bundle。关闭 `EnableRetain` 时，零引用 Bundle 在后续清理时回收。保留缓存不会延长已释放 Handle 的所有权，业务仍须用有效 Handle 覆盖资源使用期。
 - 依赖 Bundle 继续由主 Bundle 持有引用，主 Bundle 实际卸载后才归还；依赖引用归零时再开始自己的保留计时。

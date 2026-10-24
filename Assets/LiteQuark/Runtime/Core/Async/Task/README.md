@@ -57,6 +57,10 @@ CoroutineTask 及其基类捕获自有 IEnumerator 的 MoveNext/Current 异常�
 
 Result 是任务已经提交的最终结果，Task 提供等待并返回该结果，callback 提供主动通知。Bundle / Asset 加载任务不再另存一份最终结果，GetBundle / GetAsset 从 Result 读取，成功时与回调参数指向同一对象。包装器清理不清空 Result；GetAsset 在清理后也保留相同引用，不再单独变成 null。加载 Scene 时用于事件匹配的候选场景及 GetScene 保持原有语义。
 
+本地 Bundle 任务取消或失败后，原生请求仍可能完成；完成回调负责释放尚未交付的迟到 Bundle，保持原终态及空结果。成功结果若仍未由 Bundle Loader 分发，则由 Loader 关闭路径释放；普通 Task 包装器清理不会卸载成功 Bundle。原生资源后来被所有者卸载，不会把历史 Succeeded 改成 Cancelled 或清空 Result 引用。
+
+远端 Bundle 请求沿用 handler 默认的 `DownloadHandlerAssetBundle.autoLoadAssetBundle = false`，仅在有效成功回调中通过 `GetContent` 提取 Bundle。下载基类的完成回调先检查终态；取消后跳过提取，由原有 Abort 和请求 Dispose 路径收尾，不在取消回调里读取 `assetBundle` 来尝试卸载，以免按需创建已不需要的资源。此规则同时适用于带 hash 和不带 hash 的请求，不改变重试、额度和通知顺序。
+
 完成回调在调用前取出并清空，成功路径仅在 Complete 接受结果后通知，最多发送一次。通知顺序保持原样：成功路径通常先发布 Task 等待结果，再调用 callback；失败回调通常发生在 OnTerminated 内、已有 Task 等待被发布之前。UniTask 续体可能同步重入；await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理也已结束。首次在终态回调内取得 Task 时，它可以立即完成。取消、关闭和迟到原生结果仍沿用各适配器原有规则，不承诺所有终态都调用 callback。实例化失败回调仍返回空数组，Task / Result 仍返回 null；回调异常被记录，不改写任务终态。WaitCallbackTask 的 done(bool) 是结果生产入口，不属于这里的观察回调。
 
 结果引用不代表独立所有权，也不延长 Unity 资源寿命。UnityWebGetRequestTask 的成功结果是独立于原生请求的 byte[] 快照：在发布成功前读取一次 DownloadHandler.data，callback、Result 和 await 返回同一个数组。请求和 handler 仍由任务清理，数组由托管引用维持，因此包装器清理后、跨帧或晚些时候 await 仍可读取。成功的空响应返回空数组，失败和取消的 Result / Task 仍返回 null；失败回调仍传 null，取消仍不发送完成回调。
