@@ -39,6 +39,19 @@ The battle entry is [DemoLogic.cs](Assets/Scripts/DemoLogic.cs), which starts `L
 
 ## Validation and builds
 
+The maintained regression suite runs in a generated, isolated Unity project. From the repository root, use PowerShell 7:
+
+```powershell
+& .\Validation\Run-Validation.ps1
+& .\Validation\Run-Validation.ps1 -Suite paths,manifest,collector
+```
+
+On macOS, run `bash ./Validation/Run-Validation.sh` from Terminal, optionally with `--suite paths,manifest,collector`. This is a native Bash entry using system tools; it does not require PowerShell, Python, or jq. Both platforms need Git, the matching licensed Unity editor with native desktop AssetBundle build support, and access to the declared package sources. Windows has a full regression baseline; native macOS execution remains to be verified.
+
+Both native entries copy the current working tree (including uncommitted changes), restore the main project's locked UPM dependencies, compile, and run the same C# modules with matching result and isolation checks. Use `-UnityEditor` on Windows or `--unity-editor` on macOS for a non-default editor executable. No existing validation project, package mirror, or test Bundles are required. See the validation guide for timeout options.
+
+Validation sources, their `.meta` files, the entry, and documentation are versioned under `Validation`; generated projects, caches, reports, and Bundles are ignored. Results are written to `Validation/Reports/verification-report.html` and `summary.json`, with regression cases, known limitations, and diagnostics reported separately. The entry checks that source files, Git status, and the index remain unchanged. See [validation instructions and coverage](Validation/README.txt) and [maintenance rules](Validation/AGENTS.md). The old ignored `LiteQuark/SessionValidation` caches and historical reports are retained and are not used by the new entry.
+
 For a local compile, use the matching Unity executable. In PowerShell, set `$unityEditor` to its absolute path, then run from the repository root:
 
 ```powershell

@@ -8,6 +8,7 @@ Assets/Editor/**/*.cs text eol=lf
 
 .editorconfig text eol=lf
 .gitattributes text eol=lf
+Validation/Run-Validation.sh text eol=lf
 
 # Restore the default Git handling for generated files inside source directories.
 **/Generated/**/*.cs !text !eol

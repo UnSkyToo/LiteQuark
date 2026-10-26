@@ -19,7 +19,7 @@
 
 - Documentation-only edits: check referenced APIs, local links and `git diff --check`; a Unity launch is unnecessary.
 - Runtime, assembly-definition or serialized-asset changes: run a Unity editor compile. Exercise affected behavior; include screenshots or recordings for editor UI changes when possible.
-- No project test assembly currently exists. Add Unity Test Framework EditMode/PlayMode tests with a test `.asmdef` when regression coverage is warranted.
+- Maintained regression sources and native platform entries are in `Validation`; follow [its guide](Validation/README.txt) and [maintenance rules](Validation/AGENTS.md). Windows uses PowerShell 7: `& .\Validation\Run-Validation.ps1 -Suite lifecycle`. macOS uses system Bash: `bash ./Validation/Run-Validation.sh --suite lifecycle`, without PowerShell. Extend existing runners for relevant regression coverage; no dedicated Unity Test Framework test assembly currently exists.
 - Local compilation and relevant checks are part of the change. Fix resulting failures and repeat affected checks; broaden validation for concrete concerns. Report checks that could not run.
 
 ## Delivery
