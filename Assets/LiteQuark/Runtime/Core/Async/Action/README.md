@@ -42,7 +42,7 @@ public static class MotionExample
 | 等待/回调 | `WaitTime`、`WaitFrame`、`WaitUntil`、`Callback`、`DelayCallback` |
 | 设置 | `SetFinalCallback`、`SetUnscaled`，以及 `TransformSet*` 扩展 |
 
-具体参数和 `EaseKind` 以对应源码为准。当前没有 `MoveTo`、`AnchorTo`、`SizeDeltaTo` 或 `ActionSystem.Execute` 这组接口。
+具体参数和 `EaseKind` 见同目录的 Builder 扩展接口。
 
 ## 生命周期
 

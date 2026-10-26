@@ -56,7 +56,7 @@ uiSystem.CloseUI(menu);
 | Normal | 10000 |
 | Top | 15000 |
 
-非 Scene 层同层实例按创建时的子节点数量递增排序。当前没有 `System` 层。
+非 Scene 层同层实例按创建时的子节点数量递增排序。
 
 `FindUI<T>()` 返回已纳入活动列表的对应类型界面；`CloseUI<T>()` 关闭找到的一个实例，`CloseAllUI()` 关闭活动列表内界面。`isMutex` 复用找到的同类型界面，不会关闭其他类型；它不是并发打开锁，连续/同时打开仍需调用者协调。
 
@@ -64,7 +64,7 @@ uiSystem.CloseUI(menu);
 
 - 状态包括 Opening、Opened、Closing、Closed 和 Error。
 - `RegisterEvent<T>(callback)` 使用每个 UI 实例自己的 Tag；关闭时自动注销。额外通过全局 EventSystem 注册的监听需自行清理。
-- `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。公共 API 没有返回 UniTask 的 `LoadSpriteAsync`。
+- `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。
 - `GetComponent<T>(path)`、`FindChild(path)`、`SetActive(path, value)` 操作 prefab 子节点。
 - `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。
 - `OnClose()` 清理业务创建的计时器、动作和其他资源。通过 UISystem 关闭界面，不要只销毁 `Go`。

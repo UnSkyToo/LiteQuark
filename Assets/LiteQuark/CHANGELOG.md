@@ -1,19 +1,47 @@
 # Changelog
 
 ## **[Unreleased]**
-- 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐；取消或等待中 Dispose 后 IsDone 立即为 true，不代表底层清理完成，终态后 Dispose 保留 State/Error
-- 破坏：AssetError 删除 Code、Stage、Cause 及 AssetErrorCode / AssetErrorStage 枚举，构造函数收缩为资源标识、说明、可选原始异常；错误直接向上传递，ResourceKey 指向实际失败的资源或 Bundle，不保证等于请求路径
-- 新增：PreloadHandle.Errors 保存与 FailedPaths 按索引对应的原始错误；依赖失败时错误资源标识与请求路径可以不同，保留现有 await 和 Handle/Lease 所有权语义
-- 破坏：四种资源 Handle 的 `Task` 属性改为 internal，业务统一使用 `await handle` 和 `Result`；战斗配置改为初始化时异步加载、初始化失败或关闭时释放
-- 破坏：AssetSystem 对外统一为 Handle API，移除旧的回调加载、非 Handle 加载及按路径/对象释放接口；使用 `Dispose()` 管理所有权
-- 新增：`PreloadAssetHandle<T>` 批量预加载，提供成功状态、计数和失败路径；移除旧预加载接口
-- 优化：SceneHandle 保存实际 Scene 实例并按实例卸载；`await handle` 仅等待完成，结果从 `Result` 读取
-- 修复：资源类型不匹配时的引用泄漏，收紧 Asset/Bundle 引用计数语义
-- 新增：Bundle 初始化时检测循环依赖，发现环时报告错误并终止初始化
-- 修复：VersionPack 解析异常导致的错误状态
-- 破坏：AssetSystem 移除 Resource 模式，运行时资源统一使用 Bundle；包内资源使用 `BundleLocaterMode.BuiltIn`
-- 破坏：移除 Resource Provider 及内部 `LoadResourceTask` 适配入口
-- 文档：精简接入和模块指南，更新系统注册、Handle、任务调度、计时与补间 API；已发布版本的历史记录保持原意
+
+### Asset
+
+- 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。
+- 破坏：四种 Handle 的 Task 属性改为 internal；`var result = await handle.Task` 改为 `await handle; var result = handle.Result;`。Handle 必须覆盖资源使用期，不能同步读取未完成的结果。
+- 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐。取消或等待中 Dispose 立即结束请求；终态后 Dispose 保留 State / Error。
+- 破坏：AssetError 删除 Code、Stage、Cause 及对应枚举；使用 `AssetError(string resourceKey, string message, Exception exception = null)`。ResourceKey 指向实际失败资源或依赖 Bundle，调用者不能假定它等于请求路径或继续遍历 Cause。
+- 新增：PreloadHandle.Errors 与 FailedPaths 按索引对应；部分失败时仍持有成功项直到 Dispose。
+- 新增：加载入口支持 AssetLoadPriority；旧的 `(path, token)` 调用改为 `(path, ct: token)`，或显式传 priority 后再传 ct。Asset 任务额度使用独立的 `Asset.TaskConcurrencyLimit`，与 Loader 的 ConcurrencyLimit 分别生效。
+- 破坏：移除 AssetRetainTime，仅配置 BundleRetainTime；资源无引用后不再额外等待 Asset 保留期。
+- 破坏：移除 Resource 模式，运行时使用 Bundle；随包资源使用 `BundleLocaterMode.BuiltIn`。
+- 优化：SceneHandle 按实际实例卸载，外部卸载后 Result 为空；战斗配置在数据管理器启动时异步加载，初始化失败或关闭时释放。
+- 修复：资源类型不匹配及失败路径的引用泄漏；VersionPack 解析错误状态；初始化时检测 Bundle 依赖环并终止失败的初始化。
+
+### Task
+
+- 破坏：TaskState.InProgress / Completed 改名为 Running / Succeeded，更新枚举引用；失败和取消等待仍返回 null，调用者检查 State / Error。
+- 破坏：提交对象必须派生 BaseTask。ITask 不再继承 ITick / IDispose，外部通过 TaskSystem 提交、Cancel 取消，不直接 Execute / Tick / Dispose / Fail。
+- 破坏：自定义任务的 Cancel override 改为 OnTerminated 并检查 State；钩子执行时 IsDone 已为 true。Dispose override 改为 OnDispose，继承链的 base.Dispose 改为 base.OnDispose，保留清理顺序。
+- 破坏：WebGet 构造函数及 AddUnityWebGetRequestTask 的回调改为 `Action<byte[]>`；成功 Result / await 的实际类型也为 byte[]。将 handler.data 改为数组，handler.text 改为业务解码，移除 DownloadHandler 强转。
+- 破坏：DefaultGroupId / FlowGroupId 移至 LiteConst.TaskGroupId；Flow ID 从 int.MaxValue 改为 -1，使用常量而非旧硬编码。
+- 新增：任务组独立额度及稳定优先级队列；观察已有 AsyncOperation / IAsyncResult 和主线程委托便利入口使用 Flow。自定义流程须显式选组，避免同组父子等待耗尽额度。
+
+### 路径与构建
+
+- 破坏：版本清单保存完整规范资源路径。旧相对路径清单须从源资源重新构建并与新读取器配套；读入旧清单再导出不能可靠迁移，解析成功也不证明兼容。
+- 破坏：ConcatPath 按宿主 Path.Combine 处理后续根路径，不裁剪其前导分隔符；URI 组合改用 ConcatUri，传未编码路径片段。
+- 破坏：下列 PathUtils API 移除，调用方更新入口：
+
+| 旧入口 | 替换方式 |
+| --- | --- |
+| GetFullPathInAssetRoot | AssetPath.ToProjectPath |
+| GetRelativeAssetRootPath（含数组） | AssetPath.ToRootRelativePath |
+| FormatAssetPath | AssetPath.NormalizeBundlePath |
+| PathIsFile、GetPathFromFullPath、FileExists、DirectoryExists、CreateDirectory | 按实际需求使用 System.IO.File / Directory / Path；资产目录判断用 AssetDatabase.IsValidFolder |
+| GetLiteQuarkRootPath | 编辑器使用 LiteEditorUtils.GetLiteQuarkRootPath |
+| GetFullPathInRuntime | 资源定位交由 BundleBuiltInLocater；普通持久化目录使用 GetPersistentDataPath |
+| ToFlatPath | Bundle 物理路径使用 VersionPackInfo.GetBundleFileBuildPath / GetBundleFileLoadPath |
+
+- 修复：带点号目录的错误分包，受影响资源需要重新构建；FlatMode 物理文件名碰撞会在构建映射阶段报错，须调整目录／命名或关闭 FlatMode。
+- 文档：接入与模块指南说明当前能力和使用契约；升级步骤集中于此。
 
 ## **[0.4.3] - 2026-03-04**
 - 修复：Uri大小写导致的版本文件无法获取

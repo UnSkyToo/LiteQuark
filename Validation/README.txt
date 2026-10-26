@@ -35,12 +35,9 @@ Validation — 当前工作区的隔离 Unity 验证
   macOS 入口拒绝带制表符或换行符的源码文件名。异常中断若残留 .validation.lock，
   先确认没有验证进程占用，再手动移除；入口不自动删除其他运行的锁。
 
-  直接运行入口即可，不必先打开主工程或复制旧缓存。入口同步当前工作区的
-  Assets、ProjectSettings、Packages 和 Sources，清除过期副本，由 UPM
-  按主工程 manifest.json 与 packages-lock.json 恢复依赖，并检查包名集合、
-  版本、来源、registry URL 和 Git revision；不回写主工程依赖配置。
-  Bundle 和测试资源由 Runner 自动生成。允许 UPM 正常缓存，不依赖
-  PackageSources，不要求 Bundle 跨机器字节相同，也不承诺完全离线恢复。
+  直接运行入口即可，不必先打开主工程或准备旧缓存。入口同步当前工作区
+  （包括未提交修改），按主工程锁定的依赖恢复并检查一致性，不回写主工程。
+  Bundle 和测试资源自动生成；首次运行需要联网，不承诺完全离线恢复。
 
 目录
   Sources/                 唯一维护的验证源码及 .meta
@@ -50,21 +47,19 @@ Validation — 当前工作区的隔离 Unity 验证
   Reports/                 最近一次运行的结果和日志
   Bundles/                 自动构建的测试 Bundle
   Scratch/                 测试临时文件，正常结束后为空
-  PackageSources/          可选遗留缓存，入口不使用、不生成
   源码、入口和文档入库；生成目录及 .validation.lock 忽略。
-  验证源码不在两个发布 subtree 内。旧 LiteQuark/SessionValidation 的缓存和
-  历史报告保留原处，新入口不读取、不覆盖、不清理。
+  验证源码不随核心或 Addons 包发布；入口不使用 PackageSources 或旧 SessionValidation 缓存。
 
 模块
-  paths       16  路径组合、原生根目录、URI、StreamingAssets、文件操作与导航
-  manifest    13  完整路径清单、依赖 ID、Hash/Flat 命名、重复身份和旧格式边界
-  collector   15  Bundle 归属、共享依赖、循环、路径映射、BundleViewer 和 Flat 冲突
-  packages     1  真实 UPM 纹理、隐式/显式依赖打包及框架索引边界
-  tasks       29  配额、调度、终态、异常回收、协程、原生任务和结果通知顺序
-  lifecycle  102  Handle/Lease、缓存、场景、取消、关闭、优先级和并发限制
-  loading     27  路径别名、同名资源/场景、真实加载、构建选项和 Locater 配置
+  paths       路径组合、原生根目录、URI、StreamingAssets、文件操作与导航
+  manifest    完整路径清单、依赖 ID、Hash/Flat 命名、重复身份和旧格式边界
+  collector   Bundle 归属、共享依赖、循环、路径映射、BundleViewer 和 Flat 冲突
+  packages    真实 UPM 纹理、隐式/显式依赖打包及框架索引边界
+  tasks       配额、调度、终态、异常回收、协程、原生任务和结果通知顺序
+  lifecycle   Handle/Lease、缓存、场景、取消、关闭、优先级和并发限制
+  loading     路径别名、同名资源/场景、真实加载、构建选项和 Locater 配置
 
-  共 203 组，每组含多项断言；各模块使用独立 Unity 进程。
+  各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS
   实机执行确认，Windows 结果不代表 macOS 结果。
   路径根和盘符组合按宿主文件系统语义断言；Windows 保留驱动器/UNC 覆盖，
@@ -92,8 +87,7 @@ Validation — 当前工作区的隔离 Unity 验证
 
 已知限制与覆盖边界
   Passed/RegressionCases 仅计日常回归；KnownLimitations 和
-  Diagnostics/DiagnosticsPassed 单列。Windows 基线为 201 日常回归、
-  1 项已知限制及 1 项原生诊断；其他平台以实际报告为准，不放宽分类规则。
+  Diagnostics/DiagnosticsPassed 单列，不计入日常回归通过数；各类数量以实际报告为准。
   唯一允许的非阻断限制是 UNITY-SAME-NAME-SCENE-BUNDLES：
   loading 第 08 组必须实际执行，确认一份场景成功且内容/路径正确，另一份
   出现指定 Bundle 冲突且无额外错误；第 17 组还须独立确认两份 Bundle 单独

@@ -26,31 +26,32 @@ Branches track their published contents, which may differ from this checkout. Fo
 | --- | --- |
 | `Assets/LiteQuark/Runtime` | [Lifecycle](Assets/LiteQuark/README.md), [assets](Assets/LiteQuark/Runtime/Asset/README.md), [events](Assets/LiteQuark/Runtime/Core/Event/README.md), [tasks](Assets/LiteQuark/Runtime/Core/Async/Task/README.md), [timers](Assets/LiteQuark/Runtime/Core/Async/Timer/README.md), [actions](Assets/LiteQuark/Runtime/Core/Async/Action/README.md), [object pools](Assets/LiteQuark/Runtime/Core/ObjectPool/README.md), logging and utilities |
 | `Assets/LiteQuark/Editor` | Build tools, Bundle Viewer, load profiler, inspectors and debugger |
-| `Assets/LiteQuark.Addons` | [UI](Assets/LiteQuark.Addons/Runtime/UI/README.md), [audio](Assets/LiteQuark.Addons/Runtime/Audio/README.md), [effects](Assets/LiteQuark.Addons/Runtime/Effect/README.md), [HTTP](Assets/LiteQuark.Addons/Runtime/Network/README.md), [persistence](Assets/LiteQuark.Addons/Runtime/Data/README.md), configuration tables |
+| `Assets/LiteQuark.Addons` | [UI](Assets/LiteQuark.Addons/Runtime/UI/README.md), [audio](Assets/LiteQuark.Addons/Runtime/Audio/README.md), [effects](Assets/LiteQuark.Addons/Runtime/Effect/README.md), [HTTP](Assets/LiteQuark.Addons/Runtime/Network/README.md), [persistence](Assets/LiteQuark.Addons/Runtime/Data/README.md), [configuration tables](Assets/LiteQuark.Addons/Runtime/Config/README.md) |
 | `Assets/LiteBattle` | Entities, input, movement, state machines, Timeline events, battle editor/preview tools |
 | `Assets/Scripts` | Battle, network and persistence examples; these are not automated tests |
 | `Assets/StandaloneAssets` | Bundle source assets and demo content |
 
 Core bundles UniTask, LitJson and IngameDebugConsole. Unity package dependencies are recorded in [manifest.json](Packages/manifest.json) and [packages-lock.json](Packages/packages-lock.json).
 
-For configuration tables, open `Lite > Config Tool` to parse Excel sheets and export JSON/C# definitions. Add the optional `ConfigSystem` to the Launcher. In business initialization, register tables with `RegisterTable<T>(path, parseFunc)` or the generated `ConfigSystemGenerated.Register(system)`, then await `Load<T>()` / `LoadAll()` before using `GetData<T>(id)`. `LoadAllOnInitialize` only loads tables registered before system initialization; it does not discover exported tables automatically. See [ConfigSystem.cs](Assets/LiteQuark.Addons/Runtime/Config/ConfigSystem.cs).
+For optional systems, start with the [Addons guide](Assets/LiteQuark.Addons/README.md). The [Config guide](Assets/LiteQuark.Addons/Runtime/Config/README.md) covers Excel input, JSON/C# export and runtime registration.
 
-The battle entry is [DemoLogic.cs](Assets/Scripts/DemoLogic.cs), which starts `LiteNexusEngine`. The authoring window is `Lite > Nexus Engine > Editor Window`. Battle scene/configuration setup is separate from the default launcher scene.
+The battle entry is [DemoLogic.cs](Assets/Scripts/DemoLogic.cs), which starts `LiteNexusEngine`; the authoring window is `Lite > Nexus Engine > Editor Window`. Battle scene/configuration setup is separate from the default launcher scene. Await engine startup before accessing `LiteNexusConfig.Instance`: the data manager loads configuration asynchronously and releases its Handles on initialization failure or shutdown. Editor tools access configuration through AssetDatabase.
 
 ## Validation and builds
 
-The maintained regression suite runs in a generated, isolated Unity project. From the repository root, use PowerShell 7:
+The regression suite validates the current working tree in an isolated Unity project. From the repository root:
 
 ```powershell
+# Windows, PowerShell 7
 & .\Validation\Run-Validation.ps1
-& .\Validation\Run-Validation.ps1 -Suite paths,manifest,collector
 ```
 
-On macOS, run `bash ./Validation/Run-Validation.sh` from Terminal, optionally with `--suite paths,manifest,collector`. This is a native Bash entry using system tools; it does not require PowerShell, Python, or jq. Both platforms need Git, the matching licensed Unity editor with native desktop AssetBundle build support, and access to the declared package sources. Windows has a full regression baseline; native macOS execution remains to be verified.
+```bash
+# macOS, system Bash
+bash ./Validation/Run-Validation.sh
+```
 
-Both native entries copy the current working tree (including uncommitted changes), restore the main project's locked UPM dependencies, compile, and run the same C# modules with matching result and isolation checks. Use `-UnityEditor` on Windows or `--unity-editor` on macOS for a non-default editor executable. No existing validation project, package mirror, or test Bundles are required. See the validation guide for timeout options.
-
-Validation sources, their `.meta` files, the entry, and documentation are versioned under `Validation`; generated projects, caches, reports, and Bundles are ignored. Results are written to `Validation/Reports/verification-report.html` and `summary.json`, with regression cases, known limitations, and diagnostics reported separately. The entry checks that source files, Git status, and the index remain unchanged. See [validation instructions and coverage](Validation/README.txt) and [maintenance rules](Validation/AGENTS.md). The old ignored `LiteQuark/SessionValidation` caches and historical reports are retained and are not used by the new entry.
+Both platforms require Git, the matching licensed Unity editor with native AssetBundle build support, and access to declared package sources. Read [validation instructions](Validation/README.txt) for preparation, suite selection, platform coverage and report interpretation; read [maintenance rules](Validation/AGENTS.md) before changing the suite.
 
 For a local compile, use the matching Unity executable. In PowerShell, set `$unityEditor` to its absolute path, then run from the repository root:
 

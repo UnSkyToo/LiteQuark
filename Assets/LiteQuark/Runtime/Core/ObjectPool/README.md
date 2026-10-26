@@ -41,7 +41,7 @@ await LiteRuntime.ObjectPool.PreloadPoolAsync<ActiveGameObjectPool>(
 | `GetPositionGameObjectPool(path)` | 归还时移到远处，保留激活状态 |
 | `GetEmptyGameObjectPool(key)` | 创建空 GameObject 模板，无外部 prefab |
 
-`CountAll`、`CountActive`、`CountInactive` 可用于查看池状态。无空闲实例时按需创建，预加载并不保证后续没有实例化开销，也没有单独的 WebGL 必须预加载规则。
+`CountAll`、`CountActive`、`CountInactive` 可用于查看池状态。无空闲实例时按需创建，预加载并不保证后续没有实例化开销。
 
 ## 集合池
 

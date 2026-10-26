@@ -1,145 +1,63 @@
 # AssetSystem 资源管理
 
-通过 `LiteRuntime.Asset` 访问。加载、预加载、实例化和场景所有权统一使用 Handle；`await handle` 只等待完成，结果从 `handle.Result` 读取。底层加载失败可能返回 `null` / `false`，取消会使等待抛出 `OperationCanceledException`。
+通过 `LiteRuntime.Asset` 加载资源、实例和场景。业务保存 Handle，使用 `await handle` 等待、`handle.Result` 读取结果，并在使用结束后调用 `Dispose()`。等待完成不会转移所有权；资源引用本身不能替代 Handle。
 
-`AssetHandle<T>`、`GameObjectHandle`、`SceneHandle` 和 `PreloadHandle<T>` 的 `Task` 属性为 `internal`，仅供框架内部组合加载流程。业务代码统一保存 Handle，通过 `await handle` 等待、`Result` 读取结果，并在使用结束后调用 `Dispose()`；等待完成不会转移资源所有权。
+## 常用入口
 
-## 请求状态与错误
-
-四类 Handle 都提供 `State`、`Error`、`IsDone`、`IsDisposed` 和 `Result`。`State` 使用 [AssetHandleState](Handle/AssetHandleState.cs)，从 `Pending` 单次进入 `Succeeded`、`Failed` 或 `Cancelled`；缓存命中可能在入口返回前完成。`IsDone` 等价于 `State != Pending`，表示本次请求已经结束，不表示底层原生操作或迟到资源清理已经结束。
-
-| 情况 | 状态与结果 |
+| API | 结果与释放责任 |
 | --- | --- |
-| 加载成功 | `Succeeded`，`Error == null`，Handle 持有结果的所有权 |
-| 普通加载失败 | `Failed`，`Error` 非空；await 正常结束，结果为 `null` / `false` |
-| token 取消、等待中 Dispose | 立即成为 `Cancelled`，`Error == null`；await 抛 `OperationCanceledException` |
-| 成功或失败后 Dispose | 原 State/Error 保留，`IsDisposed` 变为 true；释放所持有的资源 |
-| 成功后 token 取消 | 保留成功和所有权；业务仍需 Dispose |
+| `LoadAssetHandle<T>(path, priority, ct)` | `AssetHandle<T>` 持有资源；Dispose 释放引用 |
+| `InstantiateHandle(path, parent, ...)` | `GameObjectHandle` 持有实例；Dispose 销毁实例并释放 prefab 引用 |
+| `LoadSceneHandle(path, parameters, priority, ct)` | `SceneHandle` 持有实际场景实例；Dispose 发起异步卸载 |
+| `PreloadAssetHandle<T>(paths, priority, ct)` | `PreloadHandle<T>` 持有批量资源引用，Result 为成功标志 |
+| `HasAsset(path)` / `GetVersion()` | 查询当前 Provider 的资源收录情况／版本，不取得资源所有权 |
+| `UnloadUnusedAssets(maxDepth: 5)` | 清理零引用缓存；不宜逐帧调用 |
 
-`IsDisposed` 只表示显式 Dispose，token 取消本身不将它设为 true。资源、实例和场景 Handle 释放后 Result 为空；Preload 的 bool Result 保留批次完成结论。场景被外部卸载后 Result 也会为空，但加载成功的历史状态不改变。不要用 State 代替当前资源有效性或所有权检查。
-
-[AssetError](AssetError.cs) 只保留不可变的 `ResourceKey`、`Message` 和 `Exception`。`ResourceKey` 表示错误发生的资源或 Bundle 标识，不保证等于加载入口传入的 Asset 路径；例如依赖 Bundle 加载失败时，它指向失败的依赖 Bundle。`Message` 提供诊断说明，`Exception` 保留原始异常，没有底层异常时为空。错误直接向上传递，不逐层包装，也不提供分类枚举或依赖经过路径；Message 不作为稳定的分类标识。
+加载入口的 priority 默认 `Normal`，ct 默认空令牌。建议使用 `priority:`、`ct:` 命名参数。完整重载见 [AssetSystem.cs](AssetSystem.cs)。示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 命名空间；调用在 Unity 主线程进行，含 await 的示例放在异步方法内，路径替换为实际资源。
 
 ```csharp
-using var handle = LiteRuntime.Asset.LoadAssetHandle<UnityEngine.Sprite>("UI/Icon.png");
+using var handle = LiteRuntime.Asset.LoadAssetHandle<UnityEngine.TextAsset>("Config/game.json");
 await handle;
 if (handle.State == AssetHandleState.Failed)
 {
-    LLog.Error("Load failed: {0}, {1}",
-        handle.Error.ResourceKey, handle.Error.Message);
+    LLog.Error("Load failed: {0}, {1}", handle.Error.ResourceKey, handle.Error.Message);
     return;
 }
-// 在 handle 所有权有效期间使用 handle.Result。
+var json = handle.Result.text;
+// 在 Handle 有效期内解析或复制所需数据。
 ```
 
-共享加载失败时，多个请求可以取得同一个原始错误对象；已取消请求保持 Cancelled，不被底层失败覆盖。重新加载创建新 Handle，旧 Handle 的错误不会随缓存重试改变。普通加载失败仍不从 await 抛异常；实例化过程中原本抛出的异常仍由 await 抛出，并同时保存在 Error 中。非法入口参数仍同步抛异常，TaskSystem 的失败/取消等待仍返回 null。
-
-取消只结束本 Handle 的等待，不直接取消共享 Task。待交付的内部 Lease 仍保留到原有完成或关闭路径：失败先归还 Lease 再通知；成功时转交 Handle，已取消或已释放的 Handle 拒收并释放迟到 Lease。成功状态和所有权在恢复 await 续体前确定，续体可以立即 Dispose 或发起新请求。调用沿用框架主线程约定，不新增跨线程调度。
-
-`PreloadHandle<T>.Errors` 保存逐项失败信息，与 `FailedPaths` 按索引对应：FailedPaths 是请求的 Asset 路径，Errors 中的 ResourceKey 可能是失败的依赖 Bundle，两者不一定相等。普通批次失败的 `Error` 为首个失败原因。部分失败时仍持有成功项，直到 Dispose；取消后不再把迟到子结果加入计数或错误列表。`FailedPaths`、`LoadedCount`、`FailedCount` 等原有属性保留。实现自定义 `IAssetHandle<T>` 的代码需要补充新增属性。
-
-兼容变更：`AssetErrorCode`、`AssetErrorStage` 及 AssetError 的 Code、Stage、Cause 已移除；构造函数改为 `AssetError(string resourceKey, string message, Exception exception = null)`。依赖失败直接暴露原始错误，调用方不再遍历 Cause，也不能假定 Error.ResourceKey 是本次请求路径。
-
-## 路径与模式
-
-资源默认放在 `Assets/StandaloneAssets`。加载、实例化、预加载、场景加载和 `HasAsset` 接受两种路径：相对该目录的文件路径，例如 `Prefabs/Player.prefab`；或者以 `Assets/` 开头的完整项目路径，例如 `Assets/StandaloneAssets/Prefabs/Player.prefab`。这里的完整项目路径不是磁盘绝对路径。显式的根目录外项目路径（如 `Assets/Shared/Material.mat`）也可表达；Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
-
-入口通过 [AssetPath](AssetPath.cs) 将资源身份统一为小写、使用 `/` 的完整项目路径。相对路径、完整路径以及大小写或斜杠不同的写法，会得到同一个 key；重复斜杠和 `.` 路径段会被归一化。必须包含文件扩展名，不会自动补全；场景路径必须以 `.unity` 结尾。空路径、`..`、磁盘绝对路径、URL、显式目录路径等非法输入会使加载入口同步抛出 `ArgumentException`；`HasAsset` 对非法输入返回 `false`。合法但不存在的资源仍按加载失败处理，不能将路径校验通过视为资源存在。
-
-Asset 专属转换集中在 `AssetPath`，通用文件路径操作仍使用 `PathUtils` 或 `System.IO`：
-
-| API | 输入与输出约定 |
-| --- | --- |
-| `ToProjectPath(input)` | 接受业务相对路径或完整 `Assets` 项目路径，允许目录，保留输入大小写；相对路径补 `Assets/StandaloneAssets`，不返回磁盘绝对路径 |
-| `Resolve(input)` / `TryResolve` | 共用 `ToProjectPath` 的根目录规则，要求资源文件扩展名，返回完整规范 key |
-| `ResolveProjectAssetPath(input)` | 只接受完整 `Assets/...` 资源路径，再生成规范 key；内部路径不重新作为业务相对路径补全 |
-| `NormalizeProjectPath(input)` | 校验并规范化已知完整项目路径，允许目录，保留大小写 |
-| `ToRootRelativePath(projectPath)` | 作者数据使用：根内返回相对路径，根外保留完整 `Assets/...` 路径；保留大小写，根目录自身以及 `null`、空字符串返回空字符串；数组重载逐项转换，`null` 数组参数抛异常，空数组合法 |
-| `NormalizeBundlePath(path)` | 只规范化 Bundle 逻辑路径的斜杠、首尾分隔符和大小写，不补资源根目录，不改变现有 Bundle 命名规则 |
-
-`ToProjectPath` 保留的是输入大小写，不会凭字符串恢复源文件真实大小写。实际构建和 BundleViewer 的文件访问使用收集器的规范 key 到真实源路径映射。旧 `PathUtils.GetFullPathInAssetRoot`、`GetRelativeAssetRootPath` 两个重载及 `FormatAssetPath` 已移除，调用方应迁移到上述 API。
-
-编辑器对象字段和 Nexus 导出的作者数据继续使用根内相对路径、根外完整路径，不因 API 迁移改变文件格式。字段清空仍返回空字符串；已知完整路径可直接传给加载入口，Nexus 数据库加载不再先缩短再补全。`ToRootRelativePath` 校验项目路径，不接受磁盘绝对路径或真正的 UPM 项目路径；它不用于完整路径清单，也不消除下面记录的公共输入 `assets/` 歧义。
-
-只有以 `Assets/` 开头的输入（不区分大小写）被解释为完整项目路径，其余合法文件路径均相对资源根目录。`packages/demo/probe.txt` 和 `Packages/demo/probe.txt` 都指向 `Assets/StandaloneAssets/packages/demo/probe.txt`，普通 `packages` 子目录可以正常收集、构建和加载。`Packages/com.example/probe.txt` 同样会补上资源根目录，不表示访问真正的 UPM 包；即使 UPM 包内存在同名资源，也不会回退查找它。真正的 `Packages/...` 资源仍不支持框架显式收集或直接加载；收集器继续过滤这类源路径，符合 Unity 构建条件的引用依赖仍可由 Unity 隐式打包。
-
-普通 Bundle 资源按完整资源路径加载，不按短文件名查找。场景使用规范 key 定位资源和限制并发，再使用 Bundle 或 AssetDatabase 返回的实际项目路径加载，保留实际加载路径的大小写。资源 key 的小写规则不适用于任意磁盘路径、远端 URL 或 Bundle 文件位置。
-
-版本清单的 `BundleInfo.AssetList` 统一保存小写、使用 `/` 的完整项目路径（规范 key），例如 `assets/standaloneassets/data/assets/icon.png`。收集后、写入时和读回后保持同一表示，不再根据 `BundlePath` 截去或补回资源目录；`default.ab` 也不再需要资源路径恢复的特殊规则。分包归属、Bundle 名称、HashMode 和 FlatMode 的物理文件命名规则保持不变，构建时仍通过规范 key 映射回保留实际大小写的源路径。
-
-收集器按明确的资源所在目录计算 Bundle 归属：主动扫描直接使用目录，依赖资源先取其父目录，再应用现有 IgnorePathList 合并规则。普通目录、根目录 `default.ab` 及共享依赖规则保持不变；带点号的目录不再被误判为文件而归入父 Bundle。这类此前被错误分包的资源需要重新构建。构建源文件存在性直接使用 `System.IO.File.Exists()`，不再使用路径外观猜测函数。通用路径 API 的变更见 [框架指南](../../README.md#通用路径与文件操作)。
-
-BundleViewer 的资源行显示收集器映射得到的真实源路径，并用该路径读取文件大小和图标；不将规范 key 强制当作磁盘路径。Bundle 节点显示逻辑 Bundle 名称（合并模式的目录节点显示对应逻辑前缀），不伪造源资源路径。Alt 选择资源行定位该资源，Alt 选择 Bundle 节点定位其首个资源所在目录；该目标不保证等于合并前的分包目录，空节点不执行定位。
-
-**暂时放弃资源路径压缩：**本轮取消自定义路径缩写，先完成 Asset 架构与路径职责的统一。未来再根据实际清单大小、读取并建立索引的耗时和内存占用，重新考虑目录表、显式前缀编码或二进制存储等规则；编码应能无歧义地还原完整资源身份，不依赖 Bundle 名称猜测目录。本轮没有增加通用数据压缩，AssetBundle 自身的压缩选项也未改变。
-
-依赖继续使用 Bundle ID 字符串存储，读取时恢复为 Bundle 路径。JSON 字段、UTF-8 编码及现有加密方式保持不变，暂不增加格式版本字段。`ToJsonData()`、`ToBinaryData()` 保留依赖的原地转换：`AssetList` 不变，`DependencyList` 被改成 ID；写出仍视为该对象本轮使用的结束，不继续查询或重复输出。需要再次输出时，应使用重新收集或重新读取并恢复的对象。
-
-`Initialize()` 使用 `AssetPath.ResolveProjectAssetPath()` 校验完整资源路径并建立规范 key 索引，不改写 `AssetList`。收集登记和构建源路径映射也使用该严格入口，不将内部资源路径作为业务相对路径补全。公开的 `VersionPackInfo.GetBundleInfoFromAssetPath()` 仍接受业务相对路径及完整项目路径。
-
-**兼容限制：**旧相对路径清单应从源资源重新收集并生成，与新的读取逻辑配套使用。本轮不提供旧格式自动恢复，也不增加格式版本字段；普通旧相对路径在建立索引时会被拒绝，但形似 `assets/...` 的旧相对路径仍可能被当成完整项目路径，不能依靠解析成功来证明兼容。旧 `default.ab` 清单可能已丢失根目录与真实 `default/` 子目录的区别，旧字符串替换也可能误删中间目录，不能只读入旧清单再导出以迁移。
-
-完整路径清单消除了原先压缩结果以 `assets/` 开头时的存储歧义，普通 `packages`、`assets` 子目录及 `assets.json` 文件均可保留完整身份。**公共输入的 `assets/` 目录歧义继续暂缓：**业务输入 `assets/demo/icon.png` 仍按完整项目路径解释；若实际资源位于资源根目录的同名子目录，应传 `Assets/StandaloneAssets/assets/demo/icon.png`。这与清单存储无关，真正 UPM 支持也未开放。
-
-Bundle 的逻辑名称由 `AssetPath.NormalizeBundlePath()` 规范化；物理文件名由 `VersionPackInfo.GetBundleFileBuildPath()` 与 `GetBundleFileLoadPath()` 计算。扁平化实现从 `PathUtils` 移入 `VersionPackInfo`，替换字符集合及原有命名结果不变。以 `ui/icons.ab` 为例：
-
-| 配置 | 构建文件名 | 加载文件名 |
-| --- | --- | --- |
-| FlatMode、HashMode 均关闭 | `ui/icons.ab` | `ui/icons.ab` |
-| 仅 FlatMode | `ui_icons.ab` | `ui_icons.ab` |
-| 仅 HashMode | `ui/icons.ab` | `ui/icons_<hash>.ab` |
-| FlatMode、HashMode 均开启，SecurityMode 关闭 | `ui_icons.ab` | `ui_icons_<hash>.ab` |
-| FlatMode、HashMode 均开启，SecurityMode 开启 | `ui_icons.ab` | `<hash>.ab` |
-
-`ResCollectInfoStep` 在生成构建映射时检查重复物理文件名，发现冲突即抛出包含两个逻辑 Bundle 名称及目标文件名的异常，不再交给 BuildPipeline。例如 `a/b_c.ab` 与 `a_b/c.ab` 在 FlatMode 下均映射到 `a_b_c.ab`；应调整源目录/命名或关闭 FlatMode，不自动追加序号。HashMode 在构建后才应用，不能消除构建阶段的此类碰撞。此检查不改变正常分包、依赖图或清单格式。
-
-BuiltIn 定位策略由 `BundleBuiltInLocater` 自身维护，版本文件与 Bundle 使用同一选择规则：编辑器强制 StreamingAssets 时直接选择该位置；否则优先使用 `persistentDataPath/LiteQuark` 中已存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按文件存在性选路径，不会在 persistent 文件损坏或加载失败时自动再回退，也不要求回退目标已经存在。本次迁移未改变底层读取方式或扩大其他平台的支持范围。
-
-Remote 地址通过 `PathUtils.ConcatUri()` 依次追加小写平台名、主版本目录和版本文件或 Bundle 文件名；基础 URI 按目录解释，保留已有查询参数和 fragment，路径片段使用未编码名称并逐段转义。版本请求在已有查询后追加转义后的 `t` 参数，没有查询时使用 `?`，已有查询时使用 `&`，参数始终位于 fragment 前。`t` 为框架保留的缓存参数，基础地址不应再配置同名参数；不提供通用查询参数覆盖或合并策略。
-
-普通构建输出和项目目录继续使用文件路径组合。StreamingAssets 的地址类型由其路径入口适配，BuiltIn 的 persistent 优先级与完整路径资源 key 不变。URI 字符串正确不等于所有 Player 平台读取链已经验证；其他平台和远程下载仍需对应环境的验证。
-
-在 Launcher 的 Asset 设置中配置：
-
-| 配置 | 含义 |
-| --- | --- |
-| `AssetMode` | `Editor` 直接访问项目资源；`Bundle` 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
-| `BundleLocater` | `BuiltIn` 优先读取 persistentDataPath/LiteQuark，再回退到 StreamingAssets/LiteQuark；`Remote` 使用远端资源包 |
-| `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 `0.4`）；已有查询参数保留，勿重复配置框架参数 `t` |
-| `ConcurrencyLimit` | BundleLoader 同时提交的 Bundle 加载任务数量限制，默认 5 |
-| `TaskConcurrencyLimit` | 独立 Asset 任务组的并发额度，默认 20，包含版本包、Bundle、Asset 和 Scene 加载任务 |
-| `EnableRetain` | 启用 Bundle 保留缓存，默认 true |
-| `BundleRetainTime` | Bundle 引用归零后的保留时间，默认 300 秒 |
-
-发布前使用 `Lite > Builder` 生成 Bundle 和版本文件；资源随包发布时放入对应 StreamingAssets。在编辑器中测试 BuiltIn 模式时，`EditorForceStreamingAssets` 默认为 true，会强制从 StreamingAssets 读取。Bundle 初始化会检测依赖环，检测失败或版本文件加载失败时不会完成系统初始化。Resource 模式已移除。
-
-AssetSystem 在 Provider 初始化前注册 `LiteConst.TaskGroupId.Asset`（-2），因此版本包加载也使用该组。Asset 组与普通业务的 Default 组额度独立；BundleLoader 仍管理自己的队列、并发和共享请求提权，两层限制各自生效。Loader 已提交但尚未获 Asset 组准入的任务也占用 Loader 的提交名额。额度统计逻辑任务占位，不保证取消后的 Unity 原生操作已经停止。Editor 模式也注册该组，但直接加载路径不通过该组排队。
-
-## 加载与所有权
-
-示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 和 `UnityEngine`；含 `await` 的片段放在异步方法中。示例路径需替换为项目实际资源。
-
-```csharp
-using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>("Config/game.json");
-await handle;
-if (handle.Result != null)
-{
-    var json = handle.Result.text;
-    // 在 Handle 有效期内解析或复制所需数据。
-}
-```
-
-资源要继续用于渲染、音频或实例时，将 Handle 保存在拥有者字段，在 `Dispose()`、`OnDestroy()` 或关闭界面时释放。不能在 `using` 结束后仅保留资源引用；手动从 prefab 实例化时也必须维持 prefab Handle 的寿命。
+用于渲染、音频等长期用途时，把 Handle 保存在拥有者字段，在 `OnDestroy()`、关闭界面或业务 Dispose 时释放。不能在 using 结束后仅保留资源引用；手动实例化 prefab 时也要维持 prefab Handle 的寿命。
 
 ```csharp
 var handle = LiteRuntime.Asset.InstantiateHandle("Prefabs/Enemy.prefab", parent: null);
 await handle;
-var enemy = handle.Result; // 加载失败时为 null
-// 使用实例；实际业务应保存 handle，直到实例不再需要。
+var enemy = handle.Result; // 普通加载失败时为 null
+// 保存 handle，直到实例不再需要。
 handle.Dispose();
 ```
 
-`GameObjectHandle.Dispose()` 销毁实例并释放内部 prefab 引用。不要另行销毁实例后遗忘 Handle。
+不要另行销毁实例后遗忘 Handle。`UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 同样由调用者保存和释放。
+
+## 请求状态与错误
+
+四类 Handle 提供 `State`、`Error`、`IsDone`、`IsDisposed` 和 `Result`。状态从 `Pending` 单次进入下列终态；缓存命中可能在加载入口返回前完成。`IsDone` 表示请求已结束，不代表底层原生操作或迟到资源清理已结束。
+
+| 情况 | 状态、等待与所有权 |
+| --- | --- |
+| 成功 | `Succeeded`，Error 为 null，Handle 持有结果 |
+| 普通加载失败 | `Failed`，Error 非空；await 正常结束，Result 为 null / false |
+| 等待中 token 取消或 Dispose | 立即成为 `Cancelled`，Error 为 null；await 抛 `OperationCanceledException` |
+| 成功或失败后 Dispose | State / Error 保留，IsDisposed 为 true；释放持有的资源 |
+| 成功后 token 取消 | 保留成功及所有权，业务仍需 Dispose |
+
+- `IsDisposed` 只表示显式 Dispose，token 取消不将它设为 true。重复 Dispose 不重复释放。
+- 资源、实例和场景 Handle 释放后 Result 为空；预加载的 bool Result 保留批次结论。State 不代替当前资源有效性检查。
+- 取消仅结束当前 Handle 的等待，不保证共享加载或 Unity 原生操作停止；框架清理迟到结果。使用 using 或 try/finally 保证释放。
+- 实例化过程中抛出的异常会由 await 抛出，同时保存在 Error；非法入口参数同步抛异常。不要同步读取尚未完成的加载。
+- 完成状态和所有权在恢复 await 续体前确定，续体可以立即 Dispose 或发起新请求。
+
+[AssetError](AssetError.cs) 提供不可变的 `ResourceKey`、`Message` 和可为空的原始 `Exception`。ResourceKey 指向实际失败的资源或依赖 Bundle，不保证等于请求路径；Message 是诊断文本，不作为稳定分类标识。共享失败可能返回同一个错误对象，重试不会改写旧 Handle 的错误，已取消请求也不会被迟到失败覆盖。
 
 ## 场景与预加载
 
@@ -152,21 +70,19 @@ if (sceneHandle.Result == null)
 {
     LLog.Error("Scene load failed");
 }
-// 离开该场景时调用；持有期间不要提前释放。
+// 离开场景时释放；Dispose 返回不代表卸载已经完成。
 sceneHandle.Dispose();
 ```
 
-`SceneHandle.Result` 为 `Scene?`，加载失败、Handle 已释放或场景已失效时返回 `null`；非空时可通过 `.Value` 取得实际 Scene。`Dispose()` 发起该场景的异步卸载，返回不代表卸载完成。同一 Provider 内，规范化后同一路径的并发加载会被拒绝，包括相对路径与完整路径混用的请求；不同目录下的同名场景可以区分。前一次加载完成后再次以 Additive 加载同一路径，会创建独立实例，各 Handle 持有并卸载自己的 Scene 实例。并发限制不覆盖外部直接调用 Unity 场景加载 API 的请求。通过 Single 模式或外部调用卸载场景后，框架会监听实际卸载事件，自动结束对应场景条目并归还其 Bundle 引用，`SceneHandle.Result` 返回 `null`。业务仍应在持有者生命周期结束时调用 `Dispose()`；此时不会重复卸载场景或释放资源引用。归还引用不代表共享 Bundle 立即卸载，实际回收仍遵循引用计数和缓存策略。Editor 和 Bundle 模式共用这一场景收尾逻辑。
+`SceneHandle.Result` 为 `Scene?`，失败、释放或场景失效时为空。同一 Provider 内，规范化后同一路径的并发加载会被拒绝；一次加载完成后再次 Additive 加载，可创建独立实例，各 Handle 卸载自己的实例。限制不覆盖业务直接调用 Unity 场景 API。
 
-场景卸载先启动 Unity 的卸载操作，再通过 TaskSystem 的 `AsyncOperation` 便利入口观察完成；该包装任务进入无限额的 Flow 组，不等待默认组空位。Flow 不改变底层卸载的异步完成语义。
+Single 模式替换或外部卸载后，Result 为空，成功历史状态保留；业务仍应 Dispose，框架不会重复卸载或释放引用。Unity 拒绝卸载时（例如最后一个场景），Dispose 不保证场景消失，框架保留必要资源直到确认实际卸载；没有公开的 Handle 重试入口，也不自动逐帧重试。
 
-场景条目记录实际卸载操作；提交请求期间以及原生操作尚未完成时，重复请求不会再次提交。原生拒绝卸载（例如最后一个已加载场景）、返回 null 或抛异常后，条目保留 Unloading 和 Bundle Lease，内部再次调用 Unload 可重试；没有自动逐帧重试。已释放的 Handle / Scene Lease 仍保持幂等，不恢复所有权，也不新增公开重试入口。原生卸载已经启动但观察任务登记失败时，继续保留该操作，现有 sceneUnloaded 事件仍可完成收尾。只有确认实际卸载后才归还引用，重复通知不重复归还。
-
-框架能区分同名场景的完整路径，不代表底层 Bundle 可以同时装载。Unity `2022.3.62f3` 的本地验证中，将两个 `Battle.unity` 放入同一个 Bundle 会因内部 `BuildPlayer-Battle.sharedAssets` 重名而构建失败；拆到不同 Bundle 后，同时装载仍触发“另一个包含相同文件的 AssetBundle 已加载”的错误。需要同时加载的 Bundle 场景应使用不同文件名。Editor 直读模式下不同目录同名场景可以并发加载；Bundle 构建层的限制与校验另行处理，不能仅靠完整路径解析消除。
+**需要同时加载的 Bundle 场景应使用不同文件名。** Unity 2022.3.62f3 的本地验证中，同名场景在同一个 Bundle 内会构建冲突，分到不同 Bundle 后并发装载也会冲突。Editor 直读可区分不同目录的同名场景，完整路径不能消除 Bundle 层限制。
 
 ```csharp
 var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
-using var preload = LiteRuntime.Asset.PreloadAssetHandle<Sprite>(paths);
+using var preload = LiteRuntime.Asset.PreloadAssetHandle<UnityEngine.Sprite>(paths);
 await preload;
 if (!preload.Result)
 {
@@ -175,53 +91,85 @@ if (!preload.Result)
         LLog.Error("Preload failed: {0}", path);
     }
 }
-// 将 preload 保留到预加载资源不再需要；使用资源时另取自己的 AssetHandle。
+// 持有 preload 到预加载资源不再需要；实际使用资源时另取自己的 AssetHandle。
 ```
 
-预加载先解析整批输入，再对规范化后的完整路径去重并开始加载；任意输入非法时同步抛出异常，不会启动这批预加载。提供 `TotalCount`、`LoadedCount`、`FailedCount` 和 `FailedPaths`，其中失败路径使用规范化后的完整 key。它持有批量资源引用，不直接提供资源对象；释放它会释放内部 Handle。
+预加载先校验整批路径，非法输入同步抛异常且不启动该批加载；按规范 key 去重。提供 `TotalCount`、`LoadedCount`、`FailedCount`、`FailedPaths` 和 `Errors`。FailedPaths 使用规范 key，Errors 按索引对应，错误中的 ResourceKey 可能指向依赖 Bundle。普通批次失败的 Error 为首个失败原因；部分失败仍持有成功项直到 Dispose。取消后不再增加迟到结果的计数或错误。预加载不直接提供资源对象。
+
+## 路径与模式
+
+资源默认放在 `Assets/StandaloneAssets`。加载入口接受带扩展名的根目录相对路径（`Prefabs/Player.prefab`）或完整项目路径（`Assets/StandaloneAssets/Prefabs/Player.prefab`）；场景须以 `.unity` 结尾。根目录外的 `Assets/...` 路径也可表达，但 Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
+
+[AssetPath](AssetPath.cs) 将资源 key 统一为小写及 `/`，归一化重复斜杠和 `.` 段。空路径、`..`、磁盘绝对路径、URL、目录路径等非法输入使加载入口同步抛 `ArgumentException`，HasAsset 返回 false。路径合法不代表资源存在。资源 key 的小写规则不适用于任意磁盘路径或远端 URL。
+
+- 以 `Assets/` 开头的输入按完整项目路径解释，不区分大小写。加载根目录内名为 assets 的子目录时，使用完整路径，例如 `Assets/StandaloneAssets/assets/demo/icon.png`。
+- `packages/demo/probe.txt` 相对资源根目录，不能用于访问真正的 UPM 包。框架不支持真正 `Packages/...` 资源的显式收集或直接加载；符合 Unity 构建条件的引用依赖可由 Unity 隐式打包。
+- Bundle 内按完整资源路径寻址；实际场景加载路径保留源路径大小写。
+
+| 路径工具 | 契约 |
+| --- | --- |
+| `ToProjectPath(input)` | 相对路径补资源根目录，允许目录，保留大小写，返回项目路径而非磁盘绝对路径 |
+| `Resolve(input)` / `TryResolve` | 按相同根目录规则解析资源文件，要求扩展名，生成规范 key |
+| `ResolveProjectAssetPath(input)` | 只接受完整 Assets 资源文件路径并生成 key |
+| `NormalizeProjectPath(input)` | 规范化已知完整项目路径，允许目录，保留大小写 |
+| `ToRootRelativePath(projectPath)` | 根内返回相对路径，根外保留完整项目路径，保留大小写；根目录自身、null 和空字符串返回空字符串；null 数组抛异常，空数组合法 |
+| `NormalizeBundlePath(path)` | 规范化 Bundle 逻辑路径的斜杠、首尾分隔符和大小写，不补资源根目录 |
+
+ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作者数据，不接受磁盘绝对路径或真正的 UPM 路径。通用文件路径与 URI 操作见 [框架指南](../../README.md#通用路径与文件操作)。
+
+在 Launcher 的 Asset 设置中配置：
+
+| 配置 | 含义 |
+| --- | --- |
+| `AssetMode` | Editor 直接访问项目资源；Bundle 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
+| `BundleLocater` | BuiltIn 使用本地文件；Remote 使用远端资源包 |
+| `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 0.4）；传未编码路径名称，已有查询和 fragment 保留，勿配置框架保留参数 t |
+| `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
+| `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |
+| `EnableRetain` / `BundleRetainTime` | Bundle 零引用保留缓存开关／时间，默认 true／300 秒 |
+
+BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
+
+发布前通过 `Lite > Builder` 生成资源包和版本文件，随包资源放入对应 StreamingAssets。版本文件失败或 Bundle 依赖环会使系统初始化失败。URI 能正确组成不代表所有 Player 平台的读取链都经过验证。
 
 ## 加载优先级
 
-`LoadAssetHandle`、`PreloadAssetHandle`、两个 `InstantiateHandle` 重载和 `LoadSceneHandle` 均接受 `priority` 参数，类型为 [AssetLoadPriority](AssetLoadPriority.cs)：`Low`、`Normal`、`High`，默认均为 `Normal`。参数位于可选的 `ct` 之前，建议使用命名参数：
-
 ```csharp
-// 后台预加载。业务持有该 Handle，直到不再需要这批资源。
-var preload = LiteRuntime.Asset.PreloadAssetHandle<GameObject>(
+var preload = LiteRuntime.Asset.PreloadAssetHandle<UnityEngine.GameObject>(
     backgroundPaths, priority: AssetLoadPriority.Low, ct: cancellationToken);
-
-// 玩家当前需要的界面。实例化入口将优先级传给内部 prefab 加载。
 var window = LiteRuntime.Asset.InstantiateHandle(
     "UI/Inventory.prefab", parent: uiRoot,
     priority: AssetLoadPriority.High, ct: cancellationToken);
+// backgroundPaths、uiRoot、cancellationToken 由业务提供；两个 Handle 均需最终 Dispose。
 ```
 
-`backgroundPaths`、`uiRoot` 和 `cancellationToken` 由调用方提供；两个 Handle 仍须在使用结束后 `Dispose()`。预加载将同一优先级传给每个子请求，不固定为低优先级。
+- `AssetLoadPriority` 为 Low、Normal、High，决定 Bundle Loader 尚未提交任务的顺序；同级 FIFO，提权保留入队顺序，已提交加载不抢占或重启。
+- 优先级传给主 Bundle 及依赖；共享加载周期内只升不降，高优先级请求取消也不降级。失败后重新请求会重新确定优先级。预加载每个子请求使用传入值。
+- 优先级不保证完成顺序或整条加载链优先，也不绕过并发限制。持续高优先级请求可能使低优先级请求饥饿。
+- Loader 提交额度和 Asset 任务组额度分别生效；已提交但仍等待任务组准入的任务也占 Loader 名额。它们不占业务 Default 组，但逻辑额度不保证取消后的原生操作停止。
+- `AssetLoadPriority` 与 [TaskPriority](../Core/Async/Task/README.md#优先级与执行时序) 独立，不修改已提交任务的优先级。Asset 组中版本包和 Bundle 任务以 Urgent 提交，Asset/Scene 任务以 Normal 提交。
+- Editor 直读接受优先级参数，但不经过 Asset 组排队，也不模拟 Bundle 队列。Profiler 的 Bundle Begin 表示 Cache 接受请求，不代表实际提交顺序；Profiler 事件订阅者不得在事件内加载、释放或修改资源生命周期。
 
-- 优先级只决定 Bundle Loader 尚未提交到底层 TaskSystem 的任务顺序。优先级高的先出队；同级按首次入队顺序执行，提权保留原入队序号。已提交的加载不抢占、不重启，也不因提权突破 Asset 设置的 `ConcurrencyLimit`。
-- 请求优先级传给主 Bundle 及全部依赖。共享加载在本轮收到更高优先级请求时会向尚未就绪的依赖传播提权，即使主 Bundle 自身已启动或物理加载已完成。依赖不额外提高一级；读取 Asset 或加载 Scene 前仍等待全部必要 Bundle 成功。
-- 本轮有效优先级只升不降。后来的低优先级请求，以及高优先级 Handle 的取消或释放，都不会降低本轮优先级。加载失败后重试会以新请求重新初始化优先级；取消和迟到结果的所有权规则不变。
-- 优先级和同级 FIFO 均不保证 Asset 请求的完成顺序。TaskSystem 另按任务组限制并发，没有跨组总上限；版本包和 Bundle 任务以 `TaskPriority.Urgent` 提交到独立 Asset 组，Bundle 就绪后的 Asset/Scene 任务以 `Normal` 提交到同一组，均受 `TaskConcurrencyLimit` 约束，不占用 Default 额度。Bundle Loader 自身的并发限制仍然保留。`AssetLoadPriority` 不等同于 `TaskPriority`，不会改变已提交任务的固定优先级或获得绕限权限，也不保证整条加载链优先。Asset 组内部仍共享额度；持续高优先级请求可能延迟低优先级任务，目前没有优先级老化或保底额度。参见 [TaskSystem 分组调度](../Core/Async/Task/README.md)。
-- Editor 直读模式接受该参数，但不模拟 Bundle 优先级队列。验证调度顺序时使用 Bundle 模式，并观察 Loader 实际提交任务的时机；Profiler 的 Bundle Begin 事件表示 Cache 接受加载，不能用来判断实际开始顺序。
+## 缓存与构建工具
 
-资源加载 Profiler 事件只用于编辑器观测，订阅者不得在事件中发起加载、释放或修改资源生命周期。
+Handle 释放后，资源是否立即回收取决于共享引用和 Bundle 缓存。只有 Bundle 层计算保留时间；零引用 Bundle 进入保留期，关闭 EnableRetain 时在后续清理中回收。保留期间相同路径、相同请求类型可命中缓存；不同类型分别缓存但共享 Bundle。缓存不延长已释放 Handle 的所有权。
 
-## 释放与迁移
+主 Bundle 实际卸载后才释放依赖引用，依赖引用归零后开始自己的保留计时。`UnloadUnusedAssets(maxDepth)` 最多执行指定轮数的缓存清理，不是依赖图层数；它还调用 Unity 未使用资源清理和 GC。释放最后引用后调用它可能立即回收资源，不要继续使用旧引用。
 
-- 每个加载请求持有自己的 Handle，重复 `Dispose()` 不会重复释放该 Handle 的引用。
-- Bundle 模式的 Asset 请求在被接受时取得内部 Lease，覆盖等待 Bundle 和资源加载的阶段；加载成功后将同一份 Asset Lease 转交给 Handle，失败时归还引用。场景请求提前取得的 Bundle Lease 则在 Bundle 加载成功后转交场景条目，按场景生命周期归还。
-- `UIUtils.ReplaceSpriteHandle(...)` 等工具返回的 Handle 也由调用者保管，在图片不再使用时释放；不要忽略返回值。
-- 加载期间取消或释放 Handle，不保证底层 Unity 加载立即停止；内部请求引用保留到加载完成通知，再由失败路径或 Handle 对迟到结果的清理归还。用 `try/finally` 或 `using` 保证退出时释放。
-- Bundle Loader 关闭时先结束自身登记，再取消未完成任务并卸载尚未分发的成功结果；重复或重入关闭不重复释放。已开始分发的结果继续由原有 Cache / 依赖汇总流程接管。本地 Bundle 任务在取消或失败后仍观察原生完成，并卸载未交付的迟到 Bundle，不依赖 Loader 继续 Tick，不补发成功回调。清理资源不改写 Task 的终态或 Result；正常任务包装器收尾也不会卸载已经交付的成功 Bundle。
-- Loader 按状态关闭：Pending / Running 只取消，Succeeded 只卸载尚未分发的 Bundle，Failed / Cancelled 不再处理。远端请求保持 Bundle 按需创建；取消后的下载完成回调不提取 Bundle，请求和 handler 由任务清理。不能假定取消后必然有 Bundle，也不通过读取远端 handler 的 `assetBundle` 创建资源再释放。
-- Bundle 模式仅在 Bundle 层计算保留时间。最后一份 Asset Lease 释放、资源引用归零时，资源条目立即归还主 Bundle 引用，不再等待当前回调派发结束，并保留已加载对象的索引；条目和索引随所属 Bundle 卸载一起清除。仍有未交付请求或有效 Handle 的资源会继续持有 Bundle 引用。回调中释放最后一份引用后调用 `UnloadUnusedAssets()`，可以在该回调返回前回收 Bundle。
-- Bundle 引用归零后进入保留期；期间再次以相同路径和相同请求类型加载已缓存资源，会重新取得引用并直接交付已有对象，无需再次发起 Asset 加载。不同请求类型使用独立的资源缓存条目，包括存在继承关系的类型，但仍共享所属 Bundle。关闭 `EnableRetain` 时，零引用 Bundle 在后续清理时回收。保留缓存不会延长已释放 Handle 的所有权，业务仍须用有效 Handle 覆盖资源使用期。
-- 依赖 Bundle 继续由主 Bundle 持有引用，主 Bundle 实际卸载后才归还；依赖引用归零时再开始自己的保留计时。
-- 原 `AssetRetainTime` 配置已移除，只需配置 `BundleRetainTime`。主 Bundle 无其他引用时，不再先等待一段独立的 Asset 保留时间。
-- `UnloadUnusedAssets(maxDepth: 5)` 最多执行指定轮数的缓存清理，以处理依赖释放；它不是精确的依赖图层数限制。实现还调用 Unity 的未使用资源清理和 GC，不宜逐帧执行。
-- 旧的 AssetSystem 回调加载、非 Handle 加载、按路径/对象释放、手动场景卸载接口已移除。实例化改用 `InstantiateHandle`，批量预加载改用 `PreloadAssetHandle<T>`。
-- 原先的 `var result = await handle.Task` 改为 `await handle; var result = handle.Result;`，并保持 Handle 覆盖资源使用期。不要通过 `GetAwaiter().GetResult()` 同步读取尚未完成的加载；将调用链改为异步等待。
-- 加入优先级参数后，原有按位置传入取消令牌的调用（如 `LoadAssetHandle<T>(path, token)`）应改为 `LoadAssetHandle<T>(path, ct: token)`，或显式传入 `priority` 后再传 `ct`。预加载、实例化和场景加载入口同样适用。
+版本清单 `BundleInfo.AssetList` 保存完整规范资源 key。调用 `ToJsonData()` / `ToBinaryData()` 会将 DependencyList 原地转换为 ID，输出后不要继续查询或重复输出该对象；再次输出使用重新收集或重新读取并恢复的对象。
 
-战斗模块在 `LiteNexusDataManager.Startup()` 中等待配置加载，再读取数据库；运行时同步访问 `LiteNexusConfig.Instance` 前必须完成该初始化，初始化失败或关闭数据管理器时释放配置 Handle。编辑器工具仍使用 AssetDatabase 访问配置。
+**旧相对路径清单必须从源资源重新构建，与新读取器配套使用。** 读入旧清单再导出不能可靠迁移，解析成功也不能证明兼容。其他升级步骤见 [CHANGELOG](../../CHANGELOG.md)。
 
-完整签名见 [AssetSystem.cs](AssetSystem.cs)，所有权实现见 [Handle](Handle)。
+Bundle 物理文件名由 `VersionPackInfo` 的构建／加载路径接口计算：
+
+| 配置（逻辑名为 ui/icons.ab） | 构建文件名 | 加载文件名 |
+| --- | --- | --- |
+| FlatMode、HashMode 关闭 | `ui/icons.ab` | `ui/icons.ab` |
+| 仅 FlatMode | `ui_icons.ab` | `ui_icons.ab` |
+| 仅 HashMode | `ui/icons.ab` | `ui/icons_<hash>.ab` |
+| FlatMode、HashMode 开启，SecurityMode 关闭 | `ui_icons.ab` | `ui_icons_<hash>.ab` |
+| FlatMode、HashMode、SecurityMode 开启 | `ui_icons.ab` | `<hash>.ab` |
+
+FlatMode 下 `a/b_c.ab` 与 `a_b/c.ab` 会碰撞，构建映射报错；调整源目录／命名或关闭 FlatMode。HashMode 不能消除构建阶段的碰撞。
+
+`Lite > Asset > Bundle Viewer` 显示真实源路径。Alt 选择资源定位该资源，选择 Bundle 定位首个资源所在目录，空节点不定位。

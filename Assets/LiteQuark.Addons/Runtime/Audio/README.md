@@ -30,7 +30,7 @@ ID 为 `ulong`；触及并发限制时返回 0。非零 ID 表示请求已建立
 
 - `MuteAllSound(bool)`、`MuteAllMusic(bool)`、`MuteAllAudio(bool)` 会保存分类静音状态，并应用于后续加载的音频。
 - `SetAllAudioVolume(float)` 修改当前已加载音频的音量，不保存全局默认值；仍在加载中或后续创建的音频使用播放调用的 volume 参数。
-- 单个音频可使用 `GetAudio(id)?.SetVolume(volume)`；当前没有分类音量设置接口或播放优先级 order 参数。
+- 单个音频可使用 `GetAudio(id)?.SetVolume(volume)`。
 - `PauseAllAudio()` / `ResumeAllAudio()` 同时控制 `AudioListener.pause` 与已有 AudioSource 的暂停/恢复。当前自动回收依据 `!Source.isPlaying`，若暂停期间 AudioSystem 继续 Tick，暂停音频可能被回收；需要可靠暂停时应先验证该场景。
 
 ## 生命周期

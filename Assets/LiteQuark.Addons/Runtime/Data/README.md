@@ -20,7 +20,7 @@ DataSystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，�
 | BinaryFile | 同目录 `<key>.dat`；内容是 JSON 的 UTF-8 字节，或加密后的字节 |
 | Custom | 自定义 `IDataProvider` 决定格式和存储位置 |
 
-BinaryFile 没有专用二进制对象编码或压缩，不能据此保证体积更小、性能最好。
+BinaryFile 使用上表中的 JSON 字节格式，不做压缩。
 
 ## 使用
 

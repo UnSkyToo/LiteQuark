@@ -2,6 +2,10 @@
 
 LiteQuark 将系统服务（`ISystem`）与业务逻辑（`ILogic`）分开管理，通过 `LiteRuntime` 访问已初始化的服务。本文描述当前源码；发布历史见 [CHANGELOG](CHANGELOG.md)。
 
+## 安装
+
+在 Package Manager 使用 `https://github.com/UnSkyToo/LiteQuark.git#LiteQuark`，或将本目录连同 `.meta` 文件复制到项目中。发布分支内容会更新，可复现安装应选择核对过的 tag 或 commit。版本和最低 Unity 声明见 [package.json](package.json)，声明不代表所有旧编辑器都经过兼容验证。
+
 ## 接入与启动
 
 1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
@@ -40,7 +44,7 @@ public sealed class GameLogic : ILogic
 
 `Log → Event → Timer → Task → Asset → ObjectPool → Action`
 
-扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放。当前没有 `BaseSystem` 或 Stage/Pipeline 注册机制。
+扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放。
 
 | 扩展点 | 约定 |
 | --- | --- |
@@ -75,31 +79,29 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 ## 资源与构建
 
-资源根目录为 `Assets/StandaloneAssets`。例如实际文件 `Assets/StandaloneAssets/Prefabs/Player.prefab` 可以使用 `Prefabs/Player.prefab` 或完整的 `Assets/...` 项目路径加载，均须包含扩展名。入口将其统一为小写、使用 `/` 的完整资源 key；磁盘绝对路径、URL 和 `..` 等非法输入会使加载入口同步抛出 `ArgumentException`，`HasAsset` 则返回 `false`。Bundle 内按完整资源路径寻址；场景保留实际加载路径，并区分不同目录下的同名场景。
+资源默认位于 `Assets/StandaloneAssets`，加载路径包含扩展名，可使用根目录相对路径或完整 Assets 项目路径。加载、实例化、预加载和场景所有权通过 Handle 管理；持有期间使用结果，结束时 Dispose。路径规则、错误处理和配置见 [Asset 指南](Runtime/Asset/README.md)。
 
-`packages/...` 也按资源根目录相对路径处理，可用于普通 `packages` 子目录；它不表示访问 Unity Package Manager 的包目录。真正的 UPM 资源显式管理与直接加载暂不支持。
-
-Editor 模式直接访问项目资源；非编辑器环境会改用 Bundle。发布前通过 `Lite > Builder` 生成资源包和版本文件，使用 BuiltIn 或 Remote 定位模式。资源的加载、实例化和卸载统一由 Handle 管理，详见 [Asset 指南](Runtime/Asset/README.md)。
-
-版本清单统一保存完整规范资源路径，本阶段暂时取消路径压缩，未来再重新考虑紧凑编码规则；依赖 ID 字符串、原地依赖转换及分包规则保持不变。暂不增加格式版本字段，旧相对路径清单应从源资源重新生成并与新读取器配套使用，不能依靠读取成功判断兼容，也不能靠读入旧清单再导出修复历史路径丢失。公共输入的 `assets/` 歧义继续暂缓，完整规则与兼容说明见上述 Asset 指南。
+Editor 模式直接读取项目资源，非编辑器环境使用 Bundle。通过 `Lite > Builder` 构建资源包和版本文件；目标平台须安装对应 Unity 构建支持。命令行入口为 `LiteQuark.Editor.ProjectBuilderCommandLine.Build`，参数见 [ProjectBuilderCommandLine.cs](Editor/Builder/ProjectBuilderCommandLine.cs)。`-copyToStreaming true` 会删除并替换 `Assets/StreamingAssets/LiteQuark`，构建准备也可能修改项目设置，完成后检查差异。
 
 ## 通用路径与文件操作
 
-[PathUtils](Runtime/Utils/PathUtils.cs) 的 `UnifyPath()` 只将反斜杠转换为 `/`，保留根路径、末尾分隔符及大小写；需要资源 key 时仍使用 `AssetPath`。`GetParentPath()` 先转换为当前平台原生分隔符再计算父目录，输出统一使用 `/`；只裁剪根路径之外的末尾分隔符。根路径没有父目录时返回空字符串，Windows UNC 路径保留 `//server/share` 前缀。该函数按当前平台的文件路径规则工作，不用于 URL，也不承诺跨平台解析其他操作系统的盘符或 UNC 语法。`GetRelativePath()` 使用标准文件系统相对路径计算，可能返回 `../`、`.` 或不同根的完整目标路径，不能用来判定目标是否位于某个资源根目录内，也不用于 URL。
+资源身份使用 AssetPath；磁盘路径、URI 与普通文件操作分别使用以下入口。通用路径工具不检查资源是否已打包，也不承担目录范围限制。
 
-`ConcatPath()` 只包装当前平台的 `System.IO.Path.Combine()` 并统一输出分隔符，不再裁剪后续参数开头的 `/`；后续参数为根路径时按标准库规则替换前面的部分，也不限制 `..`。普通磁盘路径和 Unity 项目目录继续使用它，不把它当作 URI 组合或根目录约束函数。
+| API | 使用约定 |
+| --- | --- |
+| `PathUtils.UnifyPath` | 仅将反斜杠转为 `/`，保留根、末尾分隔符和大小写 |
+| `ConcatPath` | 按当前平台 Path.Combine 组合；后续根路径可替换前文，不限制 `..`，不用于 URI |
+| `ConcatUri` | 把绝对基础 URI 当目录追加片段，逐段转义并保留查询和 fragment；传未编码名称，如 `My Icon.ab`，不要先编码成 `%20` |
+| `GetParentPath` | 按宿主文件系统求父目录，输出 `/`；根目录无父级时返回空字符串，不用于 URL 或跨系统解析盘符 |
+| `GetRelativePath` | 可能返回 `../`、`.` 或不同根的完整路径，不能用结果直接判断目录归属 |
+| `GetAssetDataPath` / `GetPersistentDataPath` | 基于 Unity 对应磁盘目录组合路径 |
+| `GetStreamingAssetsPath` | 随 Unity 返回的位置选择磁盘路径或 URI 组合；tag/path 传相对子路径，实际读取仍需对应平台支持 |
+| `CopyDirectory` | 递归复制通过过滤的文件并覆盖同名目标，不生成空目录；源不存在或全部被过滤时不创建目标，不删除目标已有内容 |
+| `RenameFile` | 创建目标父目录；源文件不存在返回 false，其他失败按文件系统异常处理 |
 
-`ConcatUri()` 将绝对基础 URI 作为目录追加路径片段，基础地址末尾有无 `/` 均可；片段的反斜杠统一为 `/`，首尾分隔符被裁剪，每个路径段独立转义，基础 URI 的查询参数和 fragment 保留。调用方传未编码的原始名称，例如 `My Icon.ab`；`My%20Icon.ab` 表示名称中包含字面 `%20`，会编码成 `My%2520Icon.ab`。URI 由标准库规范化，该函数不做文件存在性、资源身份或目录范围校验。
+CopyDirectory 禁止目标等于源或位于源内部，不保证解析符号链接。普通文件／目录检查和创建使用 `System.IO.File`、`System.IO.Directory`；编辑器资产目录判断使用 `AssetDatabase.IsValidFolder()`。编辑器工作目录入口为 `LiteEditorUtils.GetLiteQuarkRootPath()`。
 
-`GetStreamingAssetsPath()` 根据 Unity 提供的位置选择文件路径或 URI 拼接，tag/path 应传相对子路径。Editor 等本地位置保持磁盘路径；URI 形式（如 `jar:file://`、HTTP URL）由 `ConcatUri()` 组合。`GetAssetDataPath()`、`GetPersistentDataPath()` 继续使用文件路径语义。本轮只区分地址组成方式，不扩展底层加载器的平台支持。
-
-`PathIsFile`、`GetPathFromFullPath`、`FileExists`、`DirectoryExists`、`CreateDirectory` 已移除。普通文件与目录操作直接使用 `System.IO.File`、`System.IO.Directory`；创建文件前由调用方明确取得父目录。编辑器打开资产通过 `AssetDatabase.IsValidFolder()` 判断目录，不根据扩展名猜测类型。资源根目录补全、作者数据相对路径转换及 Bundle 逻辑路径规范化统一由 `AssetPath` 提供；旧的 `PathUtils.GetFullPathInAssetRoot`、`GetRelativeAssetRootPath`（含数组重载）、`FormatAssetPath` 已移除。对应使用 `AssetPath.ToProjectPath`、`ToRootRelativePath`、`NormalizeBundlePath`，完整契约见 [Asset 指南](Runtime/Asset/README.md#路径与模式)。
-
-`CopyDirectory()` 递归复制通过过滤的文件，覆盖同名目标文件；只有需要复制文件时才创建其目标目录，正常完成时不产生空目录。源目录不存在时返回；全部文件被过滤时不创建目标目录，也不删除目标中已有的文件或目录。普通路径下禁止目标等于源目录或位于源目录内部，不提供符号链接目标解析保证。`RenameFile()` 会创建明确的目标父目录；源文件不存在返回 `false`，其他失败按文件系统异常处理。
-
-运行时的 persistent 优先与 StreamingAssets 回退策略已归入 `BundleBuiltInLocater`；项目旁的 `<项目>/LiteQuark/...` 工作目录统一通过编辑器程序集中的 `LiteEditorUtils.GetLiteQuarkRootPath()` 获取，Builder、Navigation 和 VersionViewer 的目录布局保持不变。旧的 `PathUtils.GetFullPathInRuntime`、`GetLiteQuarkRootPath`、`ToFlatPath` 已移除。Bundle 文件名扁平化归入 `VersionPackInfo`，构建映射阶段检查物理文件名碰撞，详见 [Asset 指南](Runtime/Asset/README.md#路径与模式)。
-
-`PathUtils` 不再依赖 `LiteConst`，仍保留 `Application.dataPath`、`persistentDataPath`、`streamingAssetsPath` 的通用路径便捷函数。文件路径与 URI 的组合入口已分开，平台专用读取方式及未来的 Bundle 命名编码仍另行讨论；普通文件系统 API 不承担 Bundle 内部资源或远程资源存在性判断。
+完整签名见 [PathUtils.cs](Runtime/Utils/PathUtils.cs)，旧 API 的替换方式见 [CHANGELOG](CHANGELOG.md)。
 
 ## 依赖与版本
 
