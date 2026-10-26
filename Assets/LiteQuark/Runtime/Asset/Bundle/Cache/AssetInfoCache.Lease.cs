@@ -7,9 +7,9 @@
             return new Lease<T>(this);
         }
 
-        internal sealed class Lease<T> : IDispose where T : UnityEngine.Object
+        internal sealed class Lease<T> : IAssetLease<T> where T : UnityEngine.Object
         {
-            internal T Asset { get; private set; }
+            public T Value { get; private set; }
 
             private AssetInfoCache _cache;
             private bool _isDisposed;
@@ -18,7 +18,7 @@
             {
                 _cache = cache;
                 _isDisposed = false;
-                Asset = null;
+                Value = null;
                 cache?.IncRef();
             }
 
@@ -26,7 +26,7 @@
             {
                 var cache = _cache;
                 _cache = null;
-                Asset = null;
+                Value = null;
                 _isDisposed = true;
 
                 if (cache == null || (cache.Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded))
@@ -50,13 +50,13 @@
                     return false;
                 }
 
-                Asset = assetT;
+                Value = assetT;
                 return true;
             }
 
             internal static Lease<T> CreateUncached(T asset)
             {
-                return new Lease<T>(null) { Asset = asset };
+                return new Lease<T>(null) { Value = asset };
             }
         }
     }

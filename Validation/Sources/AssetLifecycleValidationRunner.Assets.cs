@@ -18,9 +18,9 @@ namespace LiteQuark.Editor
             var h = New();
             var rejectedSuccess = false;
             var rejectedFailure = false;
-            try { AssetLoadResult<AssetInfoCache.Lease<TextAsset>>.Success(null); }
+            try { AssetLoadResult<IAssetLease<TextAsset>>.Success(null); }
             catch (ArgumentNullException) { rejectedSuccess = true; }
-            try { AssetLoadResult<AssetInfoCache.Lease<TextAsset>>.Failure(null); }
+            try { AssetLoadResult<IAssetLease<TextAsset>>.Failure(null); }
             catch (ArgumentNullException) { rejectedFailure = true; }
             Check(rejectedSuccess && rejectedFailure,
                 "Loading outcomes reject success without a payload and failure without an error.");
@@ -30,17 +30,17 @@ namespace LiteQuark.Editor
                 "A new request is pending without an error or a released owner.");
             await Wait(() => live.IsDone, "Handle success state");
             await live;
-            AssetLoadResult<AssetInfoCache.Lease<TextAsset>> firstDelivery = null;
-            AssetLoadResult<AssetInfoCache.Lease<TextAsset>> secondDelivery = null;
+            AssetLoadResult<IAssetLease<TextAsset>> firstDelivery = null;
+            AssetLoadResult<IAssetLease<TextAsset>> secondDelivery = null;
             h.Provider.LoadAssetAsync<TextAsset>(TextPath, AssetLoadPriority.Normal, result => firstDelivery = result);
             h.Provider.LoadAssetAsync<TextAsset>(TextPath, AssetLoadPriority.Normal, result => secondDelivery = result);
             Check(firstDelivery.Succeeded && secondDelivery.Succeeded && firstDelivery.Error == null && secondDelivery.Error == null &&
-                firstDelivery.Value.Asset == live.Result && secondDelivery.Value.Asset == live.Result &&
+                firstDelivery.Value.Value == live.Result && secondDelivery.Value.Value == live.Result &&
                 !ReferenceEquals(firstDelivery.Value, secondDelivery.Value) && h.AssetRefs("text.ab", TextPath) == 3,
                 "Shared cached resources deliver successful outcomes with a distinct owned Lease per request.");
             firstDelivery.Value.Dispose();
             secondDelivery.Value.Dispose();
-            Check(firstDelivery.Succeeded && firstDelivery.Value.Asset == null && h.AssetRefs("text.ab", TextPath) == 1,
+            Check(firstDelivery.Succeeded && firstDelivery.Value.Value == null && h.AssetRefs("text.ab", TextPath) == 1,
                 "Outcome wrappers do not own resources or change history when the receiving owner releases its Lease.");
             cts.Cancel();
             Check(live.State == AssetHandleState.Succeeded && live.Result != null && live.Error == null,
@@ -959,7 +959,7 @@ namespace LiteQuark.Editor
             Check(h.AssetRefs("text.ab", TextPath) == 2 && Get<int>(objectEntry, "_refCount") == 1 && h.Refs("text.ab") == 2,
                 "Two typed entries own two Bundle leases; same-type Handles share one entry.");
             typed.Dispose(); firstLease.Dispose(); typed.Dispose();
-            Check(firstLease.Asset == null && h.AssetRefs("text.ab", TextPath) == 1 && compatible.Result != null && cached.Result != null,
+            Check(firstLease.Value == null && h.AssetRefs("text.ab", TextPath) == 1 && compatible.Result != null && cached.Result != null,
                 "Repeated disposal returns exactly one reference to its owning typed entry.");
             compatible.Dispose();
             Check(Get<int>(objectEntry, "_refCount") == 0 && h.AssetRefs("text.ab", TextPath) == 1 && h.Refs("text.ab") == 1,
@@ -1070,7 +1070,7 @@ namespace LiteQuark.Editor
                         Check(failed.Result == null && Get<AssetInfoCache.Lease<TextAsset>>(failed, "_lease") == null,
                             "Editor load failure has neither result nor Lease.");
                         var asset = live.Result; live.Dispose(); live.Dispose(); lease.Dispose();
-                        Check(live.Result == null && lease.Asset == null && asset != null,
+                        Check(live.Result == null && lease.Value == null && asset != null,
                             "Editor Lease disposal clears ownership without destroying the AssetDatabase asset.");
                     }
                     finally

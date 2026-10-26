@@ -57,7 +57,7 @@ handle.Dispose();
 - 实例化过程中抛出的异常会由 await 抛出，同时保存在 Error；非法入口参数同步抛异常。不要同步读取尚未完成的加载。
 - 完成状态和所有权在恢复 await 续体前确定，续体可以立即 Dispose 或发起新请求。
 
-[AssetError](AssetError.cs) 提供不可变的 `ResourceKey`、`Message` 和可为空的原始 `Exception`。ResourceKey 指向实际失败的资源或依赖 Bundle，不保证等于请求路径；Message 是诊断文本，不作为稳定分类标识。共享失败可能返回同一个错误对象，重试不会改写旧 Handle 的错误，已取消请求也不会被迟到失败覆盖。
+[AssetError](Base/AssetError.cs) 提供不可变的 `ResourceKey`、`Message` 和可为空的原始 `Exception`。ResourceKey 指向实际失败的资源或依赖 Bundle，不保证等于请求路径；Message 是诊断文本，不作为稳定分类标识。共享失败可能返回同一个错误对象，重试不会改写旧 Handle 的错误，已取消请求也不会被迟到失败覆盖。
 
 ## 场景与预加载
 
@@ -100,7 +100,7 @@ if (!preload.Result)
 
 资源默认放在 `Assets/StandaloneAssets`。加载入口接受带扩展名的根目录相对路径（`Prefabs/Player.prefab`）或完整项目路径（`Assets/StandaloneAssets/Prefabs/Player.prefab`）；场景须以 `.unity` 结尾。根目录外的 `Assets/...` 路径也可表达，但 Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
 
-[AssetPath](AssetPath.cs) 将资源 key 统一为小写及 `/`，归一化重复斜杠和 `.` 段。空路径、`..`、磁盘绝对路径、URL、目录路径等非法输入使加载入口同步抛 `ArgumentException`，HasAsset 返回 false。路径合法不代表资源存在。资源 key 的小写规则不适用于任意磁盘路径或远端 URL。
+[AssetPath](Base/AssetPath.cs) 将资源 key 统一为小写及 `/`，归一化重复斜杠和 `.` 段。空路径、`..`、磁盘绝对路径、URL、目录路径等非法输入使加载入口同步抛 `ArgumentException`，HasAsset 返回 false。路径合法不代表资源存在。资源 key 的小写规则不适用于任意磁盘路径或远端 URL。
 
 - 以 `Assets/` 开头的输入按完整项目路径解释，不区分大小写。加载根目录内名为 assets 的子目录时，使用完整路径，例如 `Assets/StandaloneAssets/assets/demo/icon.png`。
 - `packages/demo/probe.txt` 相对资源根目录，不能用于访问真正的 UPM 包。框架不支持真正 `Packages/...` 资源的显式收集或直接加载；符合 Unity 构建条件的引用依赖可由 Unity 隐式打包。

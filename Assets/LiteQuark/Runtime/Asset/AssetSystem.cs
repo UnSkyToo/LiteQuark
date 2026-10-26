@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -87,7 +88,7 @@ namespace LiteQuark.Runtime
             {
                 if (_provider == null)
                 {
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(
                         new AssetError(assetKey, "Asset provider is unavailable")));
                     return;
                 }
@@ -126,7 +127,7 @@ namespace LiteQuark.Runtime
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, priority, ct),
                 asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
-        public SceneHandle LoadSceneHandle(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
+        public SceneHandle LoadSceneHandle(string scenePath, LoadSceneParameters parameters, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
         {
             var sceneKey = AssetPath.ResolveScene(scenePath);
 
@@ -134,7 +135,7 @@ namespace LiteQuark.Runtime
             {
                 if (_provider == null)
                 {
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(
                         new AssetError(sceneKey, "Asset provider is unavailable")));
                     return;
                 }

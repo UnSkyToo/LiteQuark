@@ -1,4 +1,6 @@
-﻿namespace LiteQuark.Runtime
+﻿using UnityEngine.SceneManagement;
+
+namespace LiteQuark.Runtime
 {
     internal sealed partial class SceneInfoCache : IDispose
     {
@@ -7,9 +9,9 @@
             return new Lease(this);
         }
 
-        internal sealed class Lease : IDispose
+        internal sealed class Lease : IAssetLease<Scene?>
         {
-            internal UnityEngine.SceneManagement.Scene? Scene  => _cache != null
+            public Scene? Value  => _cache != null
                 ? _cache.Scene
                 : throw new System.ObjectDisposedException(nameof(Lease));
 

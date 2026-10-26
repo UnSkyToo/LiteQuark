@@ -1,11 +1,12 @@
 using System;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
     internal sealed partial class SceneInfoCache : IDispose
     {
 #if UNITY_EDITOR
-        internal void LoadSceneForEditor(UnityEngine.SceneManagement.Scene scene, Action<AssetLoadResult<Lease>> callback)
+        internal void LoadSceneForEditor(Scene scene, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage != AssetCacheStage.Idle)
             {
@@ -20,7 +21,7 @@ namespace LiteQuark.Runtime
         }
 #endif
 
-        public void LoadSceneAsync(Action<AssetLoadResult<Lease>> callback)
+        public void LoadSceneAsync(Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage != AssetCacheStage.Idle)
             {
@@ -45,12 +46,12 @@ namespace LiteQuark.Runtime
 
         private void HandleSceneLoadCompleted(ITask task)
         {
-            var scene = task.Result is UnityEngine.SceneManagement.Scene result ? result : default;
+            var scene = task.Result is Scene result ? result : default;
             var error = task.State == TaskState.Succeeded ? null : new AssetError(_sceneKey, task.Error?.Message ?? "Scene load was cancelled", task.Error);
             CompleteSceneLoad(task.State == TaskState.Succeeded, scene, error);
         }
 
-        private void CompleteSceneLoad(bool success, UnityEngine.SceneManagement.Scene scene, AssetError error)
+        private void CompleteSceneLoad(bool success, Scene scene, AssetError error)
         {
             if (Stage == AssetCacheStage.Unloaded)
             {
@@ -69,12 +70,12 @@ namespace LiteQuark.Runtime
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, bundlePath, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
 
             var result = isLoaded
-                ? AssetLoadResult<Lease>.Success(AcquireLease())
-                : AssetLoadResult<Lease>.Failure(error);
+                ? AssetLoadResult<IAssetLease<Scene?>>.Success(AcquireLease())
+                : AssetLoadResult<IAssetLease<Scene?>>.Failure(error);
             NotifyCompleted(result);
         }
 
-        private void NotifyCompleted(AssetLoadResult<Lease> result)
+        private void NotifyCompleted(AssetLoadResult<IAssetLease<Scene?>> result)
         {
             var callback = _sceneLoaderCallback;
             _sceneLoaderCallback = null;

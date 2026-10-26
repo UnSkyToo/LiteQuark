@@ -12,18 +12,18 @@ namespace LiteQuark.Runtime
     {
         private readonly UniTaskCompletionSource<Scene?> _tcs = new();
         private CancellationTokenRegistration _ctr;
-        private SceneInfoCache.Lease _lease;
+        private IAssetLease<Scene?> _lease;
         private bool _isDisposed;
 
         public AssetHandleState State { get; private set; }
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
         public bool IsDisposed => _isDisposed;
-        public Scene? Result => _lease?.Scene;
+        public Scene? Result => _lease?.Value;
         internal UniTask<Scene?> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal SceneHandle(Action<Action<AssetLoadResult<SceneInfoCache.Lease>>> invoke, CancellationToken ct)
+        internal SceneHandle(Action<Action<AssetLoadResult<IAssetLease<Scene?>>>> invoke, CancellationToken ct)
         {
             if (ct.IsCancellationRequested)
             {
@@ -39,7 +39,7 @@ namespace LiteQuark.Runtime
             invoke(OnCompleted);
         }
 
-        private void OnCompleted(AssetLoadResult<SceneInfoCache.Lease> result)
+        private void OnCompleted(AssetLoadResult<IAssetLease<Scene?>> result)
         {
             if (!TryComplete(result.Succeeded ? AssetHandleState.Succeeded : AssetHandleState.Failed, result.Error))
             {
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             }
 
             _lease = result.Value;
-            _tcs.TrySetResult(_lease?.Scene);
+            _tcs.TrySetResult(_lease?.Value);
         }
 
         private bool TryComplete(AssetHandleState state, AssetError error = null)

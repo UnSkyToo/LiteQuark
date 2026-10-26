@@ -364,7 +364,7 @@ namespace LiteQuark.Editor
             Check(completions == 1 && entry.Stage == AssetCacheStage.Unloaded && task.IsDone && !task.IsExecuted,
                 "Entry Dispose ends request exactly once without executing its queued Unity load.");
             Check(h.Refs("scene.ab") == 0 && h.LoadingNames.Count == 0 &&
-                Get<Action<AssetLoadResult<SceneInfoCache.Lease>>>(entry, "_sceneLoaderCallback") == null,
+                Get<Action<AssetLoadResult<IAssetLease<Scene?>>>>(entry, "_sceneLoaderCallback") == null,
                 "Entry cleanup returns its Bundle lease, removes registration and clears callback.");
             task.Cancel();
             await Frame();

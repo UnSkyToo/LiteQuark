@@ -1,14 +1,15 @@
 using System;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache : ITick, IDispose
     {
-        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<AssetInfoCache.Lease<T>>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(new AssetError(assetKey, "Bundle cache is unloading or unloaded")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Bundle cache is unloading or unloaded")));
                 return;
             }
 
@@ -24,7 +25,7 @@ namespace LiteQuark.Runtime
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, assetKey, assetType, BundlePath, false, errorMessage: "Bundle load failed");
                     requestLease.Dispose();
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(bundleResult.Error));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(bundleResult.Error));
                     return;
                 }
 
@@ -36,15 +37,15 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string sceneKey, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<SceneInfoCache.Lease>> callback)
+        public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(new AssetError(sceneKey, "Bundle cache is unloading or unloaded")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Bundle cache is unloading or unloaded")));
                 return;
             }
 
-            var assetType = typeof(UnityEngine.SceneManagement.Scene);
+            var assetType = typeof(Scene);
             var requestLease = AcquireLease();
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneKey, assetType, BundlePath);
@@ -55,7 +56,7 @@ namespace LiteQuark.Runtime
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, false, errorMessage: "Bundle load failed");
                     requestLease.Dispose();
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(bundleResult.Error));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(bundleResult.Error));
                     return;
                 }
 
@@ -63,7 +64,7 @@ namespace LiteQuark.Runtime
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, false, errorMessage: "Scene path not found in bundle");
                     requestLease.Dispose();
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(pathError));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(pathError));
                     return;
                 }
 

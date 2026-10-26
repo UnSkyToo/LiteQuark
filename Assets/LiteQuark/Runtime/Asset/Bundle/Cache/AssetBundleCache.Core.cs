@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -182,7 +183,7 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
-        private SceneInfoCache CreateSceneCache(string sceneKey, string loadPath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Lease bundleLease)
+        private SceneInfoCache CreateSceneCache(string sceneKey, string loadPath, LoadSceneParameters parameters, Lease bundleLease)
         {
             var cache = new SceneInfoCache(bundleLease, sceneKey, loadPath, parameters);
             _sceneCacheMap.Add(cache);

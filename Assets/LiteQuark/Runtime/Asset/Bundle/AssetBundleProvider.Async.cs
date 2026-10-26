@@ -1,20 +1,21 @@
 using System;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleProvider : IAssetProvider
     {
-        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<AssetInfoCache.Lease<T>>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(new AssetError(assetKey, "Asset provider is disposed")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset provider is disposed")));
                 return;
             }
 
             if (!_packInfo.TryGetBundleInfoByAssetKey(assetKey, out var bundleInfo))
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetInfoCache.Lease<T>>.Failure(new AssetError(assetKey, "Asset is not in the bundle manifest")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset is not in the bundle manifest")));
                 return;
             }
 
@@ -22,18 +23,18 @@ namespace LiteQuark.Runtime
             cache.LoadAssetAsync(assetKey, priority, callback);
         }
 
-        public void LoadSceneAsync(string sceneKey, UnityEngine.SceneManagement.LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<SceneInfoCache.Lease>> callback)
+        public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(new AssetError(sceneKey, "Asset provider is disposed")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Asset provider is disposed")));
                 return;
             }
 
             if (!_loadingSceneSet.Add(sceneKey))
             {
                 LLog.Error("Scene is already loading: {0}", sceneKey);
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(new AssetError(sceneKey, "Scene is already loading")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Scene is already loading")));
                 return;
             }
 
@@ -42,7 +43,7 @@ namespace LiteQuark.Runtime
                 if (!_packInfo.TryGetBundleInfoByAssetKey(sceneKey, out var bundleInfo))
                 {
                     _loadingSceneSet.Remove(sceneKey);
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<SceneInfoCache.Lease>.Failure(new AssetError(sceneKey, "Scene is not in the bundle manifest")));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Scene is not in the bundle manifest")));
                     return;
                 }
 

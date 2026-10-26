@@ -11,19 +11,19 @@ namespace LiteQuark.Runtime
     {
         private readonly UniTaskCompletionSource<T> _tcs = new();
         private CancellationTokenRegistration _ctr;
-        private AssetInfoCache.Lease<T> _lease;
+        private IAssetLease<T> _lease;
         private bool _isDisposed;
 
         public AssetHandleState State { get; private set; }
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
         public bool IsDisposed => _isDisposed;
-        public T Result => _lease?.Asset;
+        public T Result => _lease?.Value;
         internal string AssetKey { get; }
         internal UniTask<T> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal AssetHandle(string assetKey, Action<Action<AssetLoadResult<AssetInfoCache.Lease<T>>>> invoke, CancellationToken ct)
+        internal AssetHandle(string assetKey, Action<Action<AssetLoadResult<IAssetLease<T>>>> invoke, CancellationToken ct)
         {
             AssetKey = assetKey;
             if (ct.IsCancellationRequested)
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
             invoke(OnCompleted);
         }
 
-        private void OnCompleted(AssetLoadResult<AssetInfoCache.Lease<T>> result)
+        private void OnCompleted(AssetLoadResult<IAssetLease<T>> result)
         {
             if (!TryComplete(result.Succeeded ? AssetHandleState.Succeeded : AssetHandleState.Failed, result.Error))
             {
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             }
 
             _lease = result.Value;
-            _tcs.TrySetResult(_lease?.Asset);
+            _tcs.TrySetResult(_lease?.Value);
         }
 
         private bool TryComplete(AssetHandleState state, AssetError error = null)

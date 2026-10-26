@@ -4,12 +4,12 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetInfoCache : IDispose
     {
-        public void LoadAssetAsync<T>(Lease<T> lease, Action<AssetLoadResult<Lease<T>>> callback) where T : UnityEngine.Object
+        public void LoadAssetAsync<T>(Lease<T> lease, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 lease.Dispose();
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(new AssetError(_assetPath, "Asset cache is unloading or unloaded")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(_assetPath, "Asset cache is unloading or unloaded")));
                 return;
             }
 
@@ -22,10 +22,10 @@ namespace LiteQuark.Runtime
                 {
                     lease.Dispose();
                     var error = new AssetError(_assetPath, $"Asset is unavailable or does not match {typeof(T).Name}");
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(error));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(error));
                     return;
                 }
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Success(lease));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Success(lease));
                 return;
             }
 
@@ -37,10 +37,10 @@ namespace LiteQuark.Runtime
                 {
                     var error = result.Error ?? new AssetError(_assetPath, $"Asset is unavailable or does not match {typeof(T).Name}");
                     lease.Dispose();
-                    LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Failure(error));
+                    LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(error));
                     return;
                 }
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<Lease<T>>.Success(lease));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Success(lease));
             });
             if (Stage != AssetCacheStage.Idle)
             {
