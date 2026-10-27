@@ -210,7 +210,7 @@ namespace LiteQuark.Editor
                 await Run("99 Handle states and failure information", "public requests, real asset failure and provider shutdown", HandleStatusProtocol, "Load asset failed");
                 await Run("100 Cancelled shared request rejects late success", "real asset with first continuation releasing its Handle", SharedCancellationSuccess);
                 await Run("101 Cancelled shared request and immediate failure retry", "Task error snapshot and reentrant same-cache retry", SharedCancellationFailureRetry, "Load bundle failed");
-                await Run("102 GameObject failure keeps await semantics", "real prefab ownership and controlled instantiate exception", InstantiateFailureProtocol);
+                await Run("102 GameObject failure keeps await semantics", "real prefab ownership and null/throwing instantiate", InstantiateFailureProtocol);
                 await Run("103 Preload preserves individual errors", "real mixed batch, cancellation and successful ownership", PreloadErrorProtocol, "Load asset failed");
             }
             catch (Exception ex)

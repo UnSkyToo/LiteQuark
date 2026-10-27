@@ -41,7 +41,7 @@ namespace LiteQuark.Runtime
 
         private void OnCompleted(AssetLoadResult<IAssetLease<Scene?>> result)
         {
-            if (!TryComplete(result.Succeeded ? AssetHandleState.Succeeded : AssetHandleState.Failed, result.Error))
+            if (!TrySetTerminalState(result.Succeeded ? AssetHandleState.Succeeded : AssetHandleState.Failed, result.Error))
             {
                 result.Value?.Dispose();
                 return;
@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             _tcs.TrySetResult(_lease?.Value);
         }
 
-        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        private bool TrySetTerminalState(AssetHandleState state, AssetError error = null)
         {
             if (IsDone)
             {
@@ -66,13 +66,13 @@ namespace LiteQuark.Runtime
 
         private void Cancel(CancellationToken ct = default)
         {
-            if (TryComplete(AssetHandleState.Cancelled))
+            if (TrySetTerminalState(AssetHandleState.Cancelled))
             {
                 _tcs.TrySetCanceled(ct);
             }
         }
 
-        private void ReleaseResult()
+        private void ReleaseLease()
         {
             var lease = _lease;
             _lease = null;
@@ -97,7 +97,7 @@ namespace LiteQuark.Runtime
 
             if (_lease != null)
             {
-                ReleaseResult();
+                ReleaseLease();
             }
         }
     }

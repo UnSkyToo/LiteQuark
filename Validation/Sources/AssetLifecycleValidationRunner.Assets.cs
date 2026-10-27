@@ -186,6 +186,35 @@ namespace LiteQuark.Editor
             Check(failed.State == AssetHandleState.Failed && failed.IsDisposed && ReferenceEquals(failed.Error.Exception, original),
                 "Disposing a failed GameObject Handle preserves its original error.");
 
+            h.Assets.UnloadUnusedAssets();
+            var emptyPrefab = h.Asset<GameObject>(PrefabPath);
+            var survivingPrefab = h.Asset<GameObject>(PrefabPath);
+            var empty = new GameObjectHandle(emptyPrefab, _ => null, default);
+            h.Handles.Add(empty);
+            Check(!empty.IsDone && !emptyPrefab.IsDone,
+                "Null instantiation starts with a pending prefab so its continuation observes the delivery boundary.");
+            async UniTask ObserveEmpty()
+            {
+                await empty;
+                Check(empty.State == AssetHandleState.Failed && !empty.IsDisposed && empty.Result == null &&
+                    empty.Error != null && empty.Error.ResourceKey == PrefabPath &&
+                    empty.Error.Message == "Instantiation returned no GameObject" && empty.Error.Exception == null &&
+                    emptyPrefab.IsDisposed && !survivingPrefab.IsDisposed && h.AssetRefs("a.ab", PrefabPath, typeof(GameObject)) == 1,
+                    "Null instantiation completes normally and releases its prefab before the continuation without releasing another request.");
+            }
+            var emptyObservation = ObserveEmpty();
+            await Wait(() => empty.IsDone, "Null instantiation completion");
+            await emptyObservation;
+            var emptyError = empty.Error;
+            await Wait(() => survivingPrefab.IsDone, "Surviving prefab after null instantiation");
+            empty.Dispose(); empty.Dispose();
+            Check(empty.State == AssetHandleState.Failed && empty.IsDisposed && ReferenceEquals(empty.Error, emptyError) &&
+                survivingPrefab.Result != null && h.AssetRefs("a.ab", PrefabPath, typeof(GameObject)) == 1,
+                "Repeated disposal preserves the null-instantiation failure and the surviving prefab ownership.");
+            survivingPrefab.Dispose();
+            Check(h.Refs("a.ab") == 0,
+                "The final surviving prefab release leaves no ownership from the failed null instantiation.");
+
             var missing = h.Assets.InstantiateHandle("assets/__session_validation/missing.prefab", null);
             h.Handles.Add(missing);
             await missing;

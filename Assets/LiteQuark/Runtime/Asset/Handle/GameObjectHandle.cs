@@ -69,11 +69,16 @@ namespace LiteQuark.Runtime
                     error = new AssetError(_prefabHandle.AssetKey, "Instantiation returned no GameObject");
                 }
 
-                if (!TryComplete(_instance != null ? AssetHandleState.Succeeded : AssetHandleState.Failed, error))
+                if (!TrySetTerminalState(_instance != null ? AssetHandleState.Succeeded : AssetHandleState.Failed, error))
                 {
                     ReleaseInstance();
                     _prefabHandle.Dispose();
                     return;
+                }
+
+                if (State == AssetHandleState.Failed)
+                {
+                    _prefabHandle.Dispose();
                 }
 
                 _tcs.TrySetResult(_instance);
@@ -85,7 +90,7 @@ namespace LiteQuark.Runtime
             catch (Exception ex)
             {
                 var error = new AssetError(_prefabHandle.AssetKey, ex.Message, ex);
-                if (TryComplete(AssetHandleState.Failed, error))
+                if (TrySetTerminalState(AssetHandleState.Failed, error))
                 {
                     _prefabHandle.Dispose();
                     _tcs.TrySetException(ex);
@@ -97,7 +102,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        private bool TrySetTerminalState(AssetHandleState state, AssetError error = null)
         {
             if (IsDone)
             {
@@ -112,7 +117,7 @@ namespace LiteQuark.Runtime
 
         private void Cancel(CancellationToken ct = default)
         {
-            if (TryComplete(AssetHandleState.Cancelled))
+            if (TrySetTerminalState(AssetHandleState.Cancelled))
             {
                 _prefabHandle.Dispose();
                 _tcs.TrySetCanceled(ct);

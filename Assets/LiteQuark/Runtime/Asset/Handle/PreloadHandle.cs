@@ -80,7 +80,7 @@ namespace LiteQuark.Runtime
             catch (Exception ex)
             {
                 var error = new AssetError(currentPath, ex.Message, ex);
-                if (TryComplete(AssetHandleState.Failed, error))
+                if (TrySetTerminalState(AssetHandleState.Failed, error))
                 {
                     DisposeEntries();
                     _tcs.TrySetException(ex);
@@ -171,7 +171,7 @@ namespace LiteQuark.Runtime
 
         private void Complete(bool success)
         {
-            if (!TryComplete(success ? AssetHandleState.Succeeded : AssetHandleState.Failed,
+            if (!TrySetTerminalState(success ? AssetHandleState.Succeeded : AssetHandleState.Failed,
                 success ? null : _errors[0]))
             {
                 return;
@@ -187,7 +187,7 @@ namespace LiteQuark.Runtime
             _errors.Add(error);
         }
 
-        private bool TryComplete(AssetHandleState state, AssetError error = null)
+        private bool TrySetTerminalState(AssetHandleState state, AssetError error = null)
         {
             if (IsDone)
             {
@@ -202,7 +202,7 @@ namespace LiteQuark.Runtime
 
         private void Cancel(CancellationToken ct = default)
         {
-            if (TryComplete(AssetHandleState.Cancelled))
+            if (TrySetTerminalState(AssetHandleState.Cancelled))
             {
                 DisposeEntries();
                 _tcs.TrySetCanceled(ct);
