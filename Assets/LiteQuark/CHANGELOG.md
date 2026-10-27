@@ -5,6 +5,7 @@
 ### 核心接口
 
 - 破坏：移除 `ISubstance`；实现类改为直接实现 `ITick` 和 `IDispose`，原先使用 `ISubstance` 的调用方应按所需能力使用对应接口。
+- 破坏：移除 `IStartup` 和 `IShutdown`；其他使用方需改用自己的生命周期接口。
 
 ### Asset
 
