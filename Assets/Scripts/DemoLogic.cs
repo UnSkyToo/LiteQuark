@@ -16,10 +16,12 @@ namespace LiteQuark.Demo
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             LiteNexusEngine.Instance.Shutdown();
             LiteRuntime.ObjectPool.RemoveUnusedPools();
+
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

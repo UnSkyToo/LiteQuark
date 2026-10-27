@@ -20,10 +20,12 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             _httpClient = null;
             _activeRequests = 0;
+
+            return UniTask.CompletedTask;
         }
 
         public HttpClient Http => _httpClient;

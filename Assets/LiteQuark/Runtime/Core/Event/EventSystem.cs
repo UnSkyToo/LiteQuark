@@ -18,9 +18,10 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             _globalEvent.Dispose();
+            return UniTask.CompletedTask;
         }
 
         public EventModule CreateIndependentModule(string name)

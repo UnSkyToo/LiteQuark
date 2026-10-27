@@ -553,7 +553,7 @@ namespace LiteQuark.Editor
                     Active.evidence.Add("Harness-only cleanup: " + scene.path);
                     await SceneManager.UnloadSceneAsync(scene).ToUniTask();
                 }
-                Context.Assets.Dispose();
+                await Context.Assets.DisposeAsync();
                 Context = null;
                 LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor = false;
                 await UniTask.Yield();

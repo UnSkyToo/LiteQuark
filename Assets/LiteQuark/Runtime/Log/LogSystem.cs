@@ -42,15 +42,19 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
-            _logCache.Clear();
+            _repository?.Dispose();
+            _repository = null;
 
-            if (_repository != null)
-            {
-                _repository.Dispose();
-                _repository = null;
-            }
+            _logCache?.Clear();
+            _logCache = null;
+
+            _commonLogger = null;
+
+            LLog.Reset();
+
+            return UniTask.CompletedTask;
         }
 
         public ILoggerRepository GetRepository()

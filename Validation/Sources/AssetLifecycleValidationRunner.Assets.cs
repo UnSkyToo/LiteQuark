@@ -76,7 +76,7 @@ namespace LiteQuark.Editor
             Check(missing.State == AssetHandleState.Failed && missing.Error.ResourceKey == "assets/__session_validation/not-in-manifest.txt" &&
                 !string.IsNullOrWhiteSpace(missing.Error.Message) && missing.Error.Exception == null,
                 "Missing manifest entries preserve their resource key and failure explanation without inventing an exception.");
-            h.Shutdown();
+            await h.Shutdown();
             var closed = h.Asset<TextAsset>(TextPath);
             await closed;
             Check(closed.State == AssetHandleState.Failed && closed.Error.ResourceKey == TextPath &&
@@ -392,7 +392,7 @@ namespace LiteQuark.Editor
             task.Execute();
             Check(task.IsExecuted && !handle.IsDone && h.Refs("text.ab") == 1,
                 "Real native asset request is submitted before system shutdown.");
-            h.Shutdown();
+            await h.Shutdown();
             Check(handle.IsDone && handle.Result == null && completions == 1 && task.IsDone,
                 "System shutdown ends all pending asset deliveries and cancels their task.");
             Check(entry.Stage == AssetCacheStage.Unloaded && entry.Asset == null &&
@@ -431,7 +431,7 @@ namespace LiteQuark.Editor
             var continuation = Retry();
             try
             {
-                try { h.Shutdown(); }
+                try { await h.Shutdown(); }
                 catch (Exception ex) { shutdownError = ex; }
                 try { await continuation; }
                 catch (Exception ex) { retryError = ex; }
@@ -513,7 +513,7 @@ namespace LiteQuark.Editor
                 RequestBoth();
             }
             var continuation = RetryDuringUnload();
-            h.Shutdown();
+            await h.Shutdown();
             await continuation;
             Check(cache.Stage == AssetCacheStage.Unloaded && native == null && !h.Has("text.ab"),
                 "Direct rejected requests do not interrupt native Bundle unloading or Provider cleanup.");
@@ -1105,7 +1105,7 @@ namespace LiteQuark.Editor
                     finally
                     {
                         live.Dispose(); canceled.Dispose(); disposed.Dispose(); failed.Dispose();
-                        assets.Dispose();
+                        await assets.DisposeAsync();
                     }
                 }
             }
@@ -1170,7 +1170,7 @@ namespace LiteQuark.Editor
             try
             {
                 Check(request != null && !task.IsDone, "A real native Bundle request has been submitted before shutdown.");
-                h.Shutdown();
+                await h.Shutdown();
                 Check(handle.IsDone && handle.Result == null, "Provider shutdown completes the pending Handle with failure.");
                 await WaitWithoutLoaderTick(() => request.isDone, "Canceled native Bundle completion");
                 await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
@@ -1200,7 +1200,7 @@ namespace LiteQuark.Editor
                 await WaitWithoutLoaderTick(() => task.IsDone, "Native Bundle completion before Loader delivery");
                 bundle = task.GetBundle();
                 Check(bundle != null && !handle.IsDone, "The task owns a completed native Bundle which the Loader has not delivered.");
-                h.Shutdown();
+                await h.Shutdown();
                 _case.evidence.Add($"Task={task.State}, Handle done={handle.IsDone}, completed undelivered Bundle alive={bundle != null}.");
                 Check(bundle == null, "Shutdown must unload a completed Bundle whose ownership was not transferred to the cache.");
             }
@@ -1311,7 +1311,7 @@ namespace LiteQuark.Editor
             var loader = Get<AssetBundleLoader>(h.Provider, "_bundleLoader");
             Check(main != null && !handle.IsDone && h.Cache("a.ab").Bundle == null && h.Refs("b.ab") == 1,
                 "The main Bundle is held by the dependency completion group before cache publication.");
-            h.Shutdown(); loader.Dispose(); h.Provider.Dispose();
+            await h.Shutdown(); loader.Dispose(); h.Provider.Dispose();
             Check(main == null && handle.IsDone && handle.Result == null && h.Locater.Manual["b.ab"].State == TaskState.Cancelled,
                 "Cache shutdown settles dependency callbacks and rolls back the already-delivered main Bundle.");
             await UniTask.Yield();

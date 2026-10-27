@@ -28,7 +28,7 @@ $suites = [ordered]@{
     manifest = @{ Runner = 'ManifestValidationRunner'; Cases = 13 }
     collector = @{ Runner = 'CollectorValidationRunner'; Cases = 15 }
     packages = @{ Runner = 'PackageValidationRunner'; Cases = 1 }
-    tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 29 }
+    tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 33 }
     lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 102 }
     loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 27 }
 }

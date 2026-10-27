@@ -14,6 +14,8 @@ https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons
 
 扩展系统不会自动注册。将需要的系统加入 LiteLauncher 的 `SystemList`，配置对应 `SystemSettings`，分别检查 Debug / Release 设置。在业务 `ILogic.Initialize()` 或之后通过 `LiteRuntime.Get<T>()` 获取已初始化的系统。
 
+已注册扩展系统由 Runtime 统一调用 Initialize 和 DisposeAsync；业务不要直接释放系统或在释放后继续使用旧实例。DisposeAsync 采用统一的可等待接口，同步清理可返回 `UniTask.CompletedTask`；它不额外保证每个模块的在途请求或原生操作已经结束，具体边界以模块指南为准。
+
 | 模块 | 能力与使用说明 |
 | --- | --- |
 | [UI](Runtime/UI/README.md) | 界面打开、层级、事件与资源清理 |

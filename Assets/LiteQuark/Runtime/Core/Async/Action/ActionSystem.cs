@@ -16,13 +16,16 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             foreach (var action in _actionList)
             {
+                action.Stop();
                 action.Dispose();
             }
+
             _actionList.Clear();
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)
@@ -63,7 +66,7 @@ namespace LiteQuark.Runtime
             return action == null || action.IsDone;
         }
 
-        public SafeList<IAction> GetActionList()
+        internal SafeList<IAction> GetActionList()
         {
             return _actionList;
         }

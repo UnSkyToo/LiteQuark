@@ -28,7 +28,7 @@ namespace LiteQuark.Editor
                 h.Provider.Dispose();
             }
             var continuation = RetryScene();
-            h.Shutdown();
+            await h.Shutdown();
             await continuation;
             var assetCallbacks = 0;
             var sceneCallbacks = 0;
@@ -381,7 +381,7 @@ namespace LiteQuark.Editor
                 "System Dispose targets a pending Bundle request before scene entry creation.");
             var completions = 0;
             var waiter = ObserveScene(handle, result => { completions++; Check(result == null, "Pending bundle shutdown delivers failure."); });
-            h.Shutdown();
+            await h.Shutdown();
             await Wait(() => handle.IsDone, "System Dispose during bundle loading");
             await waiter;
             Check(completions == 1 && h.LoadingNames.Count == 0 &&
@@ -402,7 +402,7 @@ namespace LiteQuark.Editor
             var completions = 0;
             var waiter = ObserveScene(handle, result => { completions++; Check(result == null, "Queued scene shutdown delivers failure."); });
             Check(!task.IsExecuted, "System Dispose occurs before the native scene load is submitted.");
-            h.Shutdown();
+            await h.Shutdown();
             await Wait(() => handle.IsDone, "System Dispose with queued scene");
             await waiter;
             Check(completions == 1 && entry.Stage == AssetCacheStage.Unloaded && task.IsDone && !task.IsExecuted,
@@ -450,7 +450,7 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                assets?.Dispose();
+                if (assets != null) await assets.DisposeAsync();
                 setting.SimulateAsyncDelayInEditor = oldDelay;
                 setting.AsyncDelayMinFrame = oldMin;
                 setting.AsyncDelayMaxFrame = oldMax;

@@ -104,7 +104,7 @@ namespace LiteQuark.Editor
                 await RunAsync("13 Real AsyncOperation observer completes in Flow", ObserveAsyncOperation);
                 await RunAsync("14 Coroutine Flow parent waits for Default child", FlowParent);
                 await Run("15 Steady Tick and statistics allocations", SteadyAllocations);
-                await Run("16 Final disposal clears pending and running tasks", FinalDisposal);
+                await RunAsync("16 Final disposal clears pending and running tasks", FinalDisposal);
                 await Run("17 SafeList nested, early exit and exception cleanup", SafeListIteration);
                 await Run("18 Fault retirement preserves quotas and disposal", FaultRetirement, "InjectedValidation", "FaultTask");
                 await Run("19 Cancellation during admission skips canceled peer", AdmissionCancellation);
@@ -121,6 +121,13 @@ namespace LiteQuark.Editor
                 await RunAsync("28 Result delivery preserves callback and await order", ResultDelivery,
                     "task-result-missing.txt", "InjectedValidation result callback");
                 await RunAsync("29 WebGet byte snapshots outlive request cleanup", WebGetSnapshots);
+                await RunAsync("30 Runtime shutdown awaits logic and systems in order", RuntimeShutdownOrder,
+                    "FrameworkError: Unknown, Framework error");
+                await RunAsync("31 Runtime cleans systems after initialization returns false", RuntimeInitializationReturnsFalse,
+                    $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed", "Enter <ErrorState>", "FrameworkError: Startup");
+                await RunAsync("32 Runtime cleans unpublished logic after initialization throws", RuntimeInitializationThrows,
+                    "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
+                await RunAsync("33 Runtime shutdown waits for in-flight initialization", RuntimeShutdownDuringInitialization);
             }
             catch (Exception ex)
             {
@@ -134,7 +141,7 @@ namespace LiteQuark.Editor
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path, JsonUtility.ToJson(Results, true));
                 var success = Results.fatalError == null && Results.unexpectedErrors.Count == 0
-                    && Results.cases.Count == 29 && Results.cases.All(c => c.passed);
+                    && Results.cases.Count == 33 && Results.cases.All(c => c.passed);
                 Debug.Log($"TASK_SYSTEM_QUICK: {Results.cases.Count(c => c.passed)}/{Results.cases.Count}, assertions={Results.cases.Sum(c => c.assertions)}, GC={Results.steadyTickAllocatedBytes}");
                 EditorApplication.Exit(success ? 0 : 2);
             }
@@ -168,7 +175,7 @@ namespace LiteQuark.Editor
             finally
             {
                 LiteRuntime.Setting.Task.ConcurrencyLimit = originalLimit;
-                try { system?.Dispose(); }
+                try { if (system != null) await system.DisposeAsync(); }
                 catch (Exception ex) { _current.passed = false; _current.failure += "\nCleanup: " + ex; }
                 Debug.Log($"TASK_SYSTEM_CASE: {name}: {(_current.passed ? "PASS" : "FAIL")}");
                 _current = null;
@@ -974,14 +981,293 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static void FinalDisposal(TaskSystem system)
+        private static async UniTask FinalDisposal(TaskSystem system)
         {
             var active = new ProbeTask(); var pending = new ProbeTask(); var flow = new ProbeTask();
             system.AddTask(active); system.AddTask(pending); system.AddTask(flow, LiteConst.TaskGroupId.Flow);
-            system.Tick(0); system.Dispose(); system.Dispose();
+            system.Tick(0); await system.DisposeAsync(); await system.DisposeAsync();
             Check(active.Disposals == 1 && pending.Disposals == 1 && flow.Disposals == 1, "Final disposal releases all registered tasks exactly once");
             Check(pending.Executions == 0 && active.IsDone && pending.IsDone && flow.IsDone, "Pending work is canceled without starting");
             Check(system.RunningTaskCount == 0 && system.PendingTaskCount == 0 && Snapshot(system).Count == 0, "Final disposal clears group totals and registration");
+        }
+
+        private sealed class ShutdownFixture
+        {
+            internal readonly List<string> Events = new();
+            internal readonly List<string> Initialized = new();
+            internal readonly Dictionary<string, ShutdownProbe> Instances = new();
+            internal readonly UniTaskCompletionSource LogicGate = new();
+            internal readonly UniTaskCompletionSource SystemGate = new();
+            internal UniTaskCompletionSource<bool> InitializationGate;
+            internal string FailedInitialization;
+            internal bool ThrowOnInitialize;
+            internal bool InTimerCallback;
+            internal bool DisposalStartedInTimerCallback;
+            internal int TicksAfterDispose;
+        }
+
+        private static ShutdownFixture _shutdownFixture;
+
+        private abstract class ShutdownProbe : ILogic, ISystem
+        {
+            private readonly string _name;
+            private readonly ShutdownFixture _fixture;
+            private bool _disposed;
+            internal int Disposals;
+
+            protected ShutdownProbe(string name)
+            {
+                _name = name;
+                _fixture = _shutdownFixture;
+                _fixture.Instances.Add(name, this);
+            }
+
+            public async UniTask<bool> Initialize()
+            {
+                _fixture.Initialized.Add(_name);
+                if (_name == _fixture.FailedInitialization)
+                {
+                    if (_fixture.ThrowOnInitialize)
+                        throw new InvalidOperationException("InjectedValidation runtime initialization");
+                    return false;
+                }
+                if (_name == "system 2" && _fixture.InitializationGate != null)
+                    return await _fixture.InitializationGate.Task;
+                return true;
+            }
+
+            public void Tick(float deltaTime)
+            {
+                if (_disposed) _fixture.TicksAfterDispose++;
+            }
+
+            public async UniTask DisposeAsync()
+            {
+                Disposals++;
+                _fixture.DisposalStartedInTimerCallback |= _fixture.InTimerCallback;
+                _fixture.Events.Add(_name + " start");
+                if (_name == "logic 1") await _fixture.LogicGate.Task;
+                if (_name == "system 2") await _fixture.SystemGate.Task;
+                _disposed = true;
+                _fixture.Events.Add(_name + " end");
+            }
+        }
+
+        private sealed class ShutdownSystemOne : ShutdownProbe
+        {
+            public ShutdownSystemOne() : base("system 1") { }
+        }
+
+        private sealed class ShutdownSystemTwo : ShutdownProbe
+        {
+            public ShutdownSystemTwo() : base("system 2") { }
+        }
+
+        private sealed class ShutdownLogicOne : ShutdownProbe
+        {
+            public ShutdownLogicOne() : base("logic 1") { }
+        }
+
+        private sealed class ShutdownLogicTwo : ShutdownProbe
+        {
+            public ShutdownLogicTwo() : base("logic 2") { }
+        }
+
+        private static async UniTask BeginShutdownFixture(ShutdownFixture fixture)
+        {
+            var runtime = LiteRuntime.Instance;
+            if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
+
+            _shutdownFixture = fixture;
+            var setting = new LiteSetting();
+            setting.Asset.AssetMode = AssetProviderMode.Editor;
+            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemOne).AssemblyQualifiedName });
+            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemTwo).AssemblyQualifiedName });
+            setting.LogicList.Add(new LiteTypeEntryData<ILogic> { AssemblyQualifiedName = typeof(ShutdownLogicOne).AssemblyQualifiedName });
+            setting.LogicList.Add(new LiteTypeEntryData<ILogic> { AssemblyQualifiedName = typeof(ShutdownLogicTwo).AssemblyQualifiedName });
+            runtime.Startup(runtime.Launcher, setting);
+        }
+
+        private static async UniTask WaitForRuntimeCondition(Func<bool> condition, string operation)
+        {
+            var deadline = Time.realtimeSinceStartup + 10f;
+            while (!condition())
+            {
+                if (Time.realtimeSinceStartup > deadline) throw new TimeoutException(operation);
+                // The runner disables Launcher.Update; keep the real Runtime driving its systems.
+                LiteRuntime.Instance.Tick(0f);
+                await UniTask.NextFrame();
+            }
+        }
+
+        private static async UniTask FinishShutdownFixture(ShutdownFixture fixture, UniTask? shutdown = null)
+        {
+            try
+            {
+                fixture.InitializationGate?.TrySetResult(true);
+                fixture.LogicGate.TrySetResult();
+                fixture.SystemGate.TrySetResult();
+
+                var runtime = LiteRuntime.Instance;
+                if (!shutdown.HasValue && runtime.State is not LiteRuntime.RuntimeState.Idle
+                    and not LiteRuntime.RuntimeState.ShuttingDown and not LiteRuntime.RuntimeState.ShutdownFailed)
+                    shutdown = runtime.Shutdown();
+
+                if (shutdown.HasValue)
+                {
+                    var pending = shutdown.Value;
+                    await WaitForRuntimeCondition(() => pending.Status != UniTaskStatus.Pending, "Fixture shutdown completion");
+                    await pending;
+                }
+                else
+                {
+                    await WaitForRuntimeCondition(() => runtime.State != LiteRuntime.RuntimeState.ShuttingDown, "Automatic failure cleanup");
+                }
+
+                if (runtime.State != LiteRuntime.RuntimeState.Idle)
+                    throw new Exception("Fixture cleanup did not finish in Idle: " + runtime.State);
+            }
+            finally
+            {
+                _shutdownFixture = null;
+            }
+        }
+
+        private static async UniTask RuntimeShutdownOrder(TaskSystem system)
+        {
+            var fixture = new ShutdownFixture();
+            UniTask? shutdown = null;
+            try
+            {
+                await BeginShutdownFixture(fixture);
+                await WaitForRuntimeCondition(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Running, "Probe startup");
+                Check(fixture.Initialized.SequenceEqual(new[] { "system 1", "system 2", "logic 1", "logic 2" }) &&
+                    LiteRuntime.Get<ShutdownSystemOne>() != null && LiteRuntime.Get<ShutdownSystemTwo>() != null,
+                    "Probes initialize through Runtime configuration and publish their systems.");
+
+                shutdown = LiteRuntime.Instance.Shutdown();
+                Check(fixture.Events.Count == 0 && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "Shutdown defers disposal until the initialization callback stack has exited.");
+                await WaitForRuntimeCondition(() => fixture.Events.Count > 0, "First logic disposal");
+                Check(fixture.Events.SequenceEqual(new[] { "logic 1 start" }) && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "Runtime shutdown waits for the first asynchronous logic before starting later cleanup.");
+                await UniTask.NextFrame();
+                Check(fixture.Events.SequenceEqual(new[] { "logic 1 start" }) && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "The pending logic continues to hold shutdown across a player loop.");
+
+                LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
+                Check(LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShuttingDown,
+                    "Reporting an error does not overwrite the active shutdown state.");
+
+                LiteRuntime.Instance.IsPause = true;
+                LiteRuntime.Setting.Common.TimeScale = 0f;
+                LiteRuntime.Timer.NextFrame(() =>
+                {
+                    fixture.InTimerCallback = true;
+                    try { fixture.LogicGate.TrySetResult(); }
+                    finally { fixture.InTimerCallback = false; }
+                });
+                LiteRuntime.Instance.Tick(0f);
+                Check(fixture.Events.SequenceEqual(new[] { "logic 1 start", "logic 1 end" }),
+                    "Paused shutdown still drives Timer, but does not start the next disposal inside its callback.");
+
+                await WaitForRuntimeCondition(() => fixture.Events.Contains("system 2 start"), "First system disposal");
+                Check(fixture.Events.SequenceEqual(new[] { "logic 1 start", "logic 1 end", "logic 2 start", "logic 2 end", "system 2 start" }) && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "Logic finishes in registration order before reverse-order system disposal begins.");
+                await UniTask.NextFrame();
+                Check(fixture.Events.Count == 5 && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "The pending system holds shutdown across a player loop.");
+
+                LiteRuntime.Timer.NextFrame(() =>
+                {
+                    fixture.InTimerCallback = true;
+                    try { fixture.SystemGate.TrySetResult(); }
+                    finally { fixture.InTimerCallback = false; }
+                });
+                LiteRuntime.Instance.Tick(0f);
+                Check(fixture.Events.Count == 6 && LiteRuntime.Get<ShutdownSystemTwo>() == null &&
+                    !fixture.DisposalStartedInTimerCallback && fixture.TicksAfterDispose == 0,
+                    "A disposed system is unpublished and skipped by the remaining Tick before the next system is released.");
+            }
+            finally
+            {
+                await FinishShutdownFixture(fixture, shutdown);
+            }
+
+            Check(fixture.Events.SequenceEqual(new[] { "logic 1 start", "logic 1 end", "logic 2 start", "logic 2 end", "system 2 start", "system 2 end", "system 1 start", "system 1 end" }) &&
+                LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle,
+                "Shutdown finishes the remaining systems in reverse order before returning to Idle.");
+            Check(fixture.Instances.Values.All(probe => probe.Disposals == 1) && fixture.TicksAfterDispose == 0,
+                "Every probe is disposed exactly once and no released probe is ticked.");
+        }
+
+        private static async UniTask RuntimeInitializationReturnsFalse(TaskSystem system)
+        {
+            var fixture = new ShutdownFixture { FailedInitialization = "system 2" };
+            fixture.SystemGate.TrySetResult();
+            try
+            {
+                await BeginShutdownFixture(fixture);
+                await WaitForRuntimeCondition(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle, "False initialization cleanup");
+                Check(fixture.Initialized.SequenceEqual(new[] { "system 1", "system 2" }) && fixture.Instances.Count == 2,
+                    "A false system initialization prevents later logic construction.");
+                Check(fixture.Events.SequenceEqual(new[] { "system 2 start", "system 2 end", "system 1 start", "system 1 end" }) &&
+                    fixture.Instances.Values.All(probe => probe.Disposals == 1),
+                    "The unpublished failed system and previously initialized system are both disposed exactly once.");
+                Check(LiteRuntime.Get<ShutdownSystemOne>() == null && LiteRuntime.Get<ShutdownSystemTwo>() == null,
+                    "Failed initialization leaves no published probe system after cleanup.");
+            }
+            finally { await FinishShutdownFixture(fixture); }
+        }
+
+        private static async UniTask RuntimeInitializationThrows(TaskSystem system)
+        {
+            var fixture = new ShutdownFixture { FailedInitialization = "logic 2", ThrowOnInitialize = true };
+            fixture.LogicGate.TrySetResult();
+            fixture.SystemGate.TrySetResult();
+            try
+            {
+                await BeginShutdownFixture(fixture);
+                await WaitForRuntimeCondition(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle, "Throwing initialization cleanup");
+                Check(fixture.Initialized.SequenceEqual(new[] { "system 1", "system 2", "logic 1", "logic 2" }),
+                    "The throwing logic is created through the real initialization path.");
+                Check(fixture.Events.SequenceEqual(new[] { "logic 2 start", "logic 2 end", "logic 1 start", "logic 1 end", "system 2 start", "system 2 end", "system 1 start", "system 1 end" }),
+                    "Unpublished failed logic is cleaned before ready logic and reverse-order systems.");
+                Check(fixture.Instances.Values.All(probe => probe.Disposals == 1),
+                    "Initialization exceptions do not omit or duplicate disposal.");
+            }
+            finally { await FinishShutdownFixture(fixture); }
+        }
+
+        private static async UniTask RuntimeShutdownDuringInitialization(TaskSystem system)
+        {
+            var fixture = new ShutdownFixture { InitializationGate = new UniTaskCompletionSource<bool>() };
+            fixture.SystemGate.TrySetResult();
+            UniTask? shutdown = null;
+            try
+            {
+                await BeginShutdownFixture(fixture);
+                Check(LiteRuntime.Instance.State == LiteRuntime.RuntimeState.InitSystem &&
+                    fixture.Initialized.Contains("system 2") && LiteRuntime.Get<ShutdownSystemTwo>() == null,
+                    "The initializing system is owned but not published.");
+
+                shutdown = LiteRuntime.Instance.Shutdown();
+                await UniTask.NextFrame();
+                Check(fixture.Events.Count == 0 && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "Shutdown does not dispose an object while its Initialize is still executing.");
+                LiteRuntime.Instance.IsPause = true;
+                LiteRuntime.Setting.Common.TimeScale = 0f;
+                LiteRuntime.Timer.NextFrame(() => fixture.InitializationGate.TrySetResult(true));
+                LiteRuntime.Instance.Tick(0f);
+                Check(fixture.Events.Count == 0 && LiteRuntime.Get<ShutdownSystemTwo>() == null,
+                    "A late successful Initialize is not published after shutdown cancellation, and cleanup stays outside the callback.");
+            }
+            finally { await FinishShutdownFixture(fixture, shutdown); }
+
+            Check(fixture.Initialized.SequenceEqual(new[] { "system 1", "system 2" }) &&
+                fixture.Events.SequenceEqual(new[] { "system 2 start", "system 2 end", "system 1 start", "system 1 end" }) &&
+                fixture.Instances.Values.All(probe => probe.Disposals == 1),
+                "In-flight initialization exits before exactly-once cleanup and no logic initialization follows.");
         }
 
         private static async UniTask WaitDone(TaskSystem system, ITask task)

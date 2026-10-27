@@ -15,13 +15,15 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             foreach (var effect in _effectList)
             {
                 effect.Dispose();
             }
             _effectList.Clear();
+
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

@@ -26,10 +26,12 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             _tableMap.Clear();
             _registrations.Clear();
+
+            return UniTask.CompletedTask;
         }
 
         public void RegisterTable<T>(string assetPath, Func<string, List<T>> parseFunc) where T : IConfigData

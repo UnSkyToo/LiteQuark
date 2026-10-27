@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -85,11 +86,11 @@ namespace LiteQuark.Editor
                 Handles.Add(handle);
                 return handle;
             }
-            internal void Shutdown()
+            internal async UniTask Shutdown()
             {
                 if (Disposed) return;
                 Disposed = true;
-                Assets.Dispose();
+                await Assets.DisposeAsync();
             }
             internal Harness(bool manual, int concurrency = 10, bool scheduleManual = false)
             {

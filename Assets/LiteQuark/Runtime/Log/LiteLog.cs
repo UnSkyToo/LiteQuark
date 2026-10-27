@@ -16,6 +16,11 @@ namespace LiteQuark.Runtime
             return _log;
         }
 
+        internal static void Reset()
+        {
+            _log = null;
+        }
+
         public static void Info(string format, params object[] args)
         {
             var log = GetLog();

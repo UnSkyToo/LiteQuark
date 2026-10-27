@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             foreach (var pool in _poolCache)
             {
@@ -34,6 +34,8 @@ namespace LiteQuark.Runtime
                 Object.Destroy(_root.gameObject);
                 _root = null;
             }
+
+            return UniTask.CompletedTask;
         }
 
         public void RemoveUnusedPools()

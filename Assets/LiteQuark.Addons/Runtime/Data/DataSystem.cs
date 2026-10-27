@@ -41,10 +41,12 @@ namespace LiteQuark.Runtime
             return result;
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             _provider?.Dispose();
             _provider = null;
+
+            return UniTask.CompletedTask;
         }
 
         #region Synchronous API

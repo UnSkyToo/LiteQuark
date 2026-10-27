@@ -12,6 +12,8 @@ namespace LiteQuark.Runtime
             InitSystem,
             InitLogic,
             Running,
+            ShuttingDown,
+            ShutdownFailed,
             Error,
         }
 
@@ -28,6 +30,8 @@ namespace LiteQuark.Runtime
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
         private CancellationTokenSource _startupCts = null;
+        private UniTaskCompletionSource _initializationExited;
+        private bool _isTicking;
 
         private RuntimeState _state = RuntimeState.Idle;
         internal RuntimeState State => _state;
@@ -38,6 +42,11 @@ namespace LiteQuark.Runtime
 
         public void Startup(LiteLauncher launcher, LiteSetting setting)
         {
+            if (_state != RuntimeState.Idle)
+            {
+                throw new System.InvalidOperationException($"Cannot startup runtime in state {_state}.");
+            }
+
             IsPause = false;
             IsFocus = true;
             Launcher = launcher;
@@ -51,12 +60,17 @@ namespace LiteQuark.Runtime
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int)System.DateTime.Now.Ticks);
 
+            _initializationExited = new UniTaskCompletionSource();
             _startupCts = new CancellationTokenSource();
+            _state = RuntimeState.InitSystem;
+
             StartupAsync(_startupCts.Token).Forget();
         }
 
-        private async UniTaskVoid StartupAsync(CancellationToken ct)
+        private async UniTask StartupAsync(CancellationToken ct)
         {
+            var startupFailed = false;
+
             try
             {
                 var watch = new System.Diagnostics.Stopwatch();
@@ -67,8 +81,10 @@ namespace LiteQuark.Runtime
                 {
                     if (!ct.IsCancellationRequested)
                     {
+                        startupFailed = true;
                         EnterErrorState(FrameworkErrorCode.Startup);
                     }
+
                     return;
                 }
 
@@ -85,12 +101,19 @@ namespace LiteQuark.Runtime
                 {
                     if (!ct.IsCancellationRequested)
                     {
+                        startupFailed = true;
                         EnterErrorState(FrameworkErrorCode.Startup);
                     }
+
                     return;
                 }
 
                 LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
+
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
 
                 _state = RuntimeState.Running;
             }
@@ -100,37 +123,71 @@ namespace LiteQuark.Runtime
             }
             catch (System.Exception ex)
             {
+                startupFailed = true;
+
                 LLog.Exception(ex);
                 EnterErrorState(FrameworkErrorCode.Startup);
             }
+            finally
+            {
+                _initializationExited.TrySetResult();
+
+                if (startupFailed && _state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+                {
+                    await Shutdown();
+                }
+            }
         }
 
-        public void Shutdown()
+        public async UniTask Shutdown()
         {
             if (_state == RuntimeState.Idle)
             {
                 return;
             }
 
-            _startupCts?.Cancel();
-            _startupCts?.Dispose();
-            _startupCts = null;
+            if (_state is RuntimeState.ShuttingDown or RuntimeState.ShutdownFailed)
+            {
+                throw new System.InvalidOperationException($"Cannot shutdown runtime in state {_state}.");
+            }
 
-            OnEnterBackground();
-            LogicCenter.Instance.Dispose();
-            SystemCenter.Instance.Dispose();
-            _state = RuntimeState.Idle;
+            _state = RuntimeState.ShuttingDown;
+            _restartWhenNextFrame = false;
 
-            PlayerPrefs.Save();
-            Resources.UnloadUnusedAssets();
-            System.GC.Collect();
-            System.GC.WaitForPendingFinalizers();
+            try
+            {
+                _startupCts?.Cancel();
+
+                if (_initializationExited != null)
+                {
+                    await _initializationExited.Task;
+                }
+
+                await UniTask.NextFrame();
+
+                await LogicCenter.Instance.DisposeAsync();
+                await SystemCenter.Instance.DisposeAsync();
+
+                _startupCts?.Dispose();
+                _startupCts = null;
+
+                _state = RuntimeState.Idle;
+            }
+            catch
+            {
+                _state = RuntimeState.ShutdownFailed;
+                throw;
+            }
         }
 
         internal void EnterErrorState(FrameworkErrorCode code)
         {
-            _state = RuntimeState.Error;
-            LLog.Error("Enter <ErrorState>, please check log.");
+            if (_state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+            {
+                _state = RuntimeState.Error;
+                LLog.Error("Enter <ErrorState>, please check log.");
+            }
+
             FrameworkError(code, "Framework error");
         }
 
@@ -138,28 +195,53 @@ namespace LiteQuark.Runtime
         {
             if (_restartWhenNextFrame)
             {
-                RestartRuntime();
+                RestartRuntime().Forget();
                 return;
             }
 
-            if (IsPause)
+            var isShuttingDown = _state == RuntimeState.ShuttingDown;
+
+            if (IsPause && !isShuttingDown)
             {
                 return;
             }
-
-#if UNITY_EDITOR
-            var scaledDeltaTime = deltaTime * _setting.Common.TimeScale;
-#else
-            var scaledDeltaTime = deltaTime;
-#endif
 
             LiteTime.UnscaledDeltaTime = Time.unscaledDeltaTime;
-            LiteTime.DeltaTime = scaledDeltaTime;
 
-            SystemCenter.Instance.Tick(scaledDeltaTime);
-            if (_state == RuntimeState.Running)
+#if UNITY_EDITOR
+            var tickDeltaTime = deltaTime * _setting.Common.TimeScale;
+#else
+            var tickDeltaTime = deltaTime;
+#endif
+
+            if (isShuttingDown)
             {
-                LogicCenter.Instance.Tick(scaledDeltaTime);
+                tickDeltaTime = LiteTime.UnscaledDeltaTime;
+            }
+
+            LiteTime.DeltaTime = tickDeltaTime;
+
+            _isTicking = true;
+            try
+            {
+                SystemCenter.Instance.Tick(tickDeltaTime);
+
+                if (_state == RuntimeState.Running)
+                {
+                    LogicCenter.Instance.Tick(tickDeltaTime);
+                }
+            }
+            finally
+            {
+                _isTicking = false;
+            }
+        }
+
+        internal async UniTask WaitForTickExitAsync()
+        {
+            while (_isTicking)
+            {
+                await UniTask.NextFrame();
             }
         }
 
@@ -168,11 +250,11 @@ namespace LiteQuark.Runtime
             _restartWhenNextFrame = true;
         }
 
-        private void RestartRuntime()
+        private async UniTask RestartRuntime()
         {
             _restartWhenNextFrame = false;
             Debug.ClearDeveloperConsole();
-            Shutdown();
+            await Shutdown();
             Startup(Launcher, _setting);
         }
 

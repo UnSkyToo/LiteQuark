@@ -49,7 +49,7 @@ public static class MotionExample
 - Builder 默认执行一次，组合动作的 `repeatCount < 0` 表示循环。循环体需要有等待或耗时动作，避免纯即时回调序列无限同步执行。
 - `SetUnscaled()` 应设置在提交的最外层 Builder 上，使整个组合使用未缩放时间。框架整体暂停时仍停止更新。
 - `AddBuilder(..., isSafety: true)` 或 `LiteRuntime.Setting.Action.SafetyMode` 会向子动作传播安全标记；Transform 动作借此检查目标是否仍存在。它不代替业务资源清理。
-- `SetFinalCallback` 应设置在提交给 ActionSystem 的最外层动作上：自然结束或手动 `StopAction` 时调用，系统关闭时直接 Dispose 不调用。嵌套子动作的 FinalCallback 不会被组合动作自动触发；需要“自然走到末尾”的逻辑时，将 `Callback` 放在对应序列尾部。
+- `SetFinalCallback` 应设置在提交给 ActionSystem 的最外层动作上：自然结束或手动 `StopAction` 时调用，系统关闭时 Stop 后 Dispose，不调用 FinalCallback。嵌套子动作的 FinalCallback 不会被组合动作自动触发；需要“自然走到末尾”的逻辑时，将 `Callback` 放在对应序列尾部。
 - ActionSystem 负责结束后的 `Dispose()`；不要把同一动作实例重复提交为多个独立任务。
 
 实现见 [ActionSystem.cs](ActionSystem.cs)、[ActionBuilder.cs](ActionBuilder.cs) 及同目录扩展类。动作创建包含对象和集合分配，没有零 GC 保证。

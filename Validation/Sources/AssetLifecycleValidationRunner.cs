@@ -338,7 +338,7 @@ namespace LiteQuark.Editor
             if (!Current.Disposed)
             {
                 Current.Assets.UnloadUnusedAssets(20);
-                Current.Shutdown();
+                await Current.Shutdown();
             }
             foreach (var bundle in Current.Locater.Opened) if (bundle != null) bundle.Unload(true);
             Current = null;

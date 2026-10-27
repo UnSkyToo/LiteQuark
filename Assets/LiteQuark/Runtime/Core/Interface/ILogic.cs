@@ -1,6 +1,6 @@
 namespace LiteQuark.Runtime
 {
-    public interface ILogic : IInitializeAsync, ITick, IDispose
+    public interface ILogic : IInitializeAsync, ITick, IDisposeAsync
     {
     }
 }

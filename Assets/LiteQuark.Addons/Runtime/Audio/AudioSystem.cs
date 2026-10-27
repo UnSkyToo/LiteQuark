@@ -29,7 +29,7 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             foreach (var audio in _removeList)
             {
@@ -52,6 +52,8 @@ namespace LiteQuark.Runtime
                 Object.Destroy(_root.gameObject);
                 _root = null;
             }
+
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

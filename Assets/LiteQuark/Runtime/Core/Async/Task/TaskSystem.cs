@@ -57,7 +57,7 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             _monoBehaviourInstance?.StopAllCoroutines();
 
@@ -69,6 +69,8 @@ namespace LiteQuark.Runtime
 
             _records.Clear();
             _groups.Clear();
+
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

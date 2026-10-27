@@ -21,9 +21,15 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
+            foreach (var timer in _timerList)
+            {
+                timer.Cancel();
+            }
+
             _timerList.Clear();
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

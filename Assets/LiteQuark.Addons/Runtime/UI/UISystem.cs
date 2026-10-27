@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public UniTask DisposeAsync()
         {
             HandleOpenList();
             CloseAllUI();
@@ -59,6 +59,8 @@ namespace LiteQuark.Runtime
                 UnityEngine.Object.Destroy(item.Value.gameObject);
             }
             _canvasTransform.Clear();
+
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -74,7 +75,7 @@ namespace LiteQuark.Runtime
             }
             else if (Input.GetKeyDown(KeyCode.F6))
             {
-                LiteRuntime.Instance.Shutdown();
+                LiteRuntime.Instance.Shutdown().Forget();
             }
             else if (Input.GetKeyDown(KeyCode.F11))
             {
@@ -91,7 +92,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                LiteRuntime.Instance.Shutdown();
+                LiteRuntime.Instance.Shutdown().Forget();
             }
             catch (Exception ex)
             {

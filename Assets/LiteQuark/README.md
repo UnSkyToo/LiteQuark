@@ -10,7 +10,7 @@ LiteQuark 将系统服务（`ISystem`）与业务逻辑（`ILogic`）分开管�
 
 1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
 2. 在 Launcher 的 `LogicList` 中添加业务类，在 `SystemList` 中添加需要的扩展系统。分别配置 DebugSetting 和 ReleaseSetting。
-3. 业务类实现 `Initialize()`、`Tick()`、`Dispose()`；系统初始化完成后才开始初始化业务。
+3. 业务类实现 `Initialize()`、`Tick()`、`DisposeAsync()`；系统初始化完成后才开始初始化业务。
 
 ```csharp
 using Cysharp.Threading.Tasks;
@@ -28,8 +28,9 @@ public sealed class GameLogic : ILogic
     {
     }
 
-    public void Dispose()
+    public UniTask DisposeAsync()
     {
+        return UniTask.CompletedTask;
     }
 }
 ```
@@ -38,18 +39,26 @@ public sealed class GameLogic : ILogic
 
 ## 生命周期与注册
 
-`Idle → InitSystem → InitLogic → Running`，初始化失败进入 `Error`；关闭后回到 `Idle`。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。启动过程异步执行，业务对服务的访问应放在 `ILogic.Initialize()` 或之后。
+正常启动为 `Idle → InitSystem → InitLogic → Running`，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `ILogic.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
+
+Runtime 统一管理已注册 System 和 Logic 的生命周期。对象创建成功即纳入清理，初始化成功后才参与正常更新和服务查询。初始化返回 false 或抛异常时报告启动错误，并清理已创建对象；清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间请求关闭，会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
+
+`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待 Logic，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，清理异常进入 ShutdownFailed。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止正常 Logic 更新，系统推进不受 IsPause 和业务时间缩放阻挡；已完成释放的对象不再被 Center 更新。
+
+业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。System 和 Logic 的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
+
+等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。Asset 的在途加载和场景卸载等限制仍以[模块指南](Runtime/Asset/README.md)为准，当前不承诺任意加载状态下的安全即时重启。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 
 内置系统按 [LiteConst.InternalSystem](Runtime/Base/LiteConst.cs) 的优先级从大到小初始化：
 
 `Log → Event → Timer → Task → Asset → ObjectPool → Action`
 
-扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放。
+扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放；Logic 先释放未成功发布的对象，再按配置顺序释放已初始化对象。
 
 | 扩展点 | 约定 |
 | --- | --- |
-| `ISystem` | `UniTask<bool> Initialize()`、`Dispose()`；逐帧更新时同时实现 `ITick` |
-| `ILogic` | `UniTask<bool> Initialize()`、`Tick(float)`、`Dispose()` |
+| `ISystem` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()`；逐帧更新时同时实现 `ITick` |
+| `ILogic` | `UniTask<bool> Initialize()`、`Tick(float)`、`UniTask DisposeAsync()` |
 | `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |
 | 配置类 | 实现 `ISystemSetting`，使用可序列化类型和无参构造函数 |
 

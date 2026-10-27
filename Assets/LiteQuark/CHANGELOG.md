@@ -4,6 +4,12 @@
 
 ### 核心接口
 
+- 破坏：`ISystem`、`ILogic` 改为继承 `IDisposeAsync`，释放方法由 `void Dispose()` 改为 `UniTask DisposeAsync()`；自定义实现需要迁移，同步清理返回 `UniTask.CompletedTask`。已注册对象由 Runtime 统一释放，业务不要直接释放系统；Handle、Lease 等资源对象仍使用同步 Dispose。
+- 破坏：`LiteRuntime.Shutdown()` 改为返回 UniTask；框架集成层调用方需要等待完成，不能把调用返回前已启动的清理视为完成。初始化中的对象会在 Initialize 退出后统一释放，初始化失败且清理成功后回到 Idle；清理异常进入 ShutdownFailed，不自动重新启动。
+- 破坏：`ActionSystem.GetActionList()` 收为 internal，仅用于框架调试；外部业务通过 AddAction、StopAction、FindAction 等公开入口管理动作，不直接访问调度列表。
+- 调整：Runtime.Shutdown 不再统一调用 PlayerPrefs.Save、Resources.UnloadUnusedAssets 或 GC；依赖原退出保存行为的业务应显式保存，DataSystem 的 PlayerPrefsProvider 保留自身保存行为。
+- 修复：Center 从对象创建成功时登记清理归属，覆盖初始化 false、异常及中途关闭；异步释放完成后先停止对象更新，再在 Runtime Tick 外移除驱动列表并继续释放。
+- 调整：Timer 关闭时取消已有定时器，Action 关闭时 Stop 后 Dispose，均不额外触发完成回调；Log 释放时重置 LLog 的静态 logger 缓存。异步释放接口不代表各系统已经实现完整原生资源收尾。
 - 破坏：移除 `ISubstance`；实现类改为直接实现 `ITick` 和 `IDispose`，原先使用 `ISubstance` 的调用方应按所需能力使用对应接口。
 - 破坏：移除 `IStartup` 和 `IShutdown`；其他使用方需改用自己的生命周期接口。
 
