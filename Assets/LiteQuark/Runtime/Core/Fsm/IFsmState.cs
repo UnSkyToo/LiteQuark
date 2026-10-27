@@ -1,6 +1,6 @@
 namespace LiteQuark.Runtime
 {
-    public interface IFsmState : ISubstance
+    public interface IFsmState : ITick, IDispose
     {
         int ID { get; }
         IFsm Fsm { get; set; }

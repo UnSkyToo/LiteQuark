@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LogicCenter : Singleton<LogicCenter>, ISubstance
+    internal sealed class LogicCenter : Singleton<LogicCenter>, ITick, IDispose
     {
         private readonly List<ILogic> _logicList = new();
 

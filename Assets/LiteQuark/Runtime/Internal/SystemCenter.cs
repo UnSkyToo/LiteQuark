@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class SystemCenter : Singleton<SystemCenter>, ISubstance
+    internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, IDispose
     {
         private readonly List<ISystem> _addList = new();
         private readonly List<ISystem> _systemList = new();

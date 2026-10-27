@@ -2,6 +2,10 @@
 
 ## **[Unreleased]**
 
+### 核心接口
+
+- 破坏：移除 `ISubstance`；实现类改为直接实现 `ITick` 和 `IDispose`，原先使用 `ISubstance` 的调用方应按所需能力使用对应接口。
+
 ### Asset
 
 - 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。

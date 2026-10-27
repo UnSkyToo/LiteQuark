@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace LiteBattle.Runtime
 {
-    public abstract class LiteEntity : BaseObject, ISubstance
+    public abstract class LiteEntity : BaseObject, ITick, IDispose
     {
         public string Tag { get; set; }
 
