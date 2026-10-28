@@ -28,6 +28,7 @@
 
 ### Task
 
+- 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
 - 调整：UnityDownloadBaseTask 在终态立即停止重试计时器并释放请求，不再等待调度器回收包装器；结果通知期间的释放推迟到完成回调的 finally。首次释放错误由收尾结果报告；重试轮释放失败会停止重试并终结任务，不覆盖已有逻辑终态。RemoteBundle 据此完成 Cleanup，WebGet 和 VersionPack 的等待及通知语义不变。
 - 新增：四类内置资源加载任务通过内部 IResourceTaskCleanup 提供可重复观察的原生收尾等待；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。尚未接入 AssetSystem 关闭，不改变公开 ITask 或 ILoadBundleTask。
 - 修复：资源加载成功先取出通知，再发布逻辑结果，避免 await 续体中回收包装器丢失结果交接；Scene 包装器回收不再撤掉在途加载所需的场景观察。

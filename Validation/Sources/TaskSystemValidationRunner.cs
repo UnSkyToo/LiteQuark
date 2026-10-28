@@ -104,7 +104,7 @@ namespace LiteQuark.Editor
                 await RunAsync("13 Real AsyncOperation observer completes in Flow", ObserveAsyncOperation);
                 await RunAsync("14 Coroutine Flow parent waits for Default child", FlowParent);
                 await Run("15 Steady Tick and statistics allocations", SteadyAllocations);
-                await RunAsync("16 Final disposal clears pending and running tasks", FinalDisposal);
+                await RunAsync("16 Final disposal clears pending and running tasks", FinalDisposal, "TaskSystem is closing or disposed.");
                 await Run("17 SafeList nested, early exit and exception cleanup", SafeListIteration);
                 await Run("18 Fault retirement preserves quotas and disposal", FaultRetirement, "InjectedValidation", "FaultTask");
                 await Run("19 Cancellation during admission skips canceled peer", AdmissionCancellation);
@@ -1007,12 +1007,44 @@ namespace LiteQuark.Editor
 
         private static async UniTask FinalDisposal(TaskSystem system)
         {
-            var active = new ProbeTask(); var pending = new ProbeTask(); var flow = new ProbeTask();
+            var fromCancellation = new ProbeTask();
+            var fromDisposal = new ProbeTask();
+            ObjectDisposedException cancellationError = null;
+            ObjectDisposedException disposalError = null;
+            var active = new ProbeTask
+            {
+                TerminalAction = _ =>
+                {
+                    try { system.AddTask(fromCancellation); }
+                    catch (ObjectDisposedException ex) { cancellationError = ex; throw; }
+                },
+                DisposeAction = () =>
+                {
+                    try { system.AddTask(fromDisposal, LiteConst.TaskGroupId.Flow); }
+                    catch (ObjectDisposedException ex) { disposalError = ex; throw; }
+                }
+            };
+            var pending = new ProbeTask(); var flow = new ProbeTask();
             system.AddTask(active); system.AddTask(pending); system.AddTask(flow, LiteConst.TaskGroupId.Flow);
             system.Tick(0); await system.DisposeAsync(); await system.DisposeAsync();
             Check(active.Disposals == 1 && pending.Disposals == 1 && flow.Disposals == 1, "Final disposal releases all registered tasks exactly once");
             Check(pending.Executions == 0 && active.IsDone && pending.IsDone && flow.IsDone, "Pending work is canceled without starting");
             Check(system.RunningTaskCount == 0 && system.PendingTaskCount == 0 && Snapshot(system).Count == 0, "Final disposal clears group totals and registration");
+            Check(cancellationError?.ObjectName == nameof(TaskSystem) && disposalError?.ObjectName == nameof(TaskSystem),
+                "Cancellation and disposal callbacks receive explicit shutdown rejection without interrupting remaining task cleanup.");
+            Check(fromCancellation.State == TaskState.Pending && fromDisposal.State == TaskState.Pending &&
+                fromCancellation.Executions == 0 && fromDisposal.Executions == 0 &&
+                fromCancellation.Disposals == 0 && fromDisposal.Disposals == 0,
+                "Rejected tasks remain caller-owned; the closing system neither accepts, executes nor disposes them.");
+
+            var afterClose = new ProbeTask();
+            Throws<ObjectDisposedException>(() => system.AddTask(afterClose),
+                "Submitting after close reports a disposed system instead of a missing task group.");
+            Throws<ObjectDisposedException>(() => system.AddTask(_ => { }),
+                "Convenience submission also rejects through the central AddTask entry.");
+            Check(afterClose.State == TaskState.Pending && Snapshot(system).Count == 0 &&
+                system.RunningTaskCount == 0 && system.PendingTaskCount == 0,
+                "Rejected submissions cannot repopulate the closed scheduler.");
         }
 
         private sealed class ShutdownFixture

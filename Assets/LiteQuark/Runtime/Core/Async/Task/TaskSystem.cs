@@ -40,6 +40,7 @@ namespace LiteQuark.Runtime
 
         private readonly List<TaskGroup> _groups = new();
         private readonly List<TaskRecord> _records = new();
+        private bool _isClosing;
 
         public TaskSystem()
         {
@@ -59,6 +60,7 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
+            _isClosing = true;
             _monoBehaviourInstance?.StopAllCoroutines();
 
             var count = _records.Count;
@@ -253,6 +255,11 @@ namespace LiteQuark.Runtime
 
         public void AddTask(ITask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)
         {
+            if (_isClosing)
+            {
+                throw new ObjectDisposedException(nameof(TaskSystem), "TaskSystem is closing or disposed.");
+            }
+
             if (task == null)
             {
                 throw new ArgumentNullException(nameof(task));

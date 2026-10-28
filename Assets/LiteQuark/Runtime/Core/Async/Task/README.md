@@ -117,6 +117,6 @@ LiteRuntime.Task.PostMainThreadTask(_ => LLog.Info("Main thread"), null);
 - `SendMainThreadTask(callback, state)` 同步发送，可能阻塞调用线程。
 - `AddMainThreadTask(func, param)` 加入 Flow，由后续调度执行。
 
-不要从后台线程访问 Unity 对象或修改任务队列，也不要让主线程等待正在等待主线程的工作。不递归调用 Tick，不在任务回调中释放 TaskSystem。关闭须先停止调度，清理回调不再提交任务；系统会停止 Launcher 上的协程并取消、释放登记任务。
+不要从后台线程访问 Unity 对象或修改任务队列，也不要让主线程等待正在等待主线程的工作。不递归调用 Tick，不在任务回调中释放 TaskSystem。关闭须先停止调度，清理回调不再提交任务；系统会停止 Launcher 上的协程并取消、释放登记任务。关闭开始后，所有 AddTask 提交入口抛出 ObjectDisposedException；被拒绝的任务仍由调用者负责，系统不接管或改变它的状态。
 
 完整接口见 [TaskSystem.cs](TaskSystem.cs)，升级步骤见 [CHANGELOG](../../../../CHANGELOG.md)。
