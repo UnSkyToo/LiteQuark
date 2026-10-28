@@ -56,8 +56,12 @@ Validation — 当前工作区的隔离 Unity 验证
   collector   Bundle 归属、共享依赖、循环、路径映射、BundleViewer 和 Flat 冲突
   packages    真实 UPM 纹理、隐式/显式依赖打包及框架索引边界
   tasks       配额、调度、终态、异常回收、协程、原生任务、结果通知、框架异步关闭顺序及初始化失败/中途关闭清理
-  lifecycle   Handle/Lease、缓存、场景、取消、关闭、优先级和并发限制
+  lifecycle   Handle/Lease、缓存、场景、取消、关闭、资源 Task 原生收尾、优先级和并发限制
   loading     路径别名、同名资源/场景、真实加载、构建选项和 Locater 配置
+
+  资源 Task 收尾覆盖未启动终结、迟到 Bundle/Scene、读取期间取消、包装器回收、
+  成功交接和重复等待，以及请求释放抛错后的重试终止、首错保留和已有终态保持；
+  收尾能力不代表 AssetSystem 已接入安全关闭或即时重启。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS

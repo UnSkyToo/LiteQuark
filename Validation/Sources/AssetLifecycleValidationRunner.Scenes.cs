@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -12,6 +13,190 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask RetireSceneTaskFixture(LoadSceneTask task, AsyncOperation request, bool expectCleanupFailure = false)
+        {
+            if (task == null) return;
+            task.Cancel(); task.Dispose();
+            try
+            {
+                if (request != null) await WaitWithoutLoaderTick(() => request.isDone, "Scene Task fixture native completion");
+                var cleanup = ObserveResourceCleanup(task);
+                await WaitWithoutLoaderTick(() => cleanup.Status.IsCompleted(), "Scene Task fixture cleanup settlement");
+                try { await cleanup; }
+                catch (Exception ex) when (expectCleanupFailure)
+                {
+                    _case.evidence.Add("Expected refused cleanup remains faulted during fixture isolation: " + ex.Message);
+                }
+            }
+            finally
+            {
+                // Only fixture isolation restores a host; never retry or turn refused Task cleanup into success.
+                if (expectCleanupFailure) RestoreValidationHost();
+                var scenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
+                    .Where(scene => string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)).ToArray();
+                foreach (var scene in scenes)
+                {
+                    if (!scene.IsValid() || !scene.isLoaded) continue;
+                    var operation = SceneManager.UnloadSceneAsync(scene);
+                    if (operation == null) throw new Exception("Scene Task fixture unload was refused: " + scene.handle);
+                    await WaitWithoutLoaderTick(() => operation.isDone && (!scene.IsValid() || !scene.isLoaded), "Scene Task fixture native unload");
+                }
+            }
+        }
+
+        private static async UniTask SceneTaskCleanup()
+        {
+            AssetBundle dependency = null;
+            AssetBundle bundle = null;
+            LoadSceneTask cancelled = null;
+            LoadSceneTask success = null;
+            AsyncOperation cancelledRequest = null;
+            AsyncOperation successRequest = null;
+            var lateScene = default(Scene);
+            var lateUnloaded = false;
+            var pendingAtLoad = false;
+            void CaptureUnload(Scene scene)
+            {
+                if (scene.handle == lateScene.handle) lateUnloaded = true;
+            }
+            UnityEngine.Events.UnityAction<Scene, LoadSceneMode> captureLoad = null;
+            try
+            {
+                dependency = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
+                bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "scene.ab"));
+                Check(dependency != null && bundle != null, "Scene Task cleanup retains real Scene and dependency Bundles independently of cache ownership.");
+                var cancelledCalls = 0;
+                cancelled = new LoadSceneTask(bundle.GetAllScenePaths().Single(), new LoadSceneParameters(LoadSceneMode.Additive), _ => cancelledCalls++);
+                var first = ObserveResourceCleanup(cancelled);
+                var second = ObserveResourceCleanup(cancelled);
+                captureLoad = (scene, mode) =>
+                {
+                    if (!string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)) return;
+                    lateScene = scene;
+                    pendingAtLoad = first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending;
+                };
+                SceneManager.sceneLoaded += captureLoad;
+                SceneManager.sceneUnloaded += CaptureUnload;
+                async UniTask<bool> ObserveActualUnload()
+                {
+                    await first;
+                    return lateUnloaded && (!lateScene.IsValid() || !lateScene.isLoaded) && cancelledRequest.isDone;
+                }
+                var unloadObservation = ObserveActualUnload();
+                cancelled.Execute();
+                cancelledRequest = Get<AsyncOperation>(cancelled, "_sceneRequest");
+                Check(cancelledRequest != null && !cancelledRequest.isDone, "Scene Task cancellation targets a submitted real Additive load.");
+                cancelled.Cancel(); cancelled.Dispose(); cancelled.Dispose();
+                Check(await cancelled.Task == null && first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending && cancelledCalls == 0,
+                    "Cancelled Scene logic ends before native loading/unloading; early wrapper retirement sends no late business callback.");
+                await WaitForResourceCleanup(first, second, "Cancelled Additive Scene cleanup");
+                Check(await unloadObservation && pendingAtLoad && lateUnloaded && cancelled.State == TaskState.Cancelled &&
+                    cancelled.Error == null && cancelled.Result == null && cancelledCalls == 0 && bundle != null && dependency != null,
+                    "Concurrent cleanup waiters finish after the late Scene's actual native unload event, despite early wrapper Dispose, without rewriting logic or releasing Bundles.");
+                await ObserveResourceCleanup(cancelled);
+                SceneManager.sceneLoaded -= captureLoad;
+                SceneManager.sceneUnloaded -= CaptureUnload;
+                captureLoad = null;
+
+                var events = new List<string>();
+                var delivered = default(Scene);
+                var calls = 0;
+                success = new LoadSceneTask(bundle.GetAllScenePaths().Single(), new LoadSceneParameters(LoadSceneMode.Additive), completed =>
+                {
+                    delivered = (Scene)completed.Result; calls++; events.Add("callback");
+                });
+                var continuation = DisposeInResourceTaskAwait(success, events);
+                var successFirst = ObserveResourceCleanup(success);
+                var successSecond = ObserveResourceCleanup(success);
+                success.Execute();
+                successRequest = Get<AsyncOperation>(success, "_sceneRequest");
+                await WaitForResourceCleanup(successFirst, successSecond, "Successful Scene Task cleanup");
+                var awaited = await continuation;
+                await ObserveResourceCleanup(success);
+                await Frame(); await Frame();
+                Check(success.State == TaskState.Succeeded && success.Error == null && calls == 1 && delivered.IsValid() && delivered.isLoaded &&
+                    awaited is Scene awaitedScene && awaitedScene.handle == delivered.handle && success.GetScene().handle == delivered.handle &&
+                    events.SequenceEqual(new[] { "await", "callback" }) && bundle != null && dependency != null,
+                    "Immediate wrapper Dispose in the successful Scene await still delivers its Scene notification once; repeated cleanup observation never unloads the successful Scene.");
+            }
+            finally
+            {
+                if (captureLoad != null) SceneManager.sceneLoaded -= captureLoad;
+                SceneManager.sceneUnloaded -= CaptureUnload;
+                try { await RetireSceneTaskFixture(cancelled, cancelledRequest); }
+                finally
+                {
+                    try { await RetireSceneTaskFixture(success, successRequest); }
+                    finally
+                    {
+                        if (bundle != null) bundle.Unload(true);
+                        if (dependency != null) dependency.Unload(true);
+                    }
+                }
+            }
+        }
+
+        private static async UniTask SceneTaskCleanupRefusal()
+        {
+            AssetBundle dependency = null;
+            AssetBundle bundle = null;
+            LoadSceneTask task = null;
+            AsyncOperation request = null;
+            var lateScene = default(Scene);
+            void CaptureLoad(Scene scene, LoadSceneMode mode)
+            {
+                if (string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)) lateScene = scene;
+            }
+            try
+            {
+                dependency = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
+                bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "scene.ab"));
+                Check(dependency != null && bundle != null, "Refused cleanup uses the real Single Scene fixture and retained Bundles.");
+                var calls = 0;
+                task = new LoadSceneTask(bundle.GetAllScenePaths().Single(), new LoadSceneParameters(LoadSceneMode.Single), _ => calls++);
+                var first = ObserveResourceCleanup(task);
+                var second = ObserveResourceCleanup(task);
+                async UniTask<Exception> ObserveFailure(UniTask cleanup)
+                {
+                    try { await cleanup; return null; }
+                    catch (Exception ex) { return ex; }
+                }
+                var firstFailure = ObserveFailure(first);
+                var secondFailure = ObserveFailure(second);
+                SceneManager.sceneLoaded += CaptureLoad;
+                task.Execute();
+                request = Get<AsyncOperation>(task, "_sceneRequest");
+                Check(request != null && !request.isDone, "Single Scene is cancelled before native completion and last-scene refusal.");
+                task.Cancel(); task.Dispose();
+                Check(await task.Task == null && task.State == TaskState.Cancelled && task.Error == null && task.Result == null,
+                    "Single Scene cancellation completes logical await normally before cleanup can fail.");
+                await WaitWithoutLoaderTick(() => firstFailure.Status.IsCompleted() && secondFailure.Status.IsCompleted(), "Refused Scene cleanup observers");
+                var firstError = await firstFailure;
+                var secondError = await secondFailure;
+                Check(first.Status == UniTaskStatus.Faulted && second.Status == UniTaskStatus.Faulted && firstError != null &&
+                    ReferenceEquals(firstError, secondError) && request.isDone && SceneManager.sceneCount == 1 && lateScene.IsValid() && lateScene.isLoaded,
+                    "Unloading the actual last loaded Single Scene is refused; both simultaneous cleanup waiters receive the same cleanup failure while the Scene stays loaded.");
+                var repeatedError = await ObserveFailure(ObserveResourceCleanup(task));
+                task.Cancel(); task.Fail(new Exception("Must not replace cancelled Scene logic")); task.Dispose();
+                await Frame(); await Frame();
+                Check(ReferenceEquals(repeatedError, firstError) && task.State == TaskState.Cancelled && task.Result == null && task.Error == null &&
+                    await task.Task == null && calls == 0 && SceneManager.sceneCount == 1 && lateScene.isLoaded &&
+                    !SceneManager.GetSceneByName("SessionValidationHost").isLoaded,
+                    "Repeated cleanup keeps the refusal fault without auto-restoration, late callbacks, logical failure conversion or a throwing logical await.");
+                _case.evidence.Add("Refused cleanup exception: " + firstError);
+            }
+            finally
+            {
+                SceneManager.sceneLoaded -= CaptureLoad;
+                try { await RetireSceneTaskFixture(task, request, true); }
+                finally
+                {
+                    if (bundle != null) bundle.Unload(true);
+                    if (dependency != null) dependency.Unload(true);
+                }
+            }
+        }
+
         private static async UniTask ProviderShutdownSceneGuard()
         {
             var h = New(true);

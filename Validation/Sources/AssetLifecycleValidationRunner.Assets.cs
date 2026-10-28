@@ -13,6 +13,400 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask DownloadReleaseFailures()
+        {
+            New();
+            var timerField = typeof(UnityDownloadBaseTask).GetField("_retryTimerID", Private);
+            var requestField = typeof(UnityDownloadBaseTask).GetField("_request", Private);
+            foreach (var mode in new[] { "retry", "success", "cancel", "fail" })
+            {
+                using var server = new BundleHttpServer(new byte[16]);
+                var releaseError = new InvalidOperationException("Controlled request release failure: " + mode);
+                var logicalError = new InvalidOperationException("Controlled logical download failure");
+                var task = new RequestReleaseProbe(server.Url, releaseError, mode == "retry");
+                async UniTask<Exception> ObserveFailure()
+                {
+                    try { await task.WaitForCleanupAsync(); return null; }
+                    catch (Exception ex) { return ex; }
+                }
+                try
+                {
+                    var first = ObserveFailure();
+                    var second = ObserveFailure();
+                    if (mode == "success") task.Task.GetAwaiter().OnCompleted(task.Dispose);
+                    task.Execute();
+                    if (mode != "retry")
+                    {
+                        await WaitWithoutLoaderTick(() => task.Requests[0].downloadedBytes > 0 || server.Work.IsFaulted,
+                            "Request release fixture receives HTTP data");
+                        Check(!server.Work.IsFaulted && !task.IsDone, "Terminal release failure targets a running request.");
+                        // Set each logical terminal state deliberately; normal download success/handoff is covered by RemoteTaskCleanup.
+                        if (mode == "success") Check(task.CompleteSuccessfully(), "The fixture publishes success before injecting a release failure.");
+                        else if (mode == "cancel") task.Cancel();
+                        else task.Fail(logicalError);
+                    }
+                    await WaitWithoutLoaderTick(() => first.Status.IsCompleted() && second.Status.IsCompleted(),
+                        "Request release failure reaches both cleanup observers");
+                    Check(ReferenceEquals(await first, releaseError) && ReferenceEquals(await second, releaseError) &&
+                        task.Handler.Throws == 1 && task.CleanupReports == 1,
+                        mode + ": release failure reaches both observers once without escaping the native callback.");
+                    if (mode == "retry")
+                    {
+                        Check(task.RetryTimerAtRelease != null && task.RetryTimerAtRelease.IsDone &&
+                            (ulong)timerField.GetValue(task) == 0 && task.State == TaskState.Failed && ReferenceEquals(task.Error, releaseError),
+                            "The failed request had scheduled a retry; its release failure terminates the task and cancels that timer.");
+                        task.RetryTimerAtRelease.Tick(31f);
+                    }
+                    var expectedState = mode == "success" ? TaskState.Succeeded : mode == "cancel" ? TaskState.Cancelled : TaskState.Failed;
+                    var expectedError = mode == "retry" ? releaseError : mode == "fail" ? logicalError : null;
+                    var result = await task.Task;
+                    Check(task.State == expectedState && ReferenceEquals(task.Error, expectedError) &&
+                        (mode == "success" ? result is true : result == null) &&
+                        task.Failures == (expectedState == TaskState.Failed ? 1 : 0),
+                        mode + ": cleanup failure preserves any established logical result and only terminates an unfinished retry.");
+                    task.Dispose(); task.Dispose(); task.Cancel(); task.Fail(logicalError);
+                    Check(ReferenceEquals(await ObserveFailure(), releaseError) && task.CleanupReports == 1 &&
+                        task.Requests.Count == 1 && requestField.GetValue(task) == null && (ulong)timerField.GetValue(task) == 0,
+                        "Later retirement and repeated observation cannot restart downloading or replace the original cleanup failure.");
+                }
+                finally
+                {
+                    task.Cancel(); task.Dispose();
+                    // The injected handler error interrupts UnityWebRequest.Dispose; fixture isolation releases the retained native request.
+                    foreach (var request in task.Requests) request.Dispose();
+                    server.Dispose();
+                    await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Request release fixture socket cleanup");
+                    Check(!server.Work.IsFaulted, "Request release fixture closes its socket worker without an unhandled error.");
+                }
+            }
+        }
+
+        private static async UniTask PendingResourceTaskCleanup()
+        {
+            foreach (var fail in new[] { false, true })
+            {
+                var callbacks = new int[4];
+                var tasks = new BaseTask[]
+                {
+                    new LoadLocalBundleTask("unused.ab", _ => callbacks[0]++),
+                    new LoadAssetTask<TextAsset>(null, TextPath, _ => callbacks[1]++),
+                    new LoadSceneTask(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive), _ => callbacks[2]++),
+                    new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null, _ => callbacks[3]++)
+                };
+                try
+                {
+                    for (var i = 0; i < tasks.Length; i++)
+                    {
+                        var task = tasks[i];
+                        var first = ObserveResourceCleanup(task);
+                        var second = ObserveResourceCleanup(task);
+                        Check(first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending &&
+                            task.State == TaskState.Pending && !task.IsExecuted && callbacks[i] == 0,
+                            task.DebugName + " repeated Pending cleanup observation does not execute or notify.");
+                        var error = new InvalidOperationException("Controlled pending resource Task failure");
+                        if (fail) task.Fail(error);
+                        else task.Cancel();
+                        Check(await task.Task == null && task.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
+                            task.Result == null && ReferenceEquals(task.Error, fail ? error : null) && !task.IsExecuted,
+                            task.DebugName + " logical failure/cancellation awaits normally to null without execution.");
+                        Check(first.Status == UniTaskStatus.Succeeded && second.Status == UniTaskStatus.Succeeded,
+                            task.DebugName + " no-native-operation cleanup completes at termination.");
+                        task.Dispose(); task.Dispose(); task.Cancel(); task.Fail(error);
+                        await WaitForResourceCleanup(first, second, "Pending resource cleanup");
+                        await ObserveResourceCleanup(task);
+                        var expectedCallbacks = fail || i == 1 || i == 2 ? 1 : 0;
+                        Check(callbacks[i] == expectedCallbacks && task.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
+                            task.Result == null && ReferenceEquals(task.Error, fail ? error : null) && !task.IsExecuted,
+                            task.DebugName + " repeated cleanup preserves the original terminal callback count, error and null result.");
+                    }
+                }
+                finally
+                {
+                    foreach (var task in tasks) { task.Cancel(); task.Dispose(); }
+                }
+            }
+        }
+
+        private static async UniTask RetireLocalBundleFixture(LoadLocalBundleTask task, AssetBundleCreateRequest request)
+        {
+            task.Cancel(); task.Dispose();
+            if (request == null) return;
+            await WaitWithoutLoaderTick(() => request.isDone, "Local Bundle fixture native completion");
+            if (request.assetBundle != null) request.assetBundle.Unload(true);
+        }
+
+        private static async UniTask LocalBundleTaskCleanup()
+        {
+            foreach (var fail in new[] { false, true })
+            {
+                var callbacks = 0;
+                var task = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), _ => callbacks++);
+                AssetBundleCreateRequest request = null;
+                try
+                {
+                    var first = ObserveResourceCleanup(task);
+                    task.Execute();
+                    request = Get<AssetBundleCreateRequest>(task, "_bundleRequest");
+                    var second = ObserveResourceCleanup(task);
+                    Check(request != null && !request.isDone && first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending,
+                        "Local Bundle cleanup observes a real outstanding native request.");
+                    var error = new InvalidOperationException("Controlled started local Bundle failure");
+                    if (fail) task.Fail(error);
+                    else task.Cancel();
+                    task.Dispose(); task.Dispose();
+                    Check(await task.Task == null && first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending,
+                        "Local Bundle logical await ends before native cleanup, even after wrapper retirement.");
+                    await WaitForResourceCleanup(first, second, "Retired local Bundle cleanup");
+                    await ObserveResourceCleanup(task);
+                    task.Cancel(); task.Fail(new Exception("Must not replace local terminal state"));
+                    Check(request.isDone && request.assetBundle == null && callbacks == (fail ? 1 : 0) &&
+                        task.State == (fail ? TaskState.Failed : TaskState.Cancelled) && task.Result == null &&
+                        ReferenceEquals(task.Error, fail ? error : null) && await task.Task == null,
+                        "Both cleanup waiters finish only after late Bundle unloading, preserving the original logical outcome and callback count.");
+                }
+                finally
+                {
+                    await RetireLocalBundleFixture(task, request);
+                }
+            }
+
+            var events = new List<string>();
+            AssetBundle delivered = null;
+            var calls = 0;
+            var success = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), bundle =>
+            {
+                delivered = bundle; calls++; events.Add("callback");
+            });
+            AssetBundleCreateRequest successRequest = null;
+            try
+            {
+                var continuation = DisposeInResourceTaskAwait(success, events);
+                var first = ObserveResourceCleanup(success);
+                var second = ObserveResourceCleanup(success);
+                success.Execute();
+                successRequest = Get<AssetBundleCreateRequest>(success, "_bundleRequest");
+                await WaitForResourceCleanup(first, second, "Successful local Bundle cleanup");
+                var awaited = await continuation;
+                await ObserveResourceCleanup(success);
+                Check(success.State == TaskState.Succeeded && success.Error == null && delivered != null && calls == 1 &&
+                    ReferenceEquals(awaited, delivered) && ReferenceEquals(success.GetBundle(), delivered) &&
+                    events.SequenceEqual(new[] { "await", "callback" }),
+                    "Immediate wrapper Dispose in the local Bundle await continuation preserves the one-shot success handoff and does not unload the Bundle.");
+            }
+            finally
+            {
+                await RetireLocalBundleFixture(success, successRequest);
+            }
+        }
+
+        private static async UniTask AssetTaskCleanup()
+        {
+            var bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
+            LoadAssetTask<TextAsset> cancelled = null;
+            LoadAssetTask<TextAsset> success = null;
+            AssetBundleRequest cancelledRequest = null;
+            AssetBundleRequest successRequest = null;
+            try
+            {
+                Check(bundle != null, "Asset cleanup uses an independently owned real fixture Bundle.");
+                var cancelledCalls = 0;
+                cancelled = new LoadAssetTask<TextAsset>(bundle, AssetPath.Resolve(TextPath), _ => cancelledCalls++);
+                var first = ObserveResourceCleanup(cancelled);
+                cancelled.Execute();
+                cancelledRequest = Get<AssetBundleRequest>(cancelled, "_assetRequest");
+                var second = ObserveResourceCleanup(cancelled);
+                Check(cancelledRequest != null && !cancelledRequest.isDone, "Asset cancellation targets an outstanding native read.");
+                cancelled.Cancel(); cancelled.Dispose(); cancelled.Dispose();
+                Check(await cancelled.Task == null && first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending && cancelledCalls == 0,
+                    "Submitted Asset cancellation ends logical waiting without delivering an object or prematurely completing cleanup.");
+                await WaitForResourceCleanup(first, second, "Retired Asset native cleanup");
+                await ObserveResourceCleanup(cancelled);
+                var retained = bundle.LoadAsset<TextAsset>(AssetPath.Resolve(TextPath));
+                Check(cancelledRequest.isDone && cancelled.State == TaskState.Cancelled && cancelled.Error == null &&
+                    cancelled.Result == null && cancelled.GetAsset() == null && cancelledCalls == 0 && bundle != null && retained != null,
+                    "Late Asset completion stays undispatched after wrapper disposal; cleanup leaves the upper owner's Bundle and asset usable.");
+
+                var events = new List<string>();
+                TextAsset delivered = null;
+                var calls = 0;
+                success = new LoadAssetTask<TextAsset>(bundle, AssetPath.Resolve(SecondTextPath), completed =>
+                {
+                    delivered = completed.Result as TextAsset; calls++; events.Add("callback");
+                });
+                var continuation = DisposeInResourceTaskAwait(success, events);
+                var successFirst = ObserveResourceCleanup(success);
+                var successSecond = ObserveResourceCleanup(success);
+                success.Execute();
+                successRequest = Get<AssetBundleRequest>(success, "_assetRequest");
+                await WaitForResourceCleanup(successFirst, successSecond, "Successful Asset cleanup");
+                var awaited = await continuation;
+                await ObserveResourceCleanup(success);
+                Check(success.State == TaskState.Succeeded && success.Error == null && delivered != null && calls == 1 &&
+                    ReferenceEquals(awaited, delivered) && ReferenceEquals(success.GetAsset(), delivered) && retained != null && bundle != null &&
+                    events.SequenceEqual(new[] { "await", "callback" }),
+                    "Immediate wrapper Dispose in the Asset await continuation still hands off the same asset once and unloads neither asset nor Bundle.");
+            }
+            finally
+            {
+                cancelled?.Cancel(); cancelled?.Dispose(); success?.Cancel(); success?.Dispose();
+                if (cancelledRequest != null) await WaitWithoutLoaderTick(() => cancelledRequest.isDone, "Cancelled Asset fixture native completion");
+                if (successRequest != null) await WaitWithoutLoaderTick(() => successRequest.isDone, "Successful Asset fixture native completion");
+                if (bundle != null) bundle.Unload(true);
+            }
+        }
+
+        private static T GetDownloadField<T>(LoadRemoteBundleTask task, string field) =>
+            (T)typeof(UnityDownloadBaseTask).GetField(field, Private).GetValue(task);
+
+        private static async UniTask RetireRemoteFixture(LoadRemoteBundleTask task)
+        {
+            task.Cancel(); task.Dispose();
+            await WaitWithoutLoaderTick(() => GetDownloadField<UnityWebRequest>(task, "_request") == null &&
+                GetDownloadField<ulong>(task, "_retryTimerID") == 0 && !TaskSnapshot().Contains(task), "Remote fixture retirement");
+            var bundle = task.GetBundle();
+            if (bundle != null) bundle.Unload(true);
+        }
+
+        private static async UniTask RemoteTaskCleanup()
+        {
+            var events = new List<string>();
+            var calls = 0;
+            AssetBundle delivered = null;
+            var success = new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null, bundle =>
+            {
+                delivered = bundle; calls++; events.Add("callback");
+            });
+            try
+            {
+                var continuation = DisposeInResourceTaskAwait(success, events);
+                var first = ObserveResourceCleanup(success);
+                var second = ObserveResourceCleanup(success);
+                var deliveredAtCleanup = false;
+                async UniTask ObserveHandoff()
+                {
+                    await first;
+                    events.Add("cleanup");
+                    deliveredAtCleanup = calls == 1 && delivered != null &&
+                        GetDownloadField<UnityWebRequest>(success, "_request") == null;
+                }
+                var handoff = ObserveHandoff();
+                LiteRuntime.Task.AddTask(success, LiteConst.TaskGroupId.Asset);
+                await WaitForResourceCleanup(first, second, "Successful remote-file cleanup");
+                await handoff;
+                Check(deliveredAtCleanup && events.SequenceEqual(new[] { "await", "callback", "cleanup" }),
+                    "The cleanup continuation resumes only after request disposal and the success notification, without waiting for record retirement.");
+                var awaited = await continuation;
+                await WaitWithoutLoaderTick(() => !TaskSnapshot().Contains(success), "Successful remote wrapper retirement");
+                await ObserveResourceCleanup(success);
+                Check(success.State == TaskState.Succeeded && success.Error == null && delivered != null && calls == 1 &&
+                    ReferenceEquals(awaited, delivered) && ReferenceEquals(success.GetBundle(), delivered) &&
+                    GetDownloadField<UnityWebRequest>(success, "_request") == null && GetDownloadField<ulong>(success, "_retryTimerID") == 0 &&
+                    events.SequenceEqual(new[] { "await", "callback", "cleanup" }),
+                    "Remote-file success survives await-Dispose handoff once; repeated cleanup waits finish after request/timer release without unloading the delivered Bundle.");
+            }
+            finally
+            {
+                await RetireRemoteFixture(success);
+            }
+
+            var body = File.ReadAllBytes(Path.Combine(BundleFolder, "text.ab"));
+            using (var server = new BundleHttpServer(body))
+            {
+                var baseline = AssetBundle.GetAllLoadedAssetBundles().Select(bundle => bundle.GetInstanceID()).ToHashSet();
+                var cancelledCalls = 0;
+                var cancelled = new LoadRemoteBundleTask(server.Url, null, _ => cancelledCalls++);
+                try
+                {
+                    var first = ObserveResourceCleanup(cancelled);
+                    var second = ObserveResourceCleanup(cancelled);
+                    LiteRuntime.Task.AddTask(cancelled, LiteConst.TaskGroupId.Asset);
+                    cancelled.Execute();
+                    var request = GetDownloadField<UnityWebRequest>(cancelled, "_request");
+                    Check(request != null && cancelled.State == TaskState.Running, "Remote cancellation starts a real loopback HTTP transfer.");
+                    await WaitWithoutLoaderTick(() => request.downloadedBytes > 0 || server.Work.IsFaulted, "Remote cleanup first HTTP segment");
+                    Check(!server.Work.IsFaulted && !((DownloadHandlerAssetBundle)request.downloadHandler).isDownloadComplete,
+                        "Loopback HTTP cancellation occurs with its body held mid-transfer.");
+                    cancelled.Cancel(); cancelled.Cancel();
+                    Check(await cancelled.Task == null && cancelled.State == TaskState.Cancelled && cancelled.Error == null && cancelled.Result == null &&
+                        GetDownloadField<UnityWebRequest>(cancelled, "_request") == null,
+                        "Cancellation ends logical waiting and releases its request without waiting for scheduler retirement.");
+                    await WaitForResourceCleanup(first, second, "Cancelled HTTP cleanup without retirement");
+                    Check(TaskSnapshot().Contains(cancelled) && cancelledCalls == 0,
+                        "Cleanup completes while the scheduler still holds the task record.");
+                    await WaitWithoutLoaderTick(() => !TaskSnapshot().Contains(cancelled), "Cancelled HTTP wrapper retirement");
+                    await ObserveResourceCleanup(cancelled);
+                    Check(GetDownloadField<UnityWebRequest>(cancelled, "_request") == null && GetDownloadField<ulong>(cancelled, "_retryTimerID") == 0 &&
+                        cancelled.State == TaskState.Cancelled && cancelled.Result == null && cancelled.Error == null && cancelledCalls == 0 &&
+                        !AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
+                        "Multiple HTTP cleanup waiters observe request/timer release and no late callback or extracted Bundle.");
+                }
+                finally
+                {
+                    try { await RetireRemoteFixture(cancelled); }
+                    finally
+                    {
+                        server.Dispose();
+                        await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Cancelled HTTP fixture socket cleanup");
+                        Check(!server.Work.IsFaulted, "Cancelled HTTP fixture closes its socket worker without an unhandled error.");
+                    }
+                }
+            }
+
+            var previousRetry = LiteRuntime.Setting.Asset.BundleDownloadRetry;
+            try
+            {
+                LiteRuntime.Setting.Asset.BundleDownloadRetry = new RetryParam(1, 1, 30f);
+                foreach (var fail in new[] { false, true })
+                {
+                    using var server = new BundleHttpServer(body);
+                    var terminalCalls = 0;
+                    var retry = new LoadRemoteBundleTask(server.Url, null, _ => terminalCalls++);
+                    try
+                    {
+                        var first = ObserveResourceCleanup(retry);
+                        var second = ObserveResourceCleanup(retry);
+                        LiteRuntime.Task.AddTask(retry, LiteConst.TaskGroupId.Asset);
+                        retry.Execute();
+                        await WaitWithoutLoaderTick(() => GetDownloadField<ulong>(retry, "_retryTimerID") != 0 || retry.IsDone || server.Work.IsFaulted,
+                            "Real HTTP timeout creates a retry timer");
+                        var timerId = GetDownloadField<ulong>(retry, "_retryTimerID");
+                        var timer = LiteRuntime.Timer.FindTimer(timerId);
+                        Check(!server.Work.IsFaulted && retry.State == TaskState.Running && timer != null && !timer.IsDone &&
+                            GetDownloadField<UnityWebRequest>(retry, "_request") == null,
+                            "A real timed-out transfer disposes its first request and waits on an actual retry timer.");
+                        var error = new InvalidOperationException("Controlled remote failure during retry delay");
+                        if (fail) retry.Fail(error);
+                        else retry.Cancel();
+                        await WaitForResourceCleanup(first, second, "Retry-delay terminal cleanup");
+                        Check(await retry.Task == null && TaskSnapshot().Contains(retry) &&
+                            GetDownloadField<ulong>(retry, "_retryTimerID") == 0 && timer.IsDone,
+                            "Terminating during the retry delay stops its timer and reports cleanup before scheduler retirement.");
+                        timer.Tick(31f);
+                        await WaitWithoutLoaderTick(() => !TaskSnapshot().Contains(retry), "Retry-delay wrapper retirement");
+                        await ObserveResourceCleanup(retry);
+                        Check(GetDownloadField<ulong>(retry, "_retryTimerID") == 0 &&
+                            GetDownloadField<UnityWebRequest>(retry, "_request") == null && retry.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
+                            retry.Result == null && ReferenceEquals(retry.Error, fail ? error : null) && terminalCalls == (fail ? 1 : 0) && await retry.Task == null,
+                            "An overdue retry tick cannot restart downloading or rewrite either terminal outcome.");
+                    }
+                    finally
+                    {
+                        try { await RetireRemoteFixture(retry); }
+                        finally
+                        {
+                            server.Dispose();
+                            await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Retry HTTP fixture socket cleanup");
+                            Check(!server.Work.IsFaulted, "Retry HTTP fixture closes its socket worker without an unhandled error.");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                LiteRuntime.Setting.Asset.BundleDownloadRetry = previousRetry;
+            }
+        }
+
         private static async UniTask HandleStatusProtocol()
         {
             var h = New();

@@ -15,6 +15,9 @@ namespace LiteQuark.Runtime
         private UnityWebRequest _request;
         private int _retryCount;
         private ulong _retryTimerID;
+        private bool _isDelivering;
+        private bool _isReleased;
+        private Exception _cleanupError;
 
         protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
@@ -29,17 +32,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnDispose()
         {
-            if (_retryTimerID != 0)
-            {
-                LiteRuntime.Timer.StopTimer(_retryTimerID);
-                _retryTimerID = 0;
-            }
-
-            if (_request != null)
-            {
-                _request.Dispose();
-                _request = null;
-            }
+            ReleaseResources();
         }
 
         protected override void OnTerminated()
@@ -48,17 +41,25 @@ namespace LiteQuark.Runtime
 
             try
             {
-                if (State is TaskState.Failed or TaskState.Cancelled)
+                try
                 {
-                    _request?.Abort();
+                    if (State is TaskState.Failed or TaskState.Cancelled)
+                    {
+                        _request?.Abort();
+                    }
+                }
+                finally
+                {
+                    if (State == TaskState.Failed)
+                    {
+                        OnFailed();
+                    }
                 }
             }
             finally
             {
-                if (State == TaskState.Failed)
-                {
-                    OnFailed();
-                }
+                // 终态不依赖调度器回收包装器，能释放的资源立即释放。
+                ReleaseResources();
             }
         }
 
@@ -122,18 +123,19 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnRequestCompleted;
 
-            if (IsDone)
-            {
-                return;
-            }
-
             if (_request == null)
             {
                 return;
             }
 
+            _isDelivering = true;
             try
             {
+                if (IsDone)
+                {
+                    return;
+                }
+
                 var downloadHandler = _request.downloadHandler;
                 if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
                 {
@@ -144,8 +146,6 @@ namespace LiteQuark.Runtime
                     if (_retryCount > 0 && RetryParam.IsCanRetryError(error ?? string.Empty))
                     {
                         _retryCount--;
-                        _request.Dispose();
-                        _request = null;
                         _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
                     }
                     else
@@ -168,6 +168,71 @@ namespace LiteQuark.Runtime
                 {
                     Fail(ex);
                 }
+            }
+            finally
+            {
+                _isDelivering = false;
+                if (IsDone)
+                {
+                    ReleaseResources();
+                }
+                else
+                {
+                    // 本轮请求结束，但重试计时器仍持有下一次尝试。
+                    ReleaseRequest();
+                    if (_cleanupError != null)
+                    {
+                        // 先保存释放错误，再终结任务；终态清理会停止已安排的重试。
+                        Fail(_cleanupError);
+                    }
+                }
+            }
+        }
+
+        private void ReleaseResources()
+        {
+            // 结果通知期间不释放当前请求，交由完成回调的 finally 处理。
+            if (_isDelivering || _isReleased)
+            {
+                return;
+            }
+
+            if (_retryTimerID != 0)
+            {
+                LiteRuntime.Timer.StopTimer(_retryTimerID);
+                _retryTimerID = 0;
+            }
+
+            ReleaseRequest();
+
+            if (!IsDone)
+            {
+                return;
+            }
+
+            _isReleased = true;
+            OnResourcesReleased(_cleanupError);
+        }
+
+        private void ReleaseRequest()
+        {
+            var request = _request;
+            _request = null;
+            try
+            {
+                request?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _cleanupError ??= ex;
+            }
+        }
+
+        protected virtual void OnResourcesReleased(Exception error)
+        {
+            if (error != null)
+            {
+                LLog.Exception(error, "Release download request failed : {0}", Uri);
             }
         }
 

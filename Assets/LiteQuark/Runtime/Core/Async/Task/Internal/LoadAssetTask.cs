@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
+    internal sealed class LoadAssetTask<T> : BaseTask, IResourceTaskCleanup where T : UnityEngine.Object
     {
         public override string DebugName => $"LoadAsset {_assetName}";
 
@@ -11,6 +12,9 @@ namespace LiteQuark.Runtime
         private readonly string _assetName;
         private Action<ITask> _callback;
         private AssetBundleRequest _assetRequest;
+        private readonly UniTaskCompletionSource _cleanupCompletion = new();
+
+        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadAssetTask(AssetBundle bundle, string assetName, Action<ITask> callback)
             : base()
@@ -24,7 +28,6 @@ namespace LiteQuark.Runtime
         protected override void OnDispose()
         {
             _callback = null;
-            _assetRequest = null;
         }
 
         public T GetAsset()
@@ -36,7 +39,14 @@ namespace LiteQuark.Runtime
         {
             if (State != TaskState.Succeeded && (_assetRequest == null || _assetRequest.isDone))
             {
-                NotifyCompleted();
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, this);
+            }
+
+            if (_assetRequest == null && State != TaskState.Succeeded)
+            {
+                _cleanupCompletion.TrySetResult();
             }
         }
 
@@ -62,38 +72,36 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnAssetRequestLoadCompleted;
 
-            if (IsDone)
-            {
-                return;
-            }
-
-            T asset;
             try
             {
-                asset = _assetRequest.asset as T;
+                if (IsDone)
+                {
+                    return;
+                }
+
+                var asset = _assetRequest.asset as T;
                 if (asset == null)
                 {
                     Fail(new InvalidOperationException($"Asset load returned no {typeof(T).Name}: {_assetName}"));
                     return;
                 }
+
+                var callback = _callback;
+                _callback = null;
+                if (Complete(asset))
+                {
+                    LiteUtils.SafeInvoke(callback, this);
+                }
             }
             catch (Exception ex)
             {
                 Fail(ex);
-                return;
             }
-
-            if (Complete(asset))
+            finally
             {
-                NotifyCompleted();
+                _assetRequest = null;
+                _cleanupCompletion.TrySetResult();
             }
-        }
-
-        private void NotifyCompleted()
-        {
-            var callback = _callback;
-            _callback = null;
-            LiteUtils.SafeInvoke(callback, this);
         }
     }
 }

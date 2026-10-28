@@ -1,10 +1,11 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadSceneTask : BaseTask
+    internal sealed class LoadSceneTask : BaseTask, IResourceTaskCleanup
     {
         public override string DebugName => $"LoadScene:{_scenePath}";
 
@@ -13,6 +14,9 @@ namespace LiteQuark.Runtime
         private Action<ITask> _callback;
         private AsyncOperation _sceneRequest;
         private Scene _scene;
+        private readonly UniTaskCompletionSource _cleanupCompletion = new();
+
+        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadSceneTask(string scenePath, LoadSceneParameters parameters, Action<ITask> callback)
             : base()
@@ -25,9 +29,11 @@ namespace LiteQuark.Runtime
 
         protected override void OnDispose()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
             _callback = null;
-            _sceneRequest = null;
+            if (_sceneRequest == null)
+            {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+            }
         }
 
         public Scene GetScene()
@@ -39,8 +45,14 @@ namespace LiteQuark.Runtime
         {
             if (State != TaskState.Succeeded && (_sceneRequest == null || _sceneRequest.isDone))
             {
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, this);
+            }
+            if (_sceneRequest == null && State != TaskState.Succeeded)
+            {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
-                NotifyCompleted();
+                _cleanupCompletion.TrySetResult();
             }
         }
 
@@ -81,8 +93,9 @@ namespace LiteQuark.Runtime
             op.completed -= OnSceneRequestLoadCompleted;
             SceneManager.sceneLoaded -= OnSceneLoaded;
 
-            if (IsDone)
+            if (State is TaskState.Failed or TaskState.Cancelled)
             {
+                CleanupLateSceneAsync().Forget();
                 return;
             }
 
@@ -93,24 +106,61 @@ namespace LiteQuark.Runtime
                     Fail(new InvalidOperationException($"Scene load returned no valid scene: {_scenePath}"));
                     return;
                 }
+
+                var callback = _callback;
+                _callback = null;
+                if (Complete(_scene))
+                {
+                    LiteUtils.SafeInvoke(callback, this);
+                }
             }
             catch (Exception ex)
             {
                 Fail(ex);
-                return;
             }
-
-            if (Complete(_scene))
+            finally
             {
-                NotifyCompleted();
+                _sceneRequest = null;
+                _cleanupCompletion.TrySetResult();
             }
         }
 
-        private void NotifyCompleted()
+        private async UniTask CleanupLateSceneAsync()
         {
-            var callback = _callback;
-            _callback = null;
-            LiteUtils.SafeInvoke(callback, this);
+            Exception failure = null;
+            try
+            {
+                if (_scene.IsValid() && _scene.isLoaded)
+                {
+                    var operation = SceneManager.UnloadSceneAsync(_scene);
+                    if (operation == null)
+                    {
+                        throw new InvalidOperationException($"Could not unload cancelled scene: {_scenePath}");
+                    }
+
+                    await UniTask.WaitUntil(() => operation.isDone);
+                    if (_scene.IsValid() && _scene.isLoaded)
+                    {
+                        throw new InvalidOperationException($"Cancelled scene is still loaded: {_scenePath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+            finally
+            {
+                _sceneRequest = null;
+                if (failure == null)
+                {
+                    _cleanupCompletion.TrySetResult();
+                }
+                else
+                {
+                    _cleanupCompletion.TrySetException(failure);
+                }
+            }
         }
     }
 }

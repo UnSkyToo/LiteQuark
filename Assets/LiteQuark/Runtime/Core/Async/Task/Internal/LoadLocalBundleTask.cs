@@ -1,15 +1,19 @@
 using System;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadLocalBundleTask : BaseTask, ILoadBundleTask
+    internal sealed class LoadLocalBundleTask : BaseTask, ILoadBundleTask, IResourceTaskCleanup
     {
         public override string DebugName => $"LoadBundle {PathUtils.GetFileName(_bundleUri)}";
 
         private readonly string _bundleUri;
         private Action<AssetBundle> _callback;
         private AssetBundleCreateRequest _bundleRequest;
+        private readonly UniTaskCompletionSource _cleanupCompletion = new();
+
+        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
             : base()
@@ -30,6 +34,11 @@ namespace LiteQuark.Runtime
                 var callback = _callback;
                 _callback = null;
                 LiteUtils.SafeInvoke(callback, null);
+            }
+
+            if (_bundleRequest == null && State != TaskState.Succeeded)
+            {
+                _cleanupCompletion.TrySetResult();
             }
         }
 
@@ -53,16 +62,10 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnBundleRequestCompleted;
 
-            if (State == TaskState.Succeeded)
-            {
-                return;
-            }
-
-            AssetBundle bundle;
             try
             {
-                bundle = _bundleRequest.assetBundle;
-                if (IsDone)
+                var bundle = _bundleRequest.assetBundle;
+                if (State is TaskState.Failed or TaskState.Cancelled)
                 {
                     if (bundle != null)
                     {
@@ -76,25 +79,30 @@ namespace LiteQuark.Runtime
                     Fail(new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
                     return;
                 }
+
+                var callback = _callback;
+                _callback = null;
+                if (Complete(bundle))
+                {
+                    LiteUtils.SafeInvoke(callback, bundle);
+                }
             }
             catch (Exception ex)
             {
                 if (IsDone)
                 {
+                    _cleanupCompletion.TrySetException(ex);
                     LLog.Exception(ex, "Release late bundle failed : {0}", _bundleUri);
                 }
                 else
                 {
                     Fail(ex);
                 }
-                return;
             }
-
-            if (Complete(bundle))
+            finally
             {
-                var callback = _callback;
-                _callback = null;
-                LiteUtils.SafeInvoke(callback, bundle);
+                _bundleRequest = null;
+                _cleanupCompletion.TrySetResult();
             }
         }
 

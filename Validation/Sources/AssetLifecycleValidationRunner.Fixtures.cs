@@ -10,6 +10,7 @@ using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Editor
@@ -142,6 +143,57 @@ namespace LiteQuark.Editor
             {
                 Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null, callback);
                 return Task;
+            }
+        }
+
+        private sealed class ThrowingDownloadHandler : DownloadHandlerScript
+        {
+            internal readonly Exception Error;
+            internal Action BeforeThrow;
+            internal int Throws;
+            internal ThrowingDownloadHandler(Exception error) { Error = error; }
+            public override void Dispose()
+            {
+                base.Dispose();
+                if (Throws != 0) return;
+                Throws++;
+                BeforeThrow?.Invoke();
+                throw Error;
+            }
+        }
+
+        private sealed class RequestReleaseProbe : UnityDownloadBaseTask, IResourceTaskCleanup
+        {
+            private readonly Exception _releaseError;
+            private readonly UniTaskCompletionSource _cleanup = new();
+            internal readonly List<UnityWebRequest> Requests = new();
+            internal ThrowingDownloadHandler Handler;
+            internal ITimer RetryTimerAtRelease;
+            internal int Failures;
+            internal int CleanupReports;
+            internal RequestReleaseProbe(string uri, Exception error, bool retry)
+                : base(uri, new RetryParam(retry ? 1 : 60, retry ? 1 : 0, 30f), false) { _releaseError = error; }
+            public UniTask WaitForCleanupAsync() => _cleanup.Task;
+            internal bool CompleteSuccessfully() => Complete(true);
+            protected override UnityWebRequest CreateRequest()
+            {
+                Handler = new ThrowingDownloadHandler(_releaseError);
+                Handler.BeforeThrow = () =>
+                {
+                    var id = (ulong)typeof(UnityDownloadBaseTask).GetField("_retryTimerID", Private).GetValue(this);
+                    RetryTimerAtRelease = LiteRuntime.Timer.FindTimer(id);
+                };
+                var request = new UnityWebRequest(Uri, UnityWebRequest.kHttpVerbGET, Handler, null);
+                Requests.Add(request);
+                return request;
+            }
+            protected override void OnSuccess(UnityWebRequest request) { Complete(true); }
+            protected override void OnFailed() { Failures++; }
+            protected override void OnResourcesReleased(Exception error)
+            {
+                CleanupReports++;
+                if (error == null) _cleanup.TrySetResult();
+                else _cleanup.TrySetException(error);
             }
         }
 

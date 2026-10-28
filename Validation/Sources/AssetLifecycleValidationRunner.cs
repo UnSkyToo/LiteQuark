@@ -212,6 +212,16 @@ namespace LiteQuark.Editor
                 await Run("101 Cancelled shared request and immediate failure retry", "Task error snapshot and reentrant same-cache retry", SharedCancellationFailureRetry, "Load bundle failed");
                 await Run("102 GameObject failure keeps await semantics", "real prefab ownership and null/throwing instantiate", InstantiateFailureProtocol);
                 await Run("103 Preload preserves individual errors", "real mixed batch, cancellation and successful ownership", PreloadErrorProtocol, "Load asset failed");
+                await Run("104 Pending resource Tasks expose cleanup without execution", "four Task types, repeated cleanup waits and original terminal callbacks", PendingResourceTaskCleanup, "Bundle download failed");
+                await Run("105 Local Bundle cleanup survives wrapper retirement", "real native cancellation/failure and success await-Dispose handoff", LocalBundleTaskCleanup);
+                await Run("106 Asset cleanup waits without releasing its Bundle", "real AssetBundleRequest cancellation and success await-Dispose handoff", AssetTaskCleanup);
+                await Run("107 Scene cleanup unloads only cancelled late results", "real Additive scene, early wrapper disposal and success handoff", SceneTaskCleanup);
+                await Run("108 Refused late Single scene cleanup faults independently", "real last-scene refusal, repeated cleanup faults and null logical await", SceneTaskCleanupRefusal,
+                    "Unloading the last loaded scene");
+                await Run("109 Remote cleanup follows request and timer retirement", "real file URI handoff, loopback cancellation and timeout retry timer", RemoteTaskCleanup,
+                    "LoadRemoteBundleTask failed:", "Bundle download failed");
+                await Run("110 Download release failure terminates retry and preserves terminal results", "throwing DownloadHandler, real HTTP timeout and controlled logical terminals", DownloadReleaseFailures,
+                    "RequestReleaseProbe failed:");
             }
             catch (Exception ex)
             {
@@ -297,6 +307,33 @@ namespace LiteQuark.Editor
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             if (Current != null && !Current.Disposed) Current.Provider.Tick(0);
+        }
+
+        private static UniTask ObserveResourceCleanup(BaseTask task)
+        {
+            var before = TaskSnapshot();
+            var cleanup = ((IResourceTaskCleanup)task).WaitForCleanupAsync();
+            Check(TaskSnapshot().SequenceEqual(before), task.DebugName + " cleanup observation adds no TaskSystem observer.");
+            return cleanup;
+        }
+
+        private static async UniTask WaitForResourceCleanup(UniTask first, UniTask second, string operation)
+        {
+            async UniTask AwaitCleanup(UniTask cleanup) { await cleanup; }
+            var firstWait = AwaitCleanup(first);
+            var secondWait = AwaitCleanup(second);
+            await WaitWithoutLoaderTick(() => firstWait.Status.IsCompleted() && secondWait.Status.IsCompleted(), operation);
+            try { await firstWait; }
+            finally { await secondWait; }
+        }
+
+        private static async UniTask<object> DisposeInResourceTaskAwait(BaseTask task, List<string> events)
+        {
+            var result = await task.Task;
+            events.Add("await");
+            Check(Get<Delegate>(task, "_callback") == null, task.DebugName + " detaches its success callback before the await continuation.");
+            task.Dispose();
+            return result;
         }
 
         private static async UniTask Cleanup()

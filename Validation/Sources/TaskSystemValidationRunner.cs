@@ -862,14 +862,38 @@ namespace LiteQuark.Editor
                     "WebGet cancellation still completes await without invoking a completion callback.");
 
                 events.Clear(); calls = 0;
+                var requestSurvivedDispose = false;
+                var requestField = typeof(UnityDownloadBaseTask).GetField("_request", privateInstance);
                 var closing = new UnityWebGetRequestTask(new Uri(textPath).AbsoluteUri, new RetryParam(1, 0, 0.01f), false, _ => calls++);
                 var closingWait = closing.Task.GetAwaiter();
-                closingWait.OnCompleted(() => { events.Add("await"); closing.Dispose(); });
+                closingWait.OnCompleted(() =>
+                {
+                    events.Add("await");
+                    closing.Dispose();
+                    requestSurvivedDispose = requestField.GetValue(closing) is UnityWebRequest request && request.downloadHandler != null;
+                });
                 system.AddTask(closing); await WaitDone(system, closing);
                 Check(closing.State == TaskState.Succeeded && closing.Error == null && calls == 0
                     && events.SequenceEqual(new[] { "await" })
                     && System.Text.Encoding.UTF8.GetString((byte[])closingWait.GetResult()) == "result-delivery",
                     "Success-continuation cleanup still suppresses the pending callback without invalidating the data snapshot.");
+                Check(requestSurvivedDispose && requestField.GetValue(closing) == null,
+                    "WebGet keeps the current request alive through its completion stack, then releases it in finally.");
+
+                events.Clear(); calls = 0; requestSurvivedDispose = false;
+                var closingVersion = new LoadVersionPackTask(new Uri(packPath).AbsoluteUri, _ => calls++);
+                var closingVersionWait = closingVersion.Task.GetAwaiter();
+                closingVersionWait.OnCompleted(() =>
+                {
+                    events.Add("await");
+                    closingVersion.Dispose();
+                    requestSurvivedDispose = requestField.GetValue(closingVersion) is UnityWebRequest request && request.downloadHandler != null;
+                });
+                system.AddTask(closingVersion); await WaitDone(system, closingVersion);
+                Check(closingVersion.State == TaskState.Succeeded && closingVersion.Error == null && calls == 0
+                    && events.SequenceEqual(new[] { "await" }) && closingVersionWait.GetResult() is VersionPackInfo { Version: "result-delivery" }
+                    && requestSurvivedDispose && requestField.GetValue(closingVersion) == null,
+                    "VersionPack preserves its parsed result and existing callback suppression while request release waits for completion processing.");
             }
             finally
             {
