@@ -13,6 +13,17 @@
 - 破坏：移除 `ISubstance`；实现类改为直接实现 `ITick` 和 `IDispose`，原先使用 `ISubstance` 的调用方应按所需能力使用对应接口。
 - 破坏：移除 `IStartup` 和 `IShutdown`；其他使用方需改用自己的生命周期接口。
 
+### ObjectPool
+
+- 修复：移除池时，取消回调中创建的同 key 新池不会被外层移除误删；旧实例不能移除新池的登记。
+- 修复：系统关闭时的取消回调移除池不会中断批量清理；自动回收在实际移除前重新检查借出数量，保留被前序回调借用的池。
+- 破坏：`IBasePool.WaitReadyAsync` 和 `PreloadPoolAsync` 改为 `UniTask<bool>`，移除 `Generate(count, callback)`，预生成改用 `await GenerateAsync(count)`；普通失败检查 false，关闭取消按 `OperationCanceledException` 处理。自定义 IBasePool 实现需更新接口。
+- 调整：Alloc 回调签名保留，失败或取消均通知 null。调用方检查 null，回收时保存并使用原池。
+- 迁移：BaseGameObjectPool 的分配回调现在包装异步 `Alloc(Transform)`；自定义池需要同时影响两种入口时，覆写异步重载。模板等待改为保存终态，移除 `LoadTemplateCallbackList`／`RunWhenLoadTemplated`；派生池通过 `OnLoadTemplate` 报告结果，池关闭时统一取消等待。
+- 迁移：预生成实例直接入池并触发 `OnRelease`，不再经过公开的 `Recycle`；自定义池若将预生成也需要的复用初始化写在 `Recycle` override 中，应移到 `OnRelease`。
+- 修复：池同步关闭结束模板等待与预生成，先停止实例化再释放模板；初始化失败的池也会清理。预生成后的活动数量正确参与自动回收判断。
+- 修复：实例化 Task 清理已完成但未发布的对象，成功发布后的结果不会被取消或包装器清理误销毁。
+
 ### Asset
 
 - 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。失败会等待其余收尾后报告，不自动恢复；最终释放失败时可能已释放部分资源。

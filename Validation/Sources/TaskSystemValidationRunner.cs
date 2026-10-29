@@ -696,14 +696,46 @@ namespace LiteQuark.Editor
             {
                 var callbacks = 0;
                 var success = new InstantiateGameObjectTask(template, parent.transform, 2, _ => callbacks++);
+                var earlyWait = success.Task.GetAwaiter();
+                earlyWait.OnCompleted(() => success.Dispose());
                 system.AddTask(success); await WaitDone(system, success);
                 Check(success.State == TaskState.Succeeded && success.Error == null && callbacks == 1
                     && success.Result is GameObject[] { Length: 2 }, "Native success preserves result after scheduler disposal.");
+                Check(((GameObject[])earlyWait.GetResult()).All(go => go != null),
+                    "Retiring the wrapper from the success continuation preserves both instances and callback delivery.");
                 var canceled = new InstantiateGameObjectTask(template, parent.transform, 2, _ => callbacks++);
                 system.AddTask(canceled); system.Tick(0);
                 canceled.Cancel(); canceled.Cancel(); system.Tick(0); await UniTask.Yield();
                 Check(canceled.State == TaskState.Cancelled && canceled.Error == null && callbacks == 1,
                     "Native cancellation cannot reenter a success callback or rewrite the terminal state.");
+
+                // Hold only the completion notification, so real native results exist before cancellation.
+                var undelivered = new InstantiateGameObjectTask(template, null, 2, _ => callbacks++);
+                system.AddTask(undelivered); system.Tick(0);
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                var native = (AsyncInstantiateOperation<GameObject>)typeof(InstantiateGameObjectTask)
+                    .GetField("_task", flags).GetValue(undelivered);
+                var handler = (Action<AsyncOperation>)Delegate.CreateDelegate(typeof(Action<AsyncOperation>),
+                    undelivered, typeof(InstantiateGameObjectTask).GetMethod("OnInstantiateComplete", flags));
+                native.completed -= handler;
+                native.WaitForCompletion();
+                var objects = native.Result;
+                try
+                {
+                    Check(objects.Length == 2 && objects.All(go => go != null) && !undelivered.IsDone,
+                        "Native completion can precede publication of instantiated objects.");
+                    undelivered.Cancel(); system.Tick(0);
+                    await UniTask.NextFrame();
+                    Check(objects.All(go => go == null) && callbacks == 1,
+                        "Cancel destroys completed unpublished instances without relying on their parent or sending success.");
+                    success.Cancel();
+                    Check(((GameObject[])success.Result).All(go => go != null),
+                        "Later cancellation never destroys an already published successful result.");
+                }
+                finally
+                {
+                    foreach (var go in objects) if (go != null) UnityEngine.Object.DestroyImmediate(go);
+                }
             }
             finally
             {

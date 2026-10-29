@@ -17,6 +17,25 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private sealed class DeferredTemplatePool : BaseGameObjectPool
+        {
+            public DeferredTemplatePool() { }
+            internal void Finish(GameObject template) => OnLoadTemplate(template);
+        }
+
+        private sealed class ThrowingReleasePool : EmptyGameObjectPool
+        {
+            internal readonly Exception Error = new InvalidOperationException("Injected pool release failure");
+            private int _releases;
+            public ThrowingReleasePool() { }
+
+            protected override void OnRelease(GameObject go)
+            {
+                if (++_releases == 2) throw Error;
+                base.OnRelease(go);
+            }
+        }
+
         private static void BuildFixtures()
         {
             if (AssetDatabase.IsValidFolder(Fixture))

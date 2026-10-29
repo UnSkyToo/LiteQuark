@@ -7,6 +7,7 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"Effect<{UniqueID}>";
 
         private readonly EffectCreateInfo _info;
+        private readonly ActiveGameObjectPool _pool;
         private EffectState _state;
         private GameObject _go;
         private EffectBinder _binder;
@@ -26,7 +27,8 @@ namespace LiteQuark.Runtime
             _info = info;
             _state = EffectState.Created;
 
-            LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Alloc(_info.Parent, OnLoad);
+            _pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path);
+            _pool.Alloc(_info.Parent, OnLoad);
         }
 
         public void Dispose()
@@ -38,12 +40,8 @@ namespace LiteQuark.Runtime
                     UnityUtils.AddSortingOrder(_go, -_info.Order);
                 }
 
-                LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(_go);
+                _pool.Recycle(_go);
                 _go = null;
-            }
-            else
-            {
-                LLog.Warning("Effect {0} parent is destroyed, not recycle!", _info.Path);
             }
 
             _state = EffectState.Destroyed;
@@ -89,6 +87,15 @@ namespace LiteQuark.Runtime
 
         private void OnLoad(GameObject go)
         {
+            if (go == null)
+            {
+                if (_state != EffectState.Destroyed)
+                {
+                    _state = EffectState.Finished;
+                }
+                return;
+            }
+
             if (_state == EffectState.Created)
             {
                 _state = EffectState.Pause;
@@ -99,7 +106,7 @@ namespace LiteQuark.Runtime
             {
                 if (go != null)
                 {
-                    LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path).Recycle(go);
+                    _pool.Recycle(go);
                 }
             }
         }

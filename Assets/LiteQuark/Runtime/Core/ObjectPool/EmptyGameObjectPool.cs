@@ -20,13 +20,13 @@ namespace LiteQuark.Runtime
 
         public override void Dispose()
         {
+            base.Dispose();
+
             if (Template != null)
             {
                 Object.Destroy(Template);
                 Template = null;
             }
-
-            base.Dispose();
         }
     }
 }

@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
+using Object = UnityEngine.Object;
 
 namespace LiteQuark.Runtime
 {
@@ -8,15 +11,19 @@ namespace LiteQuark.Runtime
     {
         public string Key { get; private set; }
         public virtual string Name => Key;
-        public int CountAll => Pool?.CountAll ?? 0;
-        public int CountActive => Pool?.CountActive ?? 0;
+        public int CountAll => CountActive + CountInactive;
+        public int CountActive => _countActive;
         public int CountInactive => Pool?.CountInactive ?? 0;
-        public bool IsReady => Template != null;
+        public bool IsReady => !_isDisposed && Template != null;
 
         protected Transform Parent;
         protected GameObject Template;
         protected ObjectPool<GameObject> Pool;
-        protected readonly System.Collections.Generic.List<System.Action> LoadTemplateCallbackList = new();
+        private readonly UniTaskCompletionSource<bool> _readyCompletion = new();
+        private readonly List<InstantiateGameObjectTask> _generationTasks = new();
+        private bool _isDisposed;
+        // Unity's pool only counts objects created by its createFunc, not our async batches.
+        private int _countActive;
 
         protected BaseGameObjectPool()
         {
@@ -39,7 +46,20 @@ namespace LiteQuark.Runtime
 
         public virtual void Dispose()
         {
-            Pool.Dispose();
+            _isDisposed = true;
+            _readyCompletion.TrySetCanceled();
+
+            while (_generationTasks.Count > 0)
+            {
+                var index = _generationTasks.Count - 1;
+                var task = _generationTasks[index];
+                _generationTasks.RemoveAt(index);
+                // Cancel synchronously stops native instantiation while the template is still owned.
+                task.Cancel();
+            }
+
+            Pool?.Dispose();
+            _countActive = 0;
 
             if (Parent != null)
             {
@@ -76,29 +96,65 @@ namespace LiteQuark.Runtime
             Object.Destroy(go);
         }
 
-        public void Generate(int count, System.Action<IBasePool> callback)
+        public async UniTask<bool> GenerateAsync(int count)
         {
-            RunWhenLoadTemplated(() =>
+            if (count < 0)
             {
-                if (Template == null)
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+            if (!await WaitReadyAsync())
+            {
+                return false;
+            }
+            if (_isDisposed)
+            {
+                throw new OperationCanceledException();
+            }
+            if (count == 0)
+            {
+                return true;
+            }
+
+            var task = LiteRuntime.Task.AddInstantiateGoTask(Template, Parent, count, null);
+            _generationTasks.Add(task);
+            GameObject[] objects = null;
+            var index = 0;
+            try
+            {
+                // Task's await returns null on failure/cancellation; it does not throw for either state.
+                objects = (GameObject[])await task.Task;
+                if (_isDisposed || task.State == TaskState.Cancelled)
                 {
-                    LiteUtils.SafeInvoke(callback, this);
-                    return;
+                    throw new OperationCanceledException();
+                }
+                if (task.State == TaskState.Failed)
+                {
+                    LLog.Exception(task.Error, "Generate pool objects failed: {0}", Key);
+                    return false;
                 }
 
-                LiteRuntime.Task.AddInstantiateGoTask(Template, Parent, count, list =>
+                for (; index < objects.Length; index++)
                 {
-                    foreach (var go in list)
+                    // Generated objects enter the inactive pool directly; they were never borrowed.
+                    Pool.Release(objects[index]);
+                }
+                return true;
+            }
+            finally
+            {
+                // A successful Task transfers the whole batch, including any objects not put in the pool.
+                if (objects != null)
+                {
+                    for (; index < objects.Length; index++)
                     {
-                        if (go != null)
+                        if (objects[index] != null)
                         {
-                            Recycle(go);
+                            Object.Destroy(objects[index]);
                         }
                     }
-
-                    LiteUtils.SafeInvoke(callback, this);
-                });
-            });
+                }
+                _generationTasks.Remove(task);
+            }
         }
 
         public virtual void Alloc(System.Action<GameObject> callback)
@@ -108,16 +164,24 @@ namespace LiteQuark.Runtime
 
         public virtual void Alloc(Transform parent, System.Action<GameObject> callback)
         {
-            RunWhenLoadTemplated(() =>
-            {
-                var go = Pool.Get();
-                if (go != null && parent != null)
-                {
-                    go.transform.SetParent(parent, false);
-                }
+            AllocWithCallbackAsync(parent, callback).Forget();
+        }
 
-                LiteUtils.SafeInvoke(callback, go);
-            });
+        private async UniTaskVoid AllocWithCallbackAsync(Transform parent, Action<GameObject> callback)
+        {
+            GameObject go = null;
+            try
+            {
+                go = await Alloc(parent);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                LLog.Exception(ex, "Allocate pool object failed: {0}", Key);
+            }
+            LiteUtils.SafeInvoke(callback, go);
         }
 
         public virtual void Recycle(GameObject value)
@@ -126,9 +190,8 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-
-
             Pool.Release(value);
+            _countActive--;
         }
 
         public virtual UniTask<GameObject> Alloc()
@@ -136,53 +199,41 @@ namespace LiteQuark.Runtime
             return Alloc(parent: null);
         }
 
-        public virtual UniTask<GameObject> Alloc(Transform parent)
+        public virtual async UniTask<GameObject> Alloc(Transform parent)
         {
-            var tcs = new UniTaskCompletionSource<GameObject>();
-            Alloc(parent, go =>
+            if (!await WaitReadyAsync())
             {
-                tcs.TrySetResult(go);
-            });
-            return tcs.Task;
-        }
-
-        protected void RunWhenLoadTemplated(System.Action callback)
-        {
-            if (Template != null)
-            {
-                LiteUtils.SafeInvoke(callback);
+                return null;
             }
-            else
+            if (_isDisposed)
             {
-                LoadTemplateCallbackList.Add(callback);
+                throw new OperationCanceledException();
             }
+            var go = Pool.Get();
+            if (go != null && parent != null)
+            {
+                go.transform.SetParent(parent, false);
+            }
+            if (go != null)
+            {
+                _countActive++;
+            }
+            return go;
         }
 
         protected void OnLoadTemplate(GameObject template)
         {
-            Template = template;
-            foreach (var callback in LoadTemplateCallbackList)
+            if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback);
+                return;
             }
-            LoadTemplateCallbackList.Clear();
+            Template = template;
+            _readyCompletion.TrySetResult(template != null);
         }
 
-        public UniTask WaitReadyAsync()
+        public UniTask<bool> WaitReadyAsync()
         {
-            var tcs = new UniTaskCompletionSource();
-            if (IsReady)
-            {
-                tcs.TrySetResult();
-            }
-            else
-            {
-                RunWhenLoadTemplated(() =>
-                {
-                    tcs.TrySetResult();
-                });
-            }
-            return tcs.Task;
+            return _isDisposed ? UniTask.FromCanceled<bool>() : _readyCompletion.Task;
         }
     }
 }

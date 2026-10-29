@@ -13,6 +13,291 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask PoolTemplateCompletion()
+        {
+            var template = new GameObject("PoolTemplateCompletion");
+            try
+            {
+                foreach (var outcome in new[] { "success", "failure", "cancel" })
+                {
+                    var pools = new ObjectPoolSystem();
+                    await pools.Initialize();
+                    var pool = pools.AddPool<DeferredTemplatePool>(outcome, pools.GetPoolRoot());
+                    var ready = pool.WaitReadyAsync();
+                    var allocation = pool.Alloc();
+                    var preload = pools.PreloadPoolAsync<DeferredTemplatePool>(outcome, 2);
+                    var callbackCount = 0;
+                    GameObject callbackObject = null;
+                    pool.Alloc(go => { callbackCount++; callbackObject = go; });
+                    var generated = pool.GenerateAsync(1);
+                    try
+                    {
+                        Check(ready.Status == UniTaskStatus.Pending && allocation.Status == UniTaskStatus.Pending,
+                            "Requests wait while the template has no result.");
+                        if (outcome == "cancel")
+                        {
+                            await pools.DisposeAsync();
+                            await CheckPoolCancelled(ready);
+                            await CheckPoolCancelled(allocation);
+                            await CheckPoolCancelled(preload);
+                            await CheckPoolCancelled(generated);
+                            pool.Finish(template);
+                            Check(!pool.IsReady && callbackCount == 1 && callbackObject == null,
+                                "Closing cancels all waits, sends null callbacks once and rejects a late template.");
+                            var rejected = false;
+                            try { pools.GetPool<DeferredTemplatePool>("new"); }
+                            catch (ObjectDisposedException) { rejected = true; }
+                            Check(rejected && pools.GetPoolCache().Count == 0,
+                                "Closing cannot recreate a pool through a resumed preload or a new lookup.");
+                        }
+                        else
+                        {
+                            pool.Finish(outcome == "success" ? template : null);
+                            if (outcome == "failure")
+                            {
+                                Check(!await ready && await allocation == null && !await preload && !await generated &&
+                                    callbackCount == 1 && callbackObject == null,
+                                    "A failed template ends both callback and await requests without creating objects.");
+                                Check(!await pool.WaitReadyAsync() && await pool.Alloc() == null && !await pool.GenerateAsync(1),
+                                    "Later requests observe the existing failure rather than waiting forever.");
+                            }
+                            else
+                            {
+                                await Wait(() => preload.Status.IsCompleted() && generated.Status.IsCompleted(), "Pool generation after template completion");
+                                var allocated = await allocation;
+                                Check(await ready && await preload && await generated && callbackCount == 1 && callbackObject != null &&
+                                    allocated != null,
+                                    "Successful template completion reaches every consumer and completes native pre-generation.");
+                                Check(pool.CountActive == 2 && pool.CountInactive == 3 && pool.CountAll == 5,
+                                    "Generated objects do not corrupt borrowed and inactive counts.");
+                                pools.RemoveUnusedPools();
+                                Check(pools.GetPoolCache().Count == 1, "An active pool survives unused-pool collection after pre-generation.");
+                                pool.Recycle(allocated);
+                                pool.Recycle(callbackObject);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
+                    }
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(template); }
+
+            foreach (var removeUnused in new[] { false, true })
+            {
+                var pools = new ObjectPoolSystem();
+                await pools.Initialize();
+                var root = pools.GetPoolRoot();
+                var oldPool = pools.AddPool<DeferredTemplatePool>("PoolReplacement", root);
+                DeferredTemplatePool replacement = null;
+                var callbacks = 0;
+                var receivedNull = false;
+                oldPool.Alloc(go =>
+                {
+                    callbacks++;
+                    receivedNull = go == null;
+                    pools.RemovePool(oldPool);
+                    replacement = pools.GetPool<DeferredTemplatePool>(oldPool.Key, root);
+                });
+                try
+                {
+                    if (removeUnused) pools.RemoveUnusedPools();
+                    else pools.RemovePool(oldPool);
+                    Check(callbacks == 1 && receivedNull && replacement != null && !ReferenceEquals(oldPool, replacement),
+                        "Removing a pending pool delivers cancellation once and allows its callback to create a replacement.");
+                    Check(ReferenceEquals(pools.GetPool<DeferredTemplatePool>(oldPool.Key), replacement),
+                        "Both direct and unused-pool removal preserve the new registration after the cancellation callback returns.");
+                    var ready = replacement.WaitReadyAsync();
+                    pools.RemovePool(oldPool);
+                    Check(ready.Status == UniTaskStatus.Pending && ReferenceEquals(pools.GetPool<DeferredTemplatePool>(oldPool.Key), replacement),
+                        "Removing an old instance cannot dispose or unregister its same-key replacement.");
+                    await pools.DisposeAsync();
+                    await CheckPoolCancelled(ready);
+                    await UniTask.NextFrame();
+                    Check(root == null, "System shutdown still owns and cleans the replacement pool's hierarchy.");
+                }
+                finally
+                {
+                    if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
+                }
+            }
+            await PoolBatchRemovalCallbacks();
+        }
+
+        private static async UniTask PoolBatchRemovalCallbacks()
+        {
+            var pools = new ObjectPoolSystem();
+            await pools.Initialize();
+            var root = pools.GetPoolRoot();
+            var first = pools.AddPool<DeferredTemplatePool>("ClosingFirst", root);
+            var second = pools.AddPool<DeferredTemplatePool>("ClosingSecond", root);
+            var callbacks = 0;
+            var allCancelled = true;
+            first.Alloc(go => { callbacks++; allCancelled &= go == null; pools.RemovePool(first); });
+            second.Alloc(go => { callbacks++; allCancelled &= go == null; pools.RemovePool(second); });
+            try
+            {
+                await pools.DisposeAsync();
+                Check(callbacks == 2 && allCancelled && !first.IsReady && !second.IsReady,
+                    "Shutdown completes every pending pool even when cancellation callbacks remove their pools.");
+                await UniTask.NextFrame();
+                Check(root == null, "Cancellation callbacks cannot interrupt shutdown before the root is destroyed.");
+            }
+            finally
+            {
+                if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
+            }
+
+            pools = new ObjectPoolSystem();
+            await pools.Initialize();
+            var pending = pools.AddPool<DeferredTemplatePool>("UnusedPending", pools.GetPoolRoot());
+            var ready = pools.GetEmptyGameObjectPool("UnusedReady");
+            GameObject borrowed = null;
+            pending.Alloc(go =>
+            {
+                if (go == null) ready.Alloc(value => borrowed = value);
+            });
+            try
+            {
+                pools.RemoveUnusedPools();
+                Check(borrowed != null && ready.CountActive == 1 && ReferenceEquals(pools.GetEmptyGameObjectPool(ready.Key), ready),
+                    "Unused-pool collection keeps a candidate borrowed from an earlier cancellation callback.");
+                await UniTask.NextFrame();
+                Check(borrowed != null && ready.IsReady,
+                    "The newly borrowed object survives the candidate-removal frame under its original pool parent.");
+                ready.Recycle(borrowed);
+                pools.RemoveUnusedPools();
+                await UniTask.NextFrame();
+                Check(borrowed == null && pools.GetPoolCache().Count == 0,
+                    "The preserved pool can still be collected after its borrowed instance is returned.");
+            }
+            finally { await pools.DisposeAsync(); }
+        }
+
+        private static async UniTask CheckPoolCancelled<T>(UniTask<T> request)
+        {
+            var cancelled = false;
+            try { await request; }
+            catch (OperationCanceledException) { cancelled = true; }
+            Check(cancelled, "An asynchronous pool request preserves cancellation instead of returning ordinary failure.");
+        }
+
+        private static async UniTask PoolGenerationShutdown()
+        {
+            foreach (var running in new[] { false, true })
+            {
+                var pools = new ObjectPoolSystem();
+                await pools.Initialize();
+                var root = pools.GetPoolRoot();
+                var pool = pools.GetEmptyGameObjectPool("PoolGenerationShutdown");
+                var outside = new GameObject("PoolBorrower");
+                GameObject borrowed = null;
+                try
+                {
+                    borrowed = await pool.Alloc(outside.transform);
+                    var generated = pool.GenerateAsync(8);
+                    var secondGenerated = pool.GenerateAsync(8);
+                    if (running) LiteRuntime.Task.Tick(0);
+                    var shutdown = pools.DisposeAsync();
+                    Check(shutdown.Status.IsCompleted(), "Pool shutdown remains synchronous even with pre-generation work.");
+                    await shutdown;
+                    Check(generated.Status == UniTaskStatus.Canceled && secondGenerated.Status == UniTaskStatus.Canceled && !pool.IsReady,
+                        "All queued and running generation requests are canceled when synchronous pool shutdown returns.");
+                    await CheckPoolCancelled(generated);
+                    await CheckPoolCancelled(secondGenerated);
+                    await UniTask.NextFrame();
+                    await UniTask.NextFrame();
+                    Check(root == null && borrowed != null && pool.CountAll == 0,
+                        "Pool-owned nodes disappear with no late success; externally parented borrowed instances remain the owner's responsibility.");
+                }
+                finally
+                {
+                    if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
+                    UnityEngine.Object.DestroyImmediate(outside);
+                }
+            }
+
+            var releaseFailureSystem = new ObjectPoolSystem();
+            await releaseFailureSystem.Initialize();
+            try
+            {
+                var pool = releaseFailureSystem.AddPool<ThrowingReleasePool>("PoolReleaseFailure", releaseFailureSystem.GetPoolRoot());
+                var generated = pool.GenerateAsync(3);
+                await Wait(() => generated.Status.IsCompleted(), "Pool release failure");
+                Exception failure = null;
+                try { await generated; }
+                catch (Exception ex) { failure = ex; }
+                Check(ReferenceEquals(failure, pool.Error), "An overridden release failure propagates through GenerateAsync instead of returning false.");
+                await UniTask.NextFrame();
+                Check(pool.CountInactive == 1 && releaseFailureSystem.GetPoolRoot().GetChild(0).childCount == 2,
+                    "Partial generation retains the accepted object and template, but destroys all unaccepted instances.");
+                var next = pool.GenerateAsync(1);
+                await Wait(() => next.Status.IsCompleted(), "Generation after a release failure");
+                Check(await next && pool.CountInactive == 2, "A finished failed batch does not block a later generation request.");
+            }
+            finally { await releaseFailureSystem.DisposeAsync(); }
+
+            var partial = new ActiveGameObjectPool();
+            partial.Dispose();
+            var failedPoolSystem = new ObjectPoolSystem();
+            await failedPoolSystem.Initialize();
+            var failedRoot = failedPoolSystem.GetPoolRoot();
+            try
+            {
+                var threw = false;
+                try { failedPoolSystem.GetActiveGameObjectPool("../invalid.prefab"); }
+                catch (ArgumentException) { threw = true; }
+                await Wait(() => failedRoot.childCount == 0, "Failed pool initialization node cleanup");
+                Check(threw && failedPoolSystem.GetPoolCache().Count == 0 && failedRoot.childCount == 0,
+                    "A pool whose initialization throws releases its node without entering the cache.");
+            }
+            finally { await failedPoolSystem.DisposeAsync(); }
+        }
+
+        private static async UniTask ActivePoolShutdown()
+        {
+            var h = New();
+            var assets = LiteRuntime.Asset;
+            var original = Get<IAssetProvider>(assets, "_provider");
+            Set(assets, "_provider", h.Provider);
+            var pools = new ObjectPoolSystem();
+            await pools.Initialize();
+            try
+            {
+                var warmup = pools.PreloadPoolAsync<ActiveGameObjectPool>(PrefabPath, 2, pools.GetPoolRoot());
+                await Wait(() => warmup.Status.IsCompleted(), "Active pool native warmup");
+                Check(await warmup, "Active pool preloads a real Bundle prefab and completes generated instances.");
+                var pool = pools.GetActiveGameObjectPool(PrefabPath);
+                var go = await pool.Alloc();
+                Check(go != null && go.activeSelf && pool.CountInactive == 1, "Async allocation preserves Active pool activation.");
+                pool.Recycle(go);
+                Check(!go.activeSelf, "Recycling preserves Active pool deactivation.");
+
+                var failed = pools.GetActiveGameObjectPool("assets/__session_validation/missing.txt");
+                var failedReady = failed.WaitReadyAsync();
+                await Wait(() => failedReady.Status.IsCompleted(), "Failed pool template");
+                Check(!await failedReady && await failed.Alloc() == null,
+                    "A real template failure is returned as false/null rather than leaving consumers pending.");
+
+                var pending = pools.GetActiveGameObjectPool("assets/__session_validation/c.prefab");
+                var allocation = pending.Alloc();
+                var preload = pools.PreloadPoolAsync<ActiveGameObjectPool>(pending.Key, 3);
+                await pools.DisposeAsync();
+                await CheckPoolCancelled(allocation);
+                await CheckPoolCancelled(preload);
+                await h.Shutdown();
+                Check(!pending.IsReady && go == null && !h.Has("a.ab") && !h.Has("b.ab"),
+                    "Pool close releases templates before Asset shutdown drains late loads and unloads shared dependencies.");
+            }
+            finally
+            {
+                if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
+                Set(assets, "_provider", original);
+            }
+        }
+
         private static async UniTask ShutdownWaitsForRetiredBundle()
         {
             var h = New(concurrency: 1);

@@ -13,8 +13,8 @@ namespace LiteQuark.Runtime
         bool IsReady { get; }
 
         void Initialize(string key, params object[] args);
-        void Generate(int count, System.Action<IBasePool> callback);
-        UniTask WaitReadyAsync();
+        UniTask<bool> GenerateAsync(int count);
+        UniTask<bool> WaitReadyAsync();
     }
 
     public interface IObjectPool<T> : IBasePool

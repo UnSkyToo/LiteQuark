@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
     {
         private readonly Dictionary<string, IBasePool> _poolCache = new ();
         private Transform _root = null;
+        private bool _isClosing;
 
         public ObjectPoolSystem()
         {
@@ -23,11 +24,13 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            foreach (var pool in _poolCache)
-            {
-                pool.Value.Dispose();
-            }
+            _isClosing = true;
+            var pools = new List<IBasePool>(_poolCache.Values);
             _poolCache.Clear();
+            foreach (var pool in pools)
+            {
+                pool.Dispose();
+            }
 
             if (_root != null)
             {
@@ -51,8 +54,12 @@ namespace LiteQuark.Runtime
             }
             foreach (var pool in removeList)
             {
-                pool.Dispose();
-                _poolCache.Remove(pool.Key);
+                // Earlier cancellation callbacks may have borrowed from this candidate.
+                if (pool.CountActive > 0)
+                {
+                    continue;
+                }
+                RemovePool(pool);
             }
         }
 
@@ -68,6 +75,7 @@ namespace LiteQuark.Runtime
 
         public TPool GetPool<TPool>(string key, params object[] args) where TPool : class, IBasePool
         {
+            ThrowIfClosing();
             if (_poolCache.TryGetValue(key, out var pool))
             {
                 return pool as TPool;
@@ -78,10 +86,27 @@ namespace LiteQuark.Runtime
 
         public TPool AddPool<TPool>(string key, params object[] args) where TPool : IBasePool
         {
+            ThrowIfClosing();
             var pool = System.Activator.CreateInstance<TPool>();
-            pool.Initialize(key, args);
-            _poolCache.Add(key, pool);
+            try
+            {
+                pool.Initialize(key, args);
+                _poolCache.Add(key, pool);
+            }
+            catch
+            {
+                pool.Dispose();
+                throw;
+            }
             return pool;
+        }
+
+        private void ThrowIfClosing()
+        {
+            if (_isClosing)
+            {
+                throw new System.ObjectDisposedException(nameof(ObjectPoolSystem));
+            }
         }
 
         public void RemovePool<TPool>(TPool pool) where TPool : IBasePool
@@ -91,10 +116,11 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (_poolCache.ContainsKey(pool.Key))
+            if (_poolCache.TryGetValue(pool.Key, out var current) && ReferenceEquals(current, pool))
             {
-                pool.Dispose();
+                // Cancellation may synchronously resume callers that create another pool with this key.
                 _poolCache.Remove(pool.Key);
+                pool.Dispose();
             }
         }
 
@@ -158,23 +184,16 @@ namespace LiteQuark.Runtime
             return GetPool<ParticlePool>(path, _root);
         }
 
-        public UniTask PreloadPoolAsync<TPool>(string key, params object[] args) where TPool : class, IBasePool
+        public UniTask<bool> PreloadPoolAsync<TPool>(string key, params object[] args) where TPool : class, IBasePool
         {
             var pool = GetPool<TPool>(key, args);
             return pool.WaitReadyAsync();
         }
 
-        public async UniTask PreloadPoolAsync<TPool>(string key, int generateCount, params object[] args) where TPool : class, IBasePool
+        public async UniTask<bool> PreloadPoolAsync<TPool>(string key, int generateCount, params object[] args) where TPool : class, IBasePool
         {
-            await PreloadPoolAsync<TPool>(key, args);
-
-            if (generateCount > 0)
-            {
-                var pool = GetPool<TPool>(key, args);
-                var tcs = new UniTaskCompletionSource();
-                pool.Generate(generateCount, _ => tcs.TrySetResult());
-                await tcs.Task;
-            }
+            var pool = GetPool<TPool>(key, args);
+            return generateCount > 0 ? await pool.GenerateAsync(generateCount) : await pool.WaitReadyAsync();
         }
     }
 }

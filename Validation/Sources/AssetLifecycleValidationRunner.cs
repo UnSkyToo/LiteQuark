@@ -229,6 +229,10 @@ namespace LiteQuark.Editor
                 await Run("115 System close drains other cleanup after a failure", "controlled cleanup outcomes with a real cached Bundle", ShutdownWaitsAfterCleanupFailure);
                 await Run("116 Editor close drains ordinary and simulated delivery", "real Editor assets and Timer delivery", EditorShutdownDeliveries);
                 await Run("117 Editor close unloads a delayed scene", "real Editor Scene and pending Handle delivery", EditorShutdownScene);
+                await Run("118 Pool template completion and cancellation", "controlled template result and public callback/await APIs", PoolTemplateCompletion);
+                await Run("119 Pool generation owns tasks through shutdown", "native instantiation, queued/running cancellation and borrowed ownership", PoolGenerationShutdown);
+                await Run("120 Active pool closes pending prefab handles", "real Bundle templates, failure and delayed completion", ActivePoolShutdown,
+                    "Load pool template failed", "Load asset failed");
             }
             catch (Exception ex)
             {

@@ -31,36 +31,28 @@ namespace LiteQuark.Runtime
             try
             {
                 await handle;
-                if (_templateHandle == handle)
+                if (handle.State == AssetHandleState.Failed)
                 {
-                    OnLoadTemplate(handle.Result);
+                    LLog.Error("Load pool template failed: {0}, {1}", Key, handle.Error?.Message);
                 }
+                OnLoadTemplate(handle.Result);
             }
             catch (OperationCanceledException)
             {
-            }
-            catch (Exception ex)
-            {
-                if (_templateHandle == handle)
-                {
-                    _templateHandle = null;
-                }
-
-                handle.Dispose();
-                LLog.Error("Load pool template error: {0}", ex.Message);
             }
         }
 
         public override void Dispose()
         {
+            base.Dispose();
+
             if (_templateHandle != null)
             {
-                _templateHandle.Dispose();
+                var handle = _templateHandle;
                 _templateHandle = null;
+                handle.Dispose();
                 Template = null;
             }
-
-            base.Dispose();
         }
 
         protected override void OnRelease(GameObject go)
@@ -69,17 +61,14 @@ namespace LiteQuark.Runtime
             go.transform.SetParent(Parent, false);
         }
 
-        public override void Alloc(Transform parent, System.Action<GameObject> callback)
+        public override async UniTask<GameObject> Alloc(Transform parent)
         {
-            base.Alloc(parent, go =>
+            var go = await base.Alloc(parent);
+            if (go != null)
             {
-                if (go != null)
-                {
-                    go.SetActive(true);
-                }
-
-                LiteUtils.SafeInvoke(callback, go);
-            });
+                go.SetActive(true);
+            }
+            return go;
         }
     }
 }

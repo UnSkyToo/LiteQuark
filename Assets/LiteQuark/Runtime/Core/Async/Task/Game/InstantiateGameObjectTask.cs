@@ -57,6 +57,22 @@ namespace LiteQuark.Runtime
                 task.completed -= OnInstantiateComplete;
                 task.Cancel();
                 task.WaitForCompletion();
+                DestroyResults(task.Result);
+            }
+        }
+
+        private static void DestroyResults(UnityEngine.Object[] objects)
+        {
+            if (objects == null)
+            {
+                return;
+            }
+            foreach (var obj in objects)
+            {
+                if (obj != null)
+                {
+                    UnityEngine.Object.Destroy(obj);
+                }
             }
         }
 
@@ -69,9 +85,8 @@ namespace LiteQuark.Runtime
         private void OnInstantiateComplete(AsyncOperation operation)
         {
             operation.completed -= OnInstantiateComplete;
-            _task = null;
 
-            if (IsDone)
+            if (_task == null)
             {
                 return;
             }
@@ -79,16 +94,18 @@ namespace LiteQuark.Runtime
             GameObject[] result;
             try
             {
-                if (!operation.isDone || operation is not AsyncInstantiateOperation { Result: not null } asyncOperation)
+                var nativeResult = _task.Result;
+                if (!operation.isDone || nativeResult == null)
                 {
                     Fail(new InvalidOperationException("Instantiation returned no result."));
                     return;
                 }
 
-                result = new GameObject[asyncOperation.Result.Length];
-                for (var i = 0; i < asyncOperation.Result.Length; ++i)
+                // Unity 2022.3 reinterprets Object[] as T[]; publish a real GameObject[] through Task.Result.
+                result = new GameObject[nativeResult.Length];
+                for (var i = 0; i < nativeResult.Length; ++i)
                 {
-                    result[i] = asyncOperation.Result[i] as GameObject;
+                    result[i] = nativeResult[i] as GameObject;
                 }
             }
             catch (Exception ex)
@@ -97,11 +114,17 @@ namespace LiteQuark.Runtime
                 return;
             }
 
+            // PublishResult may resume callers and retire the wrapper before the callback runs.
+            var callback = _callback;
+            _callback = null;
+            _task = null;
             if (Complete(result))
             {
-                var callback = _callback;
-                _callback = null;
                 LiteUtils.SafeInvoke(callback, result);
+            }
+            else
+            {
+                DestroyResults(result);
             }
         }
     }

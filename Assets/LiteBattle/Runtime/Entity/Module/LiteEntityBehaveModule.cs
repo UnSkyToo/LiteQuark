@@ -13,7 +13,8 @@ namespace LiteBattle.Runtime
         private Animator Animator_;
         private int AnimationNameHash_;
         private LiteColliderBinder ColliderBinder_;
-        private string PrefabPath_;
+        private ActiveGameObjectPool PrefabPool_;
+        private bool IsDisposed_;
         private UINameplateHUD HUD_;
         private Queue<(string, EffectCreateInfo)> CacheEffect_ = new();
         private List<ulong> EffectList_ = new();
@@ -27,6 +28,8 @@ namespace LiteBattle.Runtime
 
         public override void Dispose()
         {
+            IsDisposed_ = true;
+
             if (HUD_ != null)
             {
                 LiteRuntime.Get<UISystem>().CloseUI(HUD_);
@@ -118,10 +121,19 @@ namespace LiteBattle.Runtime
         {
             IsLoad_ = false;
             RecyclePrefab();
-            PrefabPath_ = prefabPath;
-
-            LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Alloc(null, go =>
+            var pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(prefabPath);
+            PrefabPool_ = pool;
+            pool.Alloc(null, go =>
             {
+                if (go == null)
+                {
+                    return;
+                }
+                if (IsDisposed_)
+                {
+                    pool.Recycle(go);
+                    return;
+                }
                 Go_ = go;
                 TS_ = Go_.transform;
                 TS_.localPosition = Vector3.zero;
@@ -148,13 +160,14 @@ namespace LiteBattle.Runtime
 
         private void RecyclePrefab()
         {
+            IsLoad_ = false;
             if (Go_ != null)
             {
-                LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath_).Recycle(Go_);
+                PrefabPool_.Recycle(Go_);
                 Go_ = null;
             }
 
-            PrefabPath_ = string.Empty;
+            PrefabPool_ = null;
         }
     }
 }
