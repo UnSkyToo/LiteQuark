@@ -2,7 +2,7 @@
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class SceneInfoCache : IDispose
+    internal sealed partial class SceneInfoCache : IDisposeAsync
     {
         internal Lease AcquireLease()
         {

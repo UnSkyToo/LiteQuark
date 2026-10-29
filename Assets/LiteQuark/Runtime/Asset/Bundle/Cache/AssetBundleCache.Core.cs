@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : ITick, IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.AssetBundle Bundle { get; private set; }
@@ -36,26 +37,42 @@ namespace LiteQuark.Runtime
             _retainTime = 0;
         }
 
-        public void Dispose()
+        internal async UniTask ReleaseContentsAsync()
         {
-            try
+            if (Stage == AssetCacheStage.Unloaded)
             {
-                Unload();
+                return;
             }
-            finally
+            Stage = AssetCacheStage.Unloading;
+
+            var cleanups = new List<UniTask>(_assetCacheMap.Count + _sceneCacheMap.Count);
+
+            foreach (var asset in _assetCacheMap.Values)
             {
-                if (_bundleLoaderCallbackList.Count > 0)
+                cleanups.Add(asset.DisposeAsync());
+            }
+
+            foreach (var scene in _sceneCacheMap)
+            {
+                cleanups.Add(scene.DisposeAsync());
+            }
+
+            if (_bundleLoaderCallbackList.Count > 0)
+            {
+                var callbacks = new List<Action<AssetLoadResult<UnityEngine.AssetBundle>>>(_bundleLoaderCallbackList);
+                _bundleLoaderCallbackList.Clear();
+                var result = AssetLoadResult<UnityEngine.AssetBundle>.Failure(
+                    new AssetError(BundlePath, "Bundle cache was disposed before delivery"));
+                foreach (var callback in callbacks)
                 {
-                    var callbacks = new List<Action<AssetLoadResult<UnityEngine.AssetBundle>>>(_bundleLoaderCallbackList);
-                    _bundleLoaderCallbackList.Clear();
-                    var error = new AssetError(BundlePath, "Bundle cache was disposed before delivery");
-                    var result = AssetLoadResult<UnityEngine.AssetBundle>.Failure(error);
-                    foreach (var callback in callbacks)
-                    {
-                        LiteUtils.SafeInvoke(callback, result);
-                    }
+                    LiteUtils.SafeInvoke(callback, result);
                 }
             }
+
+            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
+
+            _assetCacheMap.Clear();
+            _sceneCacheMap.Clear();
         }
 
         internal bool CanUnload(bool ignoreRetainTime)
@@ -73,27 +90,43 @@ namespace LiteQuark.Runtime
             };
         }
 
-        public void Unload()
+        internal bool TryUnloadUnused(bool ignoreRetainTime)
         {
-            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+            if (!CanUnload(ignoreRetainTime))
+            {
+                return false;
+            }
+
+            // 在途读取和场景卸载始终持有 Bundle Lease，零引用缓存无需取消或等待。
+            Stage = AssetCacheStage.Unloading;
+            foreach (var asset in _assetCacheMap.Values)
+            {
+                asset.CompleteUnload();
+            }
+            CompleteUnload();
+            return true;
+        }
+
+        public async UniTask DisposeAsync()
+        {
+            if (Stage == AssetCacheStage.Unloaded)
             {
                 return;
             }
 
+            if (_assetCacheMap.Count > 0 || _sceneCacheMap.Count > 0 || _bundleLoaderCallbackList.Count > 0)
+            {
+                await ReleaseContentsAsync();
+            }
+
+            CompleteUnload();
+        }
+
+        private void CompleteUnload()
+        {
             Stage = AssetCacheStage.Unloading;
 
-            foreach (var chunk in _assetCacheMap)
-            {
-                chunk.Value.Dispose();
-            }
-
             _assetCacheMap.Clear();
-
-            foreach (var chunk in _sceneCacheMap)
-            {
-                chunk.Dispose();
-            }
-
             _sceneCacheMap.Clear();
 
             if (_refCount > 0)

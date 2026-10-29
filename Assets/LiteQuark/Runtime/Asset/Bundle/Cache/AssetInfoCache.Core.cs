@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetInfoCache : IDispose
+    internal sealed partial class AssetInfoCache : IDisposeAsync
     {
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
@@ -30,43 +31,43 @@ namespace LiteQuark.Runtime
             _refCount = 0;
         }
 
-        public void Dispose()
+        public async UniTask DisposeAsync()
         {
-            Unload();
-
-            _loadAssetTask?.Cancel();
-            _loadAssetTask = null;
-            Asset = null;
-
-            if (_assetLoaderCallbackList.Count == 0)
+            if (Stage == AssetCacheStage.Unloaded)
             {
                 return;
             }
+            Stage = AssetCacheStage.Unloading;
+            var task = _loadAssetTask;
+            task?.Cancel();
 
-            var callbacks = new List<Action<AssetLoadResult<UnityEngine.Object>>>(_assetLoaderCallbackList);
-            _assetLoaderCallbackList.Clear();
-            var error = new AssetError(_assetPath, "Asset cache was disposed before delivery");
-            var result = AssetLoadResult<UnityEngine.Object>.Failure(error);
-            foreach (var cb in callbacks)
+            if (_assetLoaderCallbackList.Count > 0)
             {
-                LiteUtils.SafeInvoke(cb, result);
+                var callbacks = new List<Action<AssetLoadResult<UnityEngine.Object>>>(_assetLoaderCallbackList);
+                _assetLoaderCallbackList.Clear();
+                var result = AssetLoadResult<UnityEngine.Object>.Failure(
+                    new AssetError(_assetPath, "Asset cache was disposed before delivery"));
+                foreach (var callback in callbacks)
+                {
+                    LiteUtils.SafeInvoke(callback, result);
+                }
             }
+
+            if (task is IResourceTaskCleanup cleanup)
+            {
+                await cleanup.WaitForCleanupAsync();
+            }
+            CompleteUnload();
         }
 
-        public void Unload()
+        // 原生读取已结束后使用；父 Bundle 的零引用回收复用这一同步步骤。
+        internal void CompleteUnload()
         {
-            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
-            {
-                return;
-            }
-
-            if (_refCount > 0)
-            {
-                LLog.Warning("Unload asset leak : {0}({1})", _assetPath, _refCount);
-            }
-
-            Stage = AssetCacheStage.Unloading;
+            _loadAssetTask = null;
+            Asset = null;
             _refCount = 0;
+
+            // 原生读取结束后才归还 Bundle 引用，正常缓存回收也遵循这一顺序。
             var lease = _mainLease;
             _mainLease = null;
             lease?.Dispose();

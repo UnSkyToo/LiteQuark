@@ -1,9 +1,10 @@
 using System;
 using UnityEngine.SceneManagement;
+using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class SceneInfoCache : IDispose
+    internal sealed partial class SceneInfoCache : IDisposeAsync
     {
         public AssetCacheStage Stage { get; private set; }
         public Scene? Scene => Stage == AssetCacheStage.Loaded && _scene.IsValid() && _scene.isLoaded ? _scene : null;
@@ -29,14 +30,21 @@ namespace LiteQuark.Runtime
             _bundleLease = bundleLease;
         }
 
-        public void Dispose()
+        public async UniTask DisposeAsync()
         {
+            var task = _loadSceneTask;
             try
             {
-                Unload();
-
-                _loadSceneTask?.Cancel();
-                _loadSceneTask = null;
+                if (Stage == AssetCacheStage.Loading)
+                {
+                    // 迟到场景归加载任务清理；保留 Bundle Lease 直到该任务收尾。
+                    Stage = AssetCacheStage.Unloading;
+                }
+                else if (Stage != AssetCacheStage.Unloading)
+                {
+                    Unload();
+                }
+                task?.Cancel();
             }
             finally
             {
@@ -45,9 +53,17 @@ namespace LiteQuark.Runtime
                     NotifyCompleted(AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(_sceneKey, "Scene cache was disposed before delivery")));
                 }
             }
+
+            if (task is IResourceTaskCleanup cleanup)
+            {
+                await cleanup.WaitForCleanupAsync();
+            }
+            _loadSceneTask = null;
+            await WaitForUnloadAsync();
+            CompleteUnload();
         }
 
-        public void Unload()
+        internal void Unload()
         {
             if (Stage == AssetCacheStage.Unloaded || _isRequestingUnload || _unloadOperation is { isDone: false })
             {
@@ -66,6 +82,19 @@ namespace LiteQuark.Runtime
             }
         }
 
+        private async UniTask WaitForUnloadAsync()
+        {
+            var operation = _unloadOperation;
+            if (operation != null)
+            {
+                await UniTask.WaitUntil(() => operation.isDone);
+            }
+            if (_scene.IsValid() && _scene.isLoaded)
+            {
+                throw new InvalidOperationException($"Scene has not been unloaded: {_sceneKey}");
+            }
+        }
+
         private void RequestUnload()
         {
             var targetScene = _scene;
@@ -75,12 +104,7 @@ namespace LiteQuark.Runtime
             _isRequestingUnload = true;
             try
             {
-                op = SceneManager.UnloadSceneAsync(targetScene);
-                if (Stage == AssetCacheStage.Unloaded)
-                {
-                    return;
-                }
-                _unloadOperation = op;
+                op = _unloadOperation = SceneManager.UnloadSceneAsync(targetScene);
             }
             catch (Exception ex)
             {
@@ -98,25 +122,18 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            try
+            op.completed += _ =>
             {
-                LiteRuntime.Task.AddTask(op, () =>
+                if (!targetScene.isLoaded || !targetScene.IsValid())
                 {
-                    if (!targetScene.isLoaded || !targetScene.IsValid())
-                    {
-                        CompleteUnload();
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                LLog.Exception(ex, "Observe scene unload failed : {0}", _sceneKey);
-            }
+                    CompleteUnload();
+                }
+            };
         }
 
         private void CompleteUnload()
         {
-            if (Stage == AssetCacheStage.Unloaded)
+            if (Stage == AssetCacheStage.Unloaded || _isRequestingUnload || _unloadOperation is { isDone: false })
             {
                 return;
             }

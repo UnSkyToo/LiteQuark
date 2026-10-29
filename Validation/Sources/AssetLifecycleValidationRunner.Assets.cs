@@ -13,6 +13,59 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask ShutdownWaitsForRetiredBundle()
+        {
+            var h = New(concurrency: 1);
+            var handle = h.Asset<TextAsset>(TextPath);
+            h.Provider.Tick(0);
+            var task = TaskSnapshot().OfType<LoadLocalBundleTask>().Single(t => t.DebugName == "LoadBundle text.ab");
+            task.Execute();
+            var request = Get<AssetBundleCreateRequest>(task, "_bundleRequest");
+            task.Fail(new InvalidOperationException("Controlled failure before native Bundle completion"));
+            task.Dispose();
+            h.Provider.Tick(0);
+            Check(handle.State == AssetHandleState.Failed && task.WaitForCleanupAsync().Status == UniTaskStatus.Pending,
+                "The logical request has failed while its native Bundle cleanup remains pending.");
+            var other = h.Asset<GameObject>(PrefabPath);
+            h.Provider.Tick(0);
+            Check(h.Locater.Started.Count == 2 && h.Locater.Started[1] != "text.ab" && !other.IsDone,
+                "Another Bundle request is submitted despite the earlier task's pending native cleanup.");
+            var shutdown = h.Shutdown();
+            Check(shutdown.Status == UniTaskStatus.Pending, "System shutdown includes the previously retired resource task.");
+            await shutdown;
+            Check(request.isDone && request.assetBundle == null && task.WaitForCleanupAsync().Status == UniTaskStatus.Succeeded && other.IsDone,
+                "System close waits for the earlier native cleanup and ends the other request without leaking its late Bundle.");
+        }
+
+        private static async UniTask ShutdownWaitsAfterCleanupFailure()
+        {
+            var h = New();
+            var handle = h.Asset<TextAsset>(TextPath);
+            var other = h.Asset<TextAsset>(SecondTextPath);
+            await Wait(() => handle.IsDone && other.IsDone, "Assets before failing cleanup");
+            var bundle = h.Cache("text.ab").Bundle;
+            var first = new CleanupProbe();
+            var second = new CleanupProbe();
+            var error = new InvalidOperationException("Controlled resource cleanup failure");
+            var firstEntry = h.Entry("text.ab", TextPath);
+            var secondEntry = h.Entry("text.ab", SecondTextPath);
+            // Each cache owns its cleanup; use controlled tails to keep one pending after another faults.
+            Set(firstEntry, "_loadAssetTask", first);
+            Set(secondEntry, "_loadAssetTask", second);
+            first.FinishCleanup(error);
+            var shutdown = h.Shutdown();
+            await Frame(); await Frame();
+            Check(shutdown.Status == UniTaskStatus.Pending && second.State == TaskState.Cancelled && bundle != null,
+                "A peer cleanup fault cannot bypass pending cleanup or trigger Bundle unloading.");
+            second.FinishCleanup();
+            Exception failure = null;
+            try { await shutdown; } catch (Exception ex) { failure = ex; }
+            Check(ReferenceEquals(failure, error) && bundle != null && !h.Disposed,
+                "After all cleanup settles, close reports the original failure without unloading the Bundle or reporting success.");
+            var rejected = h.Asset<TextAsset>(SecondTextPath);
+            Check(rejected.State == AssetHandleState.Failed, "A failed close stays closed to new requests.");
+        }
+
         private static async UniTask DownloadReleaseFailures()
         {
             New();
@@ -690,11 +743,15 @@ namespace LiteQuark.Editor
             await Wait(() => a.IsDone, "Retention load");
             var entry = h.Entry("text.ab", TextPath);
             var asset = a.Result;
+            Check(!h.Cache("text.ab").TryUnloadUnused(true) && asset != null && entry.Stage == AssetCacheStage.Loaded,
+                "TryUnloadUnused never releases a live owner's asset, even when retention is ignored.");
             h.Provider.Tick(1000);
             Check(a.Result != null && h.Refs("text.ab") == 1, "Live Handle protects the bundle beyond its retention duration.");
             a.Dispose();
             Check(h.Refs("text.ab") == 0 && entry.Stage == AssetCacheStage.Loaded &&
                 Get<AssetBundleCache.Lease>(entry, "_mainLease") == null, "Last release immediately returns Bundle lease and preserves object index.");
+            Check(!h.Cache("text.ab").TryUnloadUnused(false) && entry.Asset == asset,
+                "TryUnloadUnused respects an unexpired retention period without changing the cached object.");
             h.Provider.Tick(299);
             Check(h.Has("text.ab") && entry.Asset == asset && h.Cache("text.ab").IsLoaded && h.Cache("text.ab").IsRetained,
                 "Bundle and original index remain before 300 seconds.");
@@ -716,6 +773,14 @@ namespace LiteQuark.Editor
             await Wait(() => fresh.IsDone, "Load after Bundle expiry");
             Check(fresh.Result != null && !ReferenceEquals(entry, h.Entry("text.ab", TextPath)) && h.Locater.Calls["text.ab"] == 2,
                 "Request after expiry reloads Bundle and creates a fresh index.");
+            var freshCache = h.Cache("text.ab");
+            var freshEntry = h.Entry("text.ab", TextPath);
+            var freshAsset = fresh.Result;
+            fresh.Dispose();
+            Check(freshCache.TryUnloadUnused(true) && freshCache.Stage == AssetCacheStage.Unloaded && freshCache.Bundle == null &&
+                freshEntry.Stage == AssetCacheStage.Unloaded && freshEntry.Asset == null && freshAsset == null,
+                "Ignoring retention synchronously unloads an idle Bundle and invalidates its child asset index.");
+            Check(!freshCache.TryUnloadUnused(true), "An already-unloaded cache cannot be reclaimed a second time.");
         }
 
         private static async UniTask SharedBundleRetention()
@@ -793,7 +858,7 @@ namespace LiteQuark.Editor
                 Get<AssetBundleCache.Lease>(entry, "_mainLease") == null &&
                 bundle.Stage == AssetCacheStage.Unloaded && Get<int>(bundle, "_refCount") == 0,
                 "Shutdown returns the loading lease and clears entry and bundle ownership.");
-            handle.Dispose(); entry.Dispose();
+            handle.Dispose(); await entry.DisposeAsync();
             for (var i = 0; i < 4; i++) await Frame();
             Check(completions == 1 && handle.Result == null && entry.Asset == null &&
                 Get<int>(bundle, "_refCount") == 0, "Repeated disposal and late native completion do not revive or release entries twice.");
@@ -860,7 +925,7 @@ namespace LiteQuark.Editor
                 if (shutdownError != null)
                 {
                     _case.evidence.Add("Harness-only second Provider.Dispose after recording aborted Provider enumeration.");
-                    h.Provider.Dispose();
+                    await h.Provider.DisposeAsync();
                 }
             }
         }
@@ -1300,18 +1365,41 @@ namespace LiteQuark.Editor
             var h = New(); var bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab")); h.Locater.Opened.Add(bundle);
             var cache = h.Cache("text.ab"); typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, new object[] { bundle });
             var entry = new AssetInfoCache(cache, TextPath, typeof(TextAsset)); var calls = 0;
-            entry.LoadAssetAsync(entry.AcquireLease<TextAsset>(), result => { calls++; result.Value?.Dispose(); }); entry.Dispose(); entry.Dispose();
+            entry.LoadAssetAsync(entry.AcquireLease<TextAsset>(), result => { calls++; result.Value?.Dispose(); }); await entry.DisposeAsync(); await entry.DisposeAsync();
             Check(entry.Stage == AssetCacheStage.Unloaded && calls == 1 && h.Refs("text.ab") == 0, "Dispose cancels queued task without reviving entry or double notification.");
+
+            var reading = new AssetInfoCache(cache, TextPath, typeof(TextAsset));
+            reading.LoadAssetAsync(reading.AcquireLease<TextAsset>(), result => { calls++; result.Value?.Dispose(); });
+            var task = (LoadAssetTask<TextAsset>)Get<BaseTask>(reading, "_loadAssetTask");
+            task.Execute();
+            var request = Get<AssetBundleRequest>(task, "_assetRequest");
+            h.Assets.UnloadUnusedAssets();
+            Check(bundle != null && task.State == TaskState.Running && reading.Stage == AssetCacheStage.Loading,
+                "Ordinary reclamation rejects a native asset read without cancelling its task.");
+            var disposal = reading.DisposeAsync();
+            Check(disposal.Status == UniTaskStatus.Pending && reading.Stage == AssetCacheStage.Unloading && h.Refs("text.ab") == 1,
+                "Asset cache disposal retains its Bundle lease while the cancelled native read is pending.");
+            h.Assets.UnloadUnusedAssets();
+            Check(h.Has("text.ab") && bundle != null, "Normal cache reclamation cannot unload a Bundle still used by asynchronous disposal.");
+            await disposal;
+            Check(request.isDone && reading.Stage == AssetCacheStage.Unloaded && h.Refs("text.ab") == 0 && calls == 2,
+                "Asset DisposeAsync completes only after native reading and returns its lease once.");
+            h.Assets.UnloadUnusedAssets();
+            Check(!h.Has("text.ab") && bundle == null, "Idle cache reclamation unloads synchronously and removes the cache from its Provider.");
             await Frame();
         }
 
         private static async UniTask LeaseAccounting()
         {
             var h = New(); var cache = h.Cache("text.ab"); var lease = cache.AcquireLease();
-            Check(cache.Stage == AssetCacheStage.Idle && cache.IsUsed && !cache.CanUnload(false) && !cache.CanUnload(true), "Idle cache with lease is not collectible.");
+            Check(!cache.TryUnloadUnused(true) && cache.Stage == AssetCacheStage.Idle && cache.IsUsed,
+                "A referenced idle cache cannot be reclaimed, even when retention is ignored.");
             lease.Dispose(); lease.Dispose(); Check(!cache.IsUsed && cache.CanUnload(false) && cache.CanUnload(true), "Idle cache lease returns exactly once.");
-            var late = cache.AcquireLease(); cache.Dispose(); late.Dispose();
+            var late = cache.AcquireLease(); await cache.DisposeAsync(); late.Dispose();
             Check(cache.Stage == AssetCacheStage.Unloaded, "Late lease disposal tolerates already-unloaded owner.");
+            var unused = new AssetBundleCache(h.Provider, Get<BundleInfo>(cache, "_bundleInfo"));
+            Check(unused.TryUnloadUnused(false) && unused.Stage == AssetCacheStage.Unloaded && !unused.TryUnloadUnused(false),
+                "An empty unreferenced cache is reclaimed synchronously exactly once.");
             await UniTask.Yield();
         }
 
@@ -1433,7 +1521,7 @@ namespace LiteQuark.Editor
             finally
             {
                 oldHandle.Dispose();
-                oldEntry.Dispose();
+                await oldEntry.DisposeAsync();
             }
             Check(h.Refs("text.ab") == 1, "Disposing the detached idle entry does not release the replacement Bundle lease.");
         }
@@ -1443,7 +1531,7 @@ namespace LiteQuark.Editor
             var h = New(); var oldHandle = h.Asset<TextAsset>(TextPath);
             await Wait(() => oldHandle.IsDone, "Entry before forced unload");
             var oldEntry = h.Entry("text.ab", TextPath);
-            oldEntry.Dispose();
+            await oldEntry.DisposeAsync();
             Get<Dictionary<(string, Type), AssetInfoCache>>(h.Cache("text.ab"), "_assetCacheMap").Remove((TextPath, typeof(TextAsset)));
             var replacement = h.Asset<TextAsset>(TextPath);
             await Wait(() => replacement.IsDone, "Replacement after old entry unload");
@@ -1589,14 +1677,22 @@ namespace LiteQuark.Editor
             h.Provider.Tick(0f);
             var task = TaskSnapshot().OfType<LoadLocalBundleTask>().Single(t => t.DebugName == "LoadBundle text.ab");
             AssetBundle bundle = null;
+            UniTask shutdown = default;
+            var waitingForDelivery = false;
+            task.Task.GetAwaiter().OnCompleted(() =>
+            {
+                bundle = task.GetBundle();
+                shutdown = h.Shutdown();
+                waitingForDelivery = bundle != null && !shutdown.Status.IsCompleted();
+            });
             try
             {
-                await WaitWithoutLoaderTick(() => task.IsDone, "Native Bundle completion before Loader delivery");
-                bundle = task.GetBundle();
-                Check(bundle != null && !handle.IsDone, "The task owns a completed native Bundle which the Loader has not delivered.");
-                await h.Shutdown();
+                await WaitWithoutLoaderTick(() => task.WaitForCleanupAsync().Status.IsCompleted(), "Local Bundle callback cleanup");
+                Check(waitingForDelivery, "Shutdown from the successful Task continuation waits for the pending result callback and cleanup.");
+                await shutdown;
                 _case.evidence.Add($"Task={task.State}, Handle done={handle.IsDone}, completed undelivered Bundle alive={bundle != null}.");
-                Check(bundle == null, "Shutdown must unload a completed Bundle whose ownership was not transferred to the cache.");
+                Check(bundle == null && task.State == TaskState.Succeeded && handle.IsDone && handle.Result == null,
+                    "The closed Loader releases the late successful result without handing it to Cache or rewriting Task history.");
             }
             finally
             {
@@ -1639,8 +1735,9 @@ namespace LiteQuark.Editor
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { textInfo, deliveredInfo, pendingInfo });
             var locator = new Locator(true);
             var loader = new AssetBundleLoader(locator, pack, 3);
-            AssetBundle undelivered = null;
+            AssetBundle earlierDelivered = null;
             AssetBundle delivered = null;
+            var shutdowns = new List<UniTask>();
             try
             {
                 var discardedCallbacks = 0;
@@ -1652,7 +1749,7 @@ namespace LiteQuark.Editor
                 {
                     deliveredCallbacks++;
                     deliveredResult = result;
-                    loader.Dispose(); loader.Dispose();
+                    shutdowns.Add(loader.DisposeAsync()); shutdowns.Add(loader.DisposeAsync());
                     deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(result.Value, delivered);
                 });
                 loader.LoadBundle(deliveredInfo, AssetLoadPriority.Normal, result =>
@@ -1664,33 +1761,33 @@ namespace LiteQuark.Editor
                 loader.LoadBundle(pendingInfo, AssetLoadPriority.Normal, _ => discardedCallbacks++);
                 loader.Tick(0);
                 var reentries = 0;
-                locator.Manual["a.ab"].Task.GetAwaiter().OnCompleted(() => { reentries++; loader.Dispose(); });
-                undelivered = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
+                locator.Manual["a.ab"].Task.GetAwaiter().OnCompleted(() => { reentries++; shutdowns.Add(loader.DisposeAsync()); });
+                earlierDelivered = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
                 delivered = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
-                Check(undelivered != null && delivered != null, "The handoff fixture contains two independent real Bundles.");
-                locator.Manual["text.ab"].Finish(undelivered);
+                Check(earlierDelivered != null && delivered != null, "The handoff fixture contains two independent real Bundles.");
+                locator.Manual["text.ab"].Finish(earlierDelivered);
                 locator.Manual["b.ab"].Finish(delivered);
                 locator.Manual["b.ab"].Dispose();
                 loader.Tick(0);
+                foreach (var shutdown in shutdowns) await shutdown;
                 Check(deliveredCallbacks == 2 && deliveredAlive && delivered != null,
                     "Closing from the first callback preserves the delivered Bundle and finishes shared callback dispatch.");
-                Check(undelivered == null && discardedCallbacks == 0 && reentries == 1
+                Check(earlierDelivered != null && discardedCallbacks == 1 && reentries == 1
                     && locator.Manual["a.ab"].State == TaskState.Cancelled,
-                    "Shutdown releases only undelivered results and tolerates cancellation-continuation reentry.");
+                    "Shutdown preserves the earlier callback's Bundle, suppresses pending delivery and tolerates cancellation-continuation reentry.");
                 Check(locator.Manual["text.ab"].State == TaskState.Succeeded
                     && locator.Manual["b.ab"].State == TaskState.Succeeded,
                     "Resource cleanup does not rewrite successful Task history.");
                 var rejected = 0;
                 loader.LoadBundle(textInfo, AssetLoadPriority.High, result => { if (!result.Succeeded && result.Value == null && result.Error.ResourceKey == textInfo.BundlePath && !string.IsNullOrWhiteSpace(result.Error.Message)) rejected++; });
-                loader.RaiseBundlePriority(textInfo, AssetLoadPriority.High); loader.Tick(0); loader.Dispose();
-                Check(rejected == 1 && locator.Started.Count == 3 && Get<System.Collections.IList>(loader, "_runningTasks").Count == 0
-                    && Get<System.Collections.IDictionary>(loader, "_taskMap").Count == 0,
-                    "The closed Loader neither starts new work nor retains pending ownership.");
+                loader.RaiseBundlePriority(textInfo, AssetLoadPriority.High); loader.Tick(0); await loader.DisposeAsync();
+                Check(rejected == 1 && locator.Started.Count == 3,
+                    "The closed Loader rejects new requests without starting additional work.");
             }
             finally
             {
-                loader.Dispose();
-                if (undelivered != null) undelivered.Unload(true);
+                await loader.DisposeAsync();
+                if (earlierDelivered != null) earlierDelivered.Unload(true);
                 if (delivered != null) delivered.Unload(true);
             }
             await UniTask.Yield();
@@ -1703,9 +1800,9 @@ namespace LiteQuark.Editor
             h.Provider.Tick(0);
             var main = h.Finish("a.ab", true);
             var loader = Get<AssetBundleLoader>(h.Provider, "_bundleLoader");
-            Check(main != null && !handle.IsDone && h.Cache("a.ab").Bundle == null && h.Refs("b.ab") == 1,
-                "The main Bundle is held by the dependency completion group before cache publication.");
-            await h.Shutdown(); loader.Dispose(); h.Provider.Dispose();
+            Check(main != null && !handle.IsDone && h.Refs("b.ab") == 1,
+                "The main Bundle has arrived, but the Handle still waits for its protected dependency.");
+            await h.Shutdown(); await loader.DisposeAsync(); await h.Provider.DisposeAsync();
             Check(main == null && handle.IsDone && handle.Result == null && h.Locater.Manual["b.ab"].State == TaskState.Cancelled,
                 "Cache shutdown settles dependency callbacks and rolls back the already-delivered main Bundle.");
             await UniTask.Yield();
@@ -1715,25 +1812,47 @@ namespace LiteQuark.Editor
         {
             var info = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { info });
-            var locator = new FileRemoteLocator();
-            var loader = new AssetBundleLoader(locator, pack, 1);
-            AssetBundle bundle = null;
-            try
+            foreach (var closeBeforeCallback in new[] { false, true })
             {
-                var callbacks = 0;
-                loader.LoadBundle(info, AssetLoadPriority.Normal, _ => callbacks++); loader.Tick(0);
-                await WaitWithoutLoaderTick(() => locator.Task.IsDone, "Remote-file Bundle before Loader delivery");
-                bundle = locator.Task.GetBundle();
-                Check(locator.Task.State == TaskState.Succeeded && bundle != null && callbacks == 0,
-                    "The Remote Task has a real Bundle awaiting Loader delivery.");
-                loader.Dispose(); loader.Dispose();
-                Check(bundle == null && locator.Task.State == TaskState.Succeeded && callbacks == 0,
-                    "Loader shutdown releases an undelivered remote result without changing Task state or notifying consumers.");
-            }
-            finally
-            {
-                loader.Dispose();
-                if (bundle != null) bundle.Unload(true);
+                var locator = new FileRemoteLocator();
+                var loader = new AssetBundleLoader(locator, pack, 1);
+                AssetBundle bundle = null;
+                try
+                {
+                    var callbacks = 0;
+                    UniTask shutdown = default;
+                    var waitingForDelivery = false;
+                    loader.LoadBundle(info, AssetLoadPriority.Normal, result => { callbacks++; bundle = result.Value; }); loader.Tick(0);
+                    if (closeBeforeCallback)
+                    {
+                        locator.Task.Task.GetAwaiter().OnCompleted(() =>
+                        {
+                            bundle = locator.Task.GetBundle();
+                            shutdown = loader.DisposeAsync();
+                            waitingForDelivery = bundle != null && !shutdown.Status.IsCompleted();
+                        });
+                    }
+                    await WaitWithoutLoaderTick(() => locator.Task.WaitForCleanupAsync().Status.IsCompleted(), "Remote-file Bundle callback cleanup");
+                    if (closeBeforeCallback)
+                    {
+                        await shutdown;
+                        Check(waitingForDelivery && bundle == null && callbacks == 0,
+                            "Shutdown from the Remote Task continuation waits until its late successful Bundle is released.");
+                    }
+                    else
+                    {
+                        Check(bundle != null && callbacks == 1,
+                            "The Remote Task delivers its Bundle without another Loader Tick.");
+                    }
+                    await loader.DisposeAsync(); await loader.DisposeAsync();
+                    Check(locator.Task.State == TaskState.Succeeded && (closeBeforeCallback ? bundle == null && callbacks == 0 : bundle != null && callbacks == 1),
+                        "Shutdown preserves successful Task history and only releases results not handed to consumers.");
+                }
+                finally
+                {
+                    await loader.DisposeAsync();
+                    if (bundle != null) bundle.Unload(true);
+                }
             }
         }
 
@@ -1773,7 +1892,7 @@ namespace LiteQuark.Editor
                 }
                 Check(!AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
                     "Downloading without GetContent has not created a native Bundle.");
-                loader.Dispose(); loader.Dispose();
+                await loader.DisposeAsync(); await loader.DisposeAsync();
                 Check(locator.Task.State == TaskState.Cancelled && locator.Task.Result == null && callbacks == 0,
                     "Shutdown cancels without extracting or delivering a Bundle.");
                 await WaitWithoutLoaderTick(() => requestField.GetValue(locator.Task) == null, "Cancelled HTTP request disposal");
@@ -1787,7 +1906,7 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                loader.Dispose();
+                await loader.DisposeAsync();
                 server.Dispose();
             }
         }

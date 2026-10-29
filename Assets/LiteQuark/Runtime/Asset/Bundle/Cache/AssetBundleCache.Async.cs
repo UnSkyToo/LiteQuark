@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : ITick, IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {

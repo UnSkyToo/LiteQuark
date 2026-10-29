@@ -191,7 +191,7 @@ namespace LiteQuark.Editor
                 await Run("84 Loader limit constrains available Asset quota", "three available Asset slots, Loader limit two, controlled completion and real assets", () => AssetGroupLoaderBudgets(3));
                 await Run("85 Retention expires while timeScale is zero", "real asset and public AssetSystem Tick with Unity clock", RetentionDuringPause);
                 await Run("86 Shutdown releases a late local Bundle", "controlled native request submission and real completion", ShutdownDuringLocalBundle);
-                await Run("87 Shutdown releases a completed undelivered Bundle", "real Bundle completion before Loader delivery", ShutdownBeforeBundleDelivery);
+                await Run("87 Shutdown releases a completed undelivered Bundle", "real Bundle success continuation closes before result callback", ShutdownBeforeBundleDelivery);
                 await Run("88 Scene unload can recover after last-scene refusal", "real Single scene, Handle disposal and retry after host restoration", SceneUnloadRetry,
                     "Start scene unload failed", "Unloading the last loaded scene");
                 await Run("89 Task result views and one-shot delivery", "real local/remote-file Bundles and asset extraction", TaskResultViews,
@@ -199,9 +199,8 @@ namespace LiteQuark.Editor
                 await Run("90 Failed local task releases a late Bundle", "real native request and controlled failure", FailedLocalBundleCleanup);
                 await Run("91 Loader shutdown during delivery preserves ownership", "shared callbacks, real Bundles and reentrant close", LoaderShutdownHandoff);
                 await Run("92 Shutdown rolls back main waiting for dependency", "controlled main delivery and pending dependency", ShutdownWithPendingDependency, "Bundle load failed");
-                await Run("93 Shutdown releases undelivered remote-file Bundle", "Remote Task through file URI and paused Loader delivery", RemoteBundleShutdown);
-                await Run("94 Scene unload survives observer registration failure", "real native unload with Flow registration temporarily absent", SceneObserverFailure,
-                    "Observe scene unload failed", "Task group -1 does not exist");
+                await Run("93 Shutdown releases undelivered remote-file Bundle", "file URI immediate handoff and close before result callback", RemoteBundleShutdown);
+                await Run("94 Scene unload does not require a TaskSystem observer", "real native unload with Flow registration temporarily absent", SceneObserverFailure);
                 await Run("95 External unload recovers a refused scene release", "real Single scene, refused release and external native unload", SceneExternalUnloadAfterRefusal,
                     "Start scene unload failed", "Unloading the last loaded scene");
                 await Run("96 Remote shutdown during HTTP transfer", "loopback HTTP with body held mid-transfer", () => RemoteHttpCancellation(false));
@@ -222,6 +221,14 @@ namespace LiteQuark.Editor
                     "LoadRemoteBundleTask failed:", "Bundle download failed");
                 await Run("110 Download release failure terminates retry and preserves terminal results", "throwing DownloadHandler, real HTTP timeout and controlled logical terminals", DownloadReleaseFailures,
                     "RequestReleaseProbe failed:");
+                await Run("111 System close waits for retired Bundle cleanup", "native Bundle outlives logical failure and Loader retirement", ShutdownWaitsForRetiredBundle, "Load bundle failed");
+                await Run("112 System close releases retained asset and scene Handles", "real scene unload and cached Bundle dependencies", ShutdownReleasesHeldResources);
+                await Run("113 System close waits for cancelled native scene", "native loading, early task disposal and retained dependencies", ShutdownWaitsForNativeScene);
+                await Run("114 System close reports refused scene unload", "real last-scene refusal and retained Bundle", ShutdownReportsSceneRefusal,
+                    "Start scene unload failed", "Unloading the last loaded scene");
+                await Run("115 System close drains other cleanup after a failure", "controlled cleanup outcomes with a real cached Bundle", ShutdownWaitsAfterCleanupFailure);
+                await Run("116 Editor close drains ordinary and simulated delivery", "real Editor assets and Timer delivery", EditorShutdownDeliveries);
+                await Run("117 Editor close unloads a delayed scene", "real Editor Scene and pending Handle delivery", EditorShutdownScene);
             }
             catch (Exception ex)
             {
@@ -374,8 +381,20 @@ namespace LiteQuark.Editor
             for (var i = 0; i < 4; i++) await Frame();
             if (!Current.Disposed)
             {
-                Current.Assets.UnloadUnusedAssets(20);
-                await Current.Shutdown();
+                if (Current.ShutdownFailed)
+                {
+                    _case.evidence.Add("Fixture teardown after recorded close failure; this does not define a Runtime retry API.");
+                    var caches = Get<Dictionary<string, AssetBundleCache>>(Current.Provider, "_bundleCacheMap");
+                    // All close waits have settled; failure fixtures explicitly release their remaining native Bundles.
+                    foreach (var cache in caches.Values) if (cache.Bundle != null) cache.Bundle.Unload(true);
+                    caches.Clear();
+                    Current.Disposed = true;
+                }
+                else
+                {
+                    Current.Assets.UnloadUnusedAssets(20);
+                    await Current.Shutdown();
+                }
             }
             foreach (var bundle in Current.Locater.Opened) if (bundle != null) bundle.Unload(true);
             Current = null;

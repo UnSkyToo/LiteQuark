@@ -2,7 +2,7 @@ using System;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetInfoCache : IDispose
+    internal sealed partial class AssetInfoCache : IDisposeAsync
     {
         public void LoadAssetAsync<T>(Lease<T> lease, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {

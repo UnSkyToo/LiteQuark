@@ -51,7 +51,7 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public void Dispose()
+        public async UniTask DisposeAsync()
         {
             if (_isDisposed)
             {
@@ -59,22 +59,43 @@ namespace LiteQuark.Runtime
             }
             _isDisposed = true;
 
-            foreach (var chunk in _bundleCacheMap)
+            var cleanups = new List<UniTask>();
+            if (_bundleLoader != null)
             {
-                LiteUtils.SafeInvoke(chunk.Value.Dispose);
+                cleanups.Add(_bundleLoader.DisposeAsync());
             }
+            foreach (var cache in _bundleCacheMap.Values)
+            {
+                cleanups.Add(cache.ReleaseContentsAsync());
+            }
+
+            // Runtime 先关闭上层业务和 ObjectPoolSystem；其 GameObjectHandle／池实例已调用 Destroy。
+            // 跨帧让这些实例完成销毁，再卸载 Bundle；此处不替代原生加载与场景卸载的等待。
+            await UniTask.NextFrame();
+
+            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
+
+            cleanups.Clear();
+            foreach (var cache in _bundleCacheMap.Values)
+            {
+                cleanups.Add(cache.DisposeAsync());
+            }
+            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
             _loadingSceneSet.Clear();
 
-            _bundleLoader?.Dispose();
             _bundleLoader = null;
             _packInfo = null;
         }
 
         public void Tick(float deltaTime)
         {
-            _bundleLoader.Tick(deltaTime);
+            if (_isDisposed)
+            {
+                return;
+            }
+            _bundleLoader?.Tick(deltaTime);
 
             foreach (var chunk in _bundleCacheMap)
             {
@@ -94,7 +115,7 @@ namespace LiteQuark.Runtime
             {
                 foreach (var bundlePath in _unloadBundleList)
                 {
-                    UnloadBundleCache(bundlePath);
+                    UnloadBundleCache(bundlePath, false);
                 }
                 _unloadBundleList.Clear();
             }
@@ -135,6 +156,10 @@ namespace LiteQuark.Runtime
 
         public void UnloadUnusedAssets(int maxDepth)
         {
+            if (_isDisposed)
+            {
+                return;
+            }
             var depth = maxDepth;
             while (depth > 0)
             {
@@ -152,7 +177,7 @@ namespace LiteQuark.Runtime
                 {
                     foreach (var bundlePath in _unloadBundleList)
                     {
-                        UnloadBundleCache(bundlePath);
+                        UnloadBundleCache(bundlePath, true);
                     }
 
                     _unloadBundleList.Clear();
@@ -167,11 +192,10 @@ namespace LiteQuark.Runtime
             GC.Collect();
         }
 
-        private void UnloadBundleCache(string bundlePath)
+        private void UnloadBundleCache(string bundlePath, bool ignoreRetainTime)
         {
-            if (_bundleCacheMap.TryGetValue(bundlePath, out var cache))
+            if (_bundleCacheMap.TryGetValue(bundlePath, out var cache) && cache.TryUnloadUnused(ignoreRetainTime))
             {
-                cache.Dispose();
                 _bundleCacheMap.Remove(bundlePath);
             }
         }

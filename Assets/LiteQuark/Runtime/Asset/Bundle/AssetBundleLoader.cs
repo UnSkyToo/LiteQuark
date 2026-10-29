@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    internal class AssetBundleLoader : ITick, IDispose
+    internal class AssetBundleLoader : ITick, IDisposeAsync
     {
         private readonly IBundleLocater _bundleLocater;
         private readonly VersionPackInfo _packInfo;
@@ -13,6 +14,7 @@ namespace LiteQuark.Runtime
         private readonly Dictionary<string, PendingTask> _taskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
+        private readonly List<UniTask> _pendingCleanup = new();
         private bool _isDisposed;
 
         public AssetBundleLoader(IBundleLocater locater, VersionPackInfo packInfo, int concurrencyLimit)
@@ -26,7 +28,7 @@ namespace LiteQuark.Runtime
             _runningTasks = new List<RunningTask>();
         }
 
-        public void Dispose()
+        public async UniTask DisposeAsync()
         {
             if (_isDisposed)
             {
@@ -39,27 +41,31 @@ namespace LiteQuark.Runtime
 
             foreach (var task in _runningTasks)
             {
-                try
-                {
-                    if (task.LoadTask.State == TaskState.Succeeded)
-                    {
-                        var bundle = task.LoadTask.GetBundle();
-                        if (bundle != null)
-                        {
-                            bundle.Unload(true);
-                        }
-                    }
-                    else if (task.LoadTask.State is TaskState.Pending or TaskState.Running)
-                    {
-                        task.LoadTask.Cancel();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LLog.Exception(ex, "Release undelivered bundle failed : {0}", task.Path);
-                }
+                task.LoadTask.Cancel();
+                RetainCleanup(task.LoadTask);
             }
             _runningTasks.Clear();
+            try
+            {
+                await UniTaskUtils.WhenAllCompleteAsync(_pendingCleanup);
+            }
+            finally
+            {
+                _pendingCleanup.Clear();
+            }
+        }
+
+        private void RetainCleanup(ILoadBundleTask task)
+        {
+            if (task is IResourceTaskCleanup resourceTask)
+            {
+                var cleanup = resourceTask.WaitForCleanupAsync();
+                if (cleanup.Status != UniTaskStatus.Succeeded)
+                {
+                    // 归还 Loader 名额后，仍保留未结束或失败的原生收尾。
+                    _pendingCleanup.Add(cleanup);
+                }
+            }
         }
 
         public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<AssetBundle>> callback)
@@ -128,25 +134,23 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+            _pendingCleanup.RemoveAll(static cleanup => cleanup.Status == UniTaskStatus.Succeeded);
             for (var i = _runningTasks.Count - 1; i >= 0 && !_isDisposed; i--)
             {
                 var runningTask = _runningTasks[i];
                 if (runningTask.LoadTask.IsDone)
                 {
+                    RetainCleanup(runningTask.LoadTask);
                     _runningTasks.RemoveAt(i);
 
-                    var bundle = runningTask.LoadTask.GetBundle();
-                    if (_taskMap.Remove(runningTask.Path, out var pendingTask))
+                    // Cancel 不发送结果回调，退休时结束对应请求。
+                    if (runningTask.LoadTask.State == TaskState.Cancelled)
                     {
-                        var task = runningTask.LoadTask;
-                        var result = task.State == TaskState.Succeeded && bundle != null
-                            ? AssetLoadResult<AssetBundle>.Success(bundle)
-                            : AssetLoadResult<AssetBundle>.Failure(new AssetError(pendingTask.BundlePath,
-                                task.Error?.Message ?? "Bundle load returned no result", task.Error));
-                        foreach (var callback in pendingTask.CallbackList)
-                        {
-                            LiteUtils.SafeInvoke(callback, result);
-                        }
+                        CompletePendingTask(runningTask.Path, null, runningTask.LoadTask.Error);
                     }
                 }
             }
@@ -154,16 +158,17 @@ namespace LiteQuark.Runtime
             while (!_isDisposed && _runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
-                ILoadBundleTask task;
+                ILoadBundleTask task = null;
 
                 try
                 {
-                    task = _bundleLocater.LoadBundle(info.Path, info.Hash, null);
+                    task = _bundleLocater.LoadBundle(info.Path, info.Hash,
+                        bundle => CompletePendingTask(info.Path, bundle, task?.Error));
                 }
                 catch (Exception ex)
                 {
                     LLog.Exception(ex, "Create bundle load task failed : {0}", info.Path);
-                    FailPendingTask(info.Path, new AssetError(info.BundlePath, ex.Message, ex));
+                    CompletePendingTask(info.Path, null, ex);
                     break;
                 }
 
@@ -171,14 +176,27 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void FailPendingTask(string bundlePath, AssetError error)
+        private void CompletePendingTask(string bundlePath, AssetBundle bundle, Exception error)
         {
+            // Complete 会先恢复 Task 续体；若续体已关闭 Loader，结果不能再交付。
+            if (_isDisposed)
+            {
+                if (bundle != null)
+                {
+                    bundle.Unload(true);
+                }
+                return;
+            }
+
             if (!_taskMap.Remove(bundlePath, out var pendingTask))
             {
                 return;
             }
 
-            var result = AssetLoadResult<AssetBundle>.Failure(error);
+            var result = bundle != null
+                ? AssetLoadResult<AssetBundle>.Success(bundle)
+                : AssetLoadResult<AssetBundle>.Failure(new AssetError(pendingTask.BundlePath,
+                    error?.Message ?? "Bundle load returned no result", error));
             foreach (var callback in pendingTask.CallbackList)
             {
                 LiteUtils.SafeInvoke(callback, result);

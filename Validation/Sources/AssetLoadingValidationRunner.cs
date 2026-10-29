@@ -329,7 +329,7 @@ namespace LiteQuark.Editor
         private static async UniTask Frame()
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
-            Context?.Provider?.Tick(0);
+            Context?.ActualProvider?.Tick(0);
         }
         private static async UniTask Wait(Func<bool> condition, string label)
         {
@@ -349,7 +349,7 @@ namespace LiteQuark.Editor
             return pack;
         }
 
-        private static UniTask RemoteUriComposition()
+        private static async UniTask RemoteUriComposition()
         {
             var versionQuery = "t=" + Uri.EscapeDataString(AppUtils.GetVersion());
             var compose = typeof(BundleRemoteLocater).GetMethod("GetVersionPackUri", Private);
@@ -390,13 +390,12 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                provider.Dispose();
+                await provider.DisposeAsync();
                 setting.BundleLocater = previousMode;
                 setting.BundleRemoteUri = previousUri;
                 setting.DisableUnityWebCache = previousCache;
             }
             Active.evidence.Add("No version or remote Bundle task was started; all remote URI assertions are offline.");
-            return UniTask.CompletedTask;
         }
 
         private static async UniTask BuiltInLocation()

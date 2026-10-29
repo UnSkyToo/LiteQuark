@@ -96,6 +96,14 @@ if (!preload.Result)
 
 预加载先校验整批路径，非法输入同步抛异常且不启动该批加载；按规范 key 去重。提供 `TotalCount`、`LoadedCount`、`FailedCount`、`FailedPaths` 和 `Errors`。FailedPaths 使用规范 key，Errors 按索引对应，错误中的 ResourceKey 可能指向依赖 Bundle。普通批次失败的 Error 为首个失败原因；部分失败仍持有成功项直到 Dispose。取消后不再增加迟到结果的计数或错误。预加载不直接提供资源对象。
 
+## 系统关闭
+
+AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Editor 模式同样会等待已有加载和延迟交付，关闭中的迟到结果不再成功交付。
+
+业务应先停止资源使用并释放 Handle；遗漏 Handle 不保留旧资源的可用性，实例仍由其拥有者销毁。Handle／Lease 的 Dispose 仍是同步归还，返回不代表原生卸载已经结束。系统关闭不主动执行全局 Resources.UnloadUnusedAssets 或 GC。
+
+关闭异常会在其余收尾结束后向上传播，不自动重试或恢复。内容收尾失败时不进入最终 Bundle 卸载；最终释放失败时仍尝试其余 Bundle，此时可能已释放部分资源，不能继续使用旧系统。原生操作不结束时关闭会继续等待，没有生产超时。
+
 ## 路径与模式
 
 资源默认放在 `Assets/StandaloneAssets`。加载入口接受带扩展名的根目录相对路径（`Prefabs/Player.prefab`）或完整项目路径（`Assets/StandaloneAssets/Prefabs/Player.prefab`）；场景须以 `.unity` 结尾。根目录外的 `Assets/...` 路径也可表达，但 Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。

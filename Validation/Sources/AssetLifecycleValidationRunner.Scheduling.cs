@@ -76,7 +76,7 @@ namespace LiteQuark.Editor
             return UniTask.CompletedTask;
         }
 
-        private static UniTask PriorityLoaderScheduling()
+        private static async UniTask PriorityLoaderScheduling()
         {
             var locator = new Locator(true);
             var bundles = Enumerable.Range(0, 6).Select(i => new BundleInfo(i, "queue" + i + ".ab", Array.Empty<string>(), null)).ToArray();
@@ -94,7 +94,10 @@ namespace LiteQuark.Editor
                 loader.LoadBundle(bundles[4], AssetLoadPriority.Low, _ => callbacks++);
                 loader.Tick(0);
                 Check(locator.Started.Count == 2 && locator.Manual.Values.Count(t => !t.IsDone) == 2, "Promotion neither preempts running work nor exceeds the concurrency limit.");
-                locator.Manual["queue0.ab"].Finish(null); loader.Tick(0);
+                locator.Manual["queue0.ab"].Finish(null);
+                Check(callbacks == 1 && locator.Started.Count == 2,
+                    "Task completion delivers its result immediately but does not recursively start queued work.");
+                loader.Tick(0);
                 Check(locator.Started.Last() == "queue4.ab", "Shared queued request stays High despite a later Low request.");
                 locator.Manual["queue1.ab"].Finish(null); loader.Tick(0);
                 Check(locator.Started.Last() == "queue2.ab", "Remaining Normal work resumes FIFO.");
@@ -107,8 +110,33 @@ namespace LiteQuark.Editor
                     locator.Calls.Values.All(count => count == 1) && callbacks == 7,
                     "Each physical Bundle starts once; seven logical callbacks complete exactly once.");
             }
-            finally { loader.Dispose(); }
-            return UniTask.CompletedTask;
+            finally { await loader.DisposeAsync(); }
+
+            locator = new Locator(true);
+            loader = new AssetBundleLoader(locator, pack, 1);
+            callbacks = 0;
+            var failure = new InvalidOperationException("Controlled Bundle failure");
+            AssetLoadResult<AssetBundle> failedResult = null;
+            try
+            {
+                loader.LoadBundle(bundles[0], AssetLoadPriority.Normal, result =>
+                {
+                    callbacks++;
+                    failedResult = result;
+                    loader.LoadBundle(bundles[0], AssetLoadPriority.Normal, _ => callbacks++);
+                });
+                loader.Tick(0);
+                locator.Manual["queue0.ab"].Fail(failure);
+                Check(callbacks == 1 && ReferenceEquals(failedResult.Error.Exception, failure) && locator.Started.Count == 1,
+                    "Failure delivers the original error immediately; same-path retry stays queued until Tick.");
+                loader.Tick(0);
+                Check(locator.Calls["queue0.ab"] == 2 && callbacks == 1,
+                    "Retiring the old failed task does not remove or notify the replacement request.");
+                locator.Manual["queue0.ab"].Cancel();
+                loader.Tick(0); loader.Tick(0);
+                Check(callbacks == 2, "A cancelled task without a result callback ends its request once when retired.");
+            }
+            finally { await loader.DisposeAsync(); }
         }
 
         private static AssetLoadPriority CachePriority(Harness h, string path) => Get<AssetLoadPriority>(h.Cache(path), "_loadPriority");
@@ -289,15 +317,17 @@ namespace LiteQuark.Editor
                     "Resource completion did not borrow or release any Default slot; Urgent still does not bypass its group.");
 
                 var loadedScene = scene.Result.Value;
+                var entry = Get<SceneInfoCache>(Get<SceneInfoCache.Lease>(scene, "_lease"), "_cache");
                 scene.Dispose();
-                var unloadTask = TaskSnapshot().OfType<AsyncOperationTask>().Last();
-                Check(RuntimeRecords().Single(record => ReferenceEquals(record.Task, unloadTask)).Group.Id == LiteConst.TaskGroupId.Flow,
-                    "The real scene unload observer is registered in Flow.");
-                await Wait(() => unloadTask.IsDone && h.Refs("scene.ab") == 0
+                var unloadOperation = Get<AsyncOperation>(entry, "_unloadOperation");
+                Check(unloadOperation != null && !TaskSnapshot().OfType<AsyncOperationTask>().Any(task =>
+                        ReferenceEquals(Get<AsyncOperation>(task, "_asyncOperation"), unloadOperation)),
+                    "Scene unload uses its native completion callback without occupying a task group.");
+                await Wait(() => unloadOperation.isDone && h.Refs("scene.ab") == 0
                     && (!loadedScene.IsValid() || !loadedScene.isLoaded),
-                    "Flow observes scene unload with Default full", 15);
+                    "Native scene unload completes with Default full", 15);
                 Check(!queued.IsExecuted && h.Refs("scene.ab") == 0,
-                    "Scene unload and lease return finish through Flow without Default admission.");
+                    "Scene unload and lease return finish without Default admission.");
             }
             finally
             {

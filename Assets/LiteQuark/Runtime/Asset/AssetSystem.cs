@@ -44,14 +44,14 @@ namespace LiteQuark.Runtime
             return _provider.Initialize();
         }
 
-        public UniTask DisposeAsync()
+        public async UniTask DisposeAsync()
         {
-            _provider?.UnloadUnusedAssets(20);
-
-            _provider?.Dispose();
+            if (_provider == null)
+            {
+                return;
+            }
+            await _provider.DisposeAsync();
             _provider = null;
-
-            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)

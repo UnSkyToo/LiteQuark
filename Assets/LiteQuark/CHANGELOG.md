@@ -15,6 +15,9 @@
 
 ### Asset
 
+- 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。失败会等待其余收尾后报告，不自动恢复；最终释放失败时可能已释放部分资源。
+- 迁移：Provider 实现改为 IDisposeAsync，关闭调用方须等待终结完成；Handle／Lease 仍同步 Dispose。业务须停止使用旧资源，遗漏 Handle 不延长系统生命周期。
+- 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；场景实际卸载结束后才归还 Bundle 引用。
 - 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。
 - 破坏：四种 Handle 的 Task 属性改为 internal；`var result = await handle.Task` 改为 `await handle; var result = handle.Result;`。Handle 必须覆盖资源使用期，不能同步读取未完成的结果。
 - 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐。取消或等待中 Dispose 立即结束请求；终态后 Dispose 保留 State / Error。
@@ -29,9 +32,9 @@
 ### Task
 
 - 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
-- 调整：UnityDownloadBaseTask 在终态立即停止重试计时器并释放请求，不再等待调度器回收包装器；结果通知期间的释放推迟到完成回调的 finally。首次释放错误由收尾结果报告；重试轮释放失败会停止重试并终结任务，不覆盖已有逻辑终态。RemoteBundle 据此完成 Cleanup，WebGet 和 VersionPack 的等待及通知语义不变。
-- 新增：四类内置资源加载任务通过内部 IResourceTaskCleanup 提供可重复观察的原生收尾等待；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。尚未接入 AssetSystem 关闭，不改变公开 ITask 或 ILoadBundleTask。
-- 修复：资源加载成功先取出通知，再发布逻辑结果，避免 await 续体中回收包装器丢失结果交接；Scene 包装器回收不再撤掉在途加载所需的场景观察。
+- 调整：下载任务终结后停止重试并释放请求；释放失败会报告错误，准备重试时发生释放失败则终止重试，已有逻辑终态不变。
+- 新增：内置资源加载任务提供独立的原生收尾等待，AssetSystem 关闭已接入；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。
+- 修复：await 续体中回收任务包装器不会丢失成功结果通知，也不会中断迟到场景清理。
 - 破坏：TaskState.InProgress / Completed 改名为 Running / Succeeded，更新枚举引用；失败和取消等待仍返回 null，调用者检查 State / Error。
 - 破坏：提交对象必须派生 BaseTask。ITask 不再继承 ITick / IDispose，外部通过 TaskSystem 提交、Cancel 取消，不直接 Execute / Tick / Dispose / Fail。
 - 破坏：自定义任务的 Cancel override 改为 OnTerminated 并检查 State；钩子执行时 IsDone 已为 true。Dispose override 改为 OnDispose，继承链的 base.Dispose 改为 base.OnDispose，保留清理顺序。

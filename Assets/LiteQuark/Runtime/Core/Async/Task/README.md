@@ -49,13 +49,9 @@ else if (task.State == TaskState.Cancelled)
 
 取消结束逻辑任务，不保证 Unity 原生操作停止。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
 
-四类内置资源加载任务另实现内部 `IResourceTaskCleanup.WaitForCleanupAsync()`，可在完成前后重复等待。它只观察任务自身的原生收尾，不执行、取消或释放任务，也不加入新的调度任务；未启动的 Pending 任务仍须执行或终结后才能结束收尾。
+内置 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理未交付的迟到 Bundle／Scene，成功结果由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
 
-- LocalBundle 取消或失败后卸载迟到 Bundle；Asset 等待原生读取结束，不自行销毁所属 Bundle 中的对象；Scene 取消或失败后卸载迟到场景并等待实际卸载。
-- 下载基类在终态立即停止重试计时器并释放请求，不依赖调度器回收包装器；结果通知期间的释放推迟到完成回调的 finally。重试只释放本轮请求，保留下一轮计时器。
-- RemoteBundle 在基类报告终态资源释放后结束收尾等待，因此成功通知先于 Cleanup 完成。它不为清理而提取 Bundle，也不承诺底层线程已停止。请求释放失败由收尾等待报告；若仍在准备重试，则停止重试并使任务失败，已经确定的逻辑终态保持不变。
-- 正常成功结果继续按原路径交接，包装器回收不丢失成功通知或卸载结果。原生加载失败但无遗留资源时，收尾可以成功；迟到清理失败只使收尾等待抛异常，不改写逻辑终态。
-- 该内部能力尚未接入 AssetSystem 关闭；Asset 原生读取期间，上层仍必须保留所属 Bundle，不能依据 IsDone 提前卸载。
+AssetSystem 关闭会等待它拥有的资源任务收尾，再卸载 Bundle；TaskSystem 本身只取消任务和回收包装器。其他资源拥有者也不能依据 IsDone 提前卸载在途操作依赖的资源。
 
 - Result 是最终结果；包装器清理不会清空它，但引用不代表独立的 Unity 资源所有权。
 - 完成通知至多一次，不承诺取消或关闭时发送 callback。回调异常被记录，不改写终态。

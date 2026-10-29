@@ -13,6 +13,128 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask ShutdownReleasesHeldResources()
+        {
+            var h = New();
+            var asset = h.Asset<TextAsset>(TextPath);
+            var sceneHandle = h.Scene();
+            await Wait(() => asset.IsDone && sceneHandle.IsDone, "Held resources before close");
+            var text = asset.Result;
+            var scene = sceneHandle.Result.Value;
+            var cache = h.Cache("scene.ab");
+            var bundle = cache.Bundle;
+            var dependency = h.Cache("b.ab").Bundle;
+            var entry = h.SceneEntries().Single();
+            var sawUnload = false;
+            var protectedDuringUnload = true;
+            void ObserveUnload(Scene unloaded)
+            {
+                if (unloaded != scene) return;
+                sawUnload = true;
+                var operation = Get<AsyncOperation>(entry, "_unloadOperation");
+                if (operation is { isDone: false })
+                    protectedDuringUnload &= entry.Stage == AssetCacheStage.Unloading && bundle != null && dependency != null;
+            }
+            SceneManager.sceneUnloaded += ObserveUnload;
+            try
+            {
+                var shutdown = h.Shutdown();
+                Check(!asset.IsDisposed && !sceneHandle.IsDisposed && shutdown.Status == UniTaskStatus.Pending && bundle != null,
+                    "Shutdown does not wait for business Handles but retains cached Bundles during native scene unloading.");
+                h.Assets.UnloadUnusedAssets(); h.Provider.Tick(1000);
+                Check(bundle != null && dependency != null && h.Cache("scene.ab") == cache,
+                    "Manual and automatic cache reclamation remain stopped while close is waiting.");
+                await shutdown;
+                Check(sawUnload && protectedDuringUnload && (!scene.IsValid() || !scene.isLoaded) &&
+                    bundle == null && dependency == null && text == null && Get<IAssetProvider>(h.Assets, "_provider") == null,
+                    "Native scene unloading finishes before all cached resources and dependencies are destroyed, despite retained Handles.");
+            }
+            finally { SceneManager.sceneUnloaded -= ObserveUnload; }
+        }
+
+        private static async UniTask ShutdownWaitsForNativeScene()
+        {
+            var h = New(true);
+            var handle = QueueScene(h);
+            var entry = h.SceneEntries().Single();
+            var task = (LoadSceneTask)Get<BaseTask>(entry, "_loadSceneTask");
+            var bundle = h.Cache("scene.ab").Bundle;
+            var dependency = h.Cache("b.ab").Bundle;
+            task.Execute();
+            var operation = Get<AsyncOperation>(task, "_sceneRequest");
+            Check(operation != null && !operation.isDone, "System close targets an actual native scene load.");
+            var shutdown = h.Shutdown();
+            task.Dispose();
+            Check(shutdown.Status == UniTaskStatus.Pending && task.State == TaskState.Cancelled && handle.IsDone && bundle != null && dependency != null,
+                "Closing ends the pending Handle while keeping its native loading dependencies alive.");
+            await shutdown;
+            Check(operation.isDone && task.WaitForCleanupAsync().Status == UniTaskStatus.Succeeded &&
+                !SceneManager.GetSceneByName("validation_scene").isLoaded && bundle == null && dependency == null,
+                "System close waits for the cancelled task's late Scene cleanup before unloading either Bundle.");
+        }
+
+        private static async UniTask ShutdownReportsSceneRefusal()
+        {
+            var h = New();
+            var handle = h.Assets.LoadSceneHandle(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
+            h.Handles.Add(handle);
+            await Wait(() => handle.IsDone, "Single Scene before close");
+            var scene = handle.Result.Value;
+            var bundle = h.Cache("scene.ab").Bundle;
+            try
+            {
+                Exception failure = null;
+                try { await h.Shutdown(); } catch (Exception ex) { failure = ex; }
+                Check(failure is InvalidOperationException && failure.Message.Contains("Scene has not been unloaded") &&
+                    scene.isLoaded && bundle != null && !h.Disposed && Get<IAssetProvider>(h.Assets, "_provider") != null,
+                    "Refused native scene unloading fails shutdown without destroying its Bundle or clearing the Provider.");
+            }
+            finally
+            {
+                RestoreValidationHost();
+                if (scene.IsValid() && scene.isLoaded) await SceneManager.UnloadSceneAsync(scene).ToUniTask();
+            }
+        }
+
+        private static async UniTask EditorShutdownDeliveries()
+        {
+            New();
+            foreach (var delayed in new[] { false, true })
+            {
+                await WithEditorScenes(delayed, async (assets, provider) =>
+                {
+                    var handle = assets.LoadAssetHandle<TextAsset>(TextPath);
+                    Current.Handles.Add(handle);
+                    var shutdown = assets.DisposeAsync();
+                    var rejected = assets.LoadAssetHandle<TextAsset>(SecondTextPath);
+                    Current.Handles.Add(rejected);
+                    Check(shutdown.Status == UniTaskStatus.Pending && rejected.State == AssetHandleState.Failed,
+                        "Editor close rejects new work while an existing ordinary or simulated delivery is pending.");
+                    await Wait(() => shutdown.Status.IsCompleted(), "Editor pending delivery shutdown");
+                    await shutdown;
+                    Check(handle.State == AssetHandleState.Failed && handle.Result == null,
+                        "Editor shutdown drains and releases the old delivery without publishing a successful result.");
+                });
+            }
+        }
+
+        private static async UniTask EditorShutdownScene()
+        {
+            New();
+            await WithEditorScenes(true, async (assets, provider) =>
+            {
+                var handle = EditorScene(assets);
+                await Wait(() => SceneManager.GetSceneByName("editor_validation_scene").isLoaded, "Editor Scene before delayed delivery");
+                var scene = SceneManager.GetSceneByName("editor_validation_scene");
+                Check(!handle.IsDone && scene.isLoaded, "The native Editor scene exists before its delayed Handle delivery.");
+                var shutdown = assets.DisposeAsync();
+                await Wait(() => shutdown.Status.IsCompleted(), "Editor Scene shutdown");
+                await shutdown;
+                Check(handle.State == AssetHandleState.Failed && (!scene.IsValid() || !scene.isLoaded),
+                    "Closing an Editor provider waits for delayed scene delivery and its actual native unload.");
+            });
+        }
+
         private static async UniTask RetireSceneTaskFixture(LoadSceneTask task, AsyncOperation request, bool expectCleanupFailure = false)
         {
             if (task == null) return;
@@ -210,7 +332,7 @@ namespace LiteQuark.Editor
                 retry = h.Scene();
                 Check(retry.IsDone && retry.Result == null && h.LoadingNames.Count == 0 && !h.Has("scene.ab"),
                     "Scene retry during Provider disposal completes as failure before name registration or cache creation.");
-                h.Provider.Dispose();
+                await h.Provider.DisposeAsync();
             }
             var continuation = RetryScene();
             await h.Shutdown();
@@ -234,7 +356,7 @@ namespace LiteQuark.Editor
                 Check(!result.Succeeded && result.Value == null && result.Error != null && !string.IsNullOrWhiteSpace(result.Error.Message),
                     "Closed Provider delivers a failure outcome with no owned Lease.");
             });
-            h.Provider.Dispose();
+            await h.Provider.DisposeAsync();
             Check(assetCallbacks == 1 && sceneCallbacks == 1 && !unexpectedLease,
                 "Closed Provider returns failure before touching cleared pack metadata.");
             Check(native == null && Get<Dictionary<string, AssetBundleCache>>(h.Provider, "_bundleCacheMap").Count == 0 &&
@@ -267,13 +389,12 @@ namespace LiteQuark.Editor
             Check(sceneHandle.Result == null && entry.Stage == AssetCacheStage.Unloading, "Repeated Handle and Lease release only requests one unload.");
             Check(sceneHandle.State == AssetHandleState.Succeeded && sceneHandle.IsDisposed && sceneHandle.Error == null,
                 "Scene Dispose does not rewrite successful loading history.");
-            var unloadTask = TaskSnapshot().OfType<AsyncOperationTask>().Last();
-            var unloadOperation = Get<AsyncOperation>(unloadTask, "_asyncOperation");
+            var unloadOperation = Get<AsyncOperation>(entry, "_unloadOperation");
             Check(unloadOperation != null && !unloadOperation.isDone, "Actual Unity scene unload is still in flight when cleanup is invoked.");
             h.Assets.UnloadUnusedAssets();
             Check(h.Has("scene.ab") && h.Refs("scene.ab") == 1, "Unload submission and duplicate Dispose retain bundle reference.");
             await Wait(() => h.Has("scene.ab") && h.Refs("scene.ab") == 0, "Scene unload reference return");
-            Check(!scene.IsValid() || !scene.isLoaded, "Reference returned only after actual scene unload.");
+            Check(unloadOperation.isDone && (!scene.IsValid() || !scene.isLoaded), "Reference returned only after actual scene unload operation completion.");
             h.Assets.UnloadUnusedAssets(); Check(!h.Has("scene.ab") && !h.Has("b.ab"), "Scene and dependency bundles reclaimed.");
         }
 
@@ -542,8 +663,8 @@ namespace LiteQuark.Editor
             Check(!task.IsExecuted && !handle.IsDone, "Entry Dispose targets a queued, unsubmitted Unity task.");
             var completions = 0;
             var waiter = ObserveScene(handle, result => { completions++; Check(result == null, "Disposed entry completes waiting Handle with null."); });
-            entry.Dispose();
-            entry.Dispose();
+            await entry.DisposeAsync();
+            await entry.DisposeAsync();
             await Wait(() => handle.IsDone, "Entry Dispose completion");
             await waiter;
             Check(completions == 1 && entry.Stage == AssetCacheStage.Unloaded && task.IsDone && !task.IsExecuted,
@@ -555,6 +676,23 @@ namespace LiteQuark.Editor
             await Frame();
             Check(completions == 1 && !SceneManager.GetSceneByName("validation_scene").isLoaded,
                 "Repeated task cancellation does not notify again or create a scene.");
+
+            var lateHandle = h.Scene();
+            var lateEntry = h.SceneEntries().Last();
+            var lateTask = (LoadSceneTask)Get<BaseTask>(lateEntry, "_loadSceneTask");
+            var bundle = h.Cache("scene.ab").Bundle;
+            var dependency = h.Cache("b.ab").Bundle;
+            lateTask.Execute();
+            var native = Get<AsyncOperation>(lateTask, "_sceneRequest");
+            var disposal = lateEntry.DisposeAsync();
+            Check(disposal.Status == UniTaskStatus.Pending && lateHandle.IsDone && lateEntry.Stage == AssetCacheStage.Unloading && h.Refs("scene.ab") == 1,
+                "Scene cache disposal ends delivery but retains its Bundle lease for the task's late native cleanup.");
+            h.Assets.UnloadUnusedAssets();
+            Check(bundle != null && dependency != null, "Ordinary reclamation preserves both scene dependencies during DisposeAsync.");
+            await disposal;
+            Check(native.isDone && lateEntry.Stage == AssetCacheStage.Unloaded && h.Refs("scene.ab") == 0 &&
+                !SceneManager.GetSceneByName("validation_scene").isLoaded,
+                "Scene DisposeAsync waits until its cancelled load has unloaded the late Scene.");
         }
 
         private static async UniTask SceneSystemDisposeDuringBundle()
@@ -594,7 +732,7 @@ namespace LiteQuark.Editor
                 "Parent disposal reaches scene entry and terminates the queued request once.");
             Check(bundle.Stage == AssetCacheStage.Unloaded && Get<int>(bundle, "_refCount") == 0 && h.LoadingNames.Count == 0,
                 "Scene and Bundle terminal state and registration are consistent after shutdown.");
-            entry.Dispose();
+            await entry.DisposeAsync();
             handle.Dispose();
             await Frame();
             Check(completions == 1 && !SceneManager.GetSceneByName("validation_scene").isLoaded,
@@ -811,7 +949,7 @@ namespace LiteQuark.Editor
                     "Native unload ends the entry before the original Handle is disposed.");
                 Check(ReferenceEquals(bundle, h.Cache("scene.ab")) && h.Refs("scene.ab") == 1,
                     "Only the old scene reference is returned to the same shared bundle.");
-                first.Dispose(); first.Dispose(); firstLease.Dispose(); firstEntry.Dispose();
+                first.Dispose(); first.Dispose(); firstLease.Dispose(); await firstEntry.DisposeAsync();
                 await Frame();
                 Check(h.Refs("scene.ab") == 1 && second.Result.HasValue && second.Result.Value.isLoaded,
                     "Repeated old Handle, Lease and entry disposal preserves the surviving scene.");
@@ -863,7 +1001,7 @@ namespace LiteQuark.Editor
                     Check(!Get<bool>(first, "_isDisposed") && first.Result == null && !firstScene.isLoaded &&
                         Get<AssetBundleCache.Lease>(firstEntry, "_bundleLease") == null,
                         "Editor uses common automatic completion without a Bundle lease or Handle disposal.");
-                    first.Dispose(); first.Dispose(); firstLease.Dispose(); firstEntry.Dispose();
+                    first.Dispose(); first.Dispose(); firstLease.Dispose(); await firstEntry.DisposeAsync();
                     await Frame();
                     Check(second.Result.HasValue && second.Result.Value.isLoaded,
                         "Repeated old releases preserve the surviving Editor scene.");
@@ -948,12 +1086,12 @@ namespace LiteQuark.Editor
                 handle.Dispose();
                 operation = Get<AsyncOperation>(entry, "_unloadOperation");
                 Check(operation != null && !operation.isDone && entry.Stage == AssetCacheStage.Unloading && h.Refs("scene.ab") == 1,
-                    "Observer rejection does not discard the submitted native operation or release the scene protection.");
+                    "Missing Flow registration does not prevent native scene unloading or release its Bundle protection early.");
                 entry.Unload();
                 Check(ReferenceEquals(operation, Get<AsyncOperation>(entry, "_unloadOperation")),
-                    "An active native unload cannot be submitted twice after its observer registration failed.");
+                    "An active native unload cannot be submitted twice.");
                 Check(!TaskSnapshot().OfType<AsyncOperationTask>().Any(task => ReferenceEquals(Get<AsyncOperation>(task, "_asyncOperation"), operation)),
-                    "The failure fixture has no registered unload observer.");
+                    "Scene unloading does not register a TaskSystem observer.");
             }
             finally
             {
@@ -962,7 +1100,7 @@ namespace LiteQuark.Editor
             await Wait(() => entry.Stage == AssetCacheStage.Unloaded, "Unobserved native scene unload");
             Check(operation.isDone && (!scene.IsValid() || !scene.isLoaded) && h.Refs("scene.ab") == 0
                 && Get<AsyncOperation>(entry, "_unloadOperation") == null,
-                "The existing sceneUnloaded event completes cleanup independently of the missing observer.");
+                "Native completion releases the Scene lease without a TaskSystem observer.");
             typeof(SceneInfoCache).GetMethod("OnSceneUnloaded", Private).Invoke(entry, new object[] { scene });
             bundleLease.Dispose(); entry.Unload(); handle.Dispose();
             Check(h.Refs("scene.ab") == 0, "Duplicate scene notifications and releases cannot decrement the Bundle reference twice.");

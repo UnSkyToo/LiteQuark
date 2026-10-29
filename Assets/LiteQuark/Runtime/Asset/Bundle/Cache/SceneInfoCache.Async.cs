@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class SceneInfoCache : IDispose
+    internal sealed partial class SceneInfoCache : IDisposeAsync
     {
 #if UNITY_EDITOR
         internal void LoadSceneForEditor(Scene scene, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
 
         private void CompleteSceneLoad(bool success, Scene scene, AssetError error)
         {
-            if (Stage == AssetCacheStage.Unloaded)
+            if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }

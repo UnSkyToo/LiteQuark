@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : ITick, IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         private readonly List<Lease> _dependencyLeases = new();
 

@@ -1,6 +1,6 @@
 ﻿namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetInfoCache : IDispose
+    internal sealed partial class AssetInfoCache : IDisposeAsync
     {
         internal Lease<T> AcquireLease<T>() where T : UnityEngine.Object
         {

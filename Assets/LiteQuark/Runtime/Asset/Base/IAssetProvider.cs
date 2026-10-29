@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal interface IAssetProvider : IInitializeAsync, ITick, IDispose
+    internal interface IAssetProvider : IInitializeAsync, ITick, IDisposeAsync
     {
         string GetVersion();
 

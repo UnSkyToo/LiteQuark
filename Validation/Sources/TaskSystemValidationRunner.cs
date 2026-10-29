@@ -128,6 +128,7 @@ namespace LiteQuark.Editor
                 await RunAsync("32 Runtime cleans unpublished logic after initialization throws", RuntimeInitializationThrows,
                     "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("33 Runtime shutdown waits for in-flight initialization", RuntimeShutdownDuringInitialization);
+                await RunAsync("34 WhenAllComplete waits for success, failure and cancellation", WhenAllComplete);
             }
             catch (Exception ex)
             {
@@ -141,7 +142,7 @@ namespace LiteQuark.Editor
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path, JsonUtility.ToJson(Results, true));
                 var success = Results.fatalError == null && Results.unexpectedErrors.Count == 0
-                    && Results.cases.Count == 33 && Results.cases.All(c => c.passed);
+                    && Results.cases.Count == 34 && Results.cases.All(c => c.passed);
                 Debug.Log($"TASK_SYSTEM_QUICK: {Results.cases.Count(c => c.passed)}/{Results.cases.Count}, assertions={Results.cases.Sum(c => c.assertions)}, GC={Results.steadyTickAllocatedBytes}");
                 EditorApplication.Exit(success ? 0 : 2);
             }
@@ -1003,6 +1004,64 @@ namespace LiteQuark.Editor
                 Failures++;
                 FailureWasPublished = State == TaskState.Failed && Error != null;
             }
+        }
+
+        private static async UniTask WhenAllComplete(TaskSystem system)
+        {
+            var empty = UniTaskUtils.WhenAllCompleteAsync(Array.Empty<UniTask>());
+            Check(empty.Status == UniTaskStatus.Succeeded, "An empty input completes synchronously.");
+            await empty;
+
+            var gates = new[] { new UniTaskCompletionSource(), new UniTaskCompletionSource() };
+            var completed = 0;
+            async UniTask Work(UniTaskCompletionSource gate)
+            {
+                await gate.Task;
+                completed++;
+            }
+            var all = UniTaskUtils.WhenAllCompleteAsync(new List<UniTask> { Work(gates[0]), Work(gates[1]) });
+            gates[1].TrySetResult();
+            Check(completed == 1 && all.Status == UniTaskStatus.Pending, "Later work can finish while the first task remains pending.");
+            gates[0].TrySetResult();
+            await all;
+            Check(completed == 2, "All successful pooled UniTasks are consumed once.");
+
+            var firstError = WhenAllFailureOrigin();
+            var laterError = new InvalidOperationException("Later WhenAllComplete failure");
+            var successGate = new UniTaskCompletionSource();
+            var failureGate = new UniTaskCompletionSource();
+            async UniTask FailAfter(UniTaskCompletionSource gate)
+            {
+                await gate.Task;
+                throw laterError;
+            }
+            var failing = UniTaskUtils.WhenAllCompleteAsync(new[] { UniTask.FromException(firstError), Work(successGate), FailAfter(failureGate) });
+            Check(failing.Status == UniTaskStatus.Pending, "An immediate failure does not bypass other pending work.");
+            successGate.TrySetResult();
+            Check(failing.Status == UniTaskStatus.Pending, "After the successful tail, a second failing tail is still awaited.");
+            failureGate.TrySetResult();
+            Exception observed = null;
+            try { await failing; } catch (Exception ex) { observed = ex; }
+            Check(ReferenceEquals(observed, firstError) && observed.StackTrace.Contains(nameof(WhenAllFailureOrigin)),
+                "Only after all tasks settle is the first input error rethrown with its original stack.");
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            var cancelledTail = new UniTaskCompletionSource();
+            var cancelled = UniTaskUtils.WhenAllCompleteAsync(new[] { UniTask.FromCanceled(cancellation.Token), FailAfter(cancelledTail) });
+            Check(cancelled.Status == UniTaskStatus.Pending, "Cancellation also waits for the remaining work.");
+            cancelledTail.TrySetResult();
+            OperationCanceledException cancelledError = null;
+            try { await cancelled; } catch (OperationCanceledException ex) { cancelledError = ex; }
+            Check(cancelledError?.CancellationToken == cancellation.Token,
+                "The first cancellation retains its token even when a later task faults.");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static Exception WhenAllFailureOrigin()
+        {
+            try { throw new InvalidOperationException("First WhenAllComplete failure"); }
+            catch (Exception ex) { return ex; }
         }
 
         private static async UniTask FinalDisposal(TaskSystem system)

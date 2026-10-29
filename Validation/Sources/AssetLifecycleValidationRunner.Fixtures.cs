@@ -79,6 +79,7 @@ namespace LiteQuark.Editor
             internal readonly Locator Locater;
             internal readonly List<IDisposable> Handles = new();
             internal bool Disposed;
+            internal bool ShutdownFailed;
             internal HashSet<string> LoadingNames => Get<HashSet<string>>(Provider, "_loadingSceneSet");
             internal List<SceneInfoCache> SceneEntries() => Get<List<SceneInfoCache>>(Cache("scene.ab"), "_sceneCacheMap");
             internal SceneHandle Scene(CancellationToken token = default)
@@ -90,8 +91,18 @@ namespace LiteQuark.Editor
             internal async UniTask Shutdown()
             {
                 if (Disposed) return;
-                Disposed = true;
-                await Assets.DisposeAsync();
+                try
+                {
+                    var shutdown = Assets.DisposeAsync();
+                    await Wait(() => shutdown.Status.IsCompleted(), "Asset fixture shutdown");
+                    await shutdown;
+                    Disposed = true;
+                }
+                catch
+                {
+                    ShutdownFailed = true;
+                    throw;
+                }
             }
             internal Harness(bool manual, int concurrency = 10, bool scheduleManual = false)
             {
@@ -160,6 +171,18 @@ namespace LiteQuark.Editor
                 BeforeThrow?.Invoke();
                 throw Error;
             }
+        }
+
+        private sealed class CleanupProbe : BaseTask, IResourceTaskCleanup
+        {
+            private readonly UniTaskCompletionSource _cleanup = new();
+            public UniTask WaitForCleanupAsync() => _cleanup.Task;
+            internal void FinishCleanup(Exception error = null)
+            {
+                if (error == null) _cleanup.TrySetResult();
+                else _cleanup.TrySetException(error);
+            }
+            protected override void OnExecute() { }
         }
 
         private sealed class RequestReleaseProbe : UnityDownloadBaseTask, IResourceTaskCleanup
@@ -275,7 +298,7 @@ namespace LiteQuark.Editor
                 if (ThrowOnCreate) throw new InvalidOperationException("Injected locator failure");
                 if (_manual)
                 {
-                    var task = new ManualTask();
+                    var task = new ManualTask(callback);
                     Manual[path] = task;
                     if (_scheduleManual) LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
                     else task.Execute();
@@ -291,10 +314,24 @@ namespace LiteQuark.Editor
 
         private sealed class ManualTask : BaseTask, ILoadBundleTask
         {
+            private Action<AssetBundle> _callback;
+            internal ManualTask(Action<AssetBundle> callback = null) { _callback = callback; }
             public AssetBundle GetBundle() => Result as AssetBundle;
-            internal void Finish(AssetBundle bundle) { Complete(bundle); }
+            internal void Finish(AssetBundle bundle)
+            {
+                var callback = _callback;
+                _callback = null;
+                if (Complete(bundle)) LiteUtils.SafeInvoke(callback, bundle);
+            }
+            protected override void OnTerminated()
+            {
+                if (State != TaskState.Failed) return;
+                var callback = _callback;
+                _callback = null;
+                LiteUtils.SafeInvoke(callback, null);
+            }
             protected override void OnExecute() { }
-            protected override void OnDispose() { }
+            protected override void OnDispose() { _callback = null; }
         }
     }
 }

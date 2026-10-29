@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : ITick, IDispose
+    internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         internal BundleVisitorInfo GetVisitorInfo()
         {

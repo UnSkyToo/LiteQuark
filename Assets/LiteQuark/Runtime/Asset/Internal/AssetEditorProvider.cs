@@ -14,6 +14,9 @@ namespace LiteQuark.Runtime
         private int _asyncDelayMinFrame;
         private int _asyncDelayMaxFrame;
         private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<SceneInfoCache> _sceneCaches = new();
+        private int _pendingDeliveries;
+        private bool _isDisposed;
 
         public AssetEditorProvider()
         {
@@ -35,13 +38,26 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public void Dispose()
+        public async UniTask DisposeAsync()
         {
+            _isDisposed = true;
+            while (_pendingDeliveries > 0 || _loadingSceneSet.Count > 0)
+            {
+                await UniTask.NextFrame();
+            }
+            var cleanups = new List<UniTask>(_sceneCaches.Count);
+            foreach (var scene in _sceneCaches)
+            {
+                cleanups.Add(scene.DisposeAsync());
+            }
+            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
+            _sceneCaches.Clear();
             _loadingSceneSet.Clear();
         }
 
         public void Tick(float deltaTime)
         {
+            _sceneCaches.RemoveAll(static scene => scene.Stage == AssetCacheStage.Unloaded);
         }
 
         public string GetVersion()
@@ -51,16 +67,25 @@ namespace LiteQuark.Runtime
 
         private void SimulateAsync<T>(Action<T> callback, T value)
         {
-            if (_simulateAsyncDelayInEditor)
+            _pendingDeliveries++;
+            void Deliver()
             {
-                LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), () =>
+                try
                 {
                     LiteUtils.SafeInvoke(callback, value);
-                });
+                }
+                finally
+                {
+                    _pendingDeliveries--;
+                }
+            }
+            if (_simulateAsyncDelayInEditor)
+            {
+                LiteRuntime.Timer.AddTimerWithFrame(UnityEngine.Random.Range(_asyncDelayMinFrame, _asyncDelayMaxFrame), Deliver);
             }
             else
             {
-                LiteRuntime.Timer.NextFrame(() => { LiteUtils.SafeInvoke(callback, value); });
+                LiteRuntime.Timer.NextFrame(Deliver);
             }
         }
 
@@ -71,7 +96,21 @@ namespace LiteQuark.Runtime
 
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
-            SimulateAsync(callback, LoadAssetSync<T>(assetKey));
+            if (_isDisposed)
+            {
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset provider is closing or disposed")));
+                return;
+            }
+            var result = LoadAssetSync<T>(assetKey);
+            SimulateAsync(delivery =>
+            {
+                if (_isDisposed)
+                {
+                    delivery.Value?.Dispose();
+                    delivery = AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset provider is closing"));
+                }
+                LiteUtils.SafeInvoke(callback, delivery);
+            }, result);
         }
 
         private AssetLoadResult<IAssetLease<T>> LoadAssetSync<T>(string assetKey) where T : UnityEngine.Object
@@ -87,6 +126,11 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
+            if (_isDisposed)
+            {
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Asset provider is closing or disposed")));
+                return;
+            }
             if (!_loadingSceneSet.Add(sceneKey))
             {
                 LLog.Error("Scene is already loading: {0}", sceneKey);
@@ -123,9 +167,17 @@ namespace LiteQuark.Runtime
                         }
 
                         var cache = new SceneInfoCache(null, sceneKey, loadPath, parameters);
+                        _sceneCaches.Add(cache);
                         cache.LoadSceneForEditor(scene, result =>
                         {
                             _loadingSceneSet.Remove(sceneKey);
+
+                            if (_isDisposed)
+                            {
+                                result.Value?.Dispose();
+                                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Asset provider is closing")));
+                                return;
+                            }
 
                             if (!scene.IsValid() || !scene.isLoaded)
                             {
@@ -149,6 +201,10 @@ namespace LiteQuark.Runtime
 
         public void UnloadUnusedAssets(int maxDepth)
         {
+            if (_isDisposed)
+            {
+                return;
+            }
             UnityEngine.Resources.UnloadUnusedAssets();
             GC.Collect();
         }
