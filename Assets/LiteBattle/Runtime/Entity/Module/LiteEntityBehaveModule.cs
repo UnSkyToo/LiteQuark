@@ -148,10 +148,8 @@ namespace LiteBattle.Runtime
                     ColliderBinder_.UniqueID = Entity.UniqueID;
                 }
 
-                LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity).ContinueWith(r =>
-                {
-                    HUD_ = r;
-                });
+                LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity)
+                    .ContinueWith(ui => HUD_ = ui).Forget();
 
                 IsLoad_ = true;
                 PlayCacheEffect();

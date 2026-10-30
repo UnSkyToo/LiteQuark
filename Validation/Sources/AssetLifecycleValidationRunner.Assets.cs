@@ -13,6 +13,113 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask UIShutdownPendingOpens()
+        {
+            var h = new UIOpenHarness();
+            var unobserved = 0;
+            void OnUnobserved(Exception ex)
+            {
+                unobserved++;
+                Errors.Add(ex.ToString());
+            }
+            UniTaskScheduler.UnobservedTaskException += OnUnobserved;
+            try
+            {
+                await h.System.Initialize();
+                var retainedPrefab = h.Assets.Asset<GameObject>(PrefabPath);
+                var first = h.Open();
+                var second = h.Open();
+                // Preserve permits status assertions after Forget consumes these tasks.
+                var discarded = h.Open().Preserve();
+                Check(!UniTaskScheduler.PropagateOperationCanceledException && first.Status == UniTaskStatus.Pending &&
+                    second.Status == UniTaskStatus.Pending && discarded.Status == UniTaskStatus.Pending,
+                    "With UniTask's default cancellation policy, three accepted UI requests wait for the shared real prefab load.");
+                var published = false;
+                var consumer = first.ContinueWith(_ => { published = true; }).Preserve();
+                consumer.Forget();
+                discarded.Forget();
+                var shutdown = h.Shutdown();
+                Check(shutdown.Status == UniTaskStatus.Succeeded && consumer.Status == UniTaskStatus.Canceled &&
+                    second.Status == UniTaskStatus.Canceled && discarded.Status == UniTaskStatus.Canceled,
+                    "DisposeAsync synchronously settles all pending opens and their cancellation consumers.");
+                await shutdown;
+                await CheckPoolCancelled(second);
+                Check(!published && unobserved == 0 && h.Opens == 0 && h.Closes == 0 && h.Find() == null,
+                    "Forget reports no cancellation exception; cancelled ContinueWith does not publish UI or invoke business Open/Close.");
+                var rejected = false;
+                try { await h.Open(); }
+                catch (ObjectDisposedException) { rejected = true; }
+                Check(rejected, "New requests after shutdown fail with ObjectDisposedException instead of starting another load.");
+
+                await Wait(() => retainedPrefab.IsDone, "Shared prefab completion after UI cancellation");
+                await retainedPrefab;
+                Check(retainedPrefab.Result != null, "An independent asset Handle can still receive the successful shared native load.");
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(h.Opens == 0 && h.Closes == 0 && h.Find() == null && h.CanvasObject.transform.childCount == 0,
+                    "Late loading does not bind, open or enqueue UI after its layers have been destroyed.");
+                retainedPrefab.Dispose();
+                await h.Assets.Shutdown();
+                Check(!h.Assets.Has("a.ab") && !h.Assets.Has("b.ab"), "Asset owns the final native and Bundle cleanup after UI cancels its requests.");
+            }
+            finally
+            {
+                try { await h.Cleanup(); }
+                finally { UniTaskScheduler.UnobservedTaskException -= OnUnobserved; }
+            }
+        }
+
+        private static async UniTask UIShutdownPreservesQueues()
+        {
+            var h = new UIOpenHarness();
+            try
+            {
+                await h.System.Initialize();
+                Check(await h.OpenReady("assets/__session_validation/missing.txt") == null,
+                    "Ordinary prefab failure continues to return null.");
+                h.OnOpen = _ => throw new InvalidOperationException("Injected UI Open failure");
+                Check(await h.OpenReady() == null && h.Find() == null && h.Closes == 0,
+                    "A non-cancellation OnOpen exception retains the existing null/error behavior without publishing UI.");
+                h.OnOpen = _ => { };
+                var first = await h.OpenReady();
+                var second = await h.OpenReady();
+                Check(h.Find() == null && h.Updates == 0,
+                    "Successful UI still enters the open queue and becomes findable only after Tick.");
+                h.Tick();
+                Check(ReferenceEquals(h.Find(), first) && h.Updates == 2, "The existing open queue promotes UI in its original order.");
+                h.Close(first);
+                Check(h.Closes == 1 && h.State(first) == "Closing" && h.Go(first) != null,
+                    "Normal Close still runs immediately and leaves instance release to the close queue.");
+                var third = await h.OpenReady();
+                var objects = new[] { h.Go(first), h.Go(second), h.Go(third) };
+                var pending = h.Open("assets/__session_validation/c.prefab");
+                Check(pending.Status == UniTaskStatus.Pending, "Another prefab request is pending alongside all three UI queues.");
+                UniTask<object> rejectedOpen = default;
+                var attemptedOpen = false;
+                h.OnClose = ui =>
+                {
+                    if (!ReferenceEquals(ui, second)) return;
+                    attemptedOpen = true;
+                    rejectedOpen = h.Open(mutex: true);
+                };
+                var shutdown = h.Shutdown();
+                Check(shutdown.Status == UniTaskStatus.Succeeded, "Shutdown still finishes synchronously with pending, open, active and closing UI.");
+                await shutdown;
+                await CheckPoolCancelled(pending);
+                Check(attemptedOpen, "The normal OnClose callback ran during system shutdown.");
+                var rejected = false;
+                try { await rejectedOpen; }
+                catch (ObjectDisposedException) { rejected = true; }
+                Check(rejected, "A closing callback cannot bypass the closed entry point through mutex reuse of another UI.");
+                Check(h.Closes == 3 && new[] { first, second, third }.All(ui => h.State(ui) == "Closed" && h.Go(ui) == null) && h.Find() == null,
+                    "Shutdown drains the original queues, closes each opened UI once and finishes previously requested instance release.");
+                Check(h.Opens == 4, "The pending request never executes Open during shutdown.");
+                await h.Assets.Shutdown();
+                Check(objects.All(go => go == null), "All delivered UI instances are destroyed before Asset shutdown completes.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
         private static async UniTask UIClosingSkipsUpdate()
         {
             var systemType = Type.GetType("LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons", true);

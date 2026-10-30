@@ -234,6 +234,9 @@ namespace LiteQuark.Editor
                 await Run("120 Active pool closes pending prefab handles", "real Bundle templates, failure and delayed completion", ActivePoolShutdown,
                     "Load pool template failed", "Load asset failed");
                 await Run("121 Closing UI skips the remaining update", "UI callbacks, existing open/close queues and deferred destruction", UIClosingSkipsUpdate);
+                await Run("122 UI shutdown cancels pending opens", "shared real prefab load, synchronous cancellation and late success", UIShutdownPendingOpens);
+                await Run("123 UI shutdown preserves normal queues and failures", "real prefab success/failure, OnOpen error and mixed shutdown state", UIShutdownPreservesQueues,
+                    "Load asset failed", "Load ui prefab error");
             }
             catch (Exception ex)
             {

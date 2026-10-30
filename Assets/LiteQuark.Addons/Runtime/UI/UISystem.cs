@@ -20,6 +20,8 @@ namespace LiteQuark.Runtime
         private readonly List<BaseUI> _openList = new();
         private readonly List<BaseUI> _uiList = new();
         private readonly List<BaseUI> _closeList = new();
+        private readonly HashSet<GameObjectHandle> _pendingHandles = new();
+        private bool _isClosing;
 
         public UISystem()
         {
@@ -50,6 +52,15 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
+            _isClosing = true;
+            // Cancellation resumes OpenUI synchronously; detach before its finally removes the handle.
+            var pendingHandles = new List<GameObjectHandle>(_pendingHandles);
+            _pendingHandles.Clear();
+            foreach (var handle in pendingHandles)
+            {
+                handle.Dispose();
+            }
+
             HandleOpenList();
             CloseAllUI();
             HandleCloseList();
@@ -79,6 +90,11 @@ namespace LiteQuark.Runtime
 
         public async UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
         {
+            if (_isClosing)
+            {
+                throw new ObjectDisposedException(nameof(UISystem));
+            }
+
             if (config.IsMutex)
             {
                 var existUI = FindUI<T>();
@@ -94,6 +110,7 @@ namespace LiteQuark.Runtime
             ui.State = UIState.Opening;
             var parent = GetUIParent(config.DepthMode);
             var handle = LiteRuntime.Asset.InstantiateHandle(config.PrefabPath, parent);
+            _pendingHandles.Add(handle);
 
             try
             {
@@ -113,6 +130,10 @@ namespace LiteQuark.Runtime
                 _openList.Add(ui);
                 return ui;
             }
+            catch (OperationCanceledException) when (_isClosing)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _openList.Remove(ui);
@@ -121,6 +142,10 @@ namespace LiteQuark.Runtime
                 ui.State = UIState.Error;
                 LLog.Error("Load ui prefab error : {0}, {1}", config.PrefabPath, ex.Message);
                 return null;
+            }
+            finally
+            {
+                _pendingHandles.Remove(handle);
             }
         }
 

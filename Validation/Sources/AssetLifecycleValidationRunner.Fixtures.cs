@@ -19,7 +19,7 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
-        private static Type CreateUIUpdateProbeType()
+        private static Type CreateUIUpdateProbeType(Action<object> onOpen = null)
         {
             // Observe the actual BaseUI callbacks without adding an Addons reference to the core Editor assembly.
             var baseType = Type.GetType("LiteQuark.Runtime.BaseUI, LiteQuark.Runtime.Addons", true);
@@ -39,8 +39,100 @@ namespace LiteQuark.Editor
                 il.Emit(OpCodes.Ret);
                 type.DefineMethodOverride(method, baseType.GetMethod(name, Private));
             }
-            return type.CreateType();
+            var openCallback = type.DefineField("OnOpenCallback", typeof(Action<object>), FieldAttributes.Public | FieldAttributes.Static);
+            var open = type.DefineMethod("OnOpen", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), new[] { typeof(object[]) });
+            var openIL = open.GetILGenerator();
+            openIL.Emit(OpCodes.Ldsfld, openCallback);
+            openIL.Emit(OpCodes.Ldarg_0);
+            openIL.Emit(OpCodes.Callvirt, typeof(Action<object>).GetMethod("Invoke"));
+            openIL.Emit(OpCodes.Ret);
+            type.DefineMethodOverride(open, baseType.GetMethod("OnOpen", Private));
+            var probeType = type.CreateType();
+            probeType.GetField("OnOpenCallback").SetValue(null, onOpen ?? (_ => { }));
+            return probeType;
         }
+
+        private sealed class UIOpenHarness
+        {
+            internal readonly Harness Assets = New();
+            internal readonly ISystem System;
+            internal readonly GameObject CanvasObject = new("Canvas", typeof(RectTransform));
+            private readonly GameObject _cameraObject = new("UIOpenCamera", typeof(Camera));
+            private readonly IAssetProvider _original;
+            private readonly Type _probeType;
+            private bool _closed;
+            internal int Opens;
+            internal int Closes;
+            internal int Updates;
+            internal Action<object> OnOpen = _ => { };
+            internal Action<object> OnClose = _ => { };
+
+            internal UIOpenHarness()
+            {
+                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                var systemType = Type.GetType("LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons", true);
+                System = (ISystem)Activator.CreateInstance(systemType);
+                var settingType = Type.GetType("LiteQuark.Runtime.UISystemSetting, LiteQuark.Runtime.Addons", true);
+                var setting = Activator.CreateInstance(settingType);
+                settingType.GetField("UICamera").SetValue(setting, _cameraObject.GetComponent<Camera>());
+                systemType.GetProperty("Setting").SetValue(System, setting);
+                _probeType = CreateUIUpdateProbeType(ui =>
+                {
+                    Opens++;
+                    ui.GetType().GetField("OnUpdateCallback").SetValue(ui, (Action<object>)(_ => Updates++));
+                    ui.GetType().GetField("OnCloseCallback").SetValue(ui, (Action<object>)(value => { Closes++; OnClose(value); }));
+                    OnOpen(ui);
+                });
+            }
+
+            internal UniTask<object> Open(string path = PrefabPath, bool mutex = false)
+            {
+                var configType = Type.GetType("LiteQuark.Runtime.UIConfig, LiteQuark.Runtime.Addons", true);
+                var depthType = Type.GetType("LiteQuark.Runtime.UIDepthMode, LiteQuark.Runtime.Addons", true);
+                var config = Activator.CreateInstance(configType, path, Enum.Parse(depthType, "Normal"), mutex, false);
+                var task = System.GetType().GetMethod("OpenUI").MakeGenericMethod(_probeType)
+                    .Invoke(System, new[] { config, Array.Empty<object>() });
+                return (UniTask<object>)typeof(AssetLifecycleValidationRunner).GetMethod(nameof(AwaitUIOpen), BindingFlags.Static | BindingFlags.NonPublic)
+                    .MakeGenericMethod(_probeType).Invoke(null, new[] { task });
+            }
+
+            internal async UniTask<object> OpenReady(string path = PrefabPath)
+            {
+                var request = Open(path);
+                await Wait(() => request.Status.IsCompleted(), "UI open result");
+                return await request;
+            }
+
+            internal void Tick() => ((ITick)System).Tick(0.02f);
+            internal object Find() => System.GetType().GetMethod("FindUI").MakeGenericMethod(_probeType).Invoke(System, null);
+            internal void Close(object ui) => System.GetType().GetMethods().Single(m => m.Name == "CloseUI" && !m.IsGenericMethod).Invoke(System, new[] { ui });
+            internal GameObject Go(object ui) => (GameObject)_probeType.GetProperty("Go").GetValue(ui);
+            internal string State(object ui) => _probeType.GetProperty("State").GetValue(ui).ToString();
+            internal UniTask Shutdown()
+            {
+                _closed = true;
+                return System.DisposeAsync();
+            }
+
+            internal async UniTask Cleanup()
+            {
+                try
+                {
+                    if (!_closed) await Shutdown();
+                    await Assets.Shutdown();
+                }
+                finally
+                {
+                    Set(LiteRuntime.Asset, "_provider", _original);
+                    UnityEngine.Object.DestroyImmediate(CanvasObject);
+                    UnityEngine.Object.DestroyImmediate(_cameraObject);
+                    _probeType.GetField("OnOpenCallback").SetValue(null, (Action<object>)(_ => { }));
+                }
+            }
+        }
+
+        private static async UniTask<object> AwaitUIOpen<T>(object task) => await (UniTask<T>)task;
 
         private sealed class DeferredTemplatePool : BaseGameObjectPool
         {

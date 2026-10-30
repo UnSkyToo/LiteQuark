@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 
 namespace LiteBattle.Runtime
@@ -35,7 +36,8 @@ namespace LiteBattle.Runtime
                 LLog.Info($"{Entity.DebugName} 死亡");
             }
 
-            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, Entity, $"-{damageValue}");
+            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, Entity, $"-{damageValue}")
+                .Forget();
         }
 
         private double CalculateDamage(LiteEntity attacker, LiteEntity target)

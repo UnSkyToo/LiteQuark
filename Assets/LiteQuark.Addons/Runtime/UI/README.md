@@ -44,7 +44,7 @@ if (menu == null)
 uiSystem.CloseUI(menu);
 ```
 
-`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 返回加载完成后的 UI 或 null；`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。只有 Opened 状态的 UI 执行 Update；同一轮更新中被其他 UI 关闭的界面也会跳过后续 Update。
+`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 成功返回 UI，普通加载失败或现有绑定／Open 错误处理返回 null；系统关闭中断在途打开时抛 `OperationCanceledException`。`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。只有 Opened 状态的 UI 执行 Update；同一轮更新中被其他 UI 关闭的界面也会跳过后续 Update。
 
 ## 层级与查找
 
@@ -70,3 +70,9 @@ uiSystem.CloseUI(menu);
 - `OnClose()` 清理业务创建的计时器、动作和其他资源。通过 UISystem 关闭界面，不要只销毁 `Go`。
 
 默认参考分辨率为 1920×1080；实际效果由 `UISystemSetting` 和场景中保存的值决定。实现见 [UISystem.cs](UISystem.cs)、[BaseUI.cs](BaseUI.cs) 和 [UIConfig.cs](UIConfig.cs)。
+
+## 系统关闭
+
+UISystem 由 Runtime 统一关闭。进入 `DisposeAsync` 后拒绝新 OpenUI（抛 `ObjectDisposedException`），同步取消已有在途 Handle，再按原打开队列、活动列表和关闭队列完成已打开界面的关闭。取消请求不会执行 Setup、Open 或正常 Close，也不会作为加载错误记录。调用方 await 时应处理 `OperationCanceledException`；无需等待的入口可用 `.Forget()` 消费任务，UniTask 默认不报告取消异常。接收成功结果可用 `.ContinueWith(ui => ...).Forget()`，取消时不会执行该回调。
+
+`DisposeAsync` 返回 `UniTask.CompletedTask` 时，在途打开已结束、已打开界面已清理，UI 实例已调用 Destroy；Runtime 随即移除该系统，不再调度其 Tick。它不保证 Unity 延迟销毁或底层原生加载已经结束，原生加载与迟到资源由 AssetSystem 后续收尾。业务不要直接释放已注册系统或在关闭后使用旧实例。调用方自身早于 UISystem 结束的生命周期仍需由业务处理。
