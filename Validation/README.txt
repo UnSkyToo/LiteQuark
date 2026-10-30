@@ -63,6 +63,7 @@ Validation — 当前工作区的隔离 Unity 验证
   包含 Bundle 和 Editor 模式。具体用例见 Sources 与本轮报告。
   ObjectPool 覆盖模板成功/失败/取消、移除时同 key 池替换、批量清理中的取消回调、预生成关闭、入池异常与剩余实例清理、真实 prefab Handle 释放和借出实例责任；
   Task 实例化用例覆盖原生完成但尚未发布时的清理，以及成功通知中的包装器释放。
+  UI 覆盖同一轮 Update 中 A 关闭 B 后跳过 B 的更新，并保留下一次 Tick 通过关闭队列释放实例的时序。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS

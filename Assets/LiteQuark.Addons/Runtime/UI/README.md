@@ -44,7 +44,7 @@ if (menu == null)
 uiSystem.CloseUI(menu);
 ```
 
-`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 返回加载完成后的 UI 或 null；`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。
+`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 返回加载完成后的 UI 或 null；`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。只有 Opened 状态的 UI 执行 Update；同一轮更新中被其他 UI 关闭的界面也会跳过后续 Update。
 
 ## 层级与查找
 

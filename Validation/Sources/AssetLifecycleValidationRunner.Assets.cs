@@ -13,6 +13,61 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask UIClosingSkipsUpdate()
+        {
+            var systemType = Type.GetType("LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons", true);
+            var system = (ISystem)Activator.CreateInstance(systemType);
+            var probeType = CreateUIUpdateProbeType();
+            var first = Activator.CreateInstance(probeType);
+            var second = Activator.CreateInstance(probeType);
+            var state = probeType.GetProperty("State");
+            var go = probeType.GetProperty("Go");
+            var close = systemType.GetMethods().Single(m => m.Name == "CloseUI" && !m.IsGenericMethod);
+            var firstGo = new GameObject("UpdatingUI", typeof(RectTransform), typeof(Canvas));
+            var secondGo = new GameObject("ClosingUI", typeof(RectTransform), typeof(Canvas));
+            var firstUpdates = 0;
+            var secondUpdates = 0;
+            var secondCloses = 0;
+            try
+            {
+                probeType.GetField("OnUpdateCallback").SetValue(first, (Action<object>)(_ =>
+                {
+                    if (++firstUpdates == 1) close.Invoke(system, new[] { second });
+                }));
+                probeType.GetField("OnUpdateCallback").SetValue(second, (Action<object>)(_ => secondUpdates++));
+                probeType.GetField("OnCloseCallback").SetValue(first, (Action<object>)(_ => { }));
+                probeType.GetField("OnCloseCallback").SetValue(second, (Action<object>)(_ => secondCloses++));
+                probeType.GetMethod("BindGo", new[] { typeof(GameObject) }).Invoke(first, new object[] { firstGo });
+                probeType.GetMethod("BindGo", new[] { typeof(GameObject) }).Invoke(second, new object[] { secondGo });
+                foreach (var ui in new[] { first, second })
+                {
+                    state.SetValue(ui, Enum.Parse(state.PropertyType, "Opened"));
+                    probeType.GetProperty("System").SetValue(ui, system);
+                    // Supply already-opened UI to the existing queue; asset loading is outside this regression.
+                    Get<System.Collections.IList>(system, "_openList").Add(ui);
+                }
+
+                ((ITick)system).Tick(0.02f);
+                Check(firstUpdates == 1 && secondCloses == 1 && secondUpdates == 0 && state.GetValue(second).ToString() == "Closing",
+                    "A closes B during Update: B receives OnClose immediately and no OnUpdate later in the same Tick.");
+                Check((GameObject)go.GetValue(second) == secondGo && secondGo != null,
+                    "Closing keeps the instance alive until the existing close queue is processed next Tick.");
+                ((ITick)system).Tick(0.02f);
+                Check(firstUpdates == 2 && secondUpdates == 0 && secondCloses == 1 && state.GetValue(second).ToString() == "Closed" &&
+                    (GameObject)go.GetValue(second) == null,
+                    "Next Tick releases B through the close queue, without repeating OnClose, while A continues updating.");
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(secondGo == null, "The closed UI's GameObject is actually destroyed after deferred Unity destruction.");
+            }
+            finally
+            {
+                await system.DisposeAsync();
+                if (firstGo != null) UnityEngine.Object.DestroyImmediate(firstGo);
+                if (secondGo != null) UnityEngine.Object.DestroyImmediate(secondGo);
+            }
+        }
+
         private static async UniTask PoolTemplateCompletion()
         {
             var template = new GameObject("PoolTemplateCompletion");

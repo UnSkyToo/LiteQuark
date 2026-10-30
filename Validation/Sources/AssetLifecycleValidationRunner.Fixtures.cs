@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
@@ -17,6 +19,29 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static Type CreateUIUpdateProbeType()
+        {
+            // Observe the actual BaseUI callbacks without adding an Addons reference to the core Editor assembly.
+            var baseType = Type.GetType("LiteQuark.Runtime.BaseUI, LiteQuark.Runtime.Addons", true);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("UIUpdateValidation"), AssemblyBuilderAccess.Run);
+            var type = assembly.DefineDynamicModule("UIUpdateValidation").DefineType("UIUpdateProbe", TypeAttributes.Public, baseType);
+            type.DefineDefaultConstructor(MethodAttributes.Public);
+            foreach (var name in new[] { "OnUpdate", "OnClose" })
+            {
+                var field = type.DefineField(name + "Callback", typeof(Action<object>), FieldAttributes.Public);
+                var parameters = name == "OnUpdate" ? new[] { typeof(float) } : Type.EmptyTypes;
+                var method = type.DefineMethod(name, MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), parameters);
+                var il = method.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, field);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Callvirt, typeof(Action<object>).GetMethod("Invoke"));
+                il.Emit(OpCodes.Ret);
+                type.DefineMethodOverride(method, baseType.GetMethod(name, Private));
+            }
+            return type.CreateType();
+        }
+
         private sealed class DeferredTemplatePool : BaseGameObjectPool
         {
             public DeferredTemplatePool() { }

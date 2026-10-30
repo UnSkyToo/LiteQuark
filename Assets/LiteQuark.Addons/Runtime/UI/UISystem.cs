@@ -70,7 +70,10 @@ namespace LiteQuark.Runtime
 
             foreach (var ui in _uiList)
             {
-                ui.Update(deltaTime);
+                if (ui.State == UIState.Opened)
+                {
+                    ui.Update(deltaTime);
+                }
             }
         }
 

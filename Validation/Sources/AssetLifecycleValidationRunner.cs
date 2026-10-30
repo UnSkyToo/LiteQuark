@@ -233,6 +233,7 @@ namespace LiteQuark.Editor
                 await Run("119 Pool generation owns tasks through shutdown", "native instantiation, queued/running cancellation and borrowed ownership", PoolGenerationShutdown);
                 await Run("120 Active pool closes pending prefab handles", "real Bundle templates, failure and delayed completion", ActivePoolShutdown,
                     "Load pool template failed", "Load asset failed");
+                await Run("121 Closing UI skips the remaining update", "UI callbacks, existing open/close queues and deferred destruction", UIClosingSkipsUpdate);
             }
             catch (Exception ex)
             {
