@@ -29,11 +29,9 @@ namespace LiteQuark.Runtime
 
         public UniTask<bool> Initialize()
         {
-            var parent = GameObject.Find("Canvas");
-            if (parent == null)
-            {
-                parent = new GameObject("Canvas");
-            }
+            var parent = new GameObject("Canvas", typeof(RectTransform));
+            _canvasRoot = (RectTransform)parent.transform;
+            UnityEngine.Object.DontDestroyOnLoad(parent);
             SetupCanvasRoot(parent);
             foreach (var depthModeName in Enum.GetNames(typeof(UIDepthMode)))
             {
@@ -65,9 +63,10 @@ namespace LiteQuark.Runtime
             CloseAllUI();
             HandleCloseList();
 
-            foreach (var item in _canvasTransform)
+            if (_canvasRoot != null)
             {
-                UnityEngine.Object.Destroy(item.Value.gameObject);
+                UnityEngine.Object.Destroy(_canvasRoot.gameObject);
+                _canvasRoot = null;
             }
             _canvasTransform.Clear();
 
@@ -251,11 +250,6 @@ namespace LiteQuark.Runtime
 
         private void SetupCanvasRoot(GameObject go)
         {
-            var rectTrans = go.GetOrAddComponent<RectTransform>();
-            // rectTrans.anchorMin = Vector2.zero;
-            // rectTrans.anchorMax = Vector2.one;
-            // rectTrans.anchoredPosition = Vector2.zero;
-            // rectTrans.sizeDelta = Vector2.zero;
             go.layer = LayerMask.NameToLayer("UI");
 
             var canvas = go.GetOrAddComponent<Canvas>();
@@ -274,8 +268,6 @@ namespace LiteQuark.Runtime
 
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;
-
-            _canvasRoot = rectTrans;
         }
     }
 }

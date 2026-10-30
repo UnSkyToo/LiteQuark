@@ -56,7 +56,6 @@ namespace LiteQuark.Editor
         {
             internal readonly Harness Assets = New();
             internal readonly ISystem System;
-            internal readonly GameObject CanvasObject = new("Canvas", typeof(RectTransform));
             private readonly GameObject _cameraObject = new("UIOpenCamera", typeof(Camera));
             private readonly IAssetProvider _original;
             private readonly Type _probeType;
@@ -125,7 +124,6 @@ namespace LiteQuark.Editor
                 finally
                 {
                     Set(LiteRuntime.Asset, "_provider", _original);
-                    UnityEngine.Object.DestroyImmediate(CanvasObject);
                     UnityEngine.Object.DestroyImmediate(_cameraObject);
                     _probeType.GetField("OnOpenCallback").SetValue(null, (Action<object>)(_ => { }));
                 }
@@ -133,6 +131,9 @@ namespace LiteQuark.Editor
         }
 
         private static async UniTask<object> AwaitUIOpen<T>(object task) => await (UniTask<T>)task;
+
+        private static RectTransform GetUICanvasRoot(ISystem system) =>
+            (RectTransform)system.GetType().GetProperty("CanvasRoot").GetValue(system);
 
         private sealed class DeferredTemplatePool : BaseGameObjectPool
         {

@@ -26,6 +26,8 @@ namespace LiteQuark.Editor
             try
             {
                 await h.System.Initialize();
+                var root = GetUICanvasRoot(h.System).gameObject;
+                var layer = root.transform.GetChild(0).gameObject;
                 var retainedPrefab = h.Assets.Asset<GameObject>(PrefabPath);
                 var first = h.Open();
                 var second = h.Open();
@@ -43,6 +45,7 @@ namespace LiteQuark.Editor
                     second.Status == UniTaskStatus.Canceled && discarded.Status == UniTaskStatus.Canceled,
                     "DisposeAsync synchronously settles all pending opens and their cancellation consumers.");
                 await shutdown;
+                Check(ReferenceEquals(GetUICanvasRoot(h.System), null), "Shutdown clears the public CanvasRoot reference before returning.");
                 await CheckPoolCancelled(second);
                 Check(!published && unobserved == 0 && h.Opens == 0 && h.Closes == 0 && h.Find() == null,
                     "Forget reports no cancellation exception; cancelled ContinueWith does not publish UI or invoke business Open/Close.");
@@ -56,8 +59,9 @@ namespace LiteQuark.Editor
                 Check(retainedPrefab.Result != null, "An independent asset Handle can still receive the successful shared native load.");
                 await UniTask.NextFrame();
                 await UniTask.NextFrame();
-                Check(h.Opens == 0 && h.Closes == 0 && h.Find() == null && h.CanvasObject.transform.childCount == 0,
-                    "Late loading does not bind, open or enqueue UI after its layers have been destroyed.");
+                Check(root == null && layer == null, "Unity destroys the system's Canvas root and its child layer after shutdown.");
+                Check(h.Opens == 0 && h.Closes == 0 && h.Find() == null,
+                    "Late prefab delivery leaves the cancelled UI unpublished.");
                 retainedPrefab.Dispose();
                 await h.Assets.Shutdown();
                 Check(!h.Assets.Has("a.ab") && !h.Assets.Has("b.ab"), "Asset owns the final native and Bundle cleanup after UI cancels its requests.");
@@ -118,6 +122,28 @@ namespace LiteQuark.Editor
                 Check(objects.All(go => go == null), "All delivered UI instances are destroyed before Asset shutdown completes.");
             }
             finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask UICanvasPartialInitialization()
+        {
+            var systemType = Type.GetType("LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons", true);
+            var system = (ISystem)Activator.CreateInstance(systemType);
+            GameObject root;
+            try
+            {
+                var failed = false;
+                try { await system.Initialize(); } // No setting injected: Canvas setup fails after root creation.
+                catch (NullReferenceException) { failed = true; }
+                var canvasRoot = GetUICanvasRoot(system);
+                Check(failed && canvasRoot != null, "Failed Canvas setup leaves a live root owned by UISystem.");
+                root = canvasRoot.gameObject;
+            }
+            finally { await system.DisposeAsync(); }
+
+            Check(ReferenceEquals(GetUICanvasRoot(system), null), "Partial shutdown clears the managed CanvasRoot reference.");
+            await UniTask.NextFrame();
+            await UniTask.NextFrame();
+            Check(root == null, "Unity destroys the root created before Canvas setup failed.");
         }
 
         private static async UniTask UIClosingSkipsUpdate()

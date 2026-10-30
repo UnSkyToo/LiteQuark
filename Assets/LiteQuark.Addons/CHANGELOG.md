@@ -1,6 +1,7 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：UISystem 始终创建并销毁自己的 Canvas 根，不再复用场景同名对象；依赖场景根配置或层级的接入需改用 `UISystemSetting` 和 `CanvasRoot`。根在创建后即纳入清理，支持部分初始化释放。
 - 破坏：UISystem 关闭时同步取消在途 OpenUI，并传播 `OperationCanceledException`；关闭后的新请求抛 `ObjectDisposedException`。调用方需消费 UniTask 并单独处理关闭取消，HUD／飘字已迁移。普通加载失败和绑定／Open 的非关闭取消错误仍按原流程返回 null，现有列表与 Open／Close 顺序保持不变。
 - 修复：UISystem 仅更新 Opened 界面，避免同一轮更新中已执行 Close 的界面继续 Update；实例仍在后续 Tick 通过原关闭队列释放。
 - 修复：Effect 对象保存原池，模板失败或关闭取消后结束等待，避免收尾时重新创建池；失败不触发自然播放完成回调。

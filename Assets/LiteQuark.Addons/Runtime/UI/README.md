@@ -4,6 +4,8 @@ UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并�
 
 需要可用的 UI Camera（配置为空时回退到 `Camera.main`）。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
 
+UISystem 始终创建自己的 Canvas 根和子层，不查找或复用场景中的同名对象。通过 `CanvasRoot` 获取系统根节点，其下整个层级归系统所有，关闭时一并销毁；初始化未完成时创建的根也会被清理。
+
 ## 定义与打开
 
 界面逻辑继承 `BaseUI`，不是挂载到 prefab 的 MonoBehaviour：
@@ -69,7 +71,7 @@ uiSystem.CloseUI(menu);
 - `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。
 - `OnClose()` 清理业务创建的计时器、动作和其他资源。通过 UISystem 关闭界面，不要只销毁 `Go`。
 
-默认参考分辨率为 1920×1080；实际效果由 `UISystemSetting` 和场景中保存的值决定。实现见 [UISystem.cs](UISystem.cs)、[BaseUI.cs](BaseUI.cs) 和 [UIConfig.cs](UIConfig.cs)。
+默认参考分辨率为 1920×1080；实际效果由 `UISystemSetting` 决定。实现见 [UISystem.cs](UISystem.cs)、[BaseUI.cs](BaseUI.cs) 和 [UIConfig.cs](UIConfig.cs)。
 
 ## 系统关闭
 
