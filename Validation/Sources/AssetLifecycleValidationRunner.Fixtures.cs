@@ -19,6 +19,78 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private sealed class EffectProbePool : ActiveGameObjectPool
+        {
+            internal int Borrows;
+            internal int Returns;
+            internal Action<GameObject> Getting;
+            internal Action<GameObject> Releasing;
+            public EffectProbePool() { }
+            protected override void OnGet(GameObject go)
+            {
+                base.OnGet(go);
+                Borrows++;
+                Getting?.Invoke(go);
+            }
+            protected override void OnRelease(GameObject go)
+            {
+                base.OnRelease(go);
+                Returns++;
+                Releasing?.Invoke(go);
+            }
+        }
+
+        private sealed class EffectHarness
+        {
+            internal readonly Harness Assets = New();
+            internal readonly ISystem System = (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.EffectSystem, LiteQuark.Runtime.Addons", true));
+            internal readonly GameObject Parent = new("EffectOwner");
+            internal readonly EffectProbePool Pool;
+            internal int Completions;
+            private readonly IAssetProvider _original;
+
+            internal EffectHarness()
+            {
+                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                Pool = LiteRuntime.ObjectPool.AddPool<EffectProbePool>(EffectPath, LiteRuntime.ObjectPool.GetPoolRoot());
+            }
+
+            internal ulong Play(bool loop = false, int order = -1, string path = EffectPath)
+            {
+                var infoType = Type.GetType("LiteQuark.Runtime.EffectCreateInfo, LiteQuark.Runtime.Addons", true);
+                var spaceType = Type.GetType("LiteQuark.Runtime.EffectSpace, LiteQuark.Runtime.Addons", true);
+                var info = Activator.CreateInstance(infoType, Parent.transform, path, Enum.ToObject(spaceType, 0),
+                    Vector3.zero, 1f, Quaternion.identity, 1f, loop, 0.1f, order, "");
+                infoType.GetMethod("SetCompleteCallback").Invoke(info, new object[] { (Action)(() => Completions++) });
+                return (ulong)System.GetType().GetMethod("PlayEffect").Invoke(System, new[] { info });
+            }
+
+            internal object Find(ulong id) => System.GetType().GetMethod("FindEffect").Invoke(System, new object[] { id });
+            internal void Stop(ulong id) => System.GetType().GetMethod("StopEffect").Invoke(System, new object[] { id });
+            internal void Tick(float deltaTime = 0.02f) => ((ITick)System).Tick(deltaTime);
+            internal string State(object effect) => Get<object>(effect, "_state").ToString();
+            internal bool Done(object effect) => (bool)effect.GetType().GetProperty("IsDone").GetValue(effect);
+            internal bool Valid(object effect) => (bool)effect.GetType().GetProperty("IsValid").GetValue(effect);
+
+            internal async UniTask Cleanup()
+            {
+                try
+                {
+                    Pool.Getting = null;
+                    Pool.Releasing = null;
+                    await System.DisposeAsync();
+                    LiteRuntime.ObjectPool.RemovePool(Pool);
+                    await Assets.Shutdown();
+                }
+                finally
+                {
+                    Set(LiteRuntime.Asset, "_provider", _original);
+                    UnityEngine.Object.DestroyImmediate(Parent);
+                }
+            }
+        }
+
         private static ISystem NewAudioSystem() =>
             (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.AudioSystem, LiteQuark.Runtime.Addons", true));
 
@@ -421,6 +493,24 @@ namespace LiteQuark.Editor
                 PrefabUtility.SaveAsPrefabAsset(go, Fixture + "/" + name + ".prefab");
                 UnityEngine.Object.DestroyImmediate(go);
             }
+            var effect = new GameObject("validation_effect", typeof(ParticleSystem));
+            var particle = effect.GetComponent<ParticleSystem>();
+            particle.Stop();
+            var main = particle.main;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.duration = 0.1f;
+            main.startLifetime = 0.1f;
+            effect.GetComponent<ParticleSystemRenderer>().sortingOrder = 7;
+            var binderType = Type.GetType("LiteQuark.Runtime.EffectBinder, LiteQuark.Runtime.Addons", true);
+            var binder = effect.AddComponent(binderType);
+            binderType.GetField("Particles").SetValue(binder, new[] { particle });
+            binderType.GetField("Animators").SetValue(binder, Array.Empty<Animator>());
+            binderType.GetField("Trails").SetValue(binder, Array.Empty<TrailRenderer>());
+            binderType.GetField("LifeTime").SetValue(binder, 0.1f);
+            binderType.GetField("RetainTime").SetValue(binder, 0.5f);
+            PrefabUtility.SaveAsPrefabAsset(effect, Fixture + "/effect.prefab");
+            UnityEngine.Object.DestroyImmediate(effect);
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             marker.name = "SessionValidationSceneMarker";
@@ -435,7 +525,7 @@ namespace LiteQuark.Editor
             {
                 Build("text.ab", "payload.txt", "second.txt"), Build("b.ab", "shared.mat"),
                 Build("a.ab", "a.prefab"), Build("c.ab", "c.prefab"), Build("scene.ab", "validation_scene.unity"),
-                Build("audio.ab", "tone.wav")
+                Build("audio.ab", "tone.wav"), Build("effect.ab", "effect.prefab")
             };
             var manifest = BuildPipeline.BuildAssetBundles(BundleFolder, builds,
                 BuildAssetBundleOptions.UncompressedAssetBundle, ValidationEnvironment.BundleTarget);
@@ -493,7 +583,8 @@ namespace LiteQuark.Editor
                     new BundleInfo(3, "a.ab", new[] { PrefabPath }, new[] { "b.ab" }),
                     new BundleInfo(4, "c.ab", new[] { "assets/__session_validation/c.prefab" }, new[] { "b.ab" }),
                     new BundleInfo(5, "scene.ab", new[] { ScenePath, "assets/__session_validation/nonexistent_scene.unity" }, new[] { "b.ab" }),
-                    new BundleInfo(6, "audio.ab", new[] { AudioPath }, null)
+                    new BundleInfo(6, "audio.ab", new[] { AudioPath }, null),
+                    new BundleInfo(7, "effect.ab", new[] { EffectPath }, null)
                 });
                 pack.Initialize();
                 Set(Provider, "_packInfo", pack);

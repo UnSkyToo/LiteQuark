@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Triggers;
 using LiteQuark.Runtime;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -13,6 +14,172 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask EffectShutdownPendingLoads()
+        {
+            var h = new EffectHarness();
+            try
+            {
+                await h.System.Initialize();
+                var enables = 0;
+                h.Pool.Getting = go =>
+                {
+                    go.SetActive(false);
+                    go.GetAsyncEnableTrigger().OnEnableAsync().ContinueWith(() => { enables++; }).Forget();
+                };
+                var firstID = h.Play();
+                var first = h.Find(firstID);
+                var secondID = h.Play();
+                var second = h.Find(secondID);
+                var retained = h.Assets.Asset<GameObject>(EffectPath);
+                h.Stop(firstID);
+                h.Tick(0f);
+                h.Tick(0f);
+                Check(!h.Pool.IsReady && h.State(first) == "Destroyed" && h.State(second) == "Created" && h.Pool.CountActive == 0,
+                    "A stopped request retires while another Effect still waits for the same real prefab template.");
+                var shutdown = h.System.DisposeAsync();
+                Check(shutdown.Status == UniTaskStatus.Succeeded, "Effect shutdown releases its objects synchronously without waiting for shared template loading.");
+                await shutdown;
+                Check(h.Done(first) && h.Done(second) && !h.Valid(second) && h.Find(secondID) == null,
+                    "Stopped and shutdown requests both remain terminal and disappear from the system list.");
+                foreach (var path in new[] { EffectPath, " " })
+                {
+                    var rejected = false;
+                    try { h.Play(path: path); }
+                    catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException) { rejected = true; }
+                    Check(rejected, "Closing rejects PlayEffect before either resource loading or the blank-path shortcut.");
+                }
+                await Wait(() => retained.IsDone && h.Pool.IsReady, "Shared Effect template delivery after shutdown");
+                await retained;
+                Check(retained.Result != null && h.Assets.AssetRefs("effect.ab", EffectPath, typeof(GameObject)) == 2,
+                    "The independent Handle and shared pool still own the successful prefab; Effect shutdown does not close either owner.");
+                Check(enables == 0 && h.Completions == 0,
+                    $"Late template success runs no Unity OnEnable continuations (observed {enables}) or Effect completion (observed {h.Completions}) for stopped or disposed requests.");
+                Check(h.Pool.Borrows == h.Pool.Returns && h.Pool.CountActive == 0 && h.Parent.transform.childCount == 0,
+                    "Stopped and disposed requests leave balanced pool ownership and no active instance under the caller.");
+                var control = await h.Pool.Alloc(h.Parent.transform);
+                h.Pool.Recycle(control);
+                Check(enables == 1 && h.Pool.Borrows == h.Pool.Returns && h.Pool.CountActive == 0,
+                    "An independent accepted allocation really executes the observed OnEnable continuation and returns its instance.");
+                retained.Dispose();
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask EffectShutdownReentry()
+        {
+            var h = new EffectHarness();
+            try
+            {
+                await h.System.Initialize();
+                var id = h.Play(loop: true, order: 5);
+                var effect = h.Find(id);
+                await Wait(() => h.State(effect) == "Playing", "Effect playback before reentrant shutdown");
+                var go = Get<GameObject>(effect, "_go");
+                var renderer = go.GetComponent<ParticleSystemRenderer>();
+                Check(renderer.sortingOrder == 12, "Effect setup applies the requested sorting offset to the real prefab.");
+                var terminalBeforeRecycle = false;
+                var rejected = false;
+                h.Pool.Releasing = _ =>
+                {
+                    if (h.Pool.Returns != 1) return;
+                    terminalBeforeRecycle = h.Done(effect) && !h.Valid(effect) &&
+                        ReferenceEquals(Get<GameObject>(effect, "_go"), null) && ReferenceEquals(Get<Component>(effect, "_binder"), null);
+                    ((IDisposable)effect).Dispose();
+                    try { h.Play(loop: true); }
+                    catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException) { rejected = true; }
+                };
+                await h.System.DisposeAsync();
+                Check(terminalBeforeRecycle && rejected, "A synchronous recycle callback sees terminal Effect state and cannot create an Effect during shutdown.");
+                Check(h.Pool.Borrows == 1 && h.Pool.Returns == 1 && h.Pool.CountActive == 0 && h.Pool.CountInactive == 1 && renderer.sortingOrder == 7,
+                    "Recursive Dispose returns the instance and rolls back its sorting offset exactly once.");
+                Check(h.Find(id) == null && h.Completions == 0, "Shutdown clears the list without firing natural completion or losing a reentrant new instance.");
+                await h.System.DisposeAsync();
+                Check(h.Pool.Returns == 1 && h.Pool.IsReady, "Repeated Effect shutdown does not return an instance twice or destroy its shared pool.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask EffectTerminalReuse()
+        {
+            var h = new EffectHarness();
+            try
+            {
+                await h.System.Initialize();
+                var id = h.Play(loop: true);
+                var retired = h.Find(id);
+                await Wait(() => h.State(retired) == "Playing", "Effect playback before external Dispose");
+                var go = Get<GameObject>(retired, "_go");
+                ((IDisposable)retired).Dispose();
+                Check(h.Done(retired) && !h.Valid(retired) && ReferenceEquals(Get<GameObject>(retired, "_go"), null) &&
+                    ReferenceEquals(Get<Component>(retired, "_binder"), null), "External Dispose clears all instance references and publishes a terminal state.");
+                h.Tick(0f);
+                Check(h.Find(id) == null && h.Pool.Returns == 1, "Tick retires an externally disposed Effect without repeating its resource return.");
+                var next = h.Find(h.Play(loop: true));
+                var particle = go.GetComponent<ParticleSystem>();
+                Check(Get<GameObject>(next, "_go") == go && h.State(next) == "Playing" && particle.isPlaying,
+                    "A new Effect reuses and plays the same real particle instance.");
+                retired.GetType().GetMethod("Stop").Invoke(retired, null);
+                retired.GetType().GetMethod("Play").Invoke(retired, new object[] { 2f });
+                retired.GetType().GetMethod("SetSpeed").Invoke(retired, new object[] { 3f });
+                ((IDisposable)retired).Dispose();
+                Check(h.State(retired) == "Destroyed" && h.Done(retired) && !h.Valid(retired) && h.State(next) == "Playing" &&
+                    particle.isPlaying && Mathf.Approximately(particle.main.simulationSpeed, 1f) && h.Pool.CountActive == 1 && h.Pool.Returns == 1,
+                    "An old reference cannot resurrect, stop, retime or recycle the instance now owned by another Effect.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask EffectCompletionAndFailure()
+        {
+            var h = new EffectHarness();
+            ActiveGameObjectPool failedPool = null;
+            ActiveGameObjectPool cancelledPool = null;
+            try
+            {
+                await h.System.Initialize();
+                Check(h.Play(path: " ") == 0, "An open system preserves the blank-path zero-ID behavior.");
+                var id = h.Play();
+                var effect = h.Find(id);
+                await Wait(() => h.State(effect) == "Playing", "Non-looping Effect playback");
+                h.Tick(0.1f);
+                Check(h.Completions == 1 && h.State(effect) == "Finishing" && h.Pool.CountActive == 1,
+                    "Natural completion fires once and enters the existing retention stage without immediately recycling.");
+                h.Tick(0.25f);
+                Check(h.State(effect) == "Finishing" && h.Pool.Returns == 0, "The original Binder retention duration is still respected.");
+                h.Tick(0.25f);
+                h.Stop(id);
+                Check(h.State(effect) == "Finished" && h.Done(effect), "Stop cannot reopen a naturally finished Effect's retention stage.");
+                h.Tick(0f);
+                Check(h.Find(id) == null && h.Pool.Returns == 1 && h.Completions == 1, "The original next-Tick final recycle timing is unchanged.");
+
+                const string missing = "assets/__session_validation/missing.txt";
+                var failedID = h.Play(path: missing);
+                var failed = h.Find(failedID);
+                failedPool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(missing);
+                await Wait(() => h.Done(failed), "Failed Effect template result");
+                h.Tick(0f);
+                Check(h.State(failed) == "Destroyed" && h.Find(failedID) == null && failedPool.CountActive == 0 && h.Completions == 1,
+                    "A real template failure still retires the Effect without borrowing an instance or calling natural completion.");
+
+                var cancelledID = h.Play(path: PrefabPath);
+                var cancelled = h.Find(cancelledID);
+                cancelledPool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(PrefabPath);
+                Check(h.State(cancelled) == "Created" && !cancelledPool.IsReady, "Another real prefab template is still pending before pool cancellation.");
+                LiteRuntime.ObjectPool.RemovePool(cancelledPool);
+                Check(h.Done(cancelled) && h.State(cancelled) == "Finished" && Get<GameObject>(cancelled, "_go") == null,
+                    "Pool cancellation synchronously ends the Effect's template wait without an unobserved cancellation error.");
+                h.Tick(0f);
+                Check(h.State(cancelled) == "Destroyed" && h.Find(cancelledID) == null && h.Completions == 1,
+                    "A cancelled request preserves normal retirement and does not invoke natural completion.");
+            }
+            finally
+            {
+                LiteRuntime.ObjectPool.RemovePool(failedPool);
+                LiteRuntime.ObjectPool.RemovePool(cancelledPool);
+                await h.Cleanup();
+            }
+        }
+
         private static async UniTask AudioShutdownPendingClips()
         {
             var h = new AudioHarness();

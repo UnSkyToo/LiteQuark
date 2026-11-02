@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -20,7 +22,7 @@ namespace LiteQuark.Runtime
         public bool IsLoop => _info.IsLoop || (_binder?.IsLoop ?? false);
         public float LifeTime => _info.LifeTime > 0f ? _info.LifeTime : _binder?.LifeTime ?? 0f;
         public bool IsValid => _state is > EffectState.Created and < EffectState.Finished;
-        public bool IsDone => _state == EffectState.Finished;
+        public bool IsDone => _state is EffectState.Finished or EffectState.Destroyed;
 
         public EffectObject(EffectCreateInfo info)
         {
@@ -28,23 +30,25 @@ namespace LiteQuark.Runtime
             _state = EffectState.Created;
 
             _pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path);
-            _pool.Alloc(_info.Parent, OnLoad);
+            LoadAsync().Forget();
         }
 
         public void Dispose()
         {
-            if (_go != null)
+            var go = _go;
+            _go = null;
+            _binder = null;
+            _state = EffectState.Destroyed;
+
+            if (go != null)
             {
                 if (_info.Order > 0)
                 {
-                    UnityUtils.AddSortingOrder(_go, -_info.Order);
+                    UnityUtils.AddSortingOrder(go, -_info.Order);
                 }
 
-                _pool.Recycle(_go);
-                _go = null;
+                _pool.Recycle(go);
             }
-
-            _state = EffectState.Destroyed;
         }
 
         public void Tick(float deltaTime)
@@ -85,6 +89,25 @@ namespace LiteQuark.Runtime
             }
         }
 
+        private async UniTaskVoid LoadAsync()
+        {
+            try
+            {
+                await _pool.WaitReadyAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                OnLoad(null);
+                return;
+            }
+
+            // Check before Alloc can instantiate or enable a prefab, not just in its callback.
+            if (_state == EffectState.Created)
+            {
+                _pool.Alloc(_info.Parent, OnLoad);
+            }
+        }
+
         private void OnLoad(GameObject go)
         {
             if (go == null)
@@ -104,10 +127,7 @@ namespace LiteQuark.Runtime
             }
             else
             {
-                if (go != null)
-                {
-                    _pool.Recycle(go);
-                }
+                _pool.Recycle(go);
             }
         }
 
@@ -233,6 +253,11 @@ namespace LiteQuark.Runtime
 
         public void Stop()
         {
+            if (IsDone)
+            {
+                return;
+            }
+
             _state = EffectState.Finishing;
             _time = _binder?.RetainTime ?? 0f;
             _binder?.Stop();

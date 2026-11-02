@@ -21,6 +21,7 @@ namespace LiteQuark.Editor
         private const string PrefabPath = "assets/__session_validation/a.prefab";
         private const string MaterialPath = "assets/__session_validation/shared.mat";
         private const string AudioPath = "assets/__session_validation/tone.wav";
+        private const string EffectPath = "assets/__session_validation/effect.prefab";
         private const string ScenePath = "assets/__session_validation/validation_scene.unity";
         private const string EditorTextPath = "Assets/StandaloneAssets/_session_validation/lease_payload.txt";
         private const string EditorScenePath = "Assets/StandaloneAssets/_session_validation/editor_validation_scene.unity";
@@ -251,6 +252,11 @@ namespace LiteQuark.Editor
                     "load audio error");
                 await Run("133 Audio shutdown restores owned listener pause", "both initial global states, both first mutations and replacement systems", AudioShutdownListenerPause);
                 await Run("134 Audio pool survives unused shared-pool cleanup", "real Clip playback, repeated idle cleanup and same-key shared pool isolation", AudioPoolSurvivesSharedCleanup);
+                await Run("135 Effect shutdown suppresses late lifecycle callbacks", "shared real prefab completion, Unity OnEnable and closed entry guards", EffectShutdownPendingLoads);
+                await Run("136 Effect shutdown rejects recycle reentry", "synchronous pool release callback, recursive Dispose and sorting rollback", EffectShutdownReentry);
+                await Run("137 Disposed Effect cannot control a reused instance", "real particle prefab, terminal Stop and external Dispose retirement", EffectTerminalReuse);
+                await Run("138 Effect completion, failure and pool cancellation", "normal retention timing, real missing prefab and cancelled template", EffectCompletionAndFailure,
+                    "Load asset failed", "Load pool template failed");
             }
             catch (Exception ex)
             {

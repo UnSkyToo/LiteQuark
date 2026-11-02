@@ -50,6 +50,7 @@ public static class EffectExample
 - Binder 发现循环粒子、循环动画，或计算出的时长接近 0 时标记循环；拖尾不参与时长计算。即使创建参数 `isLoop: false`，也不能强制覆盖 Binder 的循环属性。
 - 循环特效需要主动停止；不要将完成回调当作停止、加载失败等所有路径的统一通知。
 - 模板加载失败或对象池关闭取消时，特效结束等待，不播放，也不触发自然完成回调。
+- 等待模板期间停止或释放的特效，不再继续借出／启用实例；共享模板加载本身仍由对象池管理。
 - 父节点应保留到特效完成回收，或将特效挂到寿命更长的节点；`StopEffect` 不会立即归还对象，调用后立即销毁父节点仍可能破坏池对象。
 
 ## 控制与预热
@@ -64,5 +65,11 @@ public static class EffectExample
 await LiteRuntime.ObjectPool.PreloadPoolAsync<ActiveGameObjectPool>(
     "Effects/Hit.prefab", 8, LiteRuntime.ObjectPool.GetPoolRoot());
 ```
+
+## 生命周期
+
+Runtime 调用 `DisposeAsync()` 时，EffectSystem 同步释放已有特效并归还实例，跳过停止后的 RetainTime，不调用自然完成回调；关闭开始后 `PlayEffect` 抛 `ObjectDisposedException`。共享池和模板 Handle 仍由 ObjectPoolSystem 管理，原生加载收尾由 AssetSystem 负责，Effect 不单独等待它们。
+
+`EffectObject.Dispose()` 先进入终态、清空实例和 Binder 引用，再归还对象；重复释放不会重复归还，已释放对象在后续 Tick 移出系统列表。完成或释放后调用 Stop 不会重新进入停止流程，也不会控制被复用的实例。
 
 实现见 [EffectSystem.cs](EffectSystem.cs)、[EffectObject.cs](EffectObject.cs) 和 [EffectBinder.cs](EffectBinder.cs)。

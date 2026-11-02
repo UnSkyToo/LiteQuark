@@ -1,6 +1,8 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：EffectSystem 关闭开始后 `PlayEffect` 抛 `ObjectDisposedException`，调用方不得继续使用旧实例；在途特效等待模板就绪后不再借出实例，共享模板和原生加载收尾仍由 ObjectPool／Asset 管理。
+- 修复：EffectObject 归还前进入终态并清空实例／Binder 引用，避免释放重入导致重复归还，以及旧引用 Stop 后操作已复用实例；外部提前 Dispose 的特效也会在 Tick 中移出列表。正常完成回调和 RetainTime 时序不变。
 - 修复：AudioSystem 独立持有承载对象池，不再复用 ObjectPoolSystem 的同名共享池，避免业务调用 `RemoveUnusedPools()` 后音频永久无法播放；音频关闭只释放自身的池。
 - 破坏：AudioSystem 关闭后 `PlaySound`／`PlayMusic`／`PauseAllAudio`／`ResumeAllAudio` 抛 `ObjectDisposedException`，调用方不得继续使用旧实例；关闭同步取消 Clip Handle 并清理音频，原生加载收尾仍由 AssetSystem 承担。
 - 修复：音频入口路径异常及加载结果处理异常时归还已取得的 Carrier、释放 Handle，不再因 IsLoaded 为 false 遗漏清理；关闭时恢复首次 Pause／Resume 前的全局 AudioListener.pause，从未修改则保持外部状态。
