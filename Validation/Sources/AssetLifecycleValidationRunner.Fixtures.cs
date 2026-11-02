@@ -19,13 +19,18 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
-        private static Type CreateUIUpdateProbeType(Action<object> onOpen = null)
+        private static Type CreateUIUpdateProbeType(Action<object> onOpen = null, Type bindingAttribute = null)
         {
             // Observe the actual BaseUI callbacks without adding an Addons reference to the core Editor assembly.
             var baseType = Type.GetType("LiteQuark.Runtime.BaseUI, LiteQuark.Runtime.Addons", true);
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("UIUpdateValidation"), AssemblyBuilderAccess.Run);
             var type = assembly.DefineDynamicModule("UIUpdateValidation").DefineType("UIUpdateProbe", TypeAttributes.Public, baseType);
             type.DefineDefaultConstructor(MethodAttributes.Public);
+            if (bindingAttribute != null)
+            {
+                var node = type.DefineField("BindingNode", typeof(GameObject), FieldAttributes.Public);
+                node.SetCustomAttribute(new CustomAttributeBuilder(bindingAttribute.GetConstructor(Type.EmptyTypes), Array.Empty<object>()));
+            }
             foreach (var name in new[] { "OnUpdate", "OnClose" })
             {
                 var field = type.DefineField(name + "Callback", typeof(Action<object>), FieldAttributes.Public);
@@ -52,6 +57,26 @@ namespace LiteQuark.Editor
             return probeType;
         }
 
+        private static Type CreateUIBindingProbeAttribute(Action onBind)
+        {
+            // GetCustomAttribute constructs this derived UINode attribute inside the real UIBinder.
+            var baseType = Type.GetType("LiteQuark.Runtime.UINodeAttribute, LiteQuark.Runtime.Addons", true);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("UIBindingValidation"), AssemblyBuilderAccess.Run);
+            var type = assembly.DefineDynamicModule("UIBindingValidation").DefineType("UIBindingProbeAttribute", TypeAttributes.Public | TypeAttributes.Sealed, baseType);
+            var callback = type.DefineField("OnBindCallback", typeof(Action), FieldAttributes.Public | FieldAttributes.Static);
+            var constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+            var il = constructor.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldstr, string.Empty);
+            il.Emit(OpCodes.Call, baseType.GetConstructor(new[] { typeof(string) }));
+            il.Emit(OpCodes.Ldsfld, callback);
+            il.Emit(OpCodes.Callvirt, typeof(Action).GetMethod("Invoke"));
+            il.Emit(OpCodes.Ret);
+            var attributeType = type.CreateType();
+            attributeType.GetField("OnBindCallback").SetValue(null, onBind);
+            return attributeType;
+        }
+
         private sealed class UIOpenHarness
         {
             internal readonly Harness Assets = New();
@@ -66,7 +91,7 @@ namespace LiteQuark.Editor
             internal Action<object> OnOpen = _ => { };
             internal Action<object> OnClose = _ => { };
 
-            internal UIOpenHarness()
+            internal UIOpenHarness(Type bindingAttribute = null)
             {
                 _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
                 Set(LiteRuntime.Asset, "_provider", Assets.Provider);
@@ -82,16 +107,19 @@ namespace LiteQuark.Editor
                     ui.GetType().GetField("OnUpdateCallback").SetValue(ui, (Action<object>)(_ => Updates++));
                     ui.GetType().GetField("OnCloseCallback").SetValue(ui, (Action<object>)(value => { Closes++; OnClose(value); }));
                     OnOpen(ui);
-                });
+                }, bindingAttribute);
             }
 
-            internal UniTask<object> Open(string path = PrefabPath, bool mutex = false)
+            internal UniTask<object> Open(string path = PrefabPath, bool mutex = false, CancellationToken? ct = null)
             {
                 var configType = Type.GetType("LiteQuark.Runtime.UIConfig, LiteQuark.Runtime.Addons", true);
                 var depthType = Type.GetType("LiteQuark.Runtime.UIDepthMode, LiteQuark.Runtime.Addons", true);
                 var config = Activator.CreateInstance(configType, path, Enum.Parse(depthType, "Normal"), mutex, false);
-                var task = System.GetType().GetMethod("OpenUI").MakeGenericMethod(_probeType)
-                    .Invoke(System, new[] { config, Array.Empty<object>() });
+                var arguments = ct.HasValue
+                    ? new object[] { config, ct.Value, Array.Empty<object>() }
+                    : new[] { config, Array.Empty<object>() };
+                var task = System.GetType().GetMethods().Single(m => m.Name == "OpenUI" && m.GetParameters().Length == arguments.Length)
+                    .MakeGenericMethod(_probeType).Invoke(System, arguments);
                 return (UniTask<object>)typeof(AssetLifecycleValidationRunner).GetMethod(nameof(AwaitUIOpen), BindingFlags.Static | BindingFlags.NonPublic)
                     .MakeGenericMethod(_probeType).Invoke(null, new[] { task });
             }
@@ -134,6 +162,14 @@ namespace LiteQuark.Editor
 
         private static RectTransform GetUICanvasRoot(ISystem system) =>
             (RectTransform)system.GetType().GetProperty("CanvasRoot").GetValue(system);
+
+        private static (IDisposable Entity, CancellationToken Token) NewUIOwnerEntity()
+        {
+            // Construct the real entity without starting battle logic or adding an assembly reference.
+            var type = Type.GetType("LiteBattle.Runtime.LiteUnit, Assembly-CSharp", true);
+            var entity = (IDisposable)Activator.CreateInstance(type, new object[] { null });
+            return (entity, (CancellationToken)type.GetProperty("LifetimeToken").GetValue(entity));
+        }
 
         private sealed class DeferredTemplatePool : BaseGameObjectPool
         {

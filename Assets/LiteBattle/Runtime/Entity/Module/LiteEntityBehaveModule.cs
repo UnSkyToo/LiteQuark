@@ -148,7 +148,7 @@ namespace LiteBattle.Runtime
                     ColliderBinder_.UniqueID = Entity.UniqueID;
                 }
 
-                LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity)
+                LiteRuntime.Get<UISystem>().OpenUI<UINameplateHUD>(UIConfigs.UINameplateHUD, Entity.LifetimeToken, Entity)
                     .ContinueWith(ui => HUD_ = ui).Forget();
 
                 IsLoad_ = true;

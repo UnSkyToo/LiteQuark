@@ -84,6 +84,9 @@ namespace LiteQuark.Editor
                 h.OnOpen = _ => throw new InvalidOperationException("Injected UI Open failure");
                 Check(await h.OpenReady() == null && h.Find() == null && h.Closes == 0,
                     "A non-cancellation OnOpen exception retains the existing null/error behavior without publishing UI.");
+                h.OnOpen = _ => throw new OperationCanceledException("Injected UI Open cancellation");
+                Check(await h.OpenReady() == null && h.Find() == null && h.Closes == 0,
+                    "An OnOpen cancellation unrelated to caller or system shutdown retains ordinary null/error behavior.");
                 h.OnOpen = _ => { };
                 var first = await h.OpenReady();
                 var second = await h.OpenReady();
@@ -117,11 +120,143 @@ namespace LiteQuark.Editor
                 Check(rejected, "A closing callback cannot bypass the closed entry point through mutex reuse of another UI.");
                 Check(h.Closes == 3 && new[] { first, second, third }.All(ui => h.State(ui) == "Closed" && h.Go(ui) == null) && h.Find() == null,
                     "Shutdown drains the original queues, closes each opened UI once and finishes previously requested instance release.");
-                Check(h.Opens == 4, "The pending request never executes Open during shutdown.");
+                Check(h.Opens == 5, "The pending request never executes Open during shutdown.");
                 await h.Assets.Shutdown();
                 Check(objects.All(go => go == null), "All delivered UI instances are destroyed before Asset shutdown completes.");
             }
             finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask UICallerCancellation()
+        {
+            var h = new UIOpenHarness();
+            var firstOwner = NewUIOwnerEntity();
+            var secondOwner = NewUIOwnerEntity();
+            try
+            {
+                await h.System.Initialize();
+                var first = h.Open(ct: firstOwner.Token).Preserve();
+                var published = false;
+                var consumer = first.ContinueWith(_ => { published = true; }).Preserve();
+                consumer.Forget();
+                var second = h.Open(ct: secondOwner.Token);
+                Check(first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending,
+                    "Two entities have independent UI requests waiting for the same real prefab load.");
+
+                firstOwner.Entity.Dispose();
+                Check(firstOwner.Token.IsCancellationRequested && first.Status == UniTaskStatus.Canceled &&
+                    consumer.Status == UniTaskStatus.Canceled && second.Status == UniTaskStatus.Pending,
+                    "Entity disposal synchronously cancels only its own pending open and its success continuation.");
+                var cancelled = false;
+                try { await first; }
+                catch (OperationCanceledException ex) { cancelled = ex.CancellationToken == firstOwner.Token; }
+                Check(cancelled && !published && h.Opens == 0 && h.Closes == 0,
+                    "Caller cancellation preserves its token and runs neither OnOpen, OnClose nor HUD publication.");
+                Check(Get<HashSet<GameObjectHandle>>(h.System, "_pendingHandles").Count == 1,
+                    "The cancelled request releases tracking while the other entity's request remains owned.");
+
+                await Wait(() => second.Status.IsCompleted(), "Shared UI prefab delivery to the remaining entity");
+                var ui = await second;
+                Check(ui != null && h.Opens == 1 && !published && h.Closes == 0,
+                    "The uncancelled entity still receives the shared prefab and executes OnOpen exactly once.");
+                h.Tick();
+                var instance = h.Go(ui);
+                secondOwner.Entity.Dispose();
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                h.Tick();
+                Check(secondOwner.Token.IsCancellationRequested && instance != null && h.Go(ui) == instance &&
+                    h.State(ui) == "Opened" && ReferenceEquals(h.Find(), ui) && h.Updates == 2 && h.Closes == 0,
+                    "Cancelling an entity token after delivery does not destroy or close its already-open UI.");
+
+                var preCancelled = false;
+                try { await h.Open(mutex: true, ct: firstOwner.Token); }
+                catch (OperationCanceledException) { preCancelled = true; }
+                Check(preCancelled && h.Opens == 1,
+                    "A pre-cancelled caller is rejected before mutex reuse or another prefab request.");
+                Check(ReferenceEquals(await h.Open(mutex: true), ui),
+                    "The original overload still reuses the delivered UI through its existing mutex behavior.");
+
+                h.Close(ui);
+                h.Tick();
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(instance == null && h.Go(ui) == null && h.Closes == 1 && h.Find() == null &&
+                    Get<HashSet<GameObjectHandle>>(h.System, "_pendingHandles").Count == 0,
+                    "The delivered UI is released only by normal CloseUI and leaves no pending requests.");
+                await h.Assets.Shutdown();
+                Check(!h.Assets.Has("a.ab") && !h.Assets.Has("b.ab"),
+                    "Cancelled and normally closed UI requests release the shared prefab and dependency ownership.");
+            }
+            finally
+            {
+                firstOwner.Entity.Dispose();
+                secondOwner.Entity.Dispose();
+                await h.Cleanup();
+            }
+        }
+
+        private static async UniTask UICancellationDuringHandoff()
+        {
+            foreach (var duringBinding in new[] { true, false })
+            {
+                var owner = NewUIOwnerEntity();
+                UIOpenHarness h = null;
+                GameObjectHandle handle = null;
+                GameObject instance = null;
+                object failedUI = null;
+                var handleSucceeded = false;
+                void CancelOwner()
+                {
+                    handle = Get<HashSet<GameObjectHandle>>(h.System, "_pendingHandles").Single();
+                    instance = handle.Result;
+                    handleSucceeded = handle.State == AssetHandleState.Succeeded && instance != null;
+                    owner.Entity.Dispose();
+                }
+                var attribute = duringBinding ? CreateUIBindingProbeAttribute(CancelOwner) : null;
+                try
+                {
+                    h = new UIOpenHarness(attribute);
+                    await h.System.Initialize();
+                    if (!duringBinding)
+                    {
+                        h.OnOpen = ui =>
+                        {
+                            failedUI = ui;
+                            CancelOwner();
+                            owner.Token.ThrowIfCancellationRequested();
+                        };
+                    }
+
+                    var request = h.Open(ct: owner.Token).Preserve();
+                    var published = false;
+                    var consumer = request.ContinueWith(_ => { published = true; }).Preserve();
+                    consumer.Forget();
+                    await Wait(() => request.Status.IsCompleted(), "UI cancellation during " + (duringBinding ? "binding" : "OnOpen"));
+                    var cancelled = false;
+                    try { await request; }
+                    catch (OperationCanceledException ex) { cancelled = ex.CancellationToken == owner.Token; }
+                    Check(handleSucceeded && owner.Token.IsCancellationRequested && cancelled && consumer.Status == UniTaskStatus.Canceled,
+                        "Synchronous " + (duringBinding ? "attribute binding" : "OnOpen") + " cancels the caller after its instance Handle has succeeded.");
+                    Check(h.Opens == (duringBinding ? 0 : 1) && h.Closes == 0 && !published && h.Find() == null,
+                        "Binding cancellation never enters OnOpen; cancellation thrown by OnOpen never publishes or normally closes the failed UI.");
+                    Check(handle.IsDisposed && handle.Result == null && (failedUI == null || ReferenceEquals(h.Go(failedUI), null)) &&
+                        Get<HashSet<GameObjectHandle>>(h.System, "_pendingHandles").Count == 0,
+                        "The cancellation catch releases the successful Handle, clears any exposed UI instance reference and removes request tracking.");
+                    await UniTask.NextFrame();
+                    await UniTask.NextFrame();
+                    Check(instance == null, "Unity actually destroys the untransferred instance after cancellation.");
+                    await h.Assets.Shutdown();
+                    Check(!h.Assets.Has("a.ab") && !h.Assets.Has("b.ab"),
+                        "Handoff cancellation leaves no shared prefab or dependency ownership behind.");
+                }
+                finally
+                {
+                    attribute?.GetField("OnBindCallback").SetValue(null, (Action)(() => { }));
+                    owner.Entity.Dispose();
+                    if (h != null) await h.Cleanup();
+                }
+            }
         }
 
         private static async UniTask UICanvasPartialInitialization()

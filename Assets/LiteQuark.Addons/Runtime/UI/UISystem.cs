@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -87,12 +88,19 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public async UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
+        public UniTask<T> OpenUI<T>(UIConfig config, params object[] paramList) where T : BaseUI
+        {
+            return OpenUI<T>(config, CancellationToken.None, paramList);
+        }
+
+        public async UniTask<T> OpenUI<T>(UIConfig config, CancellationToken ct, params object[] paramList) where T : BaseUI
         {
             if (_isClosing)
             {
                 throw new ObjectDisposedException(nameof(UISystem));
             }
+
+            ct.ThrowIfCancellationRequested();
 
             if (config.IsMutex)
             {
@@ -108,7 +116,7 @@ namespace LiteQuark.Runtime
             ui.System = this;
             ui.State = UIState.Opening;
             var parent = GetUIParent(config.DepthMode);
-            var handle = LiteRuntime.Asset.InstantiateHandle(config.PrefabPath, parent);
+            var handle = LiteRuntime.Asset.InstantiateHandle(config.PrefabPath, parent, ct: ct);
             _pendingHandles.Add(handle);
 
             try
@@ -124,13 +132,17 @@ namespace LiteQuark.Runtime
                 }
 
                 SetupUI(ui, instance, handle);
+                // Binding can synchronously invoke callbacks that release the caller.
+                ct.ThrowIfCancellationRequested();
                 ui.State = UIState.Opened;
                 ui.Open(paramList);
                 _openList.Add(ui);
                 return ui;
             }
-            catch (OperationCanceledException) when (_isClosing)
+            catch (OperationCanceledException) when (_isClosing || ct.IsCancellationRequested)
             {
+                ui.ReleaseGo();
+                handle.Dispose();
                 throw;
             }
             catch (Exception ex)

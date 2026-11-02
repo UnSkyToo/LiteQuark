@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using LiteQuark.Runtime;
 using UnityEngine;
 
@@ -11,6 +12,9 @@ namespace LiteBattle.Runtime
         public bool IsAlive { get; protected set; }
         public LiteEntityCamp Camp { get; set; }
 
+        /// <summary>Cancelled before module disposal.</summary>
+        public CancellationToken LifetimeToken => LifetimeCancellation_.Token;
+
         public Vector3 Position { get; set; } = Vector3.zero;
         public Vector3 Scale { get; set; } = Vector3.one;
         public Quaternion Rotation { get; set; } = Quaternion.identity;
@@ -18,6 +22,8 @@ namespace LiteBattle.Runtime
 
         private readonly LiteContext Context_;
         private readonly Dictionary<System.Type, LiteEntityModuleBase> Modules_;
+        private readonly CancellationTokenSource LifetimeCancellation_ = new();
+        private bool IsDisposed_;
 
         protected LiteEntity()
             : base()
@@ -35,6 +41,14 @@ namespace LiteBattle.Runtime
 
         public virtual void Dispose()
         {
+            if (IsDisposed_)
+            {
+                return;
+            }
+
+            // Cancel invokes callbacks synchronously; guard the entity before allowing re-entry.
+            IsDisposed_ = true;
+            LifetimeCancellation_.Cancel();
             foreach (var module in Modules_)
             {
                 module.Value.Dispose();

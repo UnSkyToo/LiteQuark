@@ -238,6 +238,8 @@ namespace LiteQuark.Editor
                 await Run("123 UI shutdown preserves normal queues and failures", "real prefab success/failure, OnOpen error and mixed shutdown state", UIShutdownPreservesQueues,
                     "Load asset failed", "Load ui prefab error");
                 await Run("124 UI shutdown after partial Canvas initialization", "missing setting after root creation and deferred destruction", UICanvasPartialInitialization);
+                await Run("125 UI caller cancellation isolates shared opens", "entity disposal, shared real prefab and post-delivery token cancellation", UICallerCancellation);
+                await Run("126 UI cancellation during instance handoff", "synchronous attribute binding and OnOpen cancellation after Handle success", UICancellationDuringHandoff);
             }
             catch (Exception ex)
             {

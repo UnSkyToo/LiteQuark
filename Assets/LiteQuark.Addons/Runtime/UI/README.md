@@ -4,7 +4,7 @@ UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并�
 
 需要可用的 UI Camera（配置为空时回退到 `Camera.main`）。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
 
-UISystem 始终创建自己的 Canvas 根和子层，不查找或复用场景中的同名对象。通过 `CanvasRoot` 获取系统根节点，其下整个层级归系统所有，关闭时一并销毁；初始化未完成时创建的根也会被清理。
+UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。系统关闭时销毁整个 Canvas 层级。
 
 ## 定义与打开
 
@@ -46,7 +46,9 @@ if (menu == null)
 uiSystem.CloseUI(menu);
 ```
 
-`UIConfig` 通过构造函数设置，只读属性不能使用对象初始化器赋值。`OpenUI` 成功返回 UI，普通加载失败或现有绑定／Open 错误处理返回 null；系统关闭中断在途打开时抛 `OperationCanceledException`。`CloseUI` 调用关闭逻辑，实例的销毁与列表移除在后续系统 Tick 中处理。只有 Opened 状态的 UI 执行 Update；同一轮更新中被其他 UI 关闭的界面也会跳过后续 Update。
+`UIConfig` 通过构造函数设置。`OpenUI` 成功返回 UI，普通加载、绑定或 `OnOpen` 错误返回 null；请求因调用方取消或系统关闭而中断时抛 `OperationCanceledException`。`CloseUI` 立即调用关闭逻辑，实例在后续系统 Tick 中释放；只有 Opened 状态的 UI 执行 Update。
+
+调用方可能先于 UISystem 释放时，使用 `OpenUI<T>(config, ct, paramList)`，并在自身释放时取消对应的 `CancellationTokenSource`。取消仅影响该调用方尚未完成的打开请求，不会自动关闭已成功返回的 UI；已打开的 UI 仍需调用 `CloseUI`。
 
 ## 层级与查找
 
@@ -75,6 +77,8 @@ uiSystem.CloseUI(menu);
 
 ## 系统关闭
 
-UISystem 由 Runtime 统一关闭。进入 `DisposeAsync` 后拒绝新 OpenUI（抛 `ObjectDisposedException`），同步取消已有在途 Handle，再按原打开队列、活动列表和关闭队列完成已打开界面的关闭。取消请求不会执行 Setup、Open 或正常 Close，也不会作为加载错误记录。调用方 await 时应处理 `OperationCanceledException`；无需等待的入口可用 `.Forget()` 消费任务，UniTask 默认不报告取消异常。接收成功结果可用 `.ContinueWith(ui => ...).Forget()`，取消时不会执行该回调。
+UISystem 由 Runtime 统一关闭，业务不要直接释放已注册系统或在关闭后使用旧实例。关闭开始后，新的 `OpenUI` 请求抛 `ObjectDisposedException`，尚未完成的请求被取消，已打开的界面统一关闭。
 
-`DisposeAsync` 返回 `UniTask.CompletedTask` 时，在途打开已结束、已打开界面已清理，UI 实例已调用 Destroy；Runtime 随即移除该系统，不再调度其 Tick。它不保证 Unity 延迟销毁或底层原生加载已经结束，原生加载与迟到资源由 AssetSystem 后续收尾。业务不要直接释放已注册系统或在关闭后使用旧实例。调用方自身早于 UISystem 结束的生命周期仍需由业务处理。
+调用方 await 时应处理 `OperationCanceledException`。无需等待结果时可用 `.Forget()` 消费任务，UniTask 默认不报告取消异常；仅处理成功结果可用 `.ContinueWith(ui => ...).Forget()`，取消时不会执行该回调。
+
+`DisposeAsync` 完成不代表 Unity 延迟销毁或底层原生加载已经结束；原生资源收尾由 AssetSystem 负责。

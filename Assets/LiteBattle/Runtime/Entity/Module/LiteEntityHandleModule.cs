@@ -36,7 +36,7 @@ namespace LiteBattle.Runtime
                 LLog.Info($"{Entity.DebugName} 死亡");
             }
 
-            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, Entity, $"-{damageValue}")
+            LiteRuntime.Get<UISystem>().OpenUI<UIFloatText>(UIConfigs.UIFloatText, Entity.LifetimeToken, Entity, $"-{damageValue}")
                 .Forget();
         }
 
