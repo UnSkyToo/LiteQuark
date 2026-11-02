@@ -217,6 +217,67 @@ namespace LiteQuark.Editor
             }
         }
 
+        private static async UniTask AudioPoolSurvivesSharedCleanup()
+        {
+            var h = new AudioHarness();
+            var pools = LiteRuntime.ObjectPool;
+            EmptyGameObjectPool shared = null;
+            try
+            {
+                await h.System.Initialize();
+                var root = Get<Transform>(h.System, "_root").gameObject;
+                var pool = h.Pool;
+                shared = pools.GetEmptyGameObjectPool("Audio");
+                Check(pool.IsReady && pool.CountActive == 0 && !ReferenceEquals(pool, shared) &&
+                    !pools.GetPoolCache().Values.Any(value => ReferenceEquals(value, pool)),
+                    "Audio owns a ready, idle pool outside ObjectPoolSystem, independent of a same-key shared pool.");
+                pools.RemoveUnusedPools();
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(!shared.IsReady && !pools.GetPoolCache().ContainsKey("Audio") && pool.IsReady,
+                    "RemoveUnusedPools actually closes the idle shared Audio pool without invalidating the private Audio pool before first playback.");
+
+                GameObject carrier = null;
+                for (var cycle = 0; cycle < 2; cycle++)
+                {
+                    var id = h.Play(music: cycle == 1);
+                    var audio = h.Audio(id);
+                    await Wait(() => AudioProperty<bool>(audio, "IsLoaded"), "Audio playback after shared-pool cleanup");
+                    var handle = Get<AssetHandle<AudioClip>>(audio, "_clipHandle");
+                    var currentCarrier = AudioProperty<GameObject>(audio, "Carrier");
+                    Check(id != 0 && handle.State == AssetHandleState.Succeeded && !handle.IsDisposed &&
+                        AudioProperty<AudioSource>(audio, "Source").clip == handle.Result && pool.CountActive == 1 &&
+                        (cycle == 0 || currentCarrier == carrier),
+                        "Sound and music still load successfully after idle cleanup and reuse the privately owned carrier.");
+                    carrier = currentCarrier;
+                    CallAudio(h.System, "StopAudio", id);
+                    h.Tick();
+                    CheckAudioReleased(audio);
+                    Check(handle.IsDisposed && pool.CountActive == 0 && pool.CountInactive == 1 &&
+                        h.Assets.AssetRefs("audio.ab", AudioPath, typeof(AudioClip)) == 0,
+                        "Stopping playback returns its Clip lease and carrier, leaving the Audio pool idle again.");
+                    pools.RemoveUnusedPools();
+                    await UniTask.NextFrame();
+                    await UniTask.NextFrame();
+                    Check(pool.IsReady && pool.CountInactive == 1 && carrier != null,
+                        "Repeated shared-pool cleanup preserves Audio's idle carrier for subsequent playback.");
+                }
+
+                shared = pools.GetEmptyGameObjectPool("Audio");
+                await h.System.DisposeAsync();
+                Check(!pool.IsReady && shared.IsReady && ReferenceEquals(pools.GetPoolCache()["Audio"], shared),
+                    "Audio shutdown disposes its private pool without removing or disposing the unrelated same-key shared pool.");
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(root == null && carrier == null, "Audio shutdown destroys its private pool, root and recycled carrier.");
+            }
+            finally
+            {
+                try { await h.Cleanup(); }
+                finally { pools.RemovePool(shared); }
+            }
+        }
+
         private static async UniTask UIShutdownPendingOpens()
         {
             var h = new UIOpenHarness();

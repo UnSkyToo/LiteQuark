@@ -27,7 +27,8 @@ namespace LiteQuark.Runtime
         public UniTask<bool> Initialize()
         {
             _root = UnityUtils.CreateHoldGameObject("Audio").transform;
-            _pool = LiteRuntime.ObjectPool.GetEmptyGameObjectPool("Audio");
+            _pool = new EmptyGameObjectPool();
+            _pool.Initialize("Audio", _root);
             return UniTask.FromResult(true);
         }
 
@@ -41,7 +42,7 @@ namespace LiteQuark.Runtime
             _audioCache.Clear();
             _removeList.Clear();
 
-            LiteRuntime.ObjectPool.RemovePool(_pool);
+            _pool?.Dispose();
             _pool = null;
 
             if (_root != null)

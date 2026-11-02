@@ -1,6 +1,6 @@
 # AudioSystem 音频
 
-AudioSystem 属于 LiteQuark.Addons。先在 Launcher 的 `SystemList` 注册，再通过 `LiteRuntime.Get<AudioSystem>()` 获取；它依赖内置 AssetSystem 和 ObjectPoolSystem。
+AudioSystem 属于 LiteQuark.Addons。先在 Launcher 的 `SystemList` 注册，再通过 `LiteRuntime.Get<AudioSystem>()` 获取；它依赖内置 AssetSystem。
 
 ## 播放
 
@@ -38,7 +38,9 @@ ID 为 `ulong`；触及并发限制时返回 0。非零 ID 表示请求已建立
 
 AudioObject 持有音频 AssetHandle，系统清理时释放 Handle 并归还承载对象。循环音频由业务保存 ID 并主动停止；已结束音频在系统 Tick 中清理。停止后不要继续使用缓存的 AudioObject 或 Source 引用。
 
-Runtime 调用 `DisposeAsync()` 时，AudioSystem 同步停止音频、取消在途 Clip Handle、清空记录，移除所属池并销毁根节点。正常加载失败、入口路径异常及部分取得资源的对象也会归还 Carrier。Unity 的 Destroy 可能到帧末才实际执行；共享加载及原生资源收尾仍由 AssetSystem 负责，Audio 不单独等待它们。
+承载对象使用 AudioSystem 自行创建、持有和释放的 EmptyGameObjectPool，不注册到 ObjectPoolSystem；业务调用 `RemoveUnusedPools()` 不影响后续播放，同名共享池也不与音频池混用。
+
+Runtime 调用 `DisposeAsync()` 时，AudioSystem 同步停止音频、取消在途 Clip Handle、清空记录，释放内部对象池并销毁根节点。正常加载失败、入口路径异常及部分取得资源的对象也会归还 Carrier。Unity 的 Destroy 可能到帧末才实际执行；共享加载及原生资源收尾仍由 AssetSystem 负责，Audio 不单独等待它们。
 
 关闭开始后 `PlaySound`、`PlayMusic`、`PauseAllAudio`、`ResumeAllAudio` 抛 `ObjectDisposedException`，不会建立请求或改变全局暂停。业务不要继续使用旧系统实例。
 

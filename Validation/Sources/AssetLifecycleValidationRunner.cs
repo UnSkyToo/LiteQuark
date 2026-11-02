@@ -250,6 +250,7 @@ namespace LiteQuark.Editor
                 await Run("132 Audio failures release partially acquired resources", "invalid path, throwing delivered lease and uninitialized shutdown", AudioLoadFailureCleanup,
                     "load audio error");
                 await Run("133 Audio shutdown restores owned listener pause", "both initial global states, both first mutations and replacement systems", AudioShutdownListenerPause);
+                await Run("134 Audio pool survives unused shared-pool cleanup", "real Clip playback, repeated idle cleanup and same-key shared pool isolation", AudioPoolSurvivesSharedCleanup);
             }
             catch (Exception ex)
             {

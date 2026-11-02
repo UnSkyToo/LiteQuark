@@ -1,6 +1,7 @@
 # Changelog
 
 ## **[Unreleased]**
+- 修复：AudioSystem 独立持有承载对象池，不再复用 ObjectPoolSystem 的同名共享池，避免业务调用 `RemoveUnusedPools()` 后音频永久无法播放；音频关闭只释放自身的池。
 - 破坏：AudioSystem 关闭后 `PlaySound`／`PlayMusic`／`PauseAllAudio`／`ResumeAllAudio` 抛 `ObjectDisposedException`，调用方不得继续使用旧实例；关闭同步取消 Clip Handle 并清理音频，原生加载收尾仍由 AssetSystem 承担。
 - 修复：音频入口路径异常及加载结果处理异常时归还已取得的 Carrier、释放 Handle，不再因 IsLoaded 为 false 遗漏清理；关闭时恢复首次 Pause／Resume 前的全局 AudioListener.pause，从未修改则保持外部状态。
 - 修复：UI 关闭只处理 Opened 状态，避免递归／重复执行 `OnClose`；最终释放时再次清理回调中新取得的框架资源，未交付请求在取消／错误时先进入 Closed／Error 终态。
