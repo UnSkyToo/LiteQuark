@@ -13,6 +13,210 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask AudioShutdownPendingClips()
+        {
+            var h = new AudioHarness();
+            try
+            {
+                await h.System.Initialize();
+                var root = Get<Transform>(h.System, "_root").gameObject;
+                var pool = h.Pool;
+                var retained = h.Assets.Asset<AudioClip>(AudioPath);
+                var firstID = h.Play();
+                var secondID = h.Play(music: true);
+                var first = h.Audio(firstID);
+                var second = h.Audio(secondID);
+                var firstHandle = Get<AssetHandle<AudioClip>>(first, "_clipHandle");
+                var secondHandle = Get<AssetHandle<AudioClip>>(second, "_clipHandle");
+                Check(firstID != 0 && secondID != 0 && firstHandle.State == AssetHandleState.Pending &&
+                    secondHandle.State == AssetHandleState.Pending && pool.CountActive == 2,
+                    "Two audio requests own carriers and pending Handles alongside an independent shared Clip request.");
+                CallAudio(h.System, "StopAudio", firstID);
+                CallAudio(h.System, "StopAudio", firstID);
+                var shutdown = h.System.DisposeAsync();
+                Check(shutdown.Status == UniTaskStatus.Succeeded, "Audio shutdown synchronously settles its pending Clip ownership.");
+                await shutdown;
+                Check(firstHandle.IsDisposed && secondHandle.IsDisposed && firstHandle.State == AssetHandleState.Cancelled &&
+                    secondHandle.State == AssetHandleState.Cancelled, "Both pending Clip Handles are cancelled before shutdown returns.");
+                CheckAudioReleased(first);
+                CheckAudioReleased(second);
+                Check(h.Audio(firstID) == null && h.Audio(secondID) == null && h.Pool == null &&
+                    Get<System.Collections.ICollection>(h.System, "_removeList").Count == 0,
+                    "Shutdown clears active and duplicate stop records, and detaches the removed pool.");
+                foreach (var music in new[] { false, true })
+                {
+                    var rejected = false;
+                    try { h.Play(music: music); }
+                    catch (ObjectDisposedException) { rejected = true; }
+                    Check(rejected, "Closed " + (music ? "PlayMusic" : "PlaySound") + " rejects the request with ObjectDisposedException.");
+                }
+                await h.System.DisposeAsync();
+                Check(Get<System.Collections.IDictionary>(h.System, "_audioCache").Count == 0 &&
+                    Get<System.Collections.ICollection>(h.System, "_removeList").Count == 0,
+                    "Rejected requests and repeated disposal create no abandoned records.");
+                await Wait(() => retained.IsDone, "Shared AudioClip after Audio shutdown");
+                await retained;
+                Check(retained.Result != null && h.Assets.AssetRefs("audio.ab", AudioPath, typeof(AudioClip)) == 1,
+                    "The independent shared request succeeds and is the only remaining Clip owner.");
+                CheckAudioReleased(first);
+                CheckAudioReleased(second);
+                retained.Dispose();
+                await h.Assets.Shutdown();
+                await UniTask.NextFrame();
+                Check(root == null && pool.CountActive == 0 && !h.Assets.Has("audio.ab"),
+                    "Unity destroys Audio's root while AssetSystem completes the native Clip and Bundle cleanup.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask AudioShutdownLoadedClips()
+        {
+            var h = new AudioHarness();
+            try
+            {
+                await h.System.Initialize();
+                var pool = h.Pool;
+                var id = h.Play();
+                var audio = h.Audio(id);
+                await Wait(() => AudioProperty<bool>(audio, "IsLoaded"), "AudioClip playback setup");
+                var handle = Get<AssetHandle<AudioClip>>(audio, "_clipHandle");
+                var source = AudioProperty<AudioSource>(audio, "Source");
+                Check(source != null && source.clip == handle.Result && pool.CountActive == 1,
+                    "A loaded AudioObject retains its Clip Handle for as long as the Source uses the Clip.");
+                CallAudio(h.System, "StopAudio", id);
+                CallAudio(h.System, "StopAudio", id);
+                h.Tick();
+                CheckAudioReleased(audio);
+                Check(handle.IsDisposed && source.clip == null && !source.isPlaying && h.Audio(id) == null &&
+                    pool.CountActive == 0 && pool.CountInactive == 1 && h.Assets.AssetRefs("audio.ab", AudioPath, typeof(AudioClip)) == 0,
+                    "Duplicate stop records return the Clip reference and carrier exactly once through the normal Tick queue.");
+                var first = h.Audio(h.Play(music: true));
+                await Wait(() => AudioProperty<bool>(first, "IsLoaded"), "First music setup");
+                var second = h.Audio(h.Play(music: true));
+                await Wait(() => AudioProperty<bool>(second, "IsLoaded"), "Replacement music setup");
+                var handles = new[] { Get<AssetHandle<AudioClip>>(first, "_clipHandle"), Get<AssetHandle<AudioClip>>(second, "_clipHandle") };
+                var carriers = new[] { AudioProperty<GameObject>(first, "Carrier"), AudioProperty<GameObject>(second, "Carrier") };
+                Check(Get<System.Collections.ICollection>(h.System, "_removeList").Count == 1 && pool.CountActive == 2,
+                    "Replacement music leaves one stopped object queued alongside both cached AudioObjects.");
+                await h.System.DisposeAsync();
+                CheckAudioReleased(first);
+                CheckAudioReleased(second);
+                Check(handles.All(value => value.IsDisposed) && h.Assets.AssetRefs("audio.ab", AudioPath, typeof(AudioClip)) == 0,
+                    "Shutdown releases both the stopped music and its active replacement without retaining Clip references.");
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(carriers.All(value => value == null), "All music carriers are actually destroyed with their removed pool.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask AudioLoadFailureCleanup()
+        {
+            var uninitialized = NewAudioSystem();
+            await uninitialized.DisposeAsync();
+            await uninitialized.DisposeAsync();
+            Check(Get<Transform>(uninitialized, "_root") == null && Get<EmptyGameObjectPool>(uninitialized, "_pool") == null,
+                "Disposal supports an uninitialized AudioSystem and repeated calls without creating or removing another system's pool.");
+            var h = new AudioHarness();
+            try
+            {
+                await h.System.Initialize();
+                var pool = h.Pool;
+                var invalidID = h.Play("../invalid.wav");
+                var invalid = h.Audio(invalidID);
+                CheckAudioReleased(invalid);
+                Check(pool.CountActive == 0 && pool.CountInactive == 1 && Get<AssetHandle<AudioClip>>(invalid, "_clipHandle") == null,
+                    "A synchronous path exception after carrier allocation immediately returns that carrier and reports failure.");
+                h.Tick();
+                Check(h.Audio(invalidID) == null, "The failed path enters the normal removal queue instead of waiting forever as an unloaded object.");
+
+                using var probe = new AudioFailureProbe();
+                Set(LiteRuntime.Asset, "_provider", probe);
+                var failedID = h.Play();
+                var failed = h.Audio(failedID);
+                var handle = Get<AssetHandle<AudioClip>>(failed, "_clipHandle");
+                Check(handle.State == AssetHandleState.Pending && pool.CountActive == 1,
+                    "The result-read failure starts with a real pending Handle and an allocated carrier.");
+                probe.Deliver();
+                CheckAudioReleased(failed);
+                Check(handle.IsDisposed && handle.State == AssetHandleState.Succeeded && probe.Lease.Disposals == 1 &&
+                    pool.CountActive == 0 && pool.CountInactive == 1,
+                    "An exception after Handle success releases its lease and carrier without relying on IsLoaded.");
+                CallAudio(failed, "Unload", pool);
+                h.Tick();
+                Check(h.Audio(failedID) == null && probe.Lease.Disposals == 1 && pool.CountActive == 0 && pool.CountInactive == 1,
+                    "Explicit repeated Unload and the failure queue do not release a lease or carrier twice.");
+                Set(LiteRuntime.Asset, "_provider", h.Assets.Provider);
+                var pendingID = h.Play();
+                var pending = h.Audio(pendingID);
+                CallAudio(h.System, "StopAudio", pendingID);
+                h.Tick();
+                CheckAudioReleased(pending);
+                Check(pool.CountActive == 0 && pool.CountInactive == 1,
+                    "Stopping an ordinarily pending load also returns its carrier exactly once before shutdown.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static void CheckAudioReleased(object audio)
+        {
+            Check(!AudioProperty<bool>(audio, "IsLoaded") && ReferenceEquals(AudioProperty<AudioSource>(audio, "Source"), null) &&
+                ReferenceEquals(AudioProperty<GameObject>(audio, "Carrier"), null) && Get<AssetHandle<AudioClip>>(audio, "_clipHandle") == null,
+                "The retired AudioObject clears IsLoaded and all Source, Carrier and Handle ownership references.");
+        }
+
+        private static async UniTask AudioShutdownListenerPause()
+        {
+            var originalPause = AudioListener.pause;
+            var systems = new List<ISystem>();
+            try
+            {
+                foreach (var initial in new[] { false, true })
+                {
+                    AudioListener.pause = initial;
+                    var untouched = NewAudioSystem();
+                    systems.Add(untouched);
+                    await untouched.Initialize();
+                    AudioListener.pause = !initial;
+                    await untouched.DisposeAsync();
+                    Check(AudioListener.pause == !initial, "A system that never changed listener pause preserves external changes made after initialization.");
+                    foreach (var pauseFirst in new[] { false, true })
+                    {
+                        AudioListener.pause = initial;
+                        var system = NewAudioSystem();
+                        systems.Add(system);
+                        await system.Initialize();
+                        CallAudio(system, pauseFirst ? "PauseAllAudio" : "ResumeAllAudio");
+                        Check(AudioListener.pause == pauseFirst, "The first global pause/resume operation applies the requested state.");
+                        CallAudio(system, pauseFirst ? "ResumeAllAudio" : "PauseAllAudio");
+                        Check(AudioListener.pause != pauseFirst, "A second operation changes pause without replacing the original saved state.");
+                        await system.DisposeAsync();
+                        Check(AudioListener.pause == initial, "Shutdown restores the listener state from before this AudioSystem's first mutation: " + initial);
+                        var replacement = NewAudioSystem();
+                        systems.Add(replacement);
+                        await replacement.Initialize();
+                        Check(AudioListener.pause == initial, "A replacement AudioSystem sees no leaked pause state from its predecessor.");
+                        AudioListener.pause = !initial;
+                        foreach (var method in new[] { "PauseAllAudio", "ResumeAllAudio" })
+                        {
+                            var rejected = false;
+                            try { CallAudio(system, method); }
+                            catch (ObjectDisposedException) { rejected = true; }
+                            Check(rejected && AudioListener.pause == !initial, "Closed " + method + " cannot change the replacement system's global state.");
+                        }
+                        await system.DisposeAsync();
+                        Check(AudioListener.pause == !initial, "Repeated disposal does not restore an already relinquished global pause snapshot.");
+                        await replacement.DisposeAsync();
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var system in systems) await system.DisposeAsync();
+                AudioListener.pause = originalPause;
+            }
+        }
+
         private static async UniTask UIShutdownPendingOpens()
         {
             var h = new UIOpenHarness();

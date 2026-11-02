@@ -379,7 +379,7 @@ for name in $selected; do
         collector) runner=CollectorValidationRunner; expected=15 ;;
         packages) runner=PackageValidationRunner; expected=1 ;;
         tasks) runner=TaskSystemValidationRunner; expected=34 ;;
-        lifecycle) runner=AssetLifecycleValidationRunner; expected=128 ;;
+        lifecycle) runner=AssetLifecycleValidationRunner; expected=132 ;;
         loading) runner=AssetLoadingValidationRunner; expected=27 ;;
     esac
     mkdir -p "$reports/$name"

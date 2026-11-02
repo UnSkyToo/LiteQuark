@@ -20,6 +20,7 @@ namespace LiteQuark.Editor
         private const string SecondTextPath = "assets/__session_validation/second.txt";
         private const string PrefabPath = "assets/__session_validation/a.prefab";
         private const string MaterialPath = "assets/__session_validation/shared.mat";
+        private const string AudioPath = "assets/__session_validation/tone.wav";
         private const string ScenePath = "assets/__session_validation/validation_scene.unity";
         private const string EditorTextPath = "Assets/StandaloneAssets/_session_validation/lease_payload.txt";
         private const string EditorScenePath = "Assets/StandaloneAssets/_session_validation/editor_validation_scene.unity";
@@ -244,6 +245,11 @@ namespace LiteQuark.Editor
                 await Run("128 UI close preserves framework release errors", "one-shot lease failure and guaranteed final-close queue", UICloseResourceFailure);
                 await Run("129 UI shutdown isolates OnClose errors", "two UI callbacks, Canvas cleanup and preserved Runtime services", UIShutdownCloseFailure,
                     "Injected UI shutdown Close failure");
+                await Run("130 Audio shutdown cancels pending clips", "real shared AudioClip load, queued stops and closed request guards", AudioShutdownPendingClips);
+                await Run("131 Audio shutdown drains loaded and stopped objects", "real AudioClip Handles and exact pool return accounting", AudioShutdownLoadedClips);
+                await Run("132 Audio failures release partially acquired resources", "invalid path, throwing delivered lease and uninitialized shutdown", AudioLoadFailureCleanup,
+                    "load audio error");
+                await Run("133 Audio shutdown restores owned listener pause", "both initial global states, both first mutations and replacement systems", AudioShutdownListenerPause);
             }
             catch (Exception ex)
             {

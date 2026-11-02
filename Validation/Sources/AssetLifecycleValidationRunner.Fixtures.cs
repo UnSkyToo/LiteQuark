@@ -19,6 +19,84 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static ISystem NewAudioSystem() =>
+            (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.AudioSystem, LiteQuark.Runtime.Addons", true));
+
+        private static object CallAudio(object target, string method, params object[] arguments)
+        {
+            try { return target.GetType().GetMethod(method).Invoke(target, arguments); }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
+            }
+        }
+
+        private static T AudioProperty<T>(object audio, string name) => (T)audio.GetType().GetProperty(name).GetValue(audio);
+
+        private sealed class AudioHarness
+        {
+            internal readonly Harness Assets = New();
+            internal readonly ISystem System = NewAudioSystem();
+            private readonly IAssetProvider _original;
+            internal EmptyGameObjectPool Pool => Get<EmptyGameObjectPool>(System, "_pool");
+
+            internal AudioHarness()
+            {
+                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+            }
+
+            internal ulong Play(string path = AudioPath, bool music = false) => (ulong)(music
+                ? CallAudio(System, "PlayMusic", path, true, 0.5f, true)
+                : CallAudio(System, "PlaySound", path, true, 0, 0.5f, 0f));
+            internal object Audio(ulong id) => CallAudio(System, "GetAudio", id);
+            internal void Tick() => ((ITick)System).Tick(0.02f);
+            internal async UniTask Cleanup()
+            {
+                try
+                {
+                    await System.DisposeAsync();
+                    await Assets.Shutdown();
+                }
+                finally { Set(LiteRuntime.Asset, "_provider", _original); }
+            }
+        }
+
+        private sealed class AudioFailureProbe : IAssetProvider, IDisposable
+        {
+            private readonly AudioClip _clip = AudioClip.Create("AudioFailureProbe", 4410, 1, 44100, false);
+            private Action _deliver;
+            internal readonly AudioFailureLease Lease;
+
+            internal sealed class AudioFailureLease : IAssetLease<AudioClip>
+            {
+                private readonly AudioClip _clip;
+                private int _reads;
+                internal int Disposals;
+                internal AudioFailureLease(AudioClip clip) { _clip = clip; }
+                public AudioClip Value => ++_reads == 1 ? _clip : throw new InvalidOperationException("Injected AudioClip result read failure");
+                public void Dispose() { Disposals++; }
+            }
+
+            internal AudioFailureProbe() { Lease = new AudioFailureLease(_clip); }
+            internal void Deliver() { var deliver = _deliver; _deliver = null; deliver(); }
+            public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
+            {
+                if (typeof(T) != typeof(AudioClip) || _deliver != null) throw new InvalidOperationException("Unexpected AudioClip probe request.");
+                _deliver = () => callback(AssetLoadResult<IAssetLease<T>>.Success((IAssetLease<T>)(object)Lease));
+            }
+            public void Dispose() { UnityEngine.Object.DestroyImmediate(_clip); }
+            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+            public UniTask DisposeAsync() => UniTask.CompletedTask;
+            public void Tick(float deltaTime) { }
+            public string GetVersion() => "audio-failure-probe";
+            public bool HasAsset(string assetKey) => assetKey == AudioPath;
+            public void UnloadUnusedAssets(int maxDepth) { }
+            public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority,
+                Action<AssetLoadResult<IAssetLease<Scene?>>> callback) => throw new NotSupportedException();
+        }
+
         private static Type CreateUIUpdateProbeType(Action<object> onOpen = null, Type bindingAttribute = null)
         {
             // Observe the actual BaseUI callbacks without adding an Addons reference to the core Editor assembly.
@@ -310,6 +388,24 @@ namespace LiteQuark.Editor
             Directory.CreateDirectory(BundleFolder);
             File.WriteAllText(Fixture + "/payload.txt", "LiteQuark session validation");
             File.WriteAllText(Fixture + "/second.txt", "Second asset in the shared text bundle");
+            // A real imported PCM clip exercises Bundle loading without relying on an audio output device.
+            using (var writer = new BinaryWriter(File.Create(Fixture + "/tone.wav")))
+            {
+                const int samples = 4410;
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+                writer.Write(36 + samples * 2);
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));
+                writer.Write(16);
+                writer.Write((short)1);
+                writer.Write((short)1);
+                writer.Write(44100);
+                writer.Write(88200);
+                writer.Write((short)2);
+                writer.Write((short)16);
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+                writer.Write(samples * 2);
+                for (var i = 0; i < samples; i++) writer.Write((short)(Math.Sin(i * 2 * Math.PI * 440 / 44100) * 1000));
+            }
             Directory.CreateDirectory("Assets/StandaloneAssets/_session_validation");
             File.WriteAllText(EditorTextPath, "Editor Asset Lease validation");
             AssetDatabase.Refresh();
@@ -338,7 +434,8 @@ namespace LiteQuark.Editor
             var builds = new[]
             {
                 Build("text.ab", "payload.txt", "second.txt"), Build("b.ab", "shared.mat"),
-                Build("a.ab", "a.prefab"), Build("c.ab", "c.prefab"), Build("scene.ab", "validation_scene.unity")
+                Build("a.ab", "a.prefab"), Build("c.ab", "c.prefab"), Build("scene.ab", "validation_scene.unity"),
+                Build("audio.ab", "tone.wav")
             };
             var manifest = BuildPipeline.BuildAssetBundles(BundleFolder, builds,
                 BuildAssetBundleOptions.UncompressedAssetBundle, ValidationEnvironment.BundleTarget);
@@ -395,7 +492,8 @@ namespace LiteQuark.Editor
                     new BundleInfo(2, "b.ab", new[] { MaterialPath }, null),
                     new BundleInfo(3, "a.ab", new[] { PrefabPath }, new[] { "b.ab" }),
                     new BundleInfo(4, "c.ab", new[] { "assets/__session_validation/c.prefab" }, new[] { "b.ab" }),
-                    new BundleInfo(5, "scene.ab", new[] { ScenePath, "assets/__session_validation/nonexistent_scene.unity" }, new[] { "b.ab" })
+                    new BundleInfo(5, "scene.ab", new[] { ScenePath, "assets/__session_validation/nonexistent_scene.unity" }, new[] { "b.ab" }),
+                    new BundleInfo(6, "audio.ab", new[] { AudioPath }, null)
                 });
                 pack.Initialize();
                 Set(Provider, "_packInfo", pack);

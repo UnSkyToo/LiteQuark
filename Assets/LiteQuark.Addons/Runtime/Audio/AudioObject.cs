@@ -41,7 +41,17 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                _clipHandle = LiteRuntime.Asset.LoadAssetHandle<AudioClip>(clipPath);
+                try
+                {
+                    _clipHandle = LiteRuntime.Asset.LoadAssetHandle<AudioClip>(clipPath);
+                }
+                catch (Exception ex)
+                {
+                    Unload(pool);
+                    LLog.Error("load audio error : {0}, {1}", clipPath, ex.Message);
+                    LiteUtils.SafeInvoke(callback, false);
+                    return;
+                }
                 LoadClipAsync(pool, clipPath, isLoop, volume, delay, _clipHandle, callback).Forget();
             });
         }
@@ -61,10 +71,7 @@ namespace LiteQuark.Runtime
                 if (clip == null)
                 {
                     LLog.Warning("can't play audio : {0}", clipPath);
-                    handle.Dispose();
-                    _clipHandle = null;
-                    pool.Recycle(Carrier);
-                    Carrier = null;
+                    Unload(pool);
                     LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
@@ -84,12 +91,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                if (_clipHandle == handle)
-                {
-                    _clipHandle = null;
-                }
-
-                handle.Dispose();
+                Unload(pool);
                 LLog.Error("load audio error : {0}, {1}", clipPath, ex.Message);
                 LiteUtils.SafeInvoke(callback, false);
             }
@@ -97,30 +99,26 @@ namespace LiteQuark.Runtime
 
         public void Unload(EmptyGameObjectPool pool)
         {
-            if (!IsLoaded && _clipHandle == null)
-            {
-                return;
-            }
-
-            if (_clipHandle != null)
-            {
-                _clipHandle.Dispose();
-                _clipHandle = null;
-            }
-
-            if (Source != null)
-            {
-                Source.clip = null;
-                Source = null;
-            }
-
-            if (Carrier != null)
-            {
-                pool.Recycle(Carrier);
-                Carrier = null;
-            }
-
+            var handle = _clipHandle;
+            var source = Source;
+            var carrier = Carrier;
+            _clipHandle = null;
+            Source = null;
+            Carrier = null;
             IsLoaded = false;
+
+            if (source != null)
+            {
+                source.Stop();
+                source.clip = null;
+            }
+
+            handle?.Dispose();
+
+            if (carrier != null)
+            {
+                pool.Recycle(carrier);
+            }
         }
 
         public bool IsValid()
