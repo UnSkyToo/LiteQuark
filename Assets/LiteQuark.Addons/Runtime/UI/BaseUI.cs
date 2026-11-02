@@ -65,9 +65,14 @@ namespace LiteQuark.Runtime
 
         public void Close()
         {
+            ReleaseResources();
+            LiteUtils.SafeInvoke(OnClose);
+        }
+
+        internal void ReleaseResources()
+        {
             UnloadSprites();
             UnRegisterAllEvent();
-            OnClose();
         }
 
         public void Update(float deltaTime)

@@ -67,6 +67,8 @@ Validation — 当前工作区的隔离 Unity 验证
   UI 关闭还覆盖在途请求同步取消、Forget 默认不报告取消且不执行 ContinueWith 回调、关闭后的新请求拒绝、共享 prefab 迟到成功不再交付 UI，以及原打开/关闭队列和非取消错误行为；真实 Bundle prefab 的原生收尾仍由 Asset 承担。
   UI 调用方取消用例使用真实实体的生命周期 token，覆盖实体释放后不执行 OnOpen／成功续体、同 prefab 的另一请求仍成功、交付后取消不影响 UI，以及预取消不能绕过 mutex 入口检查。
   UI 交付用例还覆盖 Handle 成功后的同步重入：绑定 Attribute 构造时释放调用方仍不进入 OnOpen，OnOpen 释放调用方并抛取消时不交付 UI；两条路径均检查实例和 Handle 清理。
+  UI 打开失败和调用方取消还检查 Tag 监听注销、Sprite Handle 提前释放，以及有效 Sprite 迟到成功后不执行回调且归还 Lease；不调用业务 OnClose。
+  UI 关闭覆盖递归／重复关闭、OnClose 新增资源的最终清理、未交付引用的终态守卫，以及框架释放异常的传播和入队。UISystem 关闭验证业务 OnClose 抛错不影响其他界面和 Canvas 清理，并检查原 Runtime／服务保持可用，后续资源请求仍能成功。
   Canvas 生命周期用例检查关闭时 CanvasRoot 引用清空、跨帧后系统根和子层实际销毁，以及配置失败后已创建根节点的释放。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。

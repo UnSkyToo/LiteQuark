@@ -171,6 +171,115 @@ namespace LiteQuark.Editor
             return (entity, (CancellationToken)type.GetProperty("LifetimeToken").GetValue(entity));
         }
 
+        private sealed class UIResourceEvent : IEventData { }
+
+        private sealed class UIOpenResourceProbe : IAssetProvider, IDisposable
+        {
+            private const string SpritePath = "assets/__session_validation/pending_ui_sprite.asset";
+            private readonly Texture2D _texture = new(2, 2);
+            private readonly Sprite _sprite;
+            private readonly SpriteLease _lease;
+            private readonly EventSystem _eventSystem = LiteRuntime.Event;
+            private object _ui;
+            private Type _baseType;
+            private AssetHandle<Sprite> _handle;
+            private Action _deliver;
+            private int _events;
+            private int _sprites;
+
+            private sealed class SpriteLease : IAssetLease<Sprite>
+            {
+                public Sprite Value { get; }
+                internal int Disposals;
+                private Exception _releaseError;
+                internal SpriteLease(Sprite sprite, Exception releaseError) { Value = sprite; _releaseError = releaseError; }
+                public void Dispose()
+                {
+                    Disposals++;
+                    var error = _releaseError;
+                    _releaseError = null;
+                    if (error != null) throw error;
+                }
+            }
+
+            internal UIOpenResourceProbe(Exception releaseError = null)
+            {
+                _sprite = Sprite.Create(_texture, new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
+                _lease = new SpriteLease(_sprite, releaseError);
+            }
+
+            internal void Acquire(object ui)
+            {
+                _ui = ui;
+                _baseType = ui.GetType().BaseType;
+                _baseType.GetMethod("RegisterEvent", Private).MakeGenericMethod(typeof(UIResourceEvent))
+                    .Invoke(ui, new object[] { (Action<UIResourceEvent>)(_ => _events++) });
+                _eventSystem.Send(new UIResourceEvent());
+                Check(_events == 1, "The UI callback registers a working listener under the actual UI instance's event tag.");
+                _events = 0;
+
+                var original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                try
+                {
+                    Set(LiteRuntime.Asset, "_provider", this);
+                    _baseType.GetMethod("LoadSprite").Invoke(ui, new object[] { SpritePath, (Action<Sprite>)(_ => _sprites++) });
+                }
+                finally { Set(LiteRuntime.Asset, "_provider", original); }
+                _handle = ((List<AssetHandle<Sprite>>)_baseType.GetField("_spriteHandleList", Private).GetValue(ui)).Single();
+                Check(_handle.State == AssetHandleState.Pending && _deliver != null,
+                    "The real BaseUI.LoadSprite path owns an unfinished Handle before the UI callback exits.");
+            }
+
+            internal void DeliverSprite()
+            {
+                _deliver();
+                _deliver = null;
+            }
+
+            internal void VerifyReleased(bool completed = false)
+            {
+                var released = _handle.IsDisposed && _handle.State == (completed ? AssetHandleState.Succeeded : AssetHandleState.Cancelled);
+                _eventSystem.Send(new UIResourceEvent());
+                if (!completed) DeliverSprite();
+                Check(released, "The UI disposes its Sprite Handle before final resource verification.");
+                Check(_events == 0 && _sprites == (completed ? 1 : 0), "Released UI resources receive neither events nor late Sprite callbacks.");
+                Check(_sprite != null && _lease.Disposals == 1 && _handle.Result == null,
+                    "The valid Sprite lease is returned exactly once instead of remaining owned by the UI.");
+                Check(((List<AssetHandle<Sprite>>)_baseType.GetField("_spriteHandleList", Private).GetValue(_ui)).Count == 0 &&
+                    (!_eventSystem.GetEventDebugInfo().TryGetValue(typeof(UIResourceEvent), out var count) || count == 0),
+                    "Cleanup empties both the UI's Sprite Handle list and its tagged listener registration.");
+                var cleanup = _baseType.GetMethod("ReleaseResources", Private);
+                cleanup.Invoke(_ui, null);
+                cleanup.Invoke(_ui, null);
+                Check(_lease.Disposals == 1 && _eventSystem.GetEventDebugInfo()[typeof(UIResourceEvent)] == 0,
+                    "Repeated framework cleanup after the GameObject reference was cleared does not release ownership twice.");
+            }
+
+            public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
+            {
+                if (typeof(T) != typeof(Sprite) || assetKey != SpritePath || _deliver != null) throw new InvalidOperationException("Unexpected UI Sprite request.");
+                _deliver = () => callback(AssetLoadResult<IAssetLease<T>>.Success((IAssetLease<T>)(object)_lease));
+            }
+            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+            public UniTask DisposeAsync() => UniTask.CompletedTask;
+            public void Tick(float deltaTime) { }
+            public string GetVersion() => "ui-resource-probe";
+            public bool HasAsset(string assetKey) => assetKey == SpritePath;
+            public void UnloadUnusedAssets(int maxDepth) { }
+            public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority,
+                Action<AssetLoadResult<IAssetLease<Scene?>>> callback) => throw new NotSupportedException();
+
+            public void Dispose()
+            {
+                _handle?.Dispose();
+                if (_ui != null) _eventSystem.UnRegisterAll((int)_baseType.GetField("_eventTag", Private).GetValue(_ui));
+                _deliver?.Invoke();
+                _deliver = null;
+                UnityEngine.Object.DestroyImmediate(_sprite);
+                UnityEngine.Object.DestroyImmediate(_texture);
+            }
+        }
+
         private sealed class DeferredTemplatePool : BaseGameObjectPool
         {
             public DeferredTemplatePool() { }

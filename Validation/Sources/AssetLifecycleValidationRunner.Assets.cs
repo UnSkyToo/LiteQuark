@@ -81,12 +81,29 @@ namespace LiteQuark.Editor
                 await h.System.Initialize();
                 Check(await h.OpenReady("assets/__session_validation/missing.txt") == null,
                     "Ordinary prefab failure continues to return null.");
-                h.OnOpen = _ => throw new InvalidOperationException("Injected UI Open failure");
+                using var failedResources = new UIOpenResourceProbe();
+                object failedUI = null;
+                h.OnOpen = ui =>
+                {
+                    failedUI = ui;
+                    failedResources.Acquire(ui);
+                    throw new InvalidOperationException("Injected UI Open failure");
+                };
                 Check(await h.OpenReady() == null && h.Find() == null && h.Closes == 0,
                     "A non-cancellation OnOpen exception retains the existing null/error behavior without publishing UI.");
-                h.OnOpen = _ => throw new OperationCanceledException("Injected UI Open cancellation");
+                failedResources.VerifyReleased();
+                h.Close(failedUI);
+                Check(h.State(failedUI) == "Error" && h.Closes == 0,
+                    "A reference saved by failed OnOpen cannot invoke business OnClose after the request ends.");
+                using var ordinaryCancellationResources = new UIOpenResourceProbe();
+                h.OnOpen = ui =>
+                {
+                    ordinaryCancellationResources.Acquire(ui);
+                    throw new OperationCanceledException("Injected UI Open cancellation");
+                };
                 Check(await h.OpenReady() == null && h.Find() == null && h.Closes == 0,
                     "An OnOpen cancellation unrelated to caller or system shutdown retains ordinary null/error behavior.");
+                ordinaryCancellationResources.VerifyReleased();
                 h.OnOpen = _ => { };
                 var first = await h.OpenReady();
                 var second = await h.OpenReady();
@@ -201,6 +218,7 @@ namespace LiteQuark.Editor
             foreach (var duringBinding in new[] { true, false })
             {
                 var owner = NewUIOwnerEntity();
+                using var resources = duringBinding ? null : new UIOpenResourceProbe();
                 UIOpenHarness h = null;
                 GameObjectHandle handle = null;
                 GameObject instance = null;
@@ -223,6 +241,7 @@ namespace LiteQuark.Editor
                         h.OnOpen = ui =>
                         {
                             failedUI = ui;
+                            resources.Acquire(ui);
                             CancelOwner();
                             owner.Token.ThrowIfCancellationRequested();
                         };
@@ -243,6 +262,13 @@ namespace LiteQuark.Editor
                     Check(handle.IsDisposed && handle.Result == null && (failedUI == null || ReferenceEquals(h.Go(failedUI), null)) &&
                         Get<HashSet<GameObjectHandle>>(h.System, "_pendingHandles").Count == 0,
                         "The cancellation catch releases the successful Handle, clears any exposed UI instance reference and removes request tracking.");
+                    resources?.VerifyReleased();
+                    if (failedUI != null)
+                    {
+                        h.Close(failedUI);
+                        Check(h.State(failedUI) == "Closed" && h.Closes == 0 && Get<System.Collections.IList>(h.System, "_closeList").Count == 0,
+                            "A cancelled untransferred UI is terminal and cannot be normally closed through a saved reference.");
+                    }
                     await UniTask.NextFrame();
                     await UniTask.NextFrame();
                     Check(instance == null, "Unity actually destroys the untransferred instance after cancellation.");
@@ -257,6 +283,125 @@ namespace LiteQuark.Editor
                     if (h != null) await h.Cleanup();
                 }
             }
+        }
+
+        private static async UniTask UICloseReentryAndResources()
+        {
+            var h = new UIOpenHarness();
+            using var resources = new UIOpenResourceProbe();
+            try
+            {
+                await h.System.Initialize();
+                var ui = await h.OpenReady();
+                h.Tick();
+                var instance = h.Go(ui);
+                var callbacks = 0;
+                h.OnClose = closing =>
+                {
+                    if (++callbacks != 1) return; // Bound the old recursion so a regression is reported rather than overflowing.
+                    h.Close(closing);
+                    resources.Acquire(closing);
+                };
+                h.Close(ui);
+                h.Close(ui);
+                Check(callbacks == 1 && h.Closes == 1 && h.State(ui) == "Closing" && h.Go(ui) == instance,
+                    "Recursive and repeated CloseUI execute OnClose once and retain the instance until the close queue runs.");
+                h.Tick();
+                Check(h.State(ui) == "Closed" && ReferenceEquals(h.Go(ui), null) && h.Find() == null,
+                    "Final close drains the original queue and clears the UI instance reference.");
+                resources.VerifyReleased();
+                h.Close(ui);
+                Check(callbacks == 1 && h.Closes == 1 && Get<System.Collections.IList>(h.System, "_closeList").Count == 0,
+                    "A fully closed UI cannot enqueue another close or run OnClose again.");
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(instance == null, "The recursively closed UI is actually destroyed after deferred Unity destruction.");
+            }
+            finally { h.OnClose = _ => { }; await h.Cleanup(); }
+        }
+
+        private static async UniTask UICloseResourceFailure()
+        {
+            var h = new UIOpenHarness();
+            var error = new InvalidOperationException("Injected UI resource release failure");
+            using var resources = new UIOpenResourceProbe(error);
+            try
+            {
+                await h.System.Initialize();
+                h.OnOpen = resources.Acquire;
+                var ui = await h.OpenReady();
+                h.Tick();
+                resources.DeliverSprite();
+                var propagated = false;
+                try { h.Close(ui); }
+                catch (System.Reflection.TargetInvocationException ex) { propagated = ReferenceEquals(ex.InnerException, error); }
+                Check(propagated && h.Closes == 0 && h.State(ui) == "Closing" &&
+                    Get<System.Collections.IList>(h.System, "_closeList").Count == 1,
+                    "A framework release error propagates unchanged, skips business OnClose and still queues final cleanup.");
+                h.Tick();
+                Check(h.State(ui) == "Closed" && ReferenceEquals(h.Go(ui), null) && h.Find() == null,
+                    "The queued close can finish cleanup after the one-shot framework failure without rerunning OnClose.");
+                resources.VerifyReleased(completed: true);
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask UIShutdownCloseFailure()
+        {
+            var runtime = LiteRuntime.Instance;
+            var setting = LiteRuntime.Setting;
+            var assets = LiteRuntime.Asset;
+            var provider = Get<IAssetProvider>(assets, "_provider");
+            var tasks = LiteRuntime.Task;
+            var h = new UIOpenHarness();
+            using var resources = new UIOpenResourceProbe();
+            try
+            {
+                await h.System.Initialize();
+                var root = GetUICanvasRoot(h.System).gameObject;
+                var first = await h.OpenReady();
+                var second = await h.OpenReady();
+                var firstGo = h.Go(first);
+                var secondGo = h.Go(second);
+                h.Tick();
+                var firstCloses = 0;
+                var secondCloses = 0;
+                h.OnClose = ui =>
+                {
+                    if (ReferenceEquals(ui, first))
+                    {
+                        firstCloses++;
+                        resources.Acquire(ui);
+                        throw new InvalidOperationException("Injected UI shutdown Close failure");
+                    }
+                    if (ReferenceEquals(ui, second)) secondCloses++;
+                };
+
+                var shutdown = h.Shutdown();
+                Check(shutdown.Status == UniTaskStatus.Succeeded, "UISystem.DisposeAsync completes without propagating a business OnClose exception.");
+                await shutdown;
+                Check(firstCloses == 1 && secondCloses == 1 && h.Closes == 2 &&
+                    h.State(first) == "Closed" && h.State(second) == "Closed" &&
+                    ReferenceEquals(h.Go(first), null) && ReferenceEquals(h.Go(second), null) &&
+                    Errors.Any(message => message.Contains("Injected UI shutdown Close failure")),
+                    "A logged business OnClose failure does not prevent either UI from closing and releasing its instance.");
+                resources.VerifyReleased();
+                await UniTask.NextFrame();
+                await UniTask.NextFrame();
+                Check(root == null && firstGo == null && secondGo == null && ReferenceEquals(GetUICanvasRoot(h.System), null),
+                    "Shutdown destroys the Canvas and both UI instances despite the business close exception.");
+            }
+            finally { h.OnClose = _ => { }; await h.Cleanup(); }
+
+            Check(runtime.State == LiteRuntime.RuntimeState.Running && ReferenceEquals(LiteRuntime.Setting, setting) &&
+                ReferenceEquals(LiteRuntime.Asset, assets) && ReferenceEquals(Get<IAssetProvider>(assets, "_provider"), provider) &&
+                ReferenceEquals(LiteRuntime.Task, tasks),
+                "The case preserves the original running Runtime, settings, asset provider and task service for subsequent cases.");
+            using var followup = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(EditorTextPath);
+            await Wait(() => followup.IsDone, "Asset loading after UI shutdown case");
+            await followup;
+            Check(followup.State == AssetHandleState.Succeeded && followup.Result != null,
+                "The original Runtime can still load an asset after the UI shutdown case has finished.");
         }
 
         private static async UniTask UICanvasPartialInitialization()

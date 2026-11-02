@@ -4,7 +4,9 @@ UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并�
 
 需要可用的 UI Camera（配置为空时回退到 `Camera.main`）。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
 
-UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。系统关闭时销毁整个 Canvas 层级。
+UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。根节点跨场景保留，系统关闭时销毁整个 Canvas 层级。
+
+跨场景使用时，需保证 UI Camera 常驻，并保持 EventSystem / 输入模块可用；它们不随 Canvas 自动保留。
 
 ## 定义与打开
 
@@ -46,7 +48,7 @@ if (menu == null)
 uiSystem.CloseUI(menu);
 ```
 
-`UIConfig` 通过构造函数设置。`OpenUI` 成功返回 UI，普通加载、绑定或 `OnOpen` 错误返回 null；请求因调用方取消或系统关闭而中断时抛 `OperationCanceledException`。`CloseUI` 立即调用关闭逻辑，实例在后续系统 Tick 中释放；只有 Opened 状态的 UI 执行 Update。
+`UIConfig` 通过构造函数设置。`OpenUI` 成功返回 UI，普通加载、绑定或 `OnOpen` 错误返回 null；请求因调用方取消或系统关闭而中断时抛 `OperationCanceledException`。`CloseUI` 仅关闭 Opened 状态的界面，重复关闭无效；关闭逻辑立即执行，实例在后续系统 Tick 中释放。只有 Opened 状态的 UI 执行 Update。
 
 调用方可能先于 UISystem 释放时，使用 `OpenUI<T>(config, ct, paramList)`，并在自身释放时取消对应的 `CancellationTokenSource`。取消仅影响该调用方尚未完成的打开请求，不会自动关闭已成功返回的 UI；已打开的 UI 仍需调用 `CloseUI`。
 
@@ -71,7 +73,8 @@ uiSystem.CloseUI(menu);
 - `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。
 - `GetComponent<T>(path)`、`FindChild(path)`、`SetActive(path, value)` 操作 prefab 子节点。
 - `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。
-- `OnClose()` 清理业务创建的计时器、动作和其他资源。通过 UISystem 关闭界面，不要只销毁 `Go`。
+- `OnClose()` 在正常关闭时调用一次，用于清理业务创建的计时器、动作和其他资源；回调异常会记录日志，不阻断关闭，框架资源释放异常仍向外传播。通过 UISystem 关闭界面，不要只销毁 `Go`。
+- 打开失败或取消且未返回 UI 时，框架会释放已取得的资源，但不调用 `OnClose()`。
 
 默认参考分辨率为 1920×1080；实际效果由 `UISystemSetting` 决定。实现见 [UISystem.cs](UISystem.cs)、[BaseUI.cs](BaseUI.cs) 和 [UIConfig.cs](UIConfig.cs)。
 

@@ -240,6 +240,10 @@ namespace LiteQuark.Editor
                 await Run("124 UI shutdown after partial Canvas initialization", "missing setting after root creation and deferred destruction", UICanvasPartialInitialization);
                 await Run("125 UI caller cancellation isolates shared opens", "entity disposal, shared real prefab and post-delivery token cancellation", UICallerCancellation);
                 await Run("126 UI cancellation during instance handoff", "synchronous attribute binding and OnOpen cancellation after Handle success", UICancellationDuringHandoff);
+                await Run("127 UI close reentry and callback resources", "recursive close, terminal guard and resources acquired by OnClose", UICloseReentryAndResources);
+                await Run("128 UI close preserves framework release errors", "one-shot lease failure and guaranteed final-close queue", UICloseResourceFailure);
+                await Run("129 UI shutdown isolates OnClose errors", "two UI callbacks, Canvas cleanup and preserved Runtime services", UIShutdownCloseFailure,
+                    "Injected UI shutdown Close failure");
             }
             catch (Exception ex)
             {

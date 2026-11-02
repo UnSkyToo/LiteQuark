@@ -125,8 +125,9 @@ namespace LiteQuark.Runtime
                 var instance = handle.Result;
                 if (instance == null)
                 {
-                    handle.Dispose();
                     ui.State = UIState.Error;
+                    ReleaseUI(ui);
+                    handle.Dispose();
                     LLog.Error("Load ui prefab error : {0}", config.PrefabPath);
                     return null;
                 }
@@ -141,16 +142,16 @@ namespace LiteQuark.Runtime
             }
             catch (OperationCanceledException) when (_isClosing || ct.IsCancellationRequested)
             {
-                ui.ReleaseGo();
+                ui.State = UIState.Closed;
+                ReleaseUI(ui);
                 handle.Dispose();
                 throw;
             }
             catch (Exception ex)
             {
-                _openList.Remove(ui);
-                ui.ReleaseGo();
-                handle.Dispose();
                 ui.State = UIState.Error;
+                ReleaseUI(ui);
+                handle.Dispose();
                 LLog.Error("Load ui prefab error : {0}, {1}", config.PrefabPath, ex.Message);
                 return null;
             }
@@ -158,6 +159,16 @@ namespace LiteQuark.Runtime
             {
                 _pendingHandles.Remove(handle);
             }
+        }
+
+        private void ReleaseUI(BaseUI ui)
+        {
+            if (ui.Go != null)
+            {
+                UIBinder.AutoUnbind(ui);
+            }
+            ui.ReleaseResources();
+            ui.ReleaseGo();
         }
 
         private void HandleOpenList()
@@ -174,11 +185,17 @@ namespace LiteQuark.Runtime
 
         public void CloseUI(BaseUI ui)
         {
-            if (ui != null && !_closeList.Contains(ui))
+            if (ui != null && ui.State == UIState.Opened)
             {
                 ui.State = UIState.Closing;
-                ui.Close();
-                _closeList.Add(ui);
+                try
+                {
+                    ui.Close();
+                }
+                finally
+                {
+                    _closeList.Add(ui);
+                }
             }
         }
 
@@ -194,8 +211,7 @@ namespace LiteQuark.Runtime
         private void CloseUIInternal(BaseUI ui)
         {
             ui.State = UIState.Closed;
-            UIBinder.AutoUnbind(ui);
-            ui.ReleaseGo();
+            ReleaseUI(ui);
         }
 
         public void CloseAllUI()
