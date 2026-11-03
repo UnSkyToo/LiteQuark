@@ -268,6 +268,10 @@ namespace LiteQuark.Editor
                 await Run("147 Data shutdown waits for provider switching", "accepted candidate initialization and main-thread final disposal", DataSwitchDuringShutdown);
                 await Run("148 Data provider switch ownership and readiness", "candidate initialization, old-provider availability and publication ownership", DataSwitchFailureAndReadiness);
                 await Run("149 Data built-in persistence survives shutdown", "real JSON/Binary I/O, encryption, replacement providers and PlayerPrefs", DataBuiltinPersistence);
+                await Run("150 Config shutdown cancels shared pending loads", "real TextAsset Handles, cancelled consumers and closed entry guards", ConfigShutdownPendingLoads);
+                await Run("151 Config cached load delivery and Handle release", "cached TextAssets, reload publication and independent owners", ConfigCachedDelivery);
+                await Run("152 Config normal loading and failure semantics", "auto-load order, typed queries, retained tables and Handle release", ConfigNormalLoadingAndFailures,
+                    "ConfigSystem: error loading", "ConfigSystem: failed to load asset", "Load asset failed");
             }
             catch (Exception ex)
             {

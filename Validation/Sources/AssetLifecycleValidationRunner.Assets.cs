@@ -14,6 +14,152 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask ConfigShutdownPendingLoads()
+        {
+            var partial = (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.ConfigSystem, LiteQuark.Runtime.Addons", true));
+            await partial.DisposeAsync();
+            await partial.DisposeAsync();
+            Check(Get<System.Collections.IDictionary>(partial, "_tableMap").Count == 0,
+                "Config shutdown supports an uninitialized instance and repeated calls without requiring settings or assets.");
+            var h = new ConfigHarness();
+            try
+            {
+                await h.System.Initialize();
+                var first = h.Register();
+                var second = h.Register(SecondTextPath, 2);
+                var retained = h.Assets.Asset<TextAsset>(TextPath);
+                var all = h.LoadAll();
+                var single = h.Load(first);
+                var continued = false;
+                var consumer = all.ContinueWith(() => { continued = true; }).Preserve();
+                consumer.Forget();
+                Check(all.Status == UniTaskStatus.Pending && single.Status == UniTaskStatus.Pending && h.Parsed.Count == 0,
+                    "Single and bulk loads wait for the shared real TextAsset without parsing early.");
+                var shutdown = h.System.DisposeAsync();
+                Check(shutdown.Status == UniTaskStatus.Succeeded && all.Status == UniTaskStatus.Canceled &&
+                    single.Status == UniTaskStatus.Canceled && consumer.Status == UniTaskStatus.Canceled,
+                    "Shutdown synchronously cancels accepted Handle waits and their consumers without waiting for native loading.");
+                await shutdown;
+                foreach (var task in new[] { all, single })
+                {
+                    var cancelled = false;
+                    try { await task; } catch (OperationCanceledException) { cancelled = true; }
+                    Check(cancelled, "Accepted Config loading reports cancellation instead of successful completion or a collection-modified error.");
+                }
+                var rejected = 0;
+                try { h.Register(); } catch (ObjectDisposedException) { rejected++; }
+                try { await h.Load(second); } catch (ObjectDisposedException) { rejected++; }
+                try { await h.LoadAll(); } catch (ObjectDisposedException) { rejected++; }
+                Check(rejected == 3 && Get<System.Collections.ICollection>(h.System, "_registrations").Count == 0,
+                    "Closed registration and load entry points reject work even with no registrations left.");
+                await Wait(() => retained.IsDone, "Shared Config text delivery after cancellation");
+                await retained;
+                await UniTask.NextFrame();
+                Check(retained.Result != null && h.Assets.AssetRefs("text.ab", TextPath) == 1 && h.Parsed.Count == 0 && !continued,
+                    "An independent Handle receives the real shared asset; Config releases late leases without parsing or running a success consumer.");
+                Check(!h.Assets.HasAssetEntry("text.ab", SecondTextPath) && Get<System.Collections.IDictionary>(h.System, "_tableMap").Count == 0,
+                    "Cancelled LoadAll starts no subsequent table and cannot repopulate the cleared table map.");
+                var args = new object[] { 1, null };
+                Check(h.Call("GetTable", first) == null && h.Call("GetData", first, 1) == null && !(bool)h.Call("TryGetData", first, args),
+                    "Queries after shutdown retain the existing unloaded-table null/default behavior.");
+                retained.Dispose();
+                await h.System.DisposeAsync();
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask ConfigCachedDelivery()
+        {
+            var h = new ConfigHarness();
+            try
+            {
+                await h.System.Initialize();
+                var first = h.Register();
+                var second = h.Register(SecondTextPath, 2);
+                var retainedFirst = h.Assets.Asset<TextAsset>(TextPath);
+                var retainedSecond = h.Assets.Asset<TextAsset>(SecondTextPath);
+                await Wait(() => retainedFirst.IsDone && retainedSecond.IsDone, "Config text cache priming");
+                await retainedFirst;
+                await retainedSecond;
+
+                var load = h.Load(first);
+                await load;
+                var original = h.Call("GetTable", first);
+                Check(load.Status == UniTaskStatus.Succeeded && original != null &&
+                    h.Parsed.SequenceEqual(new[] { TextPath }) && h.LastText == retainedFirst.Result.text &&
+                    ((ConfigRecordProbe)h.Call("GetData", first, 1)).Id == 1,
+                    "A cached single-table load parses the actual text and publishes a queryable table.");
+                Check(h.Assets.AssetRefs("text.ab", TextPath) == 1 && h.Assets.AssetRefs("text.ab", SecondTextPath) == 1,
+                    "Cached single-table delivery releases its Handle without consuming either independent owner's lease.");
+
+                var all = h.LoadAll();
+                await all;
+                Check(all.Status == UniTaskStatus.Succeeded && h.Parsed.SequenceEqual(new[] { TextPath, TextPath, SecondTextPath }) &&
+                    !ReferenceEquals(h.Call("GetTable", first), original) && ((ConfigRecordProbe)h.Call("GetData", second, 2)).Id == 2,
+                    "Cached LoadAll reloads and publishes tables in registration order, retaining normal replacement semantics.");
+                Check(h.Assets.AssetRefs("text.ab", TextPath) == 1 && h.Assets.AssetRefs("text.ab", SecondTextPath) == 1,
+                    "Bulk cached delivery returns every temporary TextAsset lease after parsing.");
+                await h.System.DisposeAsync();
+                Check(Get<System.Collections.IDictionary>(h.System, "_tableMap").Count == 0 &&
+                    !retainedFirst.IsDisposed && !retainedSecond.IsDisposed && retainedFirst.Result != null && retainedSecond.Result != null,
+                    "Closing clears the published tables without disposing independently retained assets.");
+                retainedFirst.Dispose();
+                retainedSecond.Dispose();
+                Check(h.Assets.AssetRefs("text.ab", TextPath) == 0 && h.Assets.AssetRefs("text.ab", SecondTextPath) == 0,
+                    "After the independent owners release their Handles, no cached Config delivery retains either asset.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
+        private static async UniTask ConfigNormalLoadingAndFailures()
+        {
+            var h = new ConfigHarness(autoLoad: true);
+            try
+            {
+                var first = h.Register();
+                var second = h.Register(SecondTextPath, 2);
+                var initialize = h.System.Initialize().Preserve();
+                await Wait(() => initialize.Status.IsCompleted(), "Config auto-load initialization");
+                Check(await initialize && h.Parsed.SequenceEqual(new[] { TextPath, SecondTextPath }) && h.LastText == "Second asset in the shared text bundle",
+                    "LoadAllOnInitialize still loads pre-registered tables sequentially and supplies their real text.");
+                var table = h.Call("GetTable", first);
+                var row = (ConfigRecordProbe)h.Call("GetData", first, 1);
+                var args = new object[] { 1, null };
+                Check(row.Id == 1 && (bool)h.Call("TryGetData", first, args) && ReferenceEquals(args[1], row) &&
+                    ((ConfigRecordProbe)h.Call("GetData", second, 2)).Id == 2 && Get<System.Collections.IDictionary>(h.System, "_tableMap").Count == 2,
+                    "Normal table lookup and TryGetData retain their original typed row and identity behavior.");
+                Check(h.Assets.AssetRefs("text.ab", TextPath) == 0 && h.Assets.AssetRefs("text.ab", SecondTextPath) == 0,
+                    "Successfully parsed tables keep managed data, not TextAsset Handle ownership.");
+                foreach (var cancellationError in new[] { false, true })
+                {
+                    h.OnParse = _ =>
+                    {
+                        if (cancellationError) throw new OperationCanceledException("Injected unrelated Config parser cancellation");
+                        throw new InvalidOperationException("Injected ordinary Config parser failure");
+                    };
+                    var reload = h.Load(first);
+                    await reload;
+                    Check(reload.Status == UniTaskStatus.Succeeded && ReferenceEquals(h.Call("GetTable", first), table) &&
+                        h.Assets.AssetRefs("text.ab", TextPath) == 0,
+                        "Ordinary parser errors, including unrelated cancellation, remain logged failures that preserve the old table and release the Handle.");
+                }
+                h.OnParse = null;
+                var missing = h.Register("assets/__session_validation/missing.txt", 3);
+                await h.Load(missing);
+                Check(h.Call("GetTable", missing) == null && ReferenceEquals(h.Call("GetTable", first), table),
+                    "An ordinary missing TextAsset does not replace another loaded table or fault the public load task.");
+                var later = h.Register(TextPath, 4);
+                await h.LoadAll();
+                Check(((ConfigRecordProbe)h.Call("GetData", later, 4)).Id == 4 && Get<System.Collections.IDictionary>(h.System, "_tableMap").Count == 3,
+                    "An open LoadAll continues after an ordinary failure and publishes subsequent registered tables.");
+                await h.System.DisposeAsync();
+                Check(h.Call("GetTable", first) == null && Get<System.Collections.IDictionary>(h.System, "_tableMap").Count == 0 &&
+                    Get<System.Collections.ICollection>(h.System, "_registrations").Count == 0,
+                    "Shutdown clears already loaded data and registrations without changing unloaded query semantics.");
+            }
+            finally { await h.Cleanup(); }
+        }
+
         private static async UniTask DataShutdownPendingIO()
         {
             var h = new DataHarness();

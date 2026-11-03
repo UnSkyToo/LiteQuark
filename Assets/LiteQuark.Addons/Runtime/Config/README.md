@@ -72,4 +72,10 @@ if (config.TryGetData<GamePlay.PeopleData>(101, out var person))
 
 加载异常在内部记录，await 完成不代表每张表成功。使用前检查查询结果；重新加载失败不会清除已经加载的旧表。`GetAll()` 返回表持有的列表，应按只读使用，修改它不会同步 id 索引。系统关闭会清空表和注册信息。
 
+## 生命周期
+
+注册和加载从 Unity 主线程调用，已注册实例由 Runtime 统一释放。`DisposeAsync()` 同步取消在途 TextAsset Handle 的等待，清空表和注册信息；未完成的 `Load<T>()`／`LoadAll()` 以 `OperationCanceledException` 结束，不作为普通加载错误记录。关闭开始后注册或加载抛 `ObjectDisposedException`，包括空注册列表的 LoadAll；查询仍按未加载返回 null／default／false。
+
+共享加载和原生资源收尾仍由 AssetSystem 负责，Config 不另行等待；普通资源／解析失败仍按原有日志和返回方式处理。
+
 完整接口见 [ConfigSystem.cs](ConfigSystem.cs)、[ConfigTable.cs](ConfigTable.cs)；导出规则见 [Config Tool](../../Editor/Config)。

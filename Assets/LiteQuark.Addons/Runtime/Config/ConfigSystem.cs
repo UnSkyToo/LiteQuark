@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace LiteQuark.Runtime
 
         private readonly Dictionary<Type, object> _tableMap = new();
         private readonly List<TableRegistration> _registrations = new();
+        private readonly CancellationTokenSource _lifetimeCts = new();
 
         public ConfigSystem()
         {
@@ -28,6 +30,7 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
+            _lifetimeCts.Cancel();
             _tableMap.Clear();
             _registrations.Clear();
 
@@ -36,6 +39,7 @@ namespace LiteQuark.Runtime
 
         public void RegisterTable<T>(string assetPath, Func<string, List<T>> parseFunc) where T : IConfigData
         {
+            ThrowIfClosing();
             _registrations.Add(new TableRegistration(
                 typeof(T),
                 assetPath,
@@ -45,6 +49,7 @@ namespace LiteQuark.Runtime
 
         public async UniTask LoadAll()
         {
+            ThrowIfClosing();
             foreach (var reg in _registrations)
             {
                 await LoadTable(reg);
@@ -53,6 +58,7 @@ namespace LiteQuark.Runtime
 
         public async UniTask Load<T>() where T : IConfigData
         {
+            ThrowIfClosing();
             var type = typeof(T);
             foreach (var reg in _registrations)
             {
@@ -104,7 +110,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(reg.AssetPath);
+                using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(reg.AssetPath, ct: _lifetimeCts.Token);
                 await handle;
                 var textAsset = handle.Result;
                 if (textAsset == null)
@@ -118,7 +124,16 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
+                _lifetimeCts.Token.ThrowIfCancellationRequested();
                 LLog.Error("ConfigSystem: error loading {0}: {1}", reg.AssetPath, ex.Message);
+            }
+        }
+
+        private void ThrowIfClosing()
+        {
+            if (_lifetimeCts.IsCancellationRequested)
+            {
+                throw new ObjectDisposedException(nameof(ConfigSystem));
             }
         }
 

@@ -1,6 +1,7 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：ConfigSystem 关闭后拒绝注册／加载，抛 `ObjectDisposedException`；在途 Load／LoadAll 同步取消 Handle 等待并向调用方传播 `OperationCanceledException`，调用方需等待或按 UniTask 取消契约消费任务。共享加载及原生收尾仍归 AssetSystem，查询和普通加载失败语义不变。
 - 文档：Data 指南改用对象根值示例并说明内置 LitJson 的根值限制，不改变序列化实现和存储格式。
 - 修复：SwitchProvider 先初始化候选，成功后才发布并释放旧 Provider；初始化 false／异常时清理候选并保留旧 Provider，null 与同实例参数不破坏当前实例。候选初始化期间保留旧 Provider 的同步 API，调用方负责整个切换期间的异步 I/O 与切换协调；发布和释放保持主线程，旧实例释放失败不销毁已发布的新实例。
 - 破坏：DataSystem 关闭开始后存取、切换及 Provider 查询抛 `ObjectDisposedException`；关闭等待经系统接收的异步读写和切换结束，不取消写入，再释放 Provider。业务仍需等待 SaveAsync 确认保存结果，直接调用 Provider 的工作需自行等待；关闭支持部分初始化、释放重入，读写及 Provider 释放异常仍按各自调用传播，接口和存储格式不变。

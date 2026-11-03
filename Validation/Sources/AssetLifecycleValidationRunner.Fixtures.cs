@@ -17,6 +17,11 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Editor
 {
+    public class ConfigRecordProbe
+    {
+        public virtual int Id { get; set; }
+    }
+
     // The emitted subclass supplies only the Addons interface; these methods keep generic I/O probes readable.
     public class DataProviderProbe : IInitializeAsync, IDispose
     {
@@ -70,6 +75,77 @@ namespace LiteQuark.Editor
 
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static Func<string, List<T>> ConfigParser<T>(Func<string, List<ConfigRecordProbe>> parse) =>
+            text => parse(text).Cast<T>().ToList();
+
+        private sealed class ConfigHarness
+        {
+            internal readonly Harness Assets = New();
+            internal readonly ISystem System = (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.ConfigSystem, LiteQuark.Runtime.Addons", true));
+            internal readonly List<string> Parsed = new();
+            internal Action<string> OnParse;
+            internal string LastText;
+            private readonly IAssetProvider _original;
+
+            internal ConfigHarness(bool autoLoad = false)
+            {
+                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                var property = System.GetType().GetProperty("Setting");
+                var setting = Activator.CreateInstance(property.PropertyType);
+                property.PropertyType.GetField("LoadAllOnInitialize").SetValue(setting, autoLoad);
+                property.SetValue(System, setting);
+            }
+
+            internal Type Register(string path = TextPath, int id = 1)
+            {
+                var contract = Type.GetType("LiteQuark.Runtime.IConfigData, LiteQuark.Runtime.Addons", true);
+                var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ConfigValidation_" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+                var type = assembly.DefineDynamicModule("ConfigValidation").DefineType("ConfigRecord", TypeAttributes.Public, typeof(ConfigRecordProbe));
+                type.AddInterfaceImplementation(contract);
+                type.DefineDefaultConstructor(MethodAttributes.Public);
+                var rowType = type.CreateType();
+                Func<string, List<ConfigRecordProbe>> parse = text =>
+                {
+                    Parsed.Add(path);
+                    LastText = text;
+                    OnParse?.Invoke(path);
+                    var row = (ConfigRecordProbe)Activator.CreateInstance(rowType);
+                    row.Id = id;
+                    return new List<ConfigRecordProbe> { row };
+                };
+                var parser = typeof(AssetLifecycleValidationRunner).GetMethod(nameof(ConfigParser), BindingFlags.Static | BindingFlags.NonPublic)
+                    .MakeGenericMethod(rowType).Invoke(null, new object[] { parse });
+                Call("RegisterTable", rowType, path, parser);
+                return rowType;
+            }
+
+            internal object Call(string name, Type rowType, params object[] arguments)
+            {
+                var method = System.GetType().GetMethod(name);
+                if (method.IsGenericMethodDefinition) method = method.MakeGenericMethod(rowType);
+                try { return method.Invoke(System, arguments); }
+                catch (TargetInvocationException ex) when (ex.InnerException != null)
+                {
+                    global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    throw;
+                }
+            }
+
+            internal UniTask Load(Type rowType) => ((UniTask)Call("Load", rowType)).Preserve();
+            internal UniTask LoadAll() => ((UniTask)Call("LoadAll", null)).Preserve();
+
+            internal async UniTask Cleanup()
+            {
+                try
+                {
+                    await System.DisposeAsync();
+                    await Assets.Shutdown();
+                }
+                finally { Set(LiteRuntime.Asset, "_provider", _original); }
+            }
+        }
+
         [Serializable] private sealed class DataRecord
         {
             public string Value;
