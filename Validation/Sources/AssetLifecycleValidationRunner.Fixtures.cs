@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
@@ -490,6 +491,130 @@ namespace LiteQuark.Editor
             return probeType;
         }
 
+        private sealed class RestartFixture
+        {
+            internal readonly LiteSetting OriginalSetting = LiteRuntime.Setting;
+            internal readonly GameObject Camera = new("RestartUICamera", typeof(Camera));
+            internal readonly string Scratch = Path.Combine(Root, "Scratch", "restart_" + Guid.NewGuid().ToString("N"));
+            internal readonly Type ProbeType;
+            internal readonly List<string> Events = new();
+            internal readonly List<RestartSystemProbe> Systems = new();
+            internal readonly List<RestartLogicProbe> Logics = new();
+            internal readonly UniTaskCompletionSource DisposeGate = new();
+            internal readonly List<Exception> Errors = new();
+            internal List<GateTask> Gates;
+            internal ExceptionDispatchInfo Failure;
+            internal int CleanupShutdownCalls;
+            internal int BaselineStartups;
+            internal AssetSystem OldAsset;
+            internal TaskSystem OldTask;
+            internal bool RequestRestart;
+            internal bool PreviousRoundReleased;
+            internal string PlatformFolder => Path.Combine(Scratch, AppUtils.GetCurrentPlatformName().ToLowerInvariant());
+            internal string ContentFolder => Path.Combine(PlatformFolder, AppUtils.GetMainVersion());
+
+            internal RestartFixture(Action<object> onOpen = null)
+            {
+                ProbeType = CreateUIUpdateProbeType(onOpen);
+                UniTaskScheduler.UnobservedTaskException += OnUnobserved;
+            }
+
+            internal void CaptureFailure(Exception error)
+            {
+                if (Failure == null) Failure = ExceptionDispatchInfo.Capture(error);
+                else if (!ReferenceEquals(Failure.SourceException, error)) Errors.Add(error);
+            }
+
+            internal void OnUnobserved(Exception error)
+            {
+                // Restart is fire-and-forget; retain its original exception without suppressing the normal error log.
+                CaptureFailure(error);
+                Debug.LogException(error);
+            }
+        }
+
+        private sealed class RestartDisposeFailure : CancellationTokenSource
+        {
+            internal readonly Exception Error = new InvalidOperationException("Injected restart fixture shutdown Dispose failure");
+            internal int Disposals;
+
+            protected override void Dispose(bool disposing)
+            {
+                base.Dispose(disposing);
+                if (!disposing) return;
+                Disposals++;
+                throw Error;
+            }
+        }
+
+        private static RestartFixture _restartFixture;
+
+        private sealed class RestartSystemProbe : ISystem
+        {
+            private readonly RestartFixture _fixture = _restartFixture;
+            internal readonly int Generation;
+            internal int Disposals;
+
+            public RestartSystemProbe()
+            {
+                Generation = _fixture.Systems.Count + 1;
+                if (Generation == 2)
+                {
+                    _fixture.PreviousRoundReleased = _fixture.Events.Last() == "system 1 disposed" &&
+                        Get<IAssetProvider>(_fixture.OldAsset, "_provider") == null &&
+                        Get<bool>(_fixture.OldTask, "_isClosing") && Get<List<TaskGroup>>(_fixture.OldTask, "_groups").Count == 0;
+                }
+                _fixture.Systems.Add(this);
+                _fixture.Events.Add("system " + Generation + " constructed");
+            }
+
+            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+
+            public async UniTask DisposeAsync()
+            {
+                Disposals++;
+                _fixture.Events.Add("system " + Generation + " disposing");
+                if (Generation == 1) await _fixture.DisposeGate.Task;
+                _fixture.Events.Add("system " + Generation + " disposed");
+            }
+        }
+
+        private sealed class RestartLogicProbe : ILogic
+        {
+            private readonly RestartFixture _fixture = _restartFixture;
+            internal readonly int Generation;
+            internal int Disposals;
+            internal int TicksAfterDispose;
+
+            public RestartLogicProbe()
+            {
+                Generation = _fixture.Logics.Count + 1;
+                _fixture.Logics.Add(this);
+            }
+
+            public UniTask<bool> Initialize()
+            {
+                _fixture.Events.Add("logic " + Generation + " initialized");
+                return UniTask.FromResult(true);
+            }
+
+            public void Tick(float deltaTime)
+            {
+                if (Disposals > 0) TicksAfterDispose++;
+                if (Generation != 1 || !_fixture.RequestRestart) return;
+                _fixture.RequestRestart = false;
+                _fixture.Events.Add("logic 1 restart requested");
+                LiteRuntime.Instance.Restart();
+            }
+
+            public UniTask DisposeAsync()
+            {
+                Disposals++;
+                _fixture.Events.Add("logic " + Generation + " disposed");
+                return UniTask.CompletedTask;
+            }
+        }
+
         private static Type CreateUIBindingProbeAttribute(Action onBind)
         {
             // GetCustomAttribute constructs this derived UINode attribute inside the real UIBinder.
@@ -544,18 +669,7 @@ namespace LiteQuark.Editor
             }
 
             internal UniTask<object> Open(string path = PrefabPath, bool mutex = false, CancellationToken? ct = null)
-            {
-                var configType = Type.GetType("LiteQuark.Runtime.UIConfig, LiteQuark.Runtime.Addons", true);
-                var depthType = Type.GetType("LiteQuark.Runtime.UIDepthMode, LiteQuark.Runtime.Addons", true);
-                var config = Activator.CreateInstance(configType, path, Enum.Parse(depthType, "Normal"), mutex, false);
-                var arguments = ct.HasValue
-                    ? new object[] { config, ct.Value, Array.Empty<object>() }
-                    : new[] { config, Array.Empty<object>() };
-                var task = System.GetType().GetMethods().Single(m => m.Name == "OpenUI" && m.GetParameters().Length == arguments.Length)
-                    .MakeGenericMethod(_probeType).Invoke(System, arguments);
-                return (UniTask<object>)typeof(AssetLifecycleValidationRunner).GetMethod(nameof(AwaitUIOpen), BindingFlags.Static | BindingFlags.NonPublic)
-                    .MakeGenericMethod(_probeType).Invoke(null, new[] { task });
-            }
+                => OpenUIProbe(System, _probeType, path, mutex, ct);
 
             internal async UniTask<object> OpenReady(string path = PrefabPath)
             {
@@ -592,6 +706,20 @@ namespace LiteQuark.Editor
         }
 
         private static async UniTask<object> AwaitUIOpen<T>(object task) => await (UniTask<T>)task;
+
+        private static UniTask<object> OpenUIProbe(ISystem system, Type probeType, string path = PrefabPath, bool mutex = false, CancellationToken? ct = null)
+        {
+            var configType = Type.GetType("LiteQuark.Runtime.UIConfig, LiteQuark.Runtime.Addons", true);
+            var depthType = Type.GetType("LiteQuark.Runtime.UIDepthMode, LiteQuark.Runtime.Addons", true);
+            var config = Activator.CreateInstance(configType, path, Enum.Parse(depthType, "Normal"), mutex, false);
+            var arguments = ct.HasValue
+                ? new object[] { config, ct.Value, Array.Empty<object>() }
+                : new[] { config, Array.Empty<object>() };
+            var task = system.GetType().GetMethods().Single(m => m.Name == "OpenUI" && m.GetParameters().Length == arguments.Length)
+                .MakeGenericMethod(probeType).Invoke(system, arguments);
+            return (UniTask<object>)typeof(AssetLifecycleValidationRunner).GetMethod(nameof(AwaitUIOpen), BindingFlags.Static | BindingFlags.NonPublic)
+                .MakeGenericMethod(probeType).Invoke(null, new[] { task });
+        }
 
         private static RectTransform GetUICanvasRoot(ISystem system) =>
             (RectTransform)system.GetType().GetProperty("CanvasRoot").GetValue(system);

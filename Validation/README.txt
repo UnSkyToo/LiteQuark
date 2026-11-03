@@ -77,6 +77,8 @@ Validation — 当前工作区的隔离 Unity 验证
   Data 覆盖在途读写关闭等待、全部关闭入口、释放重入、读写与 Dispose 异常、未初始化释放、关闭等待已接受的 Provider 初始化及主线程最终释放，以及 Scratch 内真实 JSON／Binary 文件、加密读写、替换 Provider 与独立 PlayerPrefs 键持久化；不改写业务存档。
   Provider 切换独立覆盖同实例／null、候选初始化失败清理、初始化期间旧同步 API 仍可用、后台初始化后的主线程发布，以及旧 Provider 释放失败后新实例的所有权。
   Config 覆盖共享 TextAsset 加载期间关闭与取消续体、关闭后的注册／加载拒绝及原有查询结果、缓存命中的单表／批量交付、重载发布和临时 Handle 归还；同时保留初始化自动加载顺序、普通解析／资源失败、重载保留旧表及失败后继续后续表的覆盖。
+  Runtime 重启用例由真实 Logic.Tick 调用公开 Restart()，不手工拼接关闭／启动代替被测入口；通过实际 Bundle 版本清单和 file URI 初始化两轮 Runtime，以 Asset 任务组控制旧 OpenUI 保持在途。覆盖旧 UI 取消后真实 prefab 迟到成功不触发 OnOpen、异步系统释放阻挡新一轮、全部已注册 System 换代及旧 Bundle／Task 收尾、新 UI 同路径打开／更新／关闭，以及延迟销毁后只保留新一轮 Canvas；不替换 Provider 或手动推进系统。
+  重启用例清理保留首个异常及其堆栈，同时报告额外异步／清理错误；先释放 Gate，等待当前关闭退出，ShutdownFailed 后不重试关闭，只有 Idle 才恢复基线。末项回归在真实 Runtime 关闭尾部的生命周期 CTS Dispose 注入故障，使系统已释放但 Runtime 保持 ShutdownFailed，检查原始主体／Dispose 故障可定位、无二次 Shutdown／非 Idle Startup、静态回调／Camera／Scratch 清理，以及没有主体异常时清理失败仍向上传播。该故障用例在本模块进程最后运行，不重置 Runtime 状态，不把预期故障当作生产恢复成功；不增加 Asset 原生 Cleanup 阻挡重启的集成覆盖。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS
@@ -118,5 +120,6 @@ Validation — 当前工作区的隔离 Unity 验证
   BuiltIn 定位会在真实 persistentDataPath 下创建随机临时目录并清理；
   BundleViewer 验证树数据和定位函数，不验证窗口渲染。
   不覆盖真正 UPM 直接加载、旧格式自动迁移、已提交原生场景操作的强制取消
-  或完整系统即时重启；最终 Bundle 释放阶段的异常继续处理未做故障注入验证。
+  或任意加载状态／全模块组合的即时重启；上述代表性 UI 重启链路不扩大这些保证。
+  最终 Bundle 释放阶段的异常继续处理未做故障注入验证。
   真实 UPM 打包与框架公共加载边界是不同测试目标。
