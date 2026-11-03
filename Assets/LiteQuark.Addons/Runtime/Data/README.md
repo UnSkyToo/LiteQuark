@@ -24,16 +24,26 @@ BinaryFile 使用上表中的 JSON 字节格式，不做压缩。
 
 ## 使用
 
+内置序列化使用对象或数组作为 JSON 根值，标量应放入数据对象。例如：
+
+```csharp
+public sealed class PlayerSave
+{
+    public int Level;
+    public string Name;
+}
+```
+
 以下片段在异步方法中执行：
 
 ```csharp
 var data = LiteRuntime.Get<DataSystem>();
-data.Save("playerLevel", 10);
-int level = data.Load("playerLevel", defaultValue: 1);
+data.Save("player", new PlayerSave { Level = 10, Name = "Alice" });
+var player = data.Load<PlayerSave>("player");
 
-await data.SaveAsync("playerName", "Alice");
-string playerName = await data.LoadAsync("playerName", defaultValue: "Guest");
-bool hasSave = data.Has("playerLevel");
+await data.SaveAsync("player", player);
+var loaded = await data.LoadAsync<PlayerSave>("player");
+bool hasSave = data.Has("player");
 ```
 
 - `Delete(key)` 删除单项；`DeleteAll()` 删除 Provider 覆盖的全部存储。
@@ -45,7 +55,7 @@ bool hasSave = data.Has("playerLevel");
 
 当前 `SecurityUtils` 使用 AES-256-CBC、随机 IV 和 SHA-256 派生密钥。它未提供认证标签，且加密失败时会记录错误并返回输入；不要把开关当作完整的防篡改或防作弊保证。更换密钥或加密模式前需要迁移旧数据。
 
-`SwitchProvider(newProvider)` 先初始化候选，成功后才替换并释放旧 Provider；初始化 false／异常时释放候选、保留旧 Provider，并向调用方报告异常。null 候选被拒绝，切换到当前实例不做操作。候选初始化期间，系统仍提供旧 Provider 的同步 API，不新增“切换期间不可用”状态。
+`SwitchProvider(newProvider)` 先初始化候选，成功后才替换并释放旧 Provider；初始化 false／异常时释放候选、保留旧 Provider，并向调用方报告异常。null 候选被拒绝，切换到当前实例不做操作。候选初始化期间，同步 API 继续使用旧 Provider。
 
 调用方需在整个切换期间协调异步读写和其他切换：开始前等待旧异步 I/O，切换完成前不发起新的异步 I/O 或重叠切换；系统不替业务等待或串行调度这些工作。切换**不会迁移已有数据**，存档迁移需由业务安排。
 
@@ -59,6 +69,6 @@ Runtime 等待 `DisposeAsync()` 完成：不取消已接受的异步读写或切
 
 候选初始化可在后台完成，替换和释放会回到主线程。初始化失败时保留旧 Provider；发布成功后若旧 Provider 的 Dispose 抛异常，切换仍报告错误，但已发布的新 Provider 继续由系统持有，不撤销发布或自动重试旧 Provider 的释放。
 
-关闭等待表示操作已结束，不保证写入成功；读写结果／异常仍由各调用返回的 UniTask 报告，业务应等待 SaveAsync 确认保存结果。Provider 的 Dispose 异常使关闭失败，不自动重试。自定义 Provider 的 UniTask 必须覆盖实际 I/O 寿命，Dispose 需支持部分初始化。这里不新增同 key 写入串行化、原子文件替换或断电持久化保证；必要保存应在应用退出前完成。
+关闭等待表示操作已结束，不保证写入成功；读写结果／异常仍由各调用返回的 UniTask 报告，业务应等待 SaveAsync 确认保存结果。Provider 的 Dispose 异常使关闭失败，不自动重试。自定义 Provider 的 UniTask 必须覆盖实际 I/O 寿命，Dispose 需支持部分初始化。当前不保证同 key 写入串行化、原子文件替换或断电持久化；必要保存应在应用退出前完成。
 
 实现见 [DataSystem.cs](DataSystem.cs)、[Provider](Provider) 和 [DataSystemSetting.cs](DataSystemSetting.cs)。
