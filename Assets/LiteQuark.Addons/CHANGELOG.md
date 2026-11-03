@@ -1,6 +1,7 @@
 # Changelog
 
 ## **[Unreleased]**
+- 破坏：DataSystem 关闭开始后存取、切换及 Provider 查询抛 `ObjectDisposedException`；关闭等待经系统接收的异步读写和切换结束，不取消写入，再释放 Provider。业务仍需等待 SaveAsync 确认保存结果，直接调用 Provider 的工作需自行等待；关闭支持部分初始化、释放重入，读写及 Provider 释放异常仍按各自调用传播，接口和存储格式不变。
 - 破坏：NetworkSystem 关闭后访问 Http 或通过旧客户端请求抛 `ObjectDisposedException`；关闭主动取消排队、在途传输、重试和未完成批处理，并等待已接受的操作及资源清理，不再清零并发计数后直接返回。已接受普通请求／上传返回失败响应，下载抛取消异常；业务应在关闭前等待必须取得结果的请求，拦截器不得等待本系统关闭。
 - 修复：HTTP 排队和重试延迟响应取消，关闭后异步拦截器不再继续发送；批处理保留已完成结果且不启动后续组，原生请求在配置失败时也纳入 using 清理。重试延迟取消在主线程 PlayerLoop 中处理，计时器取消不会把等待重试的续体转移到线程池。
 - 破坏：EffectSystem 关闭开始后 `PlayEffect` 抛 `ObjectDisposedException`，调用方不得继续使用旧实例；在途特效等待模板就绪后不再借出实例，共享模板和原生加载收尾仍由 ObjectPool／Asset 管理。

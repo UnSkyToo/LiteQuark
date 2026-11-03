@@ -14,6 +14,226 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask DataShutdownPendingIO()
+        {
+            var h = new DataHarness();
+            DataProviderProbe provider = null;
+            var unused = NewDataProvider();
+            try
+            {
+                provider = await h.Initialize();
+                h.Call("Save", "existing", "ready");
+                provider.WriteGate = new UniTaskCompletionSource();
+                provider.ReadGate = new UniTaskCompletionSource();
+                var write = h.Save("pending", "saved");
+                var read = h.Load("existing");
+                var reentered = false;
+                provider.OnDispose = () =>
+                {
+                    if (provider.Disposals != 1) return;
+                    var nested = h.System.DisposeAsync();
+                    reentered = nested.Status == UniTaskStatus.Succeeded;
+                    if (reentered) nested.GetAwaiter().GetResult();
+                };
+                var shutdown = h.System.DisposeAsync().Preserve();
+                Check(shutdown.Status == UniTaskStatus.Pending && provider.Disposals == 0,
+                    "Data shutdown waits for accepted reads and writes instead of cancelling them or disposing their provider early.");
+                foreach (var call in new (string Name, object[] Args)[]
+                {
+                    ("Save", new object[] { "late", "value" }), ("Load", new object[] { "existing", "missing" }),
+                    ("Has", new object[] { "existing" }), ("Delete", new object[] { "existing" }), ("DeleteAll", Array.Empty<object>())
+                })
+                {
+                    var rejected = false;
+                    try { h.Call(call.Name, call.Args); }
+                    catch (ObjectDisposedException) { rejected = true; }
+                    Check(rejected, "Closing DataSystem rejects synchronous " + call.Name + " before touching the provider.");
+                }
+                var rejectedAsync = 0;
+                try { await h.Save("late", "value"); } catch (ObjectDisposedException) { rejectedAsync++; }
+                try { await h.Load("late"); } catch (ObjectDisposedException) { rejectedAsync++; }
+                try { await h.Switch(unused); } catch (ObjectDisposedException) { rejectedAsync++; }
+                var getterRejected = false;
+                try { h.System.GetType().GetProperty("Provider").GetValue(h.System); }
+                catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException) { getterRejected = true; }
+                Check(rejectedAsync == 3 && getterRejected && unused.Initializations == 0 && unused.Disposals == 0,
+                    "Closing rejects async I/O, provider access and switching without taking ownership of a rejected candidate.");
+                provider.WriteGate.TrySetResult();
+                await UniTask.NextFrame();
+                Check(write.Status == UniTaskStatus.Succeeded && read.Status == UniTaskStatus.Pending &&
+                    shutdown.Status == UniTaskStatus.Pending && provider.Disposals == 0,
+                    "A completed write does not release the provider while another accepted read remains pending.");
+                provider.ReadGate.TrySetResult();
+                await Wait(() => shutdown.Status.IsCompleted(), "Data I/O drain");
+                await shutdown;
+                Check(write.Status == UniTaskStatus.Succeeded && read.Status == UniTaskStatus.Succeeded && await read == "ready" &&
+                    (string)provider.Values["pending"] == "saved" && provider.Disposals == 1 && h.Provider == null && reentered,
+                    "Shutdown preserves the I/O outcomes, detaches ownership before Dispose callbacks and disposes the provider exactly once.");
+                await write;
+                await h.System.DisposeAsync();
+                Check(provider.Disposals == 1, "Repeated shutdown does not dispose the same Data provider twice.");
+            }
+            finally
+            {
+                provider?.WriteGate?.TrySetResult();
+                provider?.ReadGate?.TrySetResult();
+                await h.System.DisposeAsync();
+                unused.Dispose();
+            }
+        }
+
+        private static async UniTask DataShutdownFailures()
+        {
+            var h = new DataHarness();
+            DataProviderProbe provider = null;
+            try
+            {
+                provider = await h.Initialize();
+                provider.Values["existing"] = "ready";
+                provider.WriteGate = new UniTaskCompletionSource();
+                provider.ReadGate = new UniTaskCompletionSource();
+                var error = new IOException("Injected Data write failure");
+                provider.WriteError = error;
+                var write = h.Save("fail", "value");
+                var read = h.Load("existing");
+                var shutdown = h.System.DisposeAsync().Preserve();
+                provider.WriteGate.TrySetResult();
+                Exception reported = null;
+                try { await write; } catch (IOException ex) { reported = ex; }
+                Check(ReferenceEquals(reported, error) && shutdown.Status == UniTaskStatus.Pending && provider.Disposals == 0,
+                    "A failed save reports its original error to its caller while shutdown still drains other accepted I/O.");
+                provider.ReadGate.TrySetResult();
+                await Wait(() => shutdown.Status.IsCompleted(), "Data shutdown after a failed write");
+                await shutdown;
+                Check(await read == "ready" && provider.Disposals == 1, "A save failure neither cancels another read nor prevents final provider disposal.");
+            }
+            finally
+            {
+                provider?.WriteGate?.TrySetResult();
+                provider?.ReadGate?.TrySetResult();
+                await h.System.DisposeAsync();
+            }
+
+            var partial = new DataHarness();
+            await partial.System.DisposeAsync();
+            Check(partial.Provider == null, "Data shutdown supports a system whose initialization never created a provider.");
+            var failing = new DataHarness();
+            var owned = await failing.Initialize();
+            owned.DisposeError = new InvalidOperationException("Injected Data Dispose failure");
+            Exception releaseError = null;
+            try { await failing.System.DisposeAsync(); } catch (InvalidOperationException ex) { releaseError = ex; }
+            Check(ReferenceEquals(releaseError, owned.DisposeError) && owned.Disposals == 1 && failing.Provider == null,
+                "Provider disposal errors fault shutdown instead of being swallowed, with ownership already detached.");
+            await failing.System.DisposeAsync();
+            Check(owned.Disposals == 1, "A later teardown call does not silently retry a failed provider disposal.");
+        }
+
+        private static async UniTask DataSwitchDuringShutdown()
+        {
+            var h = new DataHarness();
+            var candidate = NewDataProvider();
+            candidate.InitializeGate = new UniTaskCompletionSource();
+            try
+            {
+                var mainThread = Thread.CurrentThread.ManagedThreadId;
+                var previous = await h.Initialize();
+                var switching = h.Switch(candidate);
+                Check(switching.Status == UniTaskStatus.Pending && candidate.Initializations == 1 && candidate.Disposals == 0,
+                    "An accepted provider switch is pending while its candidate initializes.");
+                var shutdown = h.System.DisposeAsync().Preserve();
+                await UniTask.NextFrame();
+                Check(candidate.Disposals == 0 && shutdown.Status == UniTaskStatus.Pending,
+                    "Shutdown waits for the accepted switch instead of disposing a provider whose Initialize is still running.");
+                var initialize = System.Threading.Tasks.Task.Run(() => candidate.InitializeGate.TrySetResult());
+                await Wait(() => initialize.IsCompleted, "Candidate background initialization completion");
+                initialize.GetAwaiter().GetResult();
+                await Wait(() => shutdown.Status.IsCompleted(), "Data closes after accepted provider switch");
+                await shutdown;
+                Check(switching.Status == UniTaskStatus.Succeeded &&
+                    previous.Disposals == 1 && candidate.Disposals == 1 && h.Provider == null,
+                    "Shutdown returns after the switch ends and both providers have been released exactly once.");
+                Check(candidate.InitializeThread != mainThread && previous.DisposeThread == mainThread && candidate.DisposeThread == mainThread,
+                    "A candidate completing on a worker thread does not move old or final provider disposal off the Unity main thread.");
+                await switching;
+            }
+            finally
+            {
+                candidate.InitializeGate.TrySetResult();
+                await h.System.DisposeAsync();
+            }
+        }
+
+        private static async UniTask DataBuiltinPersistence()
+        {
+            var scratch = Path.Combine(Root, "Scratch", "data_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(scratch);
+            try
+            {
+                Check((File.GetAttributes(scratch) & FileAttributes.ReparsePoint) == 0, "Real Data I/O uses a new ordinary directory under the owned validation Scratch root.");
+                foreach (var mode in new[] { "JsonFile", "BinaryFile" })
+                foreach (var encrypted in new[] { false, true })
+                {
+                    var directory = Path.Combine(scratch, mode + encrypted);
+                    Directory.CreateDirectory(directory);
+                    var extension = mode == "JsonFile" ? ".json" : ".dat";
+                    var h = new DataHarness();
+                    var replacement = new DataHarness();
+                    try
+                    {
+                        await h.Initialize(mode, false, encrypted);
+                        Set(h.Provider, "_savePath", directory);
+                        var filePath = (string)h.Provider.GetType().GetMethod("GetFilePath", Private).Invoke(h.Provider, new object[] { "pending" });
+                        Check(Path.GetFullPath(filePath) == Path.GetFullPath(Path.Combine(directory, "pending" + extension)),
+                            "The native provider resolves its write to the owned Scratch directory.");
+                        var value = new string('x', 128 * 1024) + "中文\nData";
+                        var write = ((UniTask)h.Call<DataRecord>("SaveAsync", "pending", new DataRecord { Value = value })).Preserve();
+                        var shutdown = h.System.DisposeAsync().Preserve();
+                        await Wait(() => shutdown.Status.IsCompleted(), "Real file write shutdown");
+                        await shutdown;
+                        var writeFinished = write.Status == UniTaskStatus.Succeeded;
+                        await write;
+                        Check(writeFinished && File.Exists(filePath),
+                            mode + " shutdown completes only after its actual asynchronous file write ends, encryption=" + encrypted + ", finished=" + writeFinished + ", exists=" + File.Exists(filePath));
+                        await replacement.Initialize(mode, false, encrypted);
+                        Set(replacement.Provider, "_savePath", directory);
+                        var read = ((UniTask<DataRecord>)replacement.Call<DataRecord>("LoadAsync", "pending", null)).Preserve();
+                        var closeRead = replacement.System.DisposeAsync().Preserve();
+                        await Wait(() => closeRead.Status.IsCompleted(), "Real file read shutdown");
+                        await closeRead;
+                        Check(read.Status == UniTaskStatus.Succeeded && (await read)?.Value == value,
+                            mode + " replacement reads the complete saved value and closes after the read, encryption=" + encrypted);
+                    }
+                    finally
+                    {
+                        await h.System.DisposeAsync();
+                        await replacement.System.DisposeAsync();
+                        File.Delete(Path.Combine(directory, "pending" + extension));
+                        Directory.Delete(directory);
+                    }
+                }
+            }
+            finally { Directory.Delete(scratch); }
+
+            var prefs = new DataHarness();
+            var key = "validation_data_" + Guid.NewGuid().ToString("N");
+            try
+            {
+                await prefs.Initialize(controlled: false);
+                var write = ((UniTask)prefs.Call<DataRecord>("SaveAsync", key, new DataRecord { Value = "prefs value" })).Preserve();
+                Check(write.Status == UniTaskStatus.Succeeded && ((DataRecord)prefs.Call<DataRecord>("Load", key, null))?.Value == "prefs value",
+                    "PlayerPrefs async save still completes synchronously with the same stored value.");
+                await write;
+                await prefs.System.DisposeAsync();
+                Check(LitJson.JsonMapper.ToObject<DataRecord>(PlayerPrefs.GetString(key)).Value == "prefs value", "Closing flushes PlayerPrefs without deleting its saved key.");
+            }
+            finally
+            {
+                await prefs.System.DisposeAsync();
+                PlayerPrefs.DeleteKey(key);
+                PlayerPrefs.Save();
+            }
+        }
+
         private static async UniTask NetworkShutdownQueuedRequests()
         {
             var h = new NetworkHarness();

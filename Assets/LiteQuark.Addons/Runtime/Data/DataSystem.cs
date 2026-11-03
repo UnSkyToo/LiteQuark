@@ -1,3 +1,5 @@
+using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -7,6 +9,8 @@ namespace LiteQuark.Runtime
         public DataSystemSetting Setting { get; set; }
 
         private IDataProvider _provider;
+        private bool _isClosing;
+        private int _pendingOperations;
 
         public DataSystem()
         {
@@ -41,12 +45,17 @@ namespace LiteQuark.Runtime
             return result;
         }
 
-        public UniTask DisposeAsync()
+        public async UniTask DisposeAsync()
         {
-            _provider?.Dispose();
-            _provider = null;
+            _isClosing = true;
+            while (Volatile.Read(ref _pendingOperations) > 0)
+            {
+                await UniTask.Yield();
+            }
 
-            return UniTask.CompletedTask;
+            var provider = _provider;
+            _provider = null;
+            provider?.Dispose();
         }
 
         #region Synchronous API
@@ -56,7 +65,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         public void Save<T>(string key, T data)
         {
-            _provider.Save(key, data);
+            GetProvider().Save(key, data);
         }
 
         /// <summary>
@@ -64,7 +73,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         public T Load<T>(string key, T defaultValue = default)
         {
-            return _provider.Load(key, defaultValue);
+            return GetProvider().Load(key, defaultValue);
         }
 
         /// <summary>
@@ -72,7 +81,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         public bool Has(string key)
         {
-            return _provider.Has(key);
+            return GetProvider().Has(key);
         }
 
         /// <summary>
@@ -80,7 +89,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         public void Delete(string key)
         {
-            _provider.Delete(key);
+            GetProvider().Delete(key);
         }
 
         /// <summary>
@@ -88,7 +97,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         public void DeleteAll()
         {
-            _provider.DeleteAll();
+            GetProvider().DeleteAll();
         }
 
         #endregion
@@ -100,7 +109,16 @@ namespace LiteQuark.Runtime
         /// </summary>
         public async UniTask SaveAsync<T>(string key, T data)
         {
-            await _provider.SaveAsync(key, data);
+            var provider = GetProvider();
+            Interlocked.Increment(ref _pendingOperations);
+            try
+            {
+                await provider.SaveAsync(key, data);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingOperations);
+            }
         }
 
         /// <summary>
@@ -108,7 +126,16 @@ namespace LiteQuark.Runtime
         /// </summary>
         public async UniTask<T> LoadAsync<T>(string key, T defaultValue = default)
         {
-            return await _provider.LoadAsync(key, defaultValue);
+            var provider = GetProvider();
+            Interlocked.Increment(ref _pendingOperations);
+            try
+            {
+                return await provider.LoadAsync(key, defaultValue);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingOperations);
+            }
         }
 
         #endregion
@@ -118,18 +145,36 @@ namespace LiteQuark.Runtime
         /// <summary>
         /// 获取当前使用的数据提供者
         /// </summary>
-        public IDataProvider Provider => _provider;
+        public IDataProvider Provider => GetProvider();
 
         /// <summary>
         /// 切换数据提供者（高级功能）
         /// </summary>
         public async UniTask SwitchProvider(IDataProvider newProvider)
         {
-            _provider?.Dispose();
-            _provider = newProvider;
-            await _provider.Initialize();
+            var previous = GetProvider();
+            Interlocked.Increment(ref _pendingOperations);
+            try
+            {
+                previous.Dispose();
+                _provider = newProvider;
+                await newProvider.Initialize();
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingOperations);
+            }
         }
 
         #endregion
+
+        private IDataProvider GetProvider()
+        {
+            if (_isClosing)
+            {
+                throw new ObjectDisposedException(nameof(DataSystem));
+            }
+            return _provider ?? throw new InvalidOperationException("Data provider is not ready.");
+        }
     }
 }

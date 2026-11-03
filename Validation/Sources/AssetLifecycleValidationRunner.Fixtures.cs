@@ -17,8 +17,111 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Editor
 {
+    // The emitted subclass supplies only the Addons interface; these methods keep generic I/O probes readable.
+    public class DataProviderProbe : IInitializeAsync, IDispose
+    {
+        public readonly Dictionary<string, object> Values = new();
+        public UniTaskCompletionSource InitializeGate;
+        public UniTaskCompletionSource WriteGate;
+        public UniTaskCompletionSource ReadGate;
+        public Exception WriteError;
+        public Exception DisposeError;
+        public Action OnDispose;
+        public int Initializations;
+        public int InitializeThread;
+        public int Disposals;
+        public int DisposeThread;
+
+        public virtual async UniTask<bool> Initialize()
+        {
+            Initializations++;
+            if (InitializeGate != null) await InitializeGate.Task;
+            InitializeThread = Thread.CurrentThread.ManagedThreadId;
+            return true;
+        }
+
+        public virtual void Save<T>(string key, T data) => Values[key] = data;
+        public virtual async UniTask SaveAsync<T>(string key, T data)
+        {
+            if (WriteGate != null) await WriteGate.Task;
+            if (WriteError != null) throw WriteError;
+            Save(key, data);
+        }
+        public virtual T Load<T>(string key, T defaultValue = default) => Values.TryGetValue(key, out var value) ? (T)value : defaultValue;
+        public virtual async UniTask<T> LoadAsync<T>(string key, T defaultValue = default)
+        {
+            if (ReadGate != null) await ReadGate.Task;
+            return Load(key, defaultValue);
+        }
+        public virtual bool Has(string key) => Values.ContainsKey(key);
+        public virtual void Delete(string key) => Values.Remove(key);
+        public virtual void DeleteAll() => Values.Clear();
+        public virtual void Dispose()
+        {
+            Disposals++;
+            DisposeThread = Thread.CurrentThread.ManagedThreadId;
+            OnDispose?.Invoke();
+            if (DisposeError != null) throw DisposeError;
+        }
+    }
+
     internal static partial class AssetLifecycleValidationRunner
     {
+        [Serializable] private sealed class DataRecord
+        {
+            public string Value;
+            public DataRecord() { }
+        }
+
+        private static DataProviderProbe NewDataProvider()
+        {
+            var contract = Type.GetType("LiteQuark.Runtime.IDataProvider, LiteQuark.Runtime.Addons", true);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DataValidation_" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+            var type = assembly.DefineDynamicModule("DataValidation").DefineType("DataProvider", TypeAttributes.Public, typeof(DataProviderProbe));
+            type.AddInterfaceImplementation(contract);
+            type.DefineDefaultConstructor(MethodAttributes.Public);
+            return (DataProviderProbe)Activator.CreateInstance(type.CreateType());
+        }
+
+        private sealed class DataHarness
+        {
+            internal readonly ISystem System = (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.DataSystem, LiteQuark.Runtime.Addons", true));
+            internal object Provider => Get<object>(System, "_provider");
+
+            internal async UniTask<DataProviderProbe> Initialize(string mode = "PlayerPrefs", bool controlled = true, bool encryption = false)
+            {
+                var property = System.GetType().GetProperty("Setting");
+                var setting = Activator.CreateInstance(property.PropertyType);
+                var providerMode = property.PropertyType.GetField("ProviderMode");
+                providerMode.SetValue(setting, Enum.Parse(providerMode.FieldType, mode));
+                property.PropertyType.GetField("EnableEncryption").SetValue(setting, encryption);
+                property.SetValue(System, setting);
+                if (!await System.Initialize()) throw new InvalidOperationException("Data fixture initialization failed.");
+                if (!controlled) return null;
+                var probe = NewDataProvider();
+                await Switch(probe);
+                return probe;
+            }
+
+            internal object Call(string name, params object[] arguments) => Call<string>(name, arguments);
+
+            internal object Call<T>(string name, params object[] arguments)
+            {
+                var method = System.GetType().GetMethod(name);
+                if (method.IsGenericMethodDefinition) method = method.MakeGenericMethod(typeof(T));
+                try { return method.Invoke(System, arguments); }
+                catch (TargetInvocationException ex) when (ex.InnerException != null)
+                {
+                    global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    throw;
+                }
+            }
+
+            internal UniTask Save(string key, string value) => ((UniTask)Call("SaveAsync", key, value)).Preserve();
+            internal UniTask<string> Load(string key, string fallback = "missing") => ((UniTask<string>)Call("LoadAsync", key, fallback)).Preserve();
+            internal UniTask Switch(object provider) => ((UniTask)Call("SwitchProvider", provider)).Preserve();
+        }
+
         [Serializable] private sealed class NetworkPayload { public int Value; }
         private static readonly byte[] NetworkBody = System.Text.Encoding.UTF8.GetBytes("{\"Value\":7}");
 

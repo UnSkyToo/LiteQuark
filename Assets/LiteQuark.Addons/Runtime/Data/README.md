@@ -45,8 +45,16 @@ bool hasSave = data.Has("playerLevel");
 
 当前 `SecurityUtils` 使用 AES-256-CBC、随机 IV 和 SHA-256 派生密钥。它未提供认证标签，且加密失败时会记录错误并返回输入；不要把开关当作完整的防篡改或防作弊保证。更换密钥或加密模式前需要迁移旧数据。
 
-`SwitchProvider(newProvider)` 释放旧 Provider 并初始化新 Provider，**不会迁移已有数据**。业务应先读取旧数据，再切换并保存；存档结构升级也需自行维护版本和迁移逻辑。
+`SwitchProvider(newProvider)` 释放旧 Provider 并初始化新 Provider，**不会迁移已有数据**。业务应先读取旧数据，再切换并保存；存档结构升级也需自行维护版本和迁移逻辑。调用方应在整个切换期间协调读写和其他切换，避免旧 Provider 在 I/O 尚未结束时被替换释放。
 
 文件模式的 key 直接参与文件路径拼接，应由业务生成固定、有效的文件名，避免传入目录分隔符或未经检查的外部输入。按业务时机保存，不要每帧写盘。
+
+## 生命周期
+
+系统调用从 Unity 主线程发起。关闭开始后拒绝全部存取、切换及 Provider 查询，抛 `ObjectDisposedException`。Provider 是借用引用，不应自行 Dispose；直接调用 Provider 的操作不经系统追踪，须在切换或关闭前自行等待。
+
+Runtime 等待 `DisposeAsync()` 完成：不取消已接受的异步读写或切换，等待它们退出后才释放当前 Provider。已接受的切换若与关闭重叠，关闭会等待初始化退出再释放当前 Provider。Provider 不应反向等待本系统的关闭，否则会互相等待。
+
+关闭等待表示操作已结束，不保证写入成功；读写结果／异常仍由各调用返回的 UniTask 报告，业务应等待 SaveAsync 确认保存结果。Provider 的 Dispose 异常使关闭失败，不自动重试。自定义 Provider 的 UniTask 必须覆盖实际 I/O 寿命，Dispose 需支持部分初始化。这里不新增同 key 写入串行化、原子文件替换或断电持久化保证；必要保存应在应用退出前完成。
 
 实现见 [DataSystem.cs](DataSystem.cs)、[Provider](Provider) 和 [DataSystemSetting.cs](DataSystemSetting.cs)。

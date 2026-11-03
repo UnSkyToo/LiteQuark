@@ -263,6 +263,10 @@ namespace LiteQuark.Editor
                 await Run("142 Network shutdown waits for async interceptors", "OnRequest/OnResponse gates and post-await send/callback guards", NetworkInterceptorShutdown);
                 await Run("143 Network shutdown cancels upload and download", "real multipart and held responses, queued file operations and progress retirement", NetworkFileShutdown);
                 await Run("144 Network normal results and replacement system", "HTTP/JSON/files, caller queue cancellation, closed facade and new client", NetworkNormalAndRestart);
+                await Run("145 Data shutdown drains accepted I/O", "controlled provider reads/writes, closed facade and Dispose reentry", DataShutdownPendingIO);
+                await Run("146 Data shutdown preserves operation and release errors", "write failure, pending read, partial initialization and Dispose failure", DataShutdownFailures);
+                await Run("147 Data shutdown waits for provider switching", "accepted candidate initialization and main-thread final disposal", DataSwitchDuringShutdown);
+                await Run("149 Data built-in persistence survives shutdown", "real JSON/Binary I/O, encryption, replacement providers and PlayerPrefs", DataBuiltinPersistence);
             }
             catch (Exception ex)
             {
