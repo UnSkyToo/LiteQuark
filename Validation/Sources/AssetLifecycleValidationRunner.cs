@@ -266,6 +266,7 @@ namespace LiteQuark.Editor
                 await Run("145 Data shutdown drains accepted I/O", "controlled provider reads/writes, closed facade and Dispose reentry", DataShutdownPendingIO);
                 await Run("146 Data shutdown preserves operation and release errors", "write failure, pending read, partial initialization and Dispose failure", DataShutdownFailures);
                 await Run("147 Data shutdown waits for provider switching", "accepted candidate initialization and main-thread final disposal", DataSwitchDuringShutdown);
+                await Run("148 Data provider switch ownership and readiness", "candidate initialization, old-provider availability and publication ownership", DataSwitchFailureAndReadiness);
                 await Run("149 Data built-in persistence survives shutdown", "real JSON/Binary I/O, encryption, replacement providers and PlayerPrefs", DataBuiltinPersistence);
             }
             catch (Exception ex)

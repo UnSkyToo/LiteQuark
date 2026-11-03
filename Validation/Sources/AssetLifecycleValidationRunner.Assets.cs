@@ -163,6 +163,65 @@ namespace LiteQuark.Editor
             }
         }
 
+        private static async UniTask DataSwitchFailureAndReadiness()
+        {
+            var h = new DataHarness();
+            var candidate = NewDataProvider();
+            candidate.InitializeGate = new UniTaskCompletionSource();
+            try
+            {
+                var mainThread = Thread.CurrentThread.ManagedThreadId;
+                var previous = await h.Initialize();
+                h.Call("Save", "existing", "ready");
+                await h.Switch(previous);
+                Check(previous.Initializations == 1 && previous.Disposals == 0, "Switching to the current provider is a no-op rather than disposing and reinitializing it.");
+                var nullRejected = false;
+                try { await h.Switch(null); } catch (ArgumentNullException) { nullRejected = true; }
+                Check(nullRejected && ReferenceEquals(h.Provider, previous), "A null candidate is rejected without changing provider ownership.");
+                foreach (var throws in new[] { false, true })
+                {
+                    var failed = NewDataProvider();
+                    failed.InitializeResult = false;
+                    if (throws) failed.InitializeError = new IOException("Injected Data initialization failure");
+                    Exception error = null;
+                    try { await h.Switch(failed); } catch (Exception ex) { error = ex; }
+                    Check((throws ? ReferenceEquals(error, failed.InitializeError) : error is InvalidOperationException) && failed.Disposals == 1 &&
+                        ReferenceEquals(h.Provider, previous) && previous.Disposals == 0 && (string)h.Call("Load", "existing", "missing") == "ready",
+                        "Candidate initialization false or error releases only the candidate and retains the working old provider.");
+                }
+                var switching = h.Switch(candidate);
+                Check(switching.Status == UniTaskStatus.Pending && ReferenceEquals(h.Provider, previous) && (bool)h.Call("Has", "existing") &&
+                    (string)h.Call("Load", "existing", "missing") == "ready", "The old provider remains available while the candidate initializes; switching adds no temporary-unavailable API state.");
+                var initialize = System.Threading.Tasks.Task.Run(() => candidate.InitializeGate.TrySetResult());
+                await Wait(() => initialize.IsCompleted && switching.Status.IsCompleted(), "Candidate initialization and publication");
+                initialize.GetAwaiter().GetResult();
+                await switching;
+                Check(ReferenceEquals(h.Provider, candidate) && previous.Disposals == 1 && candidate.InitializeThread != mainThread && previous.DisposeThread == mainThread,
+                    "A candidate initialized on a worker is published before the old provider is disposed on the Unity main thread.");
+                h.Call("Save", "key", "value");
+                Check((bool)h.Call("Has", "key") && (string)h.Call("Load", "key", "missing") == "value", "The initialized replacement handles normal synchronous I/O.");
+                h.Call("Delete", "key");
+                h.Call("Save", "other", "value");
+                h.Call("DeleteAll");
+                Check(candidate.Values.Count == 0, "Normal deletion retains its provider behavior after switching.");
+
+                var replacement = NewDataProvider();
+                var releaseError = new InvalidOperationException("Injected old-provider Dispose failure");
+                candidate.DisposeError = releaseError;
+                Exception reported = null;
+                try { await h.Switch(replacement); } catch (InvalidOperationException ex) { reported = ex; }
+                Check(ReferenceEquals(reported, releaseError) && ReferenceEquals(h.Provider, replacement) && replacement.Disposals == 0,
+                    "An old-provider release failure does not dispose the replacement already published to the system.");
+                await h.System.DisposeAsync();
+                Check(candidate.Disposals == 1 && replacement.Disposals == 1, "Final shutdown owns the published replacement without retrying old-provider disposal.");
+            }
+            finally
+            {
+                candidate.InitializeGate.TrySetResult();
+                await h.System.DisposeAsync();
+            }
+        }
+
         private static async UniTask DataBuiltinPersistence()
         {
             var scratch = Path.Combine(Root, "Scratch", "data_" + Guid.NewGuid().ToString("N"));

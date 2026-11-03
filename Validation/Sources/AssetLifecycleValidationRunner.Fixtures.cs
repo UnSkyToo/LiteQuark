@@ -24,6 +24,8 @@ namespace LiteQuark.Editor
         public UniTaskCompletionSource InitializeGate;
         public UniTaskCompletionSource WriteGate;
         public UniTaskCompletionSource ReadGate;
+        public bool InitializeResult = true;
+        public Exception InitializeError;
         public Exception WriteError;
         public Exception DisposeError;
         public Action OnDispose;
@@ -37,7 +39,8 @@ namespace LiteQuark.Editor
             Initializations++;
             if (InitializeGate != null) await InitializeGate.Task;
             InitializeThread = Thread.CurrentThread.ManagedThreadId;
-            return true;
+            if (InitializeError != null) throw InitializeError;
+            return InitializeResult;
         }
 
         public virtual void Save<T>(string key, T data) => Values[key] = data;
