@@ -90,25 +90,27 @@ namespace LiteQuark.Runtime
 
         public async UniTask<byte[]> DownloadFile(string url, IProgress<float> progress = null, CancellationToken cancellationToken = default)
         {
-            await _networkSystem.WaitForSlot();
-
+            _networkSystem.BeginOperation();
+            var hasSlot = false;
             try
             {
+                await _networkSystem.WaitForSlot(cancellationToken);
+                hasSlot = true;
                 using var request = UnityWebRequest.Get(url);
                 request.timeout = _networkSystem.DefaultTimeout;
 
                 var operation = request.SendWebRequest();
 
-                while (!operation.isDone && !cancellationToken.IsCancellationRequested)
+                while (!operation.isDone && !_networkSystem.IsClosing && !cancellationToken.IsCancellationRequested)
                 {
                     progress?.Report(operation.progress);
                     await UniTask.Yield();
                 }
 
-                if (cancellationToken.IsCancellationRequested)
+                if (_networkSystem.IsClosing || cancellationToken.IsCancellationRequested)
                 {
                     request.Abort();
-                    throw new OperationCanceledException("Download cancelled");
+                    _networkSystem.ThrowIfCancellationRequested(cancellationToken);
                 }
 
                 if (request.result == UnityWebRequest.Result.Success)
@@ -121,16 +123,22 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                _networkSystem.ReleaseSlot();
+                if (hasSlot)
+                {
+                    _networkSystem.ReleaseSlot();
+                }
+                _networkSystem.EndOperation();
             }
         }
 
         public async UniTask<HttpResponse<T>> UploadFile<T>(string url, byte[] fileData, string fileName, string fieldName = "file", Dictionary<string, string> headers = null, IProgress<float> progress = null, int timeout = 0)
         {
-            await _networkSystem.WaitForSlot();
-
+            _networkSystem.BeginOperation();
+            var hasSlot = false;
             try
             {
+                await _networkSystem.WaitForSlot();
+                hasSlot = true;
                 var form = new List<IMultipartFormSection>
                 {
                     new MultipartFormFileSection(fieldName, fileData, fileName, "application/octet-stream")
@@ -149,10 +157,16 @@ namespace LiteQuark.Runtime
 
                 var operation = request.SendWebRequest();
 
-                while (!operation.isDone)
+                while (!operation.isDone && !_networkSystem.IsClosing)
                 {
                     progress?.Report(operation.progress);
                     await UniTask.Yield();
+                }
+
+                if (_networkSystem.IsClosing)
+                {
+                    request.Abort();
+                    return CancelledResponse<T>();
                 }
 
                 progress?.Report(1.0f);
@@ -160,9 +174,17 @@ namespace LiteQuark.Runtime
                 var rawResponse = CreateResponseFromWebRequest(request);
                 return HttpResponse<T>.FromRawResponse(rawResponse);
             }
+            catch (OperationCanceledException) when (_networkSystem.IsClosing)
+            {
+                return CancelledResponse<T>();
+            }
             finally
             {
-                _networkSystem.ReleaseSlot();
+                if (hasSlot)
+                {
+                    _networkSystem.ReleaseSlot();
+                }
+                _networkSystem.EndOperation();
             }
         }
 
@@ -172,45 +194,60 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse<T>> SendWithRetry<T>(HttpRequest request, HttpRetryPolicy retryPolicy = null)
         {
-            if (retryPolicy == null)
+            _networkSystem.BeginOperation();
+            try
             {
-                if (_networkSystem.EnableAutoRetry)
+                if (retryPolicy == null)
                 {
-                    retryPolicy = new HttpRetryPolicy(_networkSystem.DefaultRetryCount);
+                    if (_networkSystem.EnableAutoRetry)
+                    {
+                        retryPolicy = new HttpRetryPolicy(_networkSystem.DefaultRetryCount);
+                    }
+                    else
+                    {
+                        return await Send<T>(request);
+                    }
                 }
-                else
-                {
-                    return await Send<T>(request);
-                }
-            }
 
-            var attempt = 0;
-            while (attempt <= retryPolicy.MaxRetries)
+                using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(request.CancellationToken, _networkSystem.ShutdownToken);
+                var attempt = 0;
+                while (attempt <= retryPolicy.MaxRetries)
+                {
+                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
+                    var response = await Send<T>(request);
+
+                    if (response.IsSuccess)
+                    {
+                        return response;
+                    }
+                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
+
+                    var rawResponse = new HttpResponse(response.IsSuccess, response.StatusCode, null, response.Error);
+                    if (!retryPolicy.ShouldRetry(rawResponse))
+                    {
+                        return response;
+                    }
+
+                    if (attempt < retryPolicy.MaxRetries)
+                    {
+                        var delay = retryPolicy.GetDelayForAttempt(attempt);
+                        LLog.Warning("Request failed, retrying in {0}s... (Attempt {1}/{2})", delay, attempt + 1, retryPolicy.MaxRetries);
+                        await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: cancellation.Token);
+                    }
+
+                    attempt++;
+                }
+
+                return new HttpResponse<T>(false, 0, default, null, $"Request failed after {retryPolicy.MaxRetries} retries");
+            }
+            catch (OperationCanceledException) when (_networkSystem.IsClosing || request.CancellationToken.IsCancellationRequested)
             {
-                var response = await Send<T>(request);
-
-                if (response.IsSuccess)
-                {
-                    return response;
-                }
-
-                var rawResponse = new HttpResponse(response.IsSuccess, response.StatusCode, null, response.Error);
-                if (!retryPolicy.ShouldRetry(rawResponse))
-                {
-                    return response;
-                }
-
-                if (attempt < retryPolicy.MaxRetries)
-                {
-                    var delay = retryPolicy.GetDelayForAttempt(attempt);
-                    LLog.Warning("Request failed, retrying in {0}s... (Attempt {1}/{2})", delay, attempt + 1, retryPolicy.MaxRetries);
-                    await UniTask.Delay(TimeSpan.FromSeconds(delay));
-                }
-
-                attempt++;
+                return CancelledResponse<T>();
             }
-
-            return new HttpResponse<T>(false, 0, default, null, $"Request failed after {retryPolicy.MaxRetries} retries");
+            finally
+            {
+                _networkSystem.EndOperation();
+            }
         }
 
         #endregion
@@ -219,6 +256,7 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse<T>[]> SendBatch<T>(HttpRequest[] requests, int maxConcurrent = 0)
         {
+            _networkSystem.ThrowIfClosing();
             if (requests == null || requests.Length == 0)
             {
                 return Array.Empty<HttpResponse<T>>();
@@ -231,7 +269,14 @@ namespace LiteQuark.Runtime
             for (var i = 0; i < requests.Length; i++)
             {
                 var index = i;
-                tasks.Add(SendAndAssign(requests[index], results, index));
+                if (_networkSystem.IsClosing)
+                {
+                    results[index] = CancelledResponse<T>();
+                }
+                else
+                {
+                    tasks.Add(SendAndAssign(requests[index], results, index));
+                }
 
                 if (tasks.Count >= concurrency)
                 {
@@ -265,31 +310,40 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse> SendRaw(HttpRequest request)
         {
-            await _networkSystem.WaitForSlot();
-
+            _networkSystem.BeginOperation();
+            var hasSlot = false;
             try
             {
+                await _networkSystem.WaitForSlot(request.CancellationToken);
+                hasSlot = true;
                 // Apply interceptors - OnRequest
                 foreach (var interceptor in _interceptors)
                 {
+                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                     request = await interceptor.OnRequest(request);
                 }
+                _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
 
                 HttpResponse response;
 
                 using (var webRequest = CreateUnityWebRequest(request))
                 {
+                    webRequest.timeout = request.Timeout;
+                    foreach (var header in request.Headers)
+                    {
+                        webRequest.SetRequestHeader(header.Key, header.Value);
+                    }
                     var operation = webRequest.SendWebRequest();
 
-                    while (!operation.isDone && !request.CancellationToken.IsCancellationRequested)
+                    while (!operation.isDone && !_networkSystem.IsClosing && !request.CancellationToken.IsCancellationRequested)
                     {
                         await UniTask.Yield();
                     }
 
-                    if (request.CancellationToken.IsCancellationRequested)
+                    if (_networkSystem.IsClosing || request.CancellationToken.IsCancellationRequested)
                     {
                         webRequest.Abort();
-                        return new HttpResponse(false, 0, null, "Request cancelled");
+                        return CancelledResponse();
                     }
 
                     response = CreateResponseFromWebRequest(webRequest);
@@ -298,10 +352,16 @@ namespace LiteQuark.Runtime
                 // Apply interceptors - OnResponse
                 foreach (var interceptor in _interceptors)
                 {
+                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                     response = await interceptor.OnResponse(response);
                 }
+                _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
 
                 return response;
+            }
+            catch (OperationCanceledException) when (_networkSystem.IsClosing || request.CancellationToken.IsCancellationRequested)
+            {
+                return CancelledResponse();
             }
             catch (Exception ex)
             {
@@ -310,13 +370,20 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                _networkSystem.ReleaseSlot();
+                if (hasSlot)
+                {
+                    _networkSystem.ReleaseSlot();
+                }
+                _networkSystem.EndOperation();
             }
         }
 
         #endregion
 
         #region Helper Methods
+
+        private static HttpResponse CancelledResponse() => new(false, 0, null, "Request cancelled");
+        private static HttpResponse<T> CancelledResponse<T>() => HttpResponse<T>.FromRawResponse(CancelledResponse());
 
         private UnityWebRequest CreateUnityWebRequest(HttpRequest request)
         {
@@ -343,13 +410,6 @@ namespace LiteQuark.Runtime
                     break;
                 default:
                     throw new NotSupportedException($"HTTP method {request.Method} is not supported");
-            }
-
-            webRequest.timeout = request.Timeout;
-
-            foreach (var header in request.Headers)
-            {
-                webRequest.SetRequestHeader(header.Key, header.Value);
             }
 
             return webRequest;

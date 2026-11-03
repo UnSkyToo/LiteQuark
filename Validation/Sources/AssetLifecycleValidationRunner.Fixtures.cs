@@ -19,6 +19,107 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        [Serializable] private sealed class NetworkPayload { public int Value; }
+        private static readonly byte[] NetworkBody = System.Text.Encoding.UTF8.GetBytes("{\"Value\":7}");
+
+        private static T NetworkProperty<T>(object value, string name) => (T)value.GetType().GetProperty(name).GetValue(value);
+        private static bool NetworkCancelled(object response) => !NetworkProperty<bool>(response, "IsSuccess") &&
+            NetworkProperty<long>(response, "StatusCode") == 0 && !string.IsNullOrEmpty(NetworkProperty<string>(response, "Error"));
+        private static async UniTask<object> AwaitNetworkResult<T>(object task) => await (UniTask<T>)task;
+        private static Func<T, UniTask<T>> NetworkInterceptorCallback<T>(Func<object, UniTask> callback) =>
+            async value => { await callback(value); return value; };
+
+        private sealed class NetworkHarness
+        {
+            internal readonly ISystem System = (ISystem)Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.NetworkSystem, LiteQuark.Runtime.Addons", true));
+            internal object Client;
+            internal int Active => NetworkProperty<int>(System, "ActiveRequests");
+
+            internal async UniTask Initialize(int concurrency = 1)
+            {
+                var property = System.GetType().GetProperty("Setting");
+                var setting = Activator.CreateInstance(property.PropertyType);
+                property.PropertyType.GetField("MaxConcurrentRequests").SetValue(setting, concurrency);
+                property.PropertyType.GetField("DefaultTimeout").SetValue(setting, 30);
+                property.SetValue(System, setting);
+                await System.Initialize();
+                Client = System.GetType().GetProperty("Http").GetValue(System);
+            }
+
+            internal object Request(string url, CancellationToken token = default)
+            {
+                var type = Type.GetType("LiteQuark.Runtime.HttpRequest, LiteQuark.Runtime.Addons", true);
+                var request = Activator.CreateInstance(type);
+                type.GetProperty("Url").SetValue(request, url);
+                type.GetProperty("CancellationToken").SetValue(request, token);
+                return request;
+            }
+
+            internal UniTask<object> Invoke(string name, params object[] arguments)
+            {
+                var method = Client.GetType().GetMethod(name);
+                if (method.IsGenericMethodDefinition) method = method.MakeGenericMethod(typeof(NetworkPayload));
+                var task = method.Invoke(Client, arguments);
+                return ((UniTask<object>)typeof(AssetLifecycleValidationRunner).GetMethod(nameof(AwaitNetworkResult), BindingFlags.Static | BindingFlags.NonPublic)
+                    .MakeGenericMethod(method.ReturnType.GetGenericArguments()[0]).Invoke(null, new[] { task })).Preserve();
+            }
+
+            internal UniTask<object> Send(string url, CancellationToken token = default) => Invoke("SendRaw", Request(url, token));
+            internal object BatchRequests(params string[] urls)
+            {
+                var requests = Array.CreateInstance(Request(urls[0]).GetType(), urls.Length);
+                for (var i = 0; i < urls.Length; i++) requests.SetValue(Request(urls[i]), i);
+                return requests;
+            }
+
+            internal void Intercept(Func<object, UniTask> onRequest = null, Func<object, UniTask> onResponse = null)
+            {
+                // Implement the actual Addons interface without adding a reference to the core Editor assembly.
+                var contract = Type.GetType("LiteQuark.Runtime.IHttpInterceptor, LiteQuark.Runtime.Addons", true);
+                var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("NetworkValidation"), AssemblyBuilderAccess.Run);
+                var type = assembly.DefineDynamicModule("NetworkValidation").DefineType("NetworkInterceptor", TypeAttributes.Public);
+                type.AddInterfaceImplementation(contract);
+                type.DefineDefaultConstructor(MethodAttributes.Public);
+                foreach (var member in contract.GetMethods())
+                {
+                    var input = member.GetParameters()[0].ParameterType;
+                    var callback = type.DefineField(member.Name + "Callback", typeof(Func<,>).MakeGenericType(input, member.ReturnType), FieldAttributes.Public);
+                    var method = type.DefineMethod(member.Name, MethodAttributes.Public | MethodAttributes.Virtual, member.ReturnType, new[] { input });
+                    var il = method.GetILGenerator();
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Ldfld, callback);
+                    il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Callvirt, callback.FieldType.GetMethod("Invoke"));
+                    il.Emit(OpCodes.Ret);
+                    type.DefineMethodOverride(method, member);
+                }
+                var interceptorType = type.CreateType();
+                var interceptor = Activator.CreateInstance(interceptorType);
+                foreach (var member in contract.GetMethods())
+                {
+                    var callback = (member.Name == "OnRequest" ? onRequest : onResponse) ?? (_ => UniTask.CompletedTask);
+                    var handler = typeof(AssetLifecycleValidationRunner).GetMethod(nameof(NetworkInterceptorCallback), BindingFlags.Static | BindingFlags.NonPublic)
+                        .MakeGenericMethod(member.GetParameters()[0].ParameterType).Invoke(null, new object[] { callback });
+                    interceptorType.GetField(member.Name + "Callback").SetValue(interceptor, handler);
+                }
+                Client.GetType().GetMethod("AddInterceptor").Invoke(Client, new[] { interceptor });
+            }
+        }
+
+        private sealed class NetworkProgress : IProgress<float>
+        {
+            internal int Reports;
+            internal bool Completed;
+            public void Report(float value) { Reports++; Completed |= value >= 1f; }
+        }
+
+        private static async UniTask StopNetworkServers(params BundleHttpServer[] servers)
+        {
+            foreach (var server in servers) server.Dispose();
+            await Wait(() => servers.All(server => server.Work.IsCompleted), "Network server teardown");
+            foreach (var server in servers) if (server.Work.IsFaulted) throw server.Work.Exception;
+        }
+
         private sealed class EffectProbePool : ActiveGameObjectPool
         {
             internal int Borrows;
@@ -695,12 +796,25 @@ namespace LiteQuark.Editor
         {
             private readonly TcpListener _listener;
             private readonly System.Threading.Tasks.TaskCompletionSource<bool> _bodyGate = new(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
-            private TcpClient _client;
+            private volatile TcpClient _client;
             private volatile bool _disposed;
+            internal volatile bool BodyStarted;
+            internal bool Accepted => _client != null;
+            internal bool ClientClosed
+            {
+                get
+                {
+                    var client = _client;
+                    if (client == null) return false;
+                    try { return client.Client == null || (client.Client.Poll(0, SelectMode.SelectRead) && client.Available == 0); }
+                    catch (ObjectDisposedException) { return true; }
+                    catch (SocketException) { return true; }
+                }
+            }
             internal readonly string Url;
             internal readonly System.Threading.Tasks.Task Work;
 
-            internal BundleHttpServer(byte[] body)
+            internal BundleHttpServer(byte[] body, int statusCode = 200)
             {
                 _listener = new TcpListener(IPAddress.Loopback, 0);
                 _listener.Start();
@@ -722,11 +836,22 @@ namespace LiteQuark.Editor
                             var n = header.Count;
                             if (n >= 4 && header[n - 4] == 13 && header[n - 3] == 10 && header[n - 2] == 13 && header[n - 1] == 10) break;
                         }
-                        var response = System.Text.Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
+                        var contentLength = System.Text.Encoding.ASCII.GetString(header.ToArray()).Split('\n')
+                            .FirstOrDefault(line => line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase));
+                        var remaining = contentLength == null ? 0 : int.Parse(contentLength.Substring(contentLength.IndexOf(':') + 1).Trim());
+                        var requestBody = new byte[4096];
+                        while (remaining > 0)
+                        {
+                            var read = await stream.ReadAsync(requestBody, 0, Math.Min(remaining, requestBody.Length)).ConfigureAwait(false);
+                            if (read == 0) throw new IOException("Incomplete HTTP request body.");
+                            remaining -= read;
+                        }
+                        var response = System.Text.Encoding.ASCII.GetBytes($"HTTP/1.1 {statusCode} Validation\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
                         await stream.WriteAsync(response, 0, response.Length).ConfigureAwait(false);
                         var split = Math.Max(1, body.Length / 2);
                         await stream.WriteAsync(body, 0, split).ConfigureAwait(false);
                         await stream.FlushAsync().ConfigureAwait(false);
+                        BodyStarted = true;
                         await _bodyGate.Task.ConfigureAwait(false);
                         if (_disposed) return;
                         await stream.WriteAsync(body, split, body.Length - split).ConfigureAwait(false);

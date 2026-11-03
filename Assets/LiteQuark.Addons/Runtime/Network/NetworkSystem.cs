@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
@@ -8,6 +9,9 @@ namespace LiteQuark.Runtime
         public NetworkSystemSetting Setting { get; set; }
 
         private int _activeRequests = 0;
+        // Includes slot waiters and retry delays.
+        private int _pendingOperations;
+        private readonly CancellationTokenSource _shutdownCts = new();
         private HttpClient _httpClient;
 
         public NetworkSystem()
@@ -20,15 +24,19 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public UniTask DisposeAsync()
+        public async UniTask DisposeAsync()
         {
-            _httpClient = null;
-            _activeRequests = 0;
+            _shutdownCts.Cancel();
+            while (_pendingOperations > 0)
+            {
+                await UniTask.Yield();
+            }
 
-            return UniTask.CompletedTask;
+            _httpClient?.ClearInterceptors();
+            _httpClient = null;
         }
 
-        public HttpClient Http => _httpClient;
+        public HttpClient Http => IsClosing ? throw new ObjectDisposedException(nameof(NetworkSystem)) : _httpClient;
 
         public int MaxConcurrentRequests => Setting.MaxConcurrentRequests;
         public int DefaultTimeout => Setting.DefaultTimeout;
@@ -36,13 +44,42 @@ namespace LiteQuark.Runtime
         public int DefaultRetryCount => Setting.DefaultRetryCount;
 
         public int ActiveRequests => _activeRequests;
+        internal bool IsClosing => _shutdownCts.IsCancellationRequested;
+        internal CancellationToken ShutdownToken => _shutdownCts.Token;
 
-        internal async UniTask WaitForSlot()
+        internal void ThrowIfClosing()
+        {
+            if (IsClosing)
+            {
+                throw new ObjectDisposedException(nameof(NetworkSystem));
+            }
+        }
+
+        internal void BeginOperation()
+        {
+            ThrowIfClosing();
+            _pendingOperations++;
+        }
+
+        internal void EndOperation()
+        {
+            _pendingOperations--;
+        }
+
+        internal void ThrowIfCancellationRequested(CancellationToken cancellationToken = default)
+        {
+            ShutdownToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        internal async UniTask WaitForSlot(CancellationToken cancellationToken = default)
         {
             while (_activeRequests >= MaxConcurrentRequests)
             {
+                ThrowIfCancellationRequested(cancellationToken);
                 await UniTask.Yield();
             }
+            ThrowIfCancellationRequested(cancellationToken);
             Interlocked.Increment(ref _activeRequests);
         }
 

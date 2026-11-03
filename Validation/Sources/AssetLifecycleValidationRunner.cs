@@ -257,6 +257,12 @@ namespace LiteQuark.Editor
                 await Run("137 Disposed Effect cannot control a reused instance", "real particle prefab, terminal Stop and external Dispose retirement", EffectTerminalReuse);
                 await Run("138 Effect completion, failure and pool cancellation", "normal retention timing, real missing prefab and cancelled template", EffectCompletionAndFailure,
                     "Load asset failed", "Load pool template failed");
+                await Run("139 Network shutdown drains active and queued requests", "real held HTTP body, closed entry and native connection teardown", NetworkShutdownQueuedRequests);
+                await Run("140 Network cancellation stops retry delay", "real 503, caller/system cancellation and timeScale zero", NetworkRetryCancellation);
+                await Run("141 Network shutdown stops unsent batch groups", "real ordered responses, active cancellation and unstarted native requests", NetworkBatchShutdown);
+                await Run("142 Network shutdown waits for async interceptors", "OnRequest/OnResponse gates and post-await send/callback guards", NetworkInterceptorShutdown);
+                await Run("143 Network shutdown cancels upload and download", "real multipart and held responses, queued file operations and progress retirement", NetworkFileShutdown);
+                await Run("144 Network normal results and replacement system", "HTTP/JSON/files, caller queue cancellation, closed facade and new client", NetworkNormalAndRestart);
             }
             catch (Exception ex)
             {

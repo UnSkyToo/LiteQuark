@@ -14,6 +14,295 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask NetworkShutdownQueuedRequests()
+        {
+            var h = new NetworkHarness();
+            var activeServer = new BundleHttpServer(NetworkBody);
+            var queuedServer = new BundleHttpServer(NetworkBody);
+            try
+            {
+                await h.Initialize();
+                var active = h.Send(activeServer.Url);
+                await Wait(() => activeServer.BodyStarted, "Active HTTP response body");
+                var queued = h.Send(queuedServer.Url);
+                Check(h.Active == 1 && queued.Status == UniTaskStatus.Pending && !queuedServer.Accepted,
+                    "A real HTTP transfer holds the only slot while another accepted request waits without sending.");
+                var shutdown = h.System.DisposeAsync().Preserve();
+                Check(shutdown.Status == UniTaskStatus.Pending && h.Active == 1,
+                    "Shutdown does not zero occupied slots or return before accepted operations exit.");
+                var rejected = false;
+                try { await h.Send(queuedServer.Url); }
+                catch (ObjectDisposedException) { rejected = true; }
+                Check(rejected, "A cached HttpClient rejects new requests during shutdown with ObjectDisposedException.");
+                await Wait(() => shutdown.Status.IsCompleted(), "Network shutdown with occupied and queued slots");
+                await shutdown;
+                Check(NetworkCancelled(await active) && NetworkCancelled(await queued) && h.Active == 0 && !queuedServer.Accepted,
+                    "Both accepted calls finish cancelled, no queued request sends, and the slot count returns to zero without becoming negative.");
+                await Wait(() => activeServer.ClientClosed, "Aborted HTTP connection closes");
+                await h.System.DisposeAsync();
+                Check(h.Active == 0, "The native connection is closed before teardown and repeated disposal does not change accounting.");
+            }
+            finally
+            {
+                await h.System.DisposeAsync();
+                await StopNetworkServers(activeServer, queuedServer);
+            }
+        }
+
+        private static async UniTask NetworkRetryCancellation()
+        {
+            foreach (var closeSystem in new[] { false, true })
+            {
+                var h = new NetworkHarness();
+                var server = new BundleHttpServer(NetworkBody, 503);
+                using var cancellation = new CancellationTokenSource();
+                var originalScale = Time.timeScale;
+                try
+                {
+                    await h.Initialize();
+                    server.ReleaseBody();
+                    var policy = Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.HttpRetryPolicy, LiteQuark.Runtime.Addons", true), 3, 60f, false);
+                    var retry = h.Invoke("SendWithRetry", h.Request(server.Url, cancellation.Token), policy);
+                    await Wait(() => server.Work.IsCompleted && h.Active == 0 && retry.Status == UniTaskStatus.Pending, "HTTP retry enters delay without a sending slot");
+                    Check(!server.Work.IsFaulted && retry.Status == UniTaskStatus.Pending, "A real 503 response enters retry delay after releasing its native request and slot.");
+                    Time.timeScale = 0f;
+                    if (closeSystem)
+                    {
+                        var shutdown = h.System.DisposeAsync().Preserve();
+                        Check(shutdown.Status == UniTaskStatus.Pending && retry.Status == UniTaskStatus.Pending,
+                            "With no sending slot occupied, shutdown still waits for the accepted retry delay to observe cancellation on the main thread.");
+                        await Wait(() => shutdown.Status.IsCompleted(), "Shutdown drains cancelled retry delay");
+                        await shutdown;
+                    }
+                    else
+                    {
+                        var mainThread = Thread.CurrentThread.ManagedThreadId;
+                        var cancelThread = 0;
+                        var resumedThread = 0;
+                        async UniTask ObserveRetry() { await retry; resumedThread = Thread.CurrentThread.ManagedThreadId; }
+                        var observer = ObserveRetry().Preserve();
+                        using var registration = cancellation.Token.Register(() => cancelThread = Thread.CurrentThread.ManagedThreadId);
+                        cancellation.CancelAfter(1);
+                        await Wait(() => observer.Status.IsCompleted() && Volatile.Read(ref cancelThread) != 0, "Timer-driven retry cancellation");
+                        Check(observer.Status == UniTaskStatus.Succeeded && resumedThread == mainThread && cancelThread != 0 && cancelThread != mainThread,
+                            "CancelAfter fires on a worker thread, but the retry consumer resumes on the Unity main thread without another native send.");
+                        await observer;
+                    }
+                    Check(retry.Status == UniTaskStatus.Succeeded && NetworkCancelled(await retry) && h.Active == 0,
+                        "Shutdown and caller cancellation both stop retry delay while timeScale is zero and return a cancelled response instead of another attempt.");
+                }
+                finally
+                {
+                    Time.timeScale = originalScale;
+                    await h.System.DisposeAsync();
+                    await StopNetworkServers(server);
+                }
+            }
+        }
+
+        private static async UniTask NetworkBatchShutdown()
+        {
+            var h = new NetworkHarness();
+            var servers = Enumerable.Range(0, 4).Select(_ => new BundleHttpServer(NetworkBody)).ToArray();
+            try
+            {
+                await h.Initialize();
+                servers[0].ReleaseBody();
+                var batch = h.Invoke("SendBatch", h.BatchRequests(servers.Select(server => server.Url).ToArray()), 1);
+                await Wait(() => servers[1].BodyStarted, "Batch enters its second group");
+                Check(batch.Status == UniTaskStatus.Pending && !servers[2].Accepted && !servers[3].Accepted,
+                    "The first batch item completes while a second real request holds later groups back.");
+                var shutdown = h.System.DisposeAsync().Preserve();
+                await Wait(() => shutdown.Status.IsCompleted(), "Batch shutdown");
+                await shutdown;
+                Check(batch.Status == UniTaskStatus.Succeeded, "The batch has already completed when shutdown returns, without separate batch ownership accounting.");
+                var results = (Array)await batch;
+                Check(results.Length == 4 && NetworkProperty<bool>(results.GetValue(0), "IsSuccess") &&
+                    NetworkProperty<NetworkPayload>(results.GetValue(0), "Data").Value == 7,
+                    "The batch retains its completed first response and preserves input order and length.");
+                Check(Enumerable.Range(1, 3).All(index => NetworkCancelled(results.GetValue(index))) &&
+                    !servers[2].Accepted && !servers[3].Accepted && h.Active == 0,
+                    "The active item and all unsent batch items finish cancelled without admitting another group.");
+                await Wait(() => servers[1].ClientClosed, "Batch transfer abort closes connection");
+            }
+            finally
+            {
+                await h.System.DisposeAsync();
+                await StopNetworkServers(servers);
+            }
+        }
+
+        private static async UniTask NetworkInterceptorShutdown()
+        {
+            foreach (var responseStage in new[] { false, true })
+            {
+                var h = new NetworkHarness();
+                var server = new BundleHttpServer(NetworkBody);
+                var gate = new UniTaskCompletionSource();
+                var entered = false;
+                var laterCallbacks = 0;
+                UniTask Hold(object _) { entered = true; return gate.Task; }
+                UniTask Later(object _) { laterCallbacks++; return UniTask.CompletedTask; }
+                try
+                {
+                    await h.Initialize();
+                    if (responseStage) server.ReleaseBody();
+                    h.Intercept(onRequest: responseStage ? null : Hold, onResponse: responseStage ? Hold : null);
+                    h.Intercept(onRequest: responseStage ? null : Later, onResponse: responseStage ? Later : null);
+                    var send = h.Send(server.Url);
+                    await Wait(() => entered, "Async HTTP interceptor entry");
+                    var shutdown = h.System.DisposeAsync().Preserve();
+                    await UniTask.NextFrame();
+                    await UniTask.NextFrame();
+                    Check(shutdown.Status == UniTaskStatus.Pending && send.Status == UniTaskStatus.Pending,
+                        "Shutdown waits for an already-entered asynchronous interceptor instead of claiming it was forcibly terminated.");
+                    gate.TrySetResult();
+                    await Wait(() => shutdown.Status.IsCompleted(), "Interceptor exits during shutdown");
+                    await shutdown;
+                    Check(NetworkCancelled(await send) && laterCallbacks == 0 && h.Active == 0 && server.Accepted == responseStage,
+                        "After the interceptor exits, cancellation prevents remaining callbacks and, in OnRequest, prevents the first native send.");
+                    Check(Get<System.Collections.ICollection>(h.Client, "_interceptors").Count == 0,
+                        "The closed client clears interceptor references only after accepted pipelines have drained.");
+                }
+                finally
+                {
+                    gate.TrySetResult();
+                    await h.System.DisposeAsync();
+                    await StopNetworkServers(server);
+                }
+            }
+        }
+
+        private static async UniTask NetworkFileShutdown()
+        {
+            foreach (var download in new[] { true, false })
+            {
+                var h = new NetworkHarness();
+                var activeServer = new BundleHttpServer(NetworkBody);
+                var queuedServer = new BundleHttpServer(NetworkBody);
+                var progress = new NetworkProgress();
+                try
+                {
+                    await h.Initialize();
+                    UniTask<object> Start(string url) => download
+                        ? h.Invoke("DownloadFile", url, progress, CancellationToken.None)
+                        : h.Invoke("UploadFile", url, new byte[] { 1, 2, 3 }, "probe.bin", "file", null, progress, 0);
+                    var active = Start(activeServer.Url);
+                    await Wait(() => activeServer.BodyStarted, "File transfer response held mid-body");
+                    var queued = Start(queuedServer.Url);
+                    var shutdown = h.System.DisposeAsync().Preserve();
+                    await Wait(() => shutdown.Status.IsCompleted(), "File transfer shutdown");
+                    await shutdown;
+                    foreach (var request in new[] { active, queued })
+                    {
+                        if (download)
+                        {
+                            var cancelled = false;
+                            try { await request; }
+                            catch (OperationCanceledException) { cancelled = true; }
+                            Check(cancelled, "Accepted active and queued downloads retain the cancellation-exception contract.");
+                        }
+                        else
+                        {
+                            Check(NetworkCancelled(await request), "Accepted active and queued uploads return cancellation responses.");
+                        }
+                    }
+                    await Wait(() => activeServer.ClientClosed, "File transfer abort closes connection");
+                    var reports = progress.Reports;
+                    await UniTask.NextFrame();
+                    Check(reports > 0 && progress.Reports == reports && !queuedServer.Accepted && h.Active == 0,
+                        "Native file transfers stop, queued transfers never send, and no further progress Report calls occur after shutdown.");
+                }
+                finally
+                {
+                    await h.System.DisposeAsync();
+                    await StopNetworkServers(activeServer, queuedServer);
+                }
+            }
+        }
+
+        private static async UniTask NetworkNormalAndRestart()
+        {
+            var h = new NetworkHarness();
+            var servers = Enumerable.Range(0, 9).Select(index => new BundleHttpServer(NetworkBody, index == 1 || index == 7 ? 503 : 200)).ToArray();
+            try
+            {
+                await h.Initialize();
+                for (var i = 0; i < 4; i++) servers[i].ReleaseBody();
+                var response = await h.Invoke("Get", servers[0].Url, null, 0);
+                Check(NetworkProperty<bool>(response, "IsSuccess") && NetworkProperty<NetworkPayload>(response, "Data").Value == 7,
+                    "Normal HTTP JSON success and parsing are unchanged.");
+                var failure = await h.Send(servers[1].Url);
+                Check(!NetworkProperty<bool>(failure, "IsSuccess") && NetworkProperty<long>(failure, "StatusCode") == 503,
+                    "An ordinary HTTP failure keeps its actual status instead of being converted to cancellation.");
+                var progress = new NetworkProgress();
+                var upload = await h.Invoke("UploadFile", servers[2].Url, new byte[] { 1 }, "normal.bin", "file", null, progress, 0);
+                var download = (byte[])await h.Invoke("DownloadFile", servers[3].Url, progress, CancellationToken.None);
+                Check(NetworkProperty<bool>(upload, "IsSuccess") && download.SequenceEqual(NetworkBody) && progress.Completed,
+                    "Normal multipart upload, in-memory download and completion progress remain successful.");
+                servers[7].ReleaseBody();
+                servers[8].ReleaseBody();
+                var attempts = 0;
+                h.Intercept(onRequest: request =>
+                {
+                    if (NetworkProperty<string>(request, "Url") == servers[7].Url && ++attempts == 2)
+                        request.GetType().GetProperty("Url").SetValue(request, servers[8].Url);
+                    return UniTask.CompletedTask;
+                });
+                var policy = Activator.CreateInstance(Type.GetType("LiteQuark.Runtime.HttpRetryPolicy, LiteQuark.Runtime.Addons", true), 1, 0.01f, false);
+                var retried = await h.Invoke("SendWithRetry", h.Request(servers[7].Url), policy);
+                Check(NetworkProperty<bool>(retried, "IsSuccess") && attempts == 2 && h.Active == 0,
+                    "A live retry operation still advances from a real 503 to a successful second attempt through the interceptor chain.");
+                h.Client.GetType().GetMethod("ClearInterceptors").Invoke(h.Client, null);
+                var active = h.Send(servers[4].Url);
+                await Wait(() => servers[4].BodyStarted, "Caller cancellation queue setup");
+                using var cancellation = new CancellationTokenSource();
+                var queued = h.Send(servers[5].Url, cancellation.Token);
+                cancellation.Cancel();
+                await Wait(() => queued.Status.IsCompleted(), "Caller cancellation while waiting for a slot");
+                Check(NetworkCancelled(await queued) && h.Active == 1 && !servers[5].Accepted,
+                    "Caller cancellation exits a slot waiter without decrementing the unrelated active request's slot.");
+                servers[4].ReleaseBody();
+                await Wait(() => active.Status.IsCompleted(), "Unrelated active request completes");
+                Check(NetworkProperty<bool>(await active, "IsSuccess") && h.Active == 0, "The other request remains successful after queued cancellation.");
+                await h.System.DisposeAsync();
+                Check(NetworkProperty<bool>(response, "IsSuccess"), "Closing does not rewrite a response already delivered to its caller.");
+                foreach (var call in new[]
+                {
+                    h.Send(servers[5].Url),
+                    h.Invoke("Get", servers[5].Url, null, 0),
+                    h.Invoke("SendWithRetry", h.Request(servers[5].Url), null),
+                    h.Invoke("SendBatch", null, 0),
+                    h.Invoke("DownloadFile", servers[5].Url, null, CancellationToken.None),
+                    h.Invoke("UploadFile", servers[5].Url, new byte[] { 1 }, "late.bin", "file", null, null, 0)
+                })
+                {
+                    var rejected = false;
+                    try { await call; }
+                    catch (ObjectDisposedException) { rejected = true; }
+                    Check(rejected, "Every cached-client entry rejects a new operation after shutdown, including empty batches.");
+                }
+                var getterRejected = false;
+                try { h.System.GetType().GetProperty("Http").GetValue(h.System); }
+                catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException) { getterRejected = true; }
+                Check(getterRejected && !servers[5].Accepted, "The closed system's Http getter also rejects access without admitting native work.");
+                var replacement = new NetworkHarness();
+                try
+                {
+                    await replacement.Initialize();
+                    servers[6].ReleaseBody();
+                    Check(NetworkProperty<bool>(await replacement.Send(servers[6].Url), "IsSuccess") && replacement.Active == 0,
+                        "A replacement NetworkSystem sends successfully after the previous system has fully drained.");
+                }
+                finally { await replacement.System.DisposeAsync(); }
+            }
+            finally
+            {
+                await h.System.DisposeAsync();
+                await StopNetworkServers(servers);
+            }
+        }
+
         private static async UniTask EffectShutdownPendingLoads()
         {
             var h = new EffectHarness();
