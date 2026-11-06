@@ -891,6 +891,12 @@ namespace LiteQuark.Editor
             }
             Directory.CreateDirectory("Assets/StandaloneAssets/_session_validation");
             File.WriteAllText(EditorTextPath, "Editor Asset Lease validation");
+            foreach (var name in new[] { "Low", "Normal", "High" })
+            {
+                var folder = "Assets/StandaloneAssets/_session_validation/Simulate/" + name;
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(folder + "/Value.txt", name);
+            }
             AssetDatabase.Refresh();
             var shader = Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
             if (shader == null) throw new Exception("No fixture shader available.");

@@ -422,7 +422,12 @@ namespace LiteQuark.Editor
                 catch (InvalidOperationException ex) when (ex.Message.Contains("发现循环依赖")) { rejected = true; }
                 Check(rejected, "Retry also validates and rejects the cycle.");
             }
-            finally { settingField.SetValue(null, previous); }
+            finally
+            {
+                settingField.SetValue(null, previous);
+                AssetDatabase.DeleteAsset(folder);
+            }
+            Check(!AssetDatabase.IsValidFolder(folder), "The intentional cycle fixture is removed before other suites collect the project.");
         }
     }
 }

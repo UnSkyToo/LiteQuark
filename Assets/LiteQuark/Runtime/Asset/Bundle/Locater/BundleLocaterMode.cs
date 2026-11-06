@@ -4,5 +4,6 @@ namespace LiteQuark.Runtime
     {
         BuiltIn,
         Remote,
+        Simulate,
     }
 }

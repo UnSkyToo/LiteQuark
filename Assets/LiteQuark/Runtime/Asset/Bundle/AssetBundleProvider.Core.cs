@@ -227,6 +227,12 @@ namespace LiteQuark.Runtime
                     {
                         DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
                     };
+                case BundleLocaterMode.Simulate:
+#if UNITY_EDITOR
+                    return new BundleSimulateLocater();
+#else
+                    throw new NotSupportedException("Bundle Simulate mode is only available in the Unity Editor");
+#endif
                 default:
                     throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
             }

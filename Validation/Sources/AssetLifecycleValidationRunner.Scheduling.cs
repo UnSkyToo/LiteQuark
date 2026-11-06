@@ -13,6 +13,165 @@ namespace LiteQuark.Editor
 {
     internal static partial class AssetLifecycleValidationRunner
     {
+        private static async UniTask SimulateMode()
+        {
+            New();
+            var setting = LiteRuntime.Setting.Asset;
+            var oldMode = setting.AssetMode;
+            var oldLocater = setting.BundleLocater;
+            var oldLimit = setting.ConcurrencyLimit;
+            var oldRetain = setting.BundleRetainTime;
+            var handles = new List<IDisposable>();
+            var gates = new List<GateTask>();
+            AssetSystem assets = null;
+            T Keep<T>(T handle) where T : IDisposable { handles.Add(handle); return handle; }
+            try
+            {
+                setting.AssetMode = AssetProviderMode.Bundle;
+                setting.BundleLocater = BundleLocaterMode.Simulate;
+                setting.ConcurrencyLimit = 1;
+                assets = new AssetSystem();
+                var provider = Get<IAssetProvider>(assets, "_provider") as AssetBundleProvider;
+                Check(provider != null, "Simulate selects the existing Bundle Provider through normal AssetSystem construction.");
+                UniTask Pump(Func<bool> done, string label) => Wait(() => { provider.Tick(0); return done(); }, label);
+
+                var group = RuntimeGroup(LiteConst.TaskGroupId.Asset);
+                gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
+                await Wait(() => gates.All(task => task.IsExecuted), "Simulate version admission gate");
+                // The running fixture Runtime already owns the Asset group; initialize the selected Provider directly.
+                var initialization = provider.Initialize();
+                var versionTask = TaskSnapshot().OfType<LoadSimulateVersionPackTask>().Single();
+                Check(versionTask.State == TaskState.Pending && !initialization.Status.IsCompleted(),
+                    "Manifest collection is submitted to the Asset group and waits for admission.");
+                await ReleaseGates(gates); gates.Clear();
+                Check(await initialization, "Simulate initializes from project collection without a built version file.");
+                var pack = Get<VersionPackInfo>(provider, "_packInfo");
+                Check(!pack.HashMode && !pack.FlatMode && assets.GetVersion() == AppUtils.GetVersion() && assets.HasAsset(EditorTextPath) &&
+                    !assets.HasAsset("Assets/LiteQuark/Runtime/Asset/AssetSystem.cs"),
+                    "Simulate uses initialized logical manifest keys and rejects existing project files outside collection.");
+
+                var first = Keep(assets.LoadAssetHandle<TextAsset>(EditorTextPath));
+                var second = Keep(assets.LoadAssetHandle<TextAsset>(EditorTextPath.ToUpperInvariant()));
+                provider.Tick(0);
+                var bundleTask = TaskSnapshot().OfType<LoadSimulateBundleTask>().Single();
+                await Wait(() => bundleTask.State == TaskState.Running, "Simulate Bundle execution");
+                Check(!bundleTask.IsDone && !first.IsDone, "Simulate Bundle execution spans a Task tick before result delivery.");
+                await Pump(() => first.IsDone && second.IsDone, "Shared simulated assets");
+                var mainInfo = pack.GetBundleInfoFromAssetPath(EditorTextPath);
+                var cache = provider.GetOrCreateBundleCache(mainInfo.BundlePath);
+                Check(first.Result != null && ReferenceEquals(first.Result, second.Result) && cache.Bundle is SimulateBundleResource &&
+                    Get<int>(cache, "_refCount") == 1 && cache.Bundle.GetRuntimeMemorySize() == 0,
+                    "Aliases share the existing typed asset cache and one Bundle lease; simulated memory statistics are not native measurements.");
+
+                const string prefix = "Assets/StandaloneAssets/_session_validation/Simulate/";
+                gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
+                await Wait(() => gates.All(task => task.IsExecuted), "Simulate Bundle admission gate");
+                var low = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "Low/Value.txt", AssetLoadPriority.Low));
+                var normal = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "Normal/Value.txt"));
+                var high = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "High/Value.txt", AssetLoadPriority.High));
+                provider.Tick(0);
+                bundleTask = TaskSnapshot().OfType<LoadSimulateBundleTask>().Single();
+                Check(bundleTask.DebugName.Contains(pack.GetBundleInfoFromAssetPath(prefix + "High/Value.txt").BundlePath) && !bundleTask.IsExecuted &&
+                    Get<System.Collections.IList>(Get<AssetBundleLoader>(provider, "_bundleLoader"), "_runningTasks").Count == 1,
+                    "Loader submits High first, respects its one-slot limit and still waits for Asset-group admission.");
+                await ReleaseGates(gates); gates.Clear();
+                await Pump(() => low.IsDone && normal.IsDone && high.IsDone, "Simulated priority loads");
+                Check(low.Result.text == "Low" && normal.Result.text == "Normal" && high.Result.text == "High",
+                    "Simulated resources resolve normalized keys back to mixed-case source paths.");
+                var lowInfo = pack.GetBundleInfoFromAssetPath(prefix + "Low/Value.txt");
+                var lowResource = provider.GetOrCreateBundleCache(lowInfo.BundlePath).Bundle;
+                var projectAsset = low.Result;
+                setting.BundleRetainTime = 2;
+                low.Dispose(); normal.Dispose(); high.Dispose();
+                provider.Tick(1);
+                Check(provider.TryGetBundleCache(lowInfo.BundlePath, out var retained) && retained.IsRetained,
+                    "Simulated zero-reference Bundles enter the existing retention period.");
+                provider.Tick(2);
+                var disposed = false;
+                try { lowResource.GetAllScenePaths(); } catch (ObjectDisposedException) { disposed = true; }
+                Check(!provider.TryGetBundleCache(lowInfo.BundlePath, out _) && disposed && projectAsset != null,
+                    "Retention disposes the simulated container without destroying the shared AssetDatabase object.");
+
+                var missing = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "Missing.txt"));
+                var wrongType = Keep(assets.LoadAssetHandle<Texture2D>(EditorTextPath));
+                await Pump(() => wrongType.IsDone, "Simulate type failure");
+                Check(missing.State == AssetHandleState.Failed && wrongType.State == AssetHandleState.Failed && wrongType.Error != null,
+                    "Uncollected resources and incompatible requested types fail through existing Handle semantics.");
+                var cancelled = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "High/Value.txt"));
+                var surviving = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "High/Value.txt"));
+                cancelled.Dispose();
+                await Pump(() => surviving.IsDone, "Simulate shared cancellation");
+                Check(cancelled.State == AssetHandleState.Cancelled && cancelled.Result == null && surviving.Result != null,
+                    "Canceling one Handle does not cancel shared simulated loading or deliver a late result to it.");
+
+                var scene = Keep(assets.LoadSceneHandle(EditorScenePath, new LoadSceneParameters(LoadSceneMode.Additive)));
+                var duplicate = Keep(assets.LoadSceneHandle(EditorScenePath, new LoadSceneParameters(LoadSceneMode.Additive)));
+                var sceneInfo = pack.GetBundleInfoFromAssetPath(EditorScenePath);
+                var sceneCache = provider.GetOrCreateBundleCache(sceneInfo.BundlePath);
+                var entries = Get<List<SceneInfoCache>>(sceneCache, "_sceneCacheMap");
+                Check(duplicate.State == AssetHandleState.Failed && Get<BaseTask>(entries.Last(), "_loadSceneTask") is LoadEditorSceneTask,
+                    "Simulate uses the shared scene cache and Editor scene task, including same-path concurrent rejection.");
+                await Pump(() => scene.IsDone, "Simulate scene");
+                var actualScene = scene.Result.Value;
+                Check(actualScene.path == EditorScenePath && sceneInfo.DependencyList.Length > 0 &&
+                    sceneInfo.DependencyList.All(path => provider.TryGetBundleCache(path, out var dependency) && Get<int>(dependency, "_refCount") > 0),
+                    "Collected scene dependencies are held by the existing Bundle leases.");
+                var anotherScene = Keep(assets.LoadSceneHandle(EditorScenePath, new LoadSceneParameters(LoadSceneMode.Additive)));
+                await Pump(() => anotherScene.IsDone, "Second simulated scene instance");
+                var otherActualScene = anotherScene.Result.Value;
+                scene.Dispose();
+                await Pump(() => !actualScene.IsValid() || !actualScene.isLoaded, "First simulated scene unload");
+                Check(otherActualScene.isLoaded && otherActualScene.handle != actualScene.handle,
+                    "Additive simulated scenes retain separate instance ownership.");
+
+                var cancelledScene = Keep(assets.LoadSceneHandle(EditorSecondScenePath, new LoadSceneParameters(LoadSceneMode.Additive)));
+                cancelledScene.Dispose();
+                await Pump(() => Get<HashSet<string>>(provider, "_loadingSceneSet").Count == 0 &&
+                    !Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).Any(value => value.path == EditorSecondScenePath),
+                    "Cancelled simulated scene cleanup");
+                Check(cancelledScene.State == AssetHandleState.Cancelled && cancelledScene.Result == null,
+                    "A cancelled scene Handle does not retain its late Editor scene.");
+
+                var pending = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "Low/Value.txt"));
+                provider.Tick(0);
+                bundleTask = TaskSnapshot().OfType<LoadSimulateBundleTask>().Single();
+                await Wait(() => bundleTask.State == TaskState.Running, "Simulate shutdown during Bundle work");
+                var pendingResource = Get<IBundleResource>(bundleTask, "_resource");
+                await assets.DisposeAsync();
+                disposed = false;
+                try { pendingResource.GetAllScenePaths(); } catch (ObjectDisposedException) { disposed = true; }
+                Check(disposed && bundleTask.State == TaskState.Cancelled && (await bundleTask.Task) == null &&
+                    ((IResourceTaskCleanup)bundleTask).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded && pending.IsDone && pending.Result == null &&
+                    (!otherActualScene.IsValid() || !otherActualScene.isLoaded) && projectAsset != null,
+                    "Closing cancels managed Bundle work, ends pending Handles and unloads actual scenes without destroying project assets.");
+                Check(assets.LoadAssetHandle<TextAsset>(EditorTextPath).State == AssetHandleState.Failed,
+                    "A closed simulated AssetSystem rejects new requests.");
+
+                assets = new AssetSystem();
+                provider = (AssetBundleProvider)Get<IAssetProvider>(assets, "_provider");
+                Check(await provider.Initialize() && !ReferenceEquals(pack, Get<VersionPackInfo>(provider, "_packInfo")),
+                    "A new Simulate Provider collects a separate manifest session.");
+                await assets.DisposeAsync();
+                setting.AssetMode = AssetProviderMode.Editor;
+                assets = new AssetSystem();
+                Check(Get<IAssetProvider>(assets, "_provider") is AssetEditorProvider,
+                    "The original Editor direct-read mode remains a separate selectable Provider.");
+            }
+            finally
+            {
+                foreach (var gate in gates) gate.Cancel();
+                foreach (var handle in handles) handle.Dispose();
+                try { if (assets != null) await assets.DisposeAsync(); }
+                finally
+                {
+                    setting.AssetMode = oldMode;
+                    setting.BundleLocater = oldLocater;
+                    setting.ConcurrencyLimit = oldLimit;
+                    setting.BundleRetainTime = oldRetain;
+                }
+            }
+        }
+
         private static async UniTask RuntimeRestartPendingUI()
         {
             var runtime = LiteRuntime.Instance;

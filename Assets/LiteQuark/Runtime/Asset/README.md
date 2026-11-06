@@ -130,13 +130,19 @@ ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作�
 | 配置 | 含义 |
 | --- | --- |
 | `AssetMode` | Editor 直接访问项目资源；Bundle 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
-| `BundleLocater` | BuiltIn 使用本地文件；Remote 使用远端资源包 |
+| `BundleLocater` | BuiltIn 使用本地文件；Remote 使用远端资源包；Simulate 在编辑器中使用项目资源验证 Bundle 管理流程 |
 | `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 0.4）；传未编码路径名称，已有查询和 fragment 保留，勿配置框架保留参数 t |
 | `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |
 | `EnableRetain` / `BundleRetainTime` | Bundle 零引用保留缓存开关／时间，默认 true／300 秒 |
 
 BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
+
+编辑器中选择 `AssetMode = Bundle`、`BundleLocater = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
+
+Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载；不使用 Editor 直读模式的随机延迟设置。`AssetMode = Editor` 仍是独立的快速直读模式。
+
+模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 只支持编辑器，Player 中选择该值会报错。
 
 发布前通过 `Lite > Builder` 生成资源包和版本文件，随包资源放入对应 StreamingAssets。版本文件失败或 Bundle 依赖环会使系统初始化失败。URI 能正确组成不代表所有 Player 平台的读取链都经过验证。
 

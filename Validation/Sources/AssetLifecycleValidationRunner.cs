@@ -273,6 +273,8 @@ namespace LiteQuark.Editor
                 await Run("152 Config normal loading and failure semantics", "auto-load order, typed queries, retained tables and Handle release", ConfigNormalLoadingAndFailures,
                     "ConfigSystem: error loading", "ConfigSystem: failed to load asset", "Load asset failed");
                 await Run("153 Runtime Restart replaces a pending UI generation", "business Logic.Tick, real Bundle extraction, ordered disposal and a new working UI", RuntimeRestartPendingUI);
+                await Run("155 Simulate shares Bundle scheduling and ownership", "collected manifest, real project assets/scenes and shared management", SimulateMode,
+                    "Load asset failed", "Scene is already loading");
                 // Intentionally terminal: no further Runtime-dependent case may follow this controlled ShutdownFailed scenario.
                 await Run("154 Restart fixture preserves failures through cleanup", "body failure, real ShutdownFailed, gate release and no retry or forced baseline", RuntimeRestartFailureCleanup,
                     "Injected restart fixture shutdown Dispose failure");
