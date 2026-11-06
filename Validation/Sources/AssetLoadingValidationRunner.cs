@@ -180,9 +180,9 @@ namespace LiteQuark.Editor
             typeof(ResCollectInfoStep).GetMethod("CollectAssetBundleBuilds", Private)
                 .Invoke(new ResCollectInfoStep(), new object[] { packageBuilder, packagePack });
             if (!packageBundles.Any(b => b.AssetList.Contains(ProjectPath(PackagesTextPath).ToLowerInvariant())) ||
-                !packageCollector.Builds.SelectMany(b => b.assetNames).Contains(ProjectPath(PackagesTextPath)))
+                !packageBuilder.Builds.SelectMany(b => b.assetNames).Contains(ProjectPath(PackagesTextPath)))
                 throw new Exception("Unexpected packages collection or source mapping.");
-            builds = builds.Concat(packageCollector.Builds).ToArray();
+            builds = builds.Concat(packageBuilder.Builds).ToArray();
             var buildOptions = new ResBuildConfig().Options;
             var manifest = BuildPipeline.BuildAssetBundles(Bundles, builds, buildOptions, ValidationEnvironment.BundleTarget);
             if (manifest == null) throw new Exception("Fixture Bundle build failed.");

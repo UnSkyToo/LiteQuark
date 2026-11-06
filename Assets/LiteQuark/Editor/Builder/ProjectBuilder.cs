@@ -16,6 +16,8 @@ namespace LiteQuark.Editor
         public ResBuildConfig ResConfig => BuildConfig.ResConfig;
         public AppBuildConfig AppConfig => BuildConfig.AppConfig;
         public ResCollector Collector { get; private set; }
+        public UnityEngine.AssetBundleManifest Manifest { get; set; }
+        public AssetBundleBuild[] Builds { get; set; } = Array.Empty<AssetBundleBuild>();
 
         private IBuildCallback[] _buildCallbacks = Array.Empty<IBuildCallback>();
 
@@ -27,6 +29,8 @@ namespace LiteQuark.Editor
         {
             BuildConfig = buildConfig;
             Collector = new ResCollector();
+            Manifest = null;
+            Builds = Array.Empty<AssetBundleBuild>();
             _buildCallbacks = ProjectBuilderUtils.CreateBuildCallbackInstance();
 
             var stepList = GenerateBuildStep(buildConfig);

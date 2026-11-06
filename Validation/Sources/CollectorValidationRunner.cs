@@ -113,8 +113,8 @@ namespace LiteQuark.Editor
             {
                 var normal = new VersionPackInfo("collision", "windows", hash, false, bundles);
                 Call(new ResCollectInfoStep(), "CollectAssetBundleBuilds", new[] { typeof(ProjectBuilder), typeof(VersionPackInfo) }, builder, normal);
-                Check(collector.Builds.Length == 2 && collector.Builds.Select(b => b.assetBundleName).Distinct().Count() == 2, "Non-FlatMode retains distinct build paths, HashMode=" + hash);
-                Check(collector.Builds.SelectMany(b => b.assetNames).OrderBy(p => p).SequenceEqual(new[] { first, second }.OrderBy(p => p)), "Normal build source mapping retains both real source paths.");
+                Check(builder.Builds.Length == 2 && builder.Builds.Select(b => b.assetBundleName).Distinct().Count() == 2, "Non-FlatMode retains distinct build paths, HashMode=" + hash);
+                Check(builder.Builds.SelectMany(b => b.assetNames).OrderBy(p => p).SequenceEqual(new[] { first, second }.OrderBy(p => p)), "Normal build source mapping retains both real source paths.");
                 var flat = new VersionPackInfo("collision", "windows", hash, true, bundles);
                 var target = flat.GetBundleFileBuildPath(bundles[0]);
                 Check(target == flat.GetBundleFileBuildPath(bundles[1]), "Golden collision fixture maps both logical names to one physical name.");
@@ -129,7 +129,7 @@ namespace LiteQuark.Editor
             typeof(ProjectBuilder).GetProperty("Collector").SetValue(builder, unique);
             var uniquePack = new VersionPackInfo("unique-flat", "windows", false, true, Bundles(unique));
             Call(new ResCollectInfoStep(), "CollectAssetBundleBuilds", new[] { typeof(ProjectBuilder), typeof(VersionPackInfo) }, builder, uniquePack);
-            Check(unique.Builds.Length == uniquePack.BundleList.Length && unique.Builds.All(b => !b.assetBundleName.Contains("/")), "Non-colliding FlatMode still produces build inputs normally.");
+            Check(builder.Builds.Length == uniquePack.BundleList.Length && builder.Builds.All(b => !b.assetBundleName.Contains("/")), "Non-colliding FlatMode still produces build inputs normally.");
         }
 
         private static IEnumerable<UnityEditor.IMGUI.Controls.TreeViewItem> FlattenViewer(UnityEditor.IMGUI.Controls.TreeViewItem item)
@@ -221,7 +221,7 @@ namespace LiteQuark.Editor
                 var builder = new ProjectBuilder();
                 typeof(ProjectBuilder).GetProperty("Collector").SetValue(builder, collector);
                 Call(new ResCollectInfoStep(), "CollectAssetBundleBuilds", new[] { typeof(ProjectBuilder), typeof(VersionPackInfo) }, builder, pack);
-                Check(collector.Builds.Single().assetNames.Single() == path, "Production build mapping resolves the real packages source.");
+                Check(builder.Builds.Single().assetNames.Single() == path, "Production build mapping resolves the real packages source.");
                 var restored = VersionPackInfo.FromBinaryData(pack.ToBinaryData());
                 restored.Initialize();
                 Check(restored.GetBundleInfoFromAssetPath(path) != null, "Full packages identity survives manifest round trip.");
@@ -231,6 +231,16 @@ namespace LiteQuark.Editor
 
         private static void Grouping()
         {
+            var existingSetting = AssetDatabase.LoadAssetAtPath<ResCollectorSetting>("Assets/Editor/ResSetting.asset");
+            Check(existingSetting != null && AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(existingSetting))) == "5651dc22344e4fab9c65f8b493246dc0",
+                "The existing serialized settings asset resolves the moved script with its original GUID.");
+            var inspector = UnityEditor.Editor.CreateEditor(existingSetting);
+            try
+            {
+                Check(inspector is ResCollectorSettingEditor, "The settings asset still uses its existing custom Inspector after the assembly move.");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(inspector); }
+
             var folder = Root + "/Grouping";
             var plain = folder + "/Plain/Upper.asset";
             var child = folder + "/Merged/Child/Other.asset";
@@ -300,8 +310,8 @@ namespace LiteQuark.Editor
             var builder = new ProjectBuilder();
             typeof(ProjectBuilder).GetProperty("Collector").SetValue(builder, collector);
             Call(new ResCollectInfoStep(), "CollectAssetBundleBuilds", new[] { typeof(ProjectBuilder), typeof(VersionPackInfo) }, builder, pack);
-            Check(collector.Builds.Single().assetNames.Single() == path, "AssetBundleBuild.assetNames contains the actual mixed-case source path.");
-            Check(collector.Builds.Single().assetBundleName == pack.BundleList.Single().BundlePath, "AssetBundleBuild keeps the collected Bundle name.");
+            Check(builder.Builds.Single().assetNames.Single() == path, "AssetBundleBuild.assetNames contains the actual mixed-case source path.");
+            Check(builder.Builds.Single().assetBundleName == pack.BundleList.Single().BundlePath, "AssetBundleBuild keeps the collected Bundle name.");
             Check(collector.GetAssetSourcePath(AssetPath.Resolve(path)) == path, "Canonical lookup returns the real source path.");
         }
         private static void InternalCycle()

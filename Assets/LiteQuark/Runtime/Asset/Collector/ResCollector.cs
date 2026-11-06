@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,6 @@ namespace LiteQuark.Editor
 {
     internal class ResCollector
     {
-        public AssetBundleManifest Manifest { get; set; }
-        public AssetBundleBuild[] Builds { get; set; } = Array.Empty<AssetBundleBuild>();
-
         private readonly string _defaultBundlePath = $"default{LiteConst.BundleFileExt}";
         private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new();
         private readonly Dictionary<string, string[]> _dependencyCache = new();
@@ -19,11 +17,6 @@ namespace LiteQuark.Editor
         private ResCollectorSetting _setting = null;
         private VersionPackInfo _packInfo = null;
         private int _bundleID = 1;
-
-        public VersionPackInfo GetVersionPackInfo(ProjectBuilder builder)
-        {
-            return GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode, builder.ResConfig.FlatMode);
-        }
 
         public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode, bool flatMode)
         {
@@ -41,7 +34,7 @@ namespace LiteQuark.Editor
                 if (cycles.Count > 0)
                 {
                     var message = $"发现循环依赖:{Environment.NewLine}{AssetBundleDependencyValidator.FormatCycles(cycles)}";
-                    LEditorLog.Error(message);
+                    Debug.LogError(message);
                     throw new InvalidOperationException(message);
                 }
 
@@ -58,8 +51,6 @@ namespace LiteQuark.Editor
             _bundleID = 1;
             _setting = null;
             _packInfo = null;
-            Manifest = null;
-            Builds = Array.Empty<AssetBundleBuild>();
         }
 
         private void AddToBundleInfoCache(string bundlePath, string[] assetList, string[] dependencyList)
@@ -305,7 +296,7 @@ namespace LiteQuark.Editor
             {
                 if (filePath.Contains(ch))
                 {
-                    LEditorLog.Error($"invalid path with '{ch}' : {filePath}");
+                    Debug.LogError($"invalid path with '{ch}' : {filePath}");
                     return false;
                 }
             }
@@ -314,3 +305,4 @@ namespace LiteQuark.Editor
         }
     }
 }
+#endif

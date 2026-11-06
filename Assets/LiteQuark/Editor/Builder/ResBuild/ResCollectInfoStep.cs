@@ -14,7 +14,7 @@ namespace LiteQuark.Editor
 
         public void Execute(ProjectBuilder builder)
         {
-            var versionPack = builder.Collector.GetVersionPackInfo(builder);
+            var versionPack = builder.Collector.GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode, builder.ResConfig.FlatMode);
             CollectAssetBundleBuilds(builder, versionPack);
         }
 
@@ -22,7 +22,7 @@ namespace LiteQuark.Editor
         {
             var buildPathToBundle = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            builder.Collector.Builds = new AssetBundleBuild[versionPack.BundleList.Length];
+            builder.Builds = new AssetBundleBuild[versionPack.BundleList.Length];
 
             for (var i = 0; i < versionPack.BundleList.Length; i++)
             {
@@ -42,7 +42,7 @@ namespace LiteQuark.Editor
                     assetPaths[j] = builder.Collector.GetAssetSourcePath(bundleInfo.AssetList[j]);
                 }
 
-                builder.Collector.Builds[i] = new AssetBundleBuild()
+                builder.Builds[i] = new AssetBundleBuild()
                 {
                     assetBundleName = bundlePath,
                     assetNames = assetPaths,

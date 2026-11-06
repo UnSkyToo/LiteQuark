@@ -12,9 +12,9 @@ namespace LiteQuark.Editor
         public void Execute(ProjectBuilder builder)
         {
             var collector = builder.Collector;
-            var versionPack = collector.GetVersionPackInfo(builder);
+            var versionPack = collector.GetVersionPackInfo(builder.Version, builder.Target, builder.ResConfig.HashMode, builder.ResConfig.FlatMode);
 
-            var manifest = collector.Manifest;
+            var manifest = builder.Manifest;
             if (manifest == null)
             {
                 builder.LogError("AssetBundleManifest is null");

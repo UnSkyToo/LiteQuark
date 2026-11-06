@@ -53,7 +53,7 @@ Validation — 当前工作区的隔离 Unity 验证
 模块
   paths       路径组合、原生根目录、URI、StreamingAssets、文件操作与导航
   manifest    完整路径清单、依赖 ID、Hash/Flat 命名、重复身份和旧格式边界
-  collector   Bundle 归属、共享依赖、循环、路径映射、BundleViewer 和 Flat 冲突
+  collector   Bundle 归属、共享依赖、循环、路径映射、设置资产与 Inspector、BundleViewer 和 Flat 冲突
   packages    真实 UPM 纹理、隐式/显式依赖打包及框架索引边界
   tasks       任务调度、终态与结果通知、异步等待的失败/取消传播、Runtime 初始化与关闭
   lifecycle   Handle/Lease、缓存、场景、取消、关闭、资源 Task 原生收尾、优先级和并发限制
