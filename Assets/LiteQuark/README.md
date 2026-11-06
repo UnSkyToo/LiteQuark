@@ -51,6 +51,8 @@ Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求
 
 等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。Asset 的在途加载和场景卸载等限制仍以[模块指南](Runtime/Asset/README.md)为准，当前不承诺任意加载状态下的安全即时重启。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 
+Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步清理续体才执行。释放逻辑访问 Unity 对象前应使用 `obj != null` 检查其原生对象是否仍存在；`?.` 只检查托管引用。已经由 Unity 销毁的对象无需再次 Destroy。
+
 内置系统按 [LiteConst.InternalSystem](Runtime/Base/LiteConst.cs) 的优先级从大到小初始化：
 
 `Log → Event → Timer → Task → Asset → ObjectPool → Action`

@@ -4,6 +4,7 @@
 
 ### 核心接口
 
+- 修复：Editor 停止 Play Mode 后的异步清理使用 Unity 对象判空，日志逻辑跳过已销毁的日志窗口，TaskSystem 跳过已销毁的协程宿主，避免编辑模式 Destroy 错误和 MissingReferenceException。
 - 破坏：Restart 仅在 Running 接受请求并在下一帧执行，多次请求合并；ShuttingDown 期间忽略请求，其他状态抛出 InvalidOperationException。启动错误回调中的直接 Restart 需改为等待清理回到 Idle 后再 Startup；已排队请求遇到错误或关闭会被放弃。
 - 修复：ShutdownFailed 停止 Runtime 对 System 和 Logic 的 Tick；释放续体在系统 Tick 内失败时，该调用返回后也停止同轮剩余系统的更新。保留失败对象供诊断，不自动重试清理。
 - 修复：后台超时返回前台时，仅在前台事件处理后仍为 Running 才请求自动重启，避免初始化或错误状态触发 Restart 异常。

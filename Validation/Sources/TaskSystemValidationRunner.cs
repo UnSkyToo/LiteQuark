@@ -19,6 +19,11 @@ namespace LiteQuark.Editor
     {
         private const string PendingKey = "LiteQuark.TaskSystemValidation.Pending";
         private const string ReportKey = "LiteQuark.TaskSystemValidation.Report";
+        private const string EditorStopStageKey = "LiteQuark.TaskSystemValidation.EditorStopStage";
+        private const string EditorStopResultKey = "LiteQuark.TaskSystemValidation.EditorStopResult";
+        private const string EditorStopErrorsKey = "LiteQuark.TaskSystemValidation.EditorStopErrors";
+        private const string EditorStopLogOffsetKey = "LiteQuark.TaskSystemValidation.EditorStopLogOffset";
+        private static double _editorStopFinishAt;
         private static readonly Report Results = new();
         private static bool _running;
         private static CaseResult _current;
@@ -48,7 +53,11 @@ namespace LiteQuark.Editor
         public static void Begin()
         {
             SessionState.SetString(ReportKey, Path.Combine(ValidationEnvironment.Reports("tasks"), "results.json"));
-            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            SessionState.SetInt(EditorStopStageKey, 1);
+            SessionState.SetString(EditorStopResultKey, string.Empty);
+            SessionState.SetString(EditorStopErrorsKey, string.Empty);
+            SessionState.SetString(EditorStopLogOffsetKey, new FileInfo(Application.consoleLogPath).Length.ToString());
+            EditorSceneManager.OpenScene("Assets/Scenes/Demo.unity", OpenSceneMode.Single);
             SessionState.SetBool(PendingKey, true);
             EditorApplication.EnterPlaymode();
         }
@@ -56,6 +65,7 @@ namespace LiteQuark.Editor
         [InitializeOnLoadMethod]
         private static void Resume()
         {
+            Application.logMessageReceived += CaptureEditorStopError;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             EditorApplication.delayCall += StartIfPending;
         }
@@ -63,6 +73,11 @@ namespace LiteQuark.Editor
         private static void OnPlayModeChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.EnteredPlayMode) StartIfPending();
+            if (state == PlayModeStateChange.EnteredEditMode && SessionState.GetInt(EditorStopStageKey, 0) == 2)
+            {
+                _editorStopFinishAt = EditorApplication.timeSinceStartup + 0.25;
+                EditorApplication.update += FinishEditorStop;
+            }
         }
 
         private static void StartIfPending()
@@ -70,7 +85,86 @@ namespace LiteQuark.Editor
             if (_running || !EditorApplication.isPlaying || !SessionState.GetBool(PendingKey, false)) return;
             _running = true;
             SessionState.SetBool(PendingKey, false);
+            if (SessionState.GetInt(EditorStopStageKey, 0) == 1)
+            {
+                StopDemoPlayMode().Forget();
+                return;
+            }
             RunAll().Forget();
+        }
+
+        private static async UniTask StopDemoPlayMode()
+        {
+            var result = new CaseResult { name = "38 Demo Play Mode stop tolerates Unity-owned object destruction" };
+            try
+            {
+                var deadline = Time.realtimeSinceStartup + 20f;
+                while (LiteRuntime.Instance.State != LiteRuntime.RuntimeState.Running)
+                {
+                    if (Time.realtimeSinceStartup > deadline) throw new TimeoutException("Demo startup before Editor stop");
+                    await UniTask.NextFrame();
+                }
+                result.assertions++;
+                if (GameObject.Find("IngameDebugConsole(Clone)") == null)
+                    throw new Exception("Demo must create the real LogRuntimeLogic viewer before stopping.");
+                result.evidence.Add("The repository Demo scene reaches Running with its real log viewer.");
+                var task = LiteRuntime.Task.AddTask(WaitUntilEditorStop());
+                while (!task.IsExecuted)
+                {
+                    if (Time.realtimeSinceStartup > deadline) throw new TimeoutException("Demo coroutine before Editor stop");
+                    await UniTask.NextFrame();
+                }
+                result.assertions++;
+                result.evidence.Add("A real scheduled coroutine is running on the Launcher when the Editor stops Play Mode.");
+            }
+            catch (Exception ex) { result.failure = ex.ToString(); }
+            finally
+            {
+                SessionState.SetString(EditorStopResultKey, JsonUtility.ToJson(result));
+                SessionState.SetInt(EditorStopStageKey, 2);
+                // Exercise Unity's actual quit/destroy order, not a prior awaited Runtime.Shutdown.
+                EditorApplication.ExitPlaymode();
+            }
+        }
+
+        private static IEnumerator WaitUntilEditorStop()
+        {
+            while (true) yield return null;
+        }
+
+        private static void CaptureEditorStopError(string message, string stack, LogType type)
+        {
+            if (SessionState.GetInt(EditorStopStageKey, 0) == 0 || type is not (LogType.Error or LogType.Exception or LogType.Assert)) return;
+            SessionState.SetString(EditorStopErrorsKey, SessionState.GetString(EditorStopErrorsKey, string.Empty) + message + "\n" + stack + "\n");
+        }
+
+        private static void FinishEditorStop()
+        {
+            if (EditorApplication.timeSinceStartup < _editorStopFinishAt) return;
+            EditorApplication.update -= FinishEditorStop;
+            var result = JsonUtility.FromJson<CaseResult>(SessionState.GetString(EditorStopResultKey, string.Empty));
+            var errors = SessionState.GetString(EditorStopErrorsKey, string.Empty);
+            // Unity may reset managed log callbacks at the mode boundary; check the same interval in its native log too.
+            using (var stream = new FileStream(Application.consoleLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                stream.Seek(long.Parse(SessionState.GetString(EditorStopLogOffsetKey, "0")), SeekOrigin.Begin);
+                using var reader = new StreamReader(stream);
+                var log = reader.ReadToEnd();
+                if (log.Contains("Destroy may not be called from edit mode") || log.Contains("MissingReferenceException"))
+                    errors += "Native Editor log contains an invalid destruction or destroyed-object access during Demo stop.\n";
+            }
+            result.assertions++;
+            if (EditorApplication.isPlaying || errors.Length > 0)
+                result.failure += "\nEditor stop did not complete without errors:\n" + errors;
+            else
+                result.evidence.Add("Actual Play Mode exit and edit-mode continuation drain produced no errors.");
+            result.passed = string.IsNullOrEmpty(result.failure);
+            SessionState.SetString(EditorStopResultKey, JsonUtility.ToJson(result));
+            SessionState.SetInt(EditorStopStageKey, 0);
+            _running = false;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            SessionState.SetBool(PendingKey, true);
+            EditorApplication.EnterPlaymode();
         }
 
         private static async UniTask RunAll()
@@ -149,12 +243,14 @@ namespace LiteQuark.Editor
                     UnityEngine.Object.DestroyImmediate(LiteRuntime.Instance.Launcher.gameObject);
                 }
                 Application.logMessageReceived -= CaptureError;
+                var editorStop = JsonUtility.FromJson<CaseResult>(SessionState.GetString(EditorStopResultKey, string.Empty));
+                Results.cases.Add(editorStop);
                 Results.finishedUtc = DateTime.UtcNow.ToString("O");
                 var path = SessionState.GetString(ReportKey, string.Empty);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path, JsonUtility.ToJson(Results, true));
                 var success = Results.fatalError == null && Results.unexpectedErrors.Count == 0
-                    && Results.cases.Count == 37 && Results.cases.All(c => c.passed);
+                    && Results.cases.Count == 38 && Results.cases.All(c => c.passed);
                 Debug.Log($"TASK_SYSTEM_QUICK: {Results.cases.Count(c => c.passed)}/{Results.cases.Count}, assertions={Results.cases.Sum(c => c.assertions)}, GC={Results.steadyTickAllocatedBytes}");
                 EditorApplication.Exit(success ? 0 : 2);
             }

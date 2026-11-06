@@ -61,7 +61,10 @@ namespace LiteQuark.Runtime
         public UniTask DisposeAsync()
         {
             _isClosing = true;
-            _monoBehaviourInstance?.StopAllCoroutines();
+            if (_monoBehaviourInstance != null)
+            {
+                _monoBehaviourInstance.StopAllCoroutines();
+            }
 
             var count = _records.Count;
             for (var i = 0; i < count; i++)
@@ -209,12 +212,15 @@ namespace LiteQuark.Runtime
 
         public UnityEngine.Coroutine StartCoroutine(IEnumerator routine)
         {
-            return _monoBehaviourInstance?.StartCoroutine(routine);
+            return _monoBehaviourInstance != null ? _monoBehaviourInstance.StartCoroutine(routine) : null;
         }
 
         public void StopCoroutine(UnityEngine.Coroutine routine)
         {
-            _monoBehaviourInstance?.StopCoroutine(routine);
+            if (_monoBehaviourInstance != null)
+            {
+                _monoBehaviourInstance.StopCoroutine(routine);
+            }
         }
 
         public void RegisterGroup(int groupId, int? concurrencyLimit)

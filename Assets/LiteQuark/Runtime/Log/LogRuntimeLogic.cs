@@ -33,9 +33,13 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            Object.Destroy(_go);
+            if (_go != null)
+            {
+                Object.Destroy(_go);
+            }
+            _go = null;
 
-            return  UniTask.CompletedTask;
+            return UniTask.CompletedTask;
         }
 
         public void Tick(float deltaTime)
