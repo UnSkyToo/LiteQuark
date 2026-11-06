@@ -17,7 +17,6 @@ namespace LiteQuark.Editor
         {
             New();
             var setting = LiteRuntime.Setting.Asset;
-            var oldMode = setting.AssetMode;
             var oldLocater = setting.BundleLocater;
             var oldLimit = setting.ConcurrencyLimit;
             var oldRetain = setting.BundleRetainTime;
@@ -27,7 +26,6 @@ namespace LiteQuark.Editor
             T Keep<T>(T handle) where T : IDisposable { handles.Add(handle); return handle; }
             try
             {
-                setting.AssetMode = AssetProviderMode.Bundle;
                 setting.BundleLocater = BundleLocaterMode.Simulate;
                 setting.ConcurrencyLimit = 1;
                 assets = new AssetSystem();
@@ -152,10 +150,9 @@ namespace LiteQuark.Editor
                 Check(await provider.Initialize() && !ReferenceEquals(pack, Get<VersionPackInfo>(provider, "_packInfo")),
                     "A new Simulate Provider collects a separate manifest session.");
                 await assets.DisposeAsync();
-                setting.AssetMode = AssetProviderMode.Editor;
                 assets = new AssetSystem();
-                Check(Get<IAssetProvider>(assets, "_provider") is AssetEditorProvider,
-                    "The original Editor direct-read mode remains a separate selectable Provider.");
+                Check(Get<IAssetProvider>(assets, "_provider") is AssetBundleProvider,
+                    "All modes use the same Bundle Provider.");
             }
             finally
             {
@@ -164,7 +161,6 @@ namespace LiteQuark.Editor
                 try { if (assets != null) await assets.DisposeAsync(); }
                 finally
                 {
-                    setting.AssetMode = oldMode;
                     setting.BundleLocater = oldLocater;
                     setting.ConcurrencyLimit = oldLimit;
                     setting.BundleRetainTime = oldRetain;
@@ -201,7 +197,6 @@ namespace LiteQuark.Editor
                 });
                 File.WriteAllBytes(Path.Combine(content, AppUtils.GetVersionFileName()), pack.ToBinaryData());
                 var setting = new LiteSetting();
-                setting.Asset.AssetMode = AssetProviderMode.Bundle;
                 setting.Asset.BundleLocater = BundleLocaterMode.Remote;
                 setting.Asset.BundleRemoteUri = new Uri(fixture.Scratch + Path.DirectorySeparatorChar).AbsoluteUri;
                 setting.Asset.DisableUnityWebCache = true;
@@ -388,7 +383,6 @@ namespace LiteQuark.Editor
                     await runtime.Shutdown();
                     _restartFixture = fixture;
                     var setting = new LiteSetting();
-                    setting.Asset.AssetMode = AssetProviderMode.Editor;
                     setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(RestartSystemProbe).AssemblyQualifiedName });
                     setting.LogicList.Add(new LiteTypeEntryData<ILogic> { AssemblyQualifiedName = typeof(RestartLogicProbe).AssemblyQualifiedName });
                     runtime.Startup(launcher, setting);

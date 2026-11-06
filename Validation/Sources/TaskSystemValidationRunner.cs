@@ -1356,7 +1356,6 @@ namespace LiteQuark.Editor
 
             _shutdownFixture = fixture;
             var setting = new LiteSetting();
-            setting.Asset.AssetMode = AssetProviderMode.Editor;
             setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemOne).AssemblyQualifiedName });
             setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemTwo).AssemblyQualifiedName });
             setting.LogicList.Add(new LiteTypeEntryData<ILogic> { AssemblyQualifiedName = typeof(ShutdownLogicOne).AssemblyQualifiedName });
@@ -1523,6 +1522,7 @@ namespace LiteQuark.Editor
             try
             {
                 await BeginShutdownFixture(fixture);
+                await WaitForRuntimeCondition(() => fixture.Initialized.Contains("system 2"), "Gated system initialization after Asset manifest collection");
                 Check(LiteRuntime.Instance.State == LiteRuntime.RuntimeState.InitSystem &&
                     fixture.Initialized.Contains("system 2") && LiteRuntime.Get<ShutdownSystemTwo>() == null,
                     "The initializing system is owned but not published.");
@@ -1562,6 +1562,7 @@ namespace LiteQuark.Editor
                 try
                 {
                     await BeginShutdownFixture(fixture);
+                    await WaitForRuntimeCondition(() => fixture.Initialized.Contains(target), "Gated initialization: " + target);
                     var expected = target == "system 2" ? LiteRuntime.RuntimeState.InitSystem : LiteRuntime.RuntimeState.InitLogic;
                     Check(runtime.State == expected, "The real startup is held in " + expected + ".");
                     Throws<InvalidOperationException>(runtime.Restart, expected + " rejects Restart.");
@@ -1612,6 +1613,7 @@ namespace LiteQuark.Editor
             try
             {
                 await BeginShutdownFixture(failed);
+                await WaitForRuntimeCondition(() => rejectedInCallback, "Startup error callback after Asset manifest collection");
                 Check(rejectedInCallback && runtime.State == LiteRuntime.RuntimeState.ShuttingDown,
                     "Restart is explicitly rejected inside the startup error callback while automatic cleanup still begins.");
             }

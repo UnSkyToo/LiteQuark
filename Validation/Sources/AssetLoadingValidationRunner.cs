@@ -237,20 +237,19 @@ namespace LiteQuark.Editor
                 await Run("08 Bundle same-name scenes in different folders", () => DifferentScenes(false));
                 await Run("09 Bundle alias guard and sequential instances", () => SceneInstances(false), "Scene is already loading");
                 await Run("10 Bundle scene cancellation and release", SceneCancellation);
-                await Run("11 Editor assets and path aliases", EditorAssets);
-                await Run("12 Editor same-name scenes in different folders", () => DifferentScenes(true));
-                await Run("13 Editor alias guard and sequential instances", () => SceneInstances(true), "Scene is already loading");
-                await Run("14 Editor delayed scene delivery", () => DifferentScenes(true, true));
+                await Run("11 Simulate assets and path aliases", EditorAssets);
+                await Run("12 Simulate same-name scenes in different folders", () => DifferentScenes(true));
+                await Run("13 Simulate alias guard and sequential instances", () => SceneInstances(true), "Scene is already loading");
                 await Run("15 Scene lookup failure does not poison retry", MissingScene);
-                await Run("16 Bundle distinct-name scenes load concurrently", () => DifferentScenes(false, false, true));
+                await Run("16 Bundle distinct-name scenes load concurrently", () => DifferentScenes(false, true));
                 await Run(NativeCollisionCase, NativeCollision);
-                await Run("18 New configuration enables both filename flags", DefaultOptions);
+                await Run("18 Default modes, Player selection and filename flags", DefaultOptions);
                 await Run("19 Synchronous full-path versus filename lookup with control", () => LookupProbe(false));
                 await Run("20 Asynchronous full-path versus filename lookup with control", () => LookupProbe(true));
                 await Run("21 Collected packages path loads through Bundle public API", () => PackagesFolderLoad(false));
-                await Run("22 Packages aliases load through Editor public API", () => PackagesFolderLoad(true));
+                await Run("22 Packages aliases load through Simulate public API", () => PackagesFolderLoad(true));
                 await Run("23 Existing UPM texture is not a Bundle fallback", () => UpmNotSupported(false));
-                await Run("24 Existing UPM texture is not an Editor fallback", () => UpmNotSupported(true), "Can't load asset");
+                await Run("24 Existing UPM texture is not a Simulate fallback", () => UpmNotSupported(true));
                 await Run("25 Full manifest paths load assets directories and default resources", FullManifestResources);
                 await Run("26 BuiltIn locator preserves override and persistent priority", BuiltInLocation);
                 await Run("27 Remote URI configuration and version query composition", RemoteUriComposition);
@@ -379,7 +378,7 @@ namespace LiteQuark.Editor
                 setting.BundleLocater = BundleLocaterMode.Remote;
                 setting.BundleRemoteUri = "https://cdn.example/base%20dir?token=a%2Bb#part";
                 setting.DisableUnityWebCache = true;
-                var locator = (BundleRemoteLocater)typeof(AssetBundleProvider).GetMethod("CreateLocater", Private).Invoke(provider, null);
+                var locator = (BundleRemoteLocater)typeof(AssetBundleProvider).GetMethod("CreateLocater", Private).Invoke(provider, new object[] { true });
                 var platform = Uri.EscapeDataString(AppUtils.GetCurrentPlatformName().ToLowerInvariant());
                 var version = Uri.EscapeDataString(AppUtils.GetMainVersion());
                 var expectedBase = "https://cdn.example/base%20dir/" + platform + "/" + version;
@@ -505,18 +504,18 @@ namespace LiteQuark.Editor
                 return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
             }
         }
-        private static async UniTask<EnvironmentContext> New(bool editor = false, bool delayed = false)
+        private static async UniTask<EnvironmentContext> New(bool editor = false)
         {
             Context = new EnvironmentContext();
             LiteRuntime.Setting.Asset.EnableRetain = true;
             LiteRuntime.Setting.Asset.BundleRetainTime = 300;
             if (editor)
             {
-                LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor = delayed;
-                LiteRuntime.Setting.Asset.AsyncDelayMinFrame = 5;
-                LiteRuntime.Setting.Asset.AsyncDelayMaxFrame = 6;
-                var provider = new AssetEditorProvider();
-                await provider.Initialize();
+                var previous = LiteRuntime.Setting.Asset.BundleLocater;
+                LiteRuntime.Setting.Asset.BundleLocater = BundleLocaterMode.Simulate;
+                var provider = new AssetBundleProvider();
+                try { Check(await provider.Initialize(), "Simulate initializes a fresh collected manifest."); }
+                finally { LiteRuntime.Setting.Asset.BundleLocater = previous; }
                 Context.ActualProvider = provider;
             }
             else
@@ -554,7 +553,6 @@ namespace LiteQuark.Editor
                 }
                 await Context.Assets.DisposeAsync();
                 Context = null;
-                LiteRuntime.Setting.Asset.SimulateAsyncDelayInEditor = false;
                 await UniTask.Yield();
             }
         }
@@ -651,9 +649,9 @@ namespace LiteQuark.Editor
             await Wait(() => asset.IsDone, "External root asset");
             Check(env.Assets.HasAsset(Outside) && asset.Result != null && asset.Result.text == "outside-root", "Explicit root-external resource loads from Bundle.");
         }
-        private static async UniTask DifferentScenes(bool editor, bool delayed = false, bool distinctName = false)
+        private static async UniTask DifferentScenes(bool editor, bool distinctName = false)
         {
-            var env = await New(editor, delayed);
+            var env = await New(editor);
             var otherPath = distinctName ? SceneC : SceneB;
             var a = env.Scene(SceneA); var b = env.Scene(ProjectPath(otherPath).ToUpperInvariant());
             await Wait(() => a.IsDone && b.IsDone, "Different same-name scenes");
@@ -725,7 +723,7 @@ namespace LiteQuark.Editor
             var outside = env.Asset<TextAsset>(Outside);
             await Wait(() => a.IsDone && b.IsDone && outside.IsDone, "Editor assets");
             Check(a.Result != null && a.Result.text == "text-A" && a.Result == b.Result, "Editor aliases select the same asset.");
-            Check(outside.Result != null && outside.Result.text == "outside-root", "Editor resolves root-external project path.");
+            Check(outside.State == AssetHandleState.Failed && !env.Assets.HasAsset(Outside), "Simulate rejects an existing external resource absent from its collected manifest.");
             Check(env.Assets.HasAsset(TextA) && env.Assets.HasAsset(ProjectPath(TextA)) && !env.Assets.HasAsset("../invalid.txt"), "Editor HasAsset shares input rules.");
         }
         private static async UniTask MissingScene()
@@ -777,12 +775,50 @@ namespace LiteQuark.Editor
 
         private static UniTask DefaultOptions()
         {
+            var setting = LiteRuntime.Setting.Asset;
+            var previous = setting.BundleLocater;
+            var provider = new AssetBundleProvider();
+            var factory = typeof(AssetBundleProvider).GetMethod("CreateLocater", Private);
+            try
+            {
+                Check(new LiteSetting.AssetSetting().BundleLocater == BundleLocaterMode.Simulate &&
+                    (byte)BundleLocaterMode.Simulate == 0 && (byte)BundleLocaterMode.BuiltIn == 1 && (byte)BundleLocaterMode.Remote == 2,
+                    "The single mode field defaults to Simulate with explicit serialized enum values.");
+                setting.BundleLocater = BundleLocaterMode.Simulate;
+                Check(factory.Invoke(provider, new object[] { true }) is BundleSimulateLocater &&
+                    factory.Invoke(provider, new object[] { false }) is BundleBuiltInLocater && setting.BundleLocater == BundleLocaterMode.Simulate,
+                    "Editor selects simulation; the same configuration selects BuiltIn in Player without rewriting settings.");
+                foreach (var mode in new[] { BundleLocaterMode.BuiltIn, BundleLocaterMode.Remote })
+                {
+                    setting.BundleLocater = mode;
+                    var expected = mode == BundleLocaterMode.BuiltIn ? typeof(BundleBuiltInLocater) : typeof(BundleRemoteLocater);
+                    Check(factory.Invoke(provider, new object[] { true }).GetType() == expected &&
+                        factory.Invoke(provider, new object[] { false }).GetType() == expected,
+                        "Explicit " + mode + " is preserved in both environments.");
+                }
+                var serialized = new SerializedObject(ScriptableObject.CreateInstance<SettingProbe>());
+                try
+                {
+                    var asset = serialized.FindProperty("Asset");
+                    Check(asset.FindPropertyRelative("BundleLocater") != null && asset.FindPropertyRelative("AssetMode") == null &&
+                        asset.FindPropertyRelative("SimulateAsyncDelayInEditor") == null && asset.FindPropertyRelative("AsyncDelayMinFrame") == null &&
+                        asset.FindPropertyRelative("AsyncDelayMaxFrame") == null,
+                        "The serialized settings expose one mode selector and no direct-read delay fields.");
+                }
+                finally { UnityEngine.Object.DestroyImmediate(serialized.targetObject); serialized.Dispose(); }
+            }
+            finally { setting.BundleLocater = previous; }
             var options = new ResBuildConfig().Options;
             Check((options & BuildAssetBundleOptions.ChunkBasedCompression) != 0, "Default compression remains ChunkBasedCompression.");
             Check((options & BuildAssetBundleOptions.DisableLoadAssetByFileName) != 0, "Default disables extensionless filename lookup.");
             Check((options & BuildAssetBundleOptions.DisableLoadAssetByFileNameWithExtension) != 0, "Default disables filename-with-extension lookup.");
             Check(options == (BuildAssetBundleOptions.ChunkBasedCompression | FilenameFlags), "No unrelated default build flags changed.");
             return UniTask.CompletedTask;
+        }
+
+        private sealed class SettingProbe : ScriptableObject
+        {
+            public LiteSetting.AssetSetting Asset = new();
         }
 
         private static async UniTask PackagesFolderLoad(bool editor)

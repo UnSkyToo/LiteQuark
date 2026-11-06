@@ -32,6 +32,7 @@ namespace LiteQuark.Editor
         private static readonly Report Results = new();
         private static readonly List<string> Errors = new();
         private static Harness Current;
+        private static AssetBundleProvider _simulateProvider;
         private static bool _running;
         private static CaseResult _case;
 
@@ -140,7 +141,7 @@ namespace LiteQuark.Editor
                 await Run("32 Destroyed Unity asset still returns its reference", "real bundle asset + deliberate native destruction", DestroyedAssetLease);
                 await Run("33 Asset lease releases exact entry after mapping replacement", "controlled dictionary replacement + real asset", ExactAssetEntry);
                 await Run("34 Old Asset lease ignores unloaded entry and replacement", "controlled entry unload + real asset", UnloadedAssetLease);
-                await Run("35 Editor Provider lease and delayed cancellation", "real AssetDatabase + ordinary and simulated delay", EditorAssetLease, "Can't load asset");
+                await Run("35 Simulate cached lease and shared cancellation", "collected assets, required owners and shared cancellation", EditorAssetLease, "Load asset failed");
                 await Run("36 Pre-cancelled scene starts no request", "public SceneHandle API", ScenePreCancelled);
                 await Run("37 Dispose during submitted scene load", "real Unity scene operation", SceneDisposeDuringLoad);
                 await Run("38 Same-name loading guard spans async operation", "controlled bundle delivery + real scene", SceneConcurrentGuard, "Scene is already loading");
@@ -151,20 +152,13 @@ namespace LiteQuark.Editor
                 await Run("43 AssetSystem Dispose ends pending bundle request", "controlled pending bundle operation", SceneSystemDisposeDuringBundle, "Bundle load failed");
                 await Run("44 AssetSystem Dispose ends queued scene request", "real queued LoadSceneTask", SceneSystemDisposeQueued);
                 await Run("45 Pre-execution task cancel reaches SceneHandle", "real cache/task/Handle callback chain", SceneQueuedTaskCancel, "Load scene failed");
-                await Run("46 Editor scene loading and independent release", "real Editor scenes; ordinary next-frame delivery", () => EditorSceneLifetime(false));
-                await Run("47 Editor scene cancellation and repeated Dispose", "real Editor scenes; ordinary next-frame delivery", () => EditorSceneCancellation(false));
-                await Run("48 Editor scene pre-cancel and startup failure retry", "public API + real invalid Editor path", EditorSceneFailure, "editor_validation_missing");
-                await Run("49 Editor invalid scene rejected at delayed delivery", "manual completed unload before delayed callback", EditorSceneInvalidated,
-                    "Can't load scene : Assets/StandaloneAssets/_session_validation/editor_validation_scene.unity");
-                await Run("50 Editor scene loading with simulated delay", "real Editor scenes; simulated delay", () => EditorSceneLifetime(true));
-                await Run("51 Editor scene cancellation with simulated delay", "real Editor scenes; simulated delay", () => EditorSceneCancellation(true));
-                await Run("52 Editor native scene load timing", "direct Unity API timing observation", EditorNativeTiming);
+                await Run("46 Simulate scene loading and independent release", "Simulate scenes through collected Bundle ownership", EditorSceneLifetime);
+                await Run("47 Simulate scene cancellation and repeated Dispose", "Simulate scenes through collected Bundle ownership", EditorSceneCancellation);
+                await Run("48 Simulate scene pre-cancel and startup failure retry", "public API + real invalid Editor path", EditorSceneFailure, "editor_validation_missing");
                 await Run("53 Bundle external scene unload", "two real same-path instances; native external unload", () => SceneAutomaticUnload(false));
                 await Run("54 Bundle Single scene replacement", "real Single load; shared bundle ownership", () => SceneAutomaticUnload(true));
-                await Run("55 Editor external scene unload", "real Editor scenes; ordinary delivery", () => EditorSceneAutomaticUnload(false, false));
-                await Run("56 Editor Single scene replacement", "real Editor scenes; ordinary delivery", () => EditorSceneAutomaticUnload(true, false));
-                await Run("57 Editor external unload with simulated delay", "real Editor scenes; simulated delay", () => EditorSceneAutomaticUnload(false, true));
-                await Run("58 Editor Single replacement with simulated delay", "real Editor scenes; simulated delay", () => EditorSceneAutomaticUnload(true, true));
+                await Run("55 Simulate external scene unload", "Simulate scene ownership", () => EditorSceneAutomaticUnload(false));
+                await Run("56 Simulate Single scene replacement", "Simulate scene ownership", () => EditorSceneAutomaticUnload(true));
                 await Run("59 Idle asset index survives another asset in the same bundle", "real assets + controlled Tick time", SharedBundleRetention);
                 await Run("60 Dependency retention starts after parent unload", "real prefab/material + controlled Tick time", DependencyRetention);
                 await Run("61 AssetSystem Dispose ends submitted asset request", "real submitted AssetBundleRequest", AssetSystemDisposeSubmitted);
@@ -229,8 +223,8 @@ namespace LiteQuark.Editor
                 await Run("114 System close reports refused scene unload", "real last-scene refusal and retained Bundle", ShutdownReportsSceneRefusal,
                     "Start scene unload failed", "Unloading the last loaded scene");
                 await Run("115 System close drains other cleanup after a failure", "controlled cleanup outcomes with a real cached Bundle", ShutdownWaitsAfterCleanupFailure);
-                await Run("116 Editor close drains ordinary and simulated delivery", "real Editor assets and Timer delivery", EditorShutdownDeliveries);
-                await Run("117 Editor close unloads a delayed scene", "real Editor Scene and pending Handle delivery", EditorShutdownScene);
+                await Run("116 Simulate close drains queued and executed Asset tasks", "shared Bundle flow and actual project objects", EditorShutdownDeliveries);
+                await Run("117 Simulate close unloads an in-flight scene", "native Editor scene task and cleanup", EditorShutdownScene);
                 await Run("118 Pool template completion and cancellation", "controlled template result and public callback/await APIs", PoolTemplateCompletion);
                 await Run("119 Pool generation owns tasks through shutdown", "native instantiation, queued/running cancellation and borrowed ownership", PoolGenerationShutdown);
                 await Run("120 Active pool closes pending prefab handles", "real Bundle templates, failure and delayed completion", ActivePoolShutdown,
@@ -363,6 +357,7 @@ namespace LiteQuark.Editor
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             if (Current != null && !Current.Disposed) Current.Provider.Tick(0);
+            _simulateProvider?.Tick(0);
         }
 
         private static UniTask ObserveResourceCleanup(BaseTask task)

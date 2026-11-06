@@ -16,10 +16,10 @@
 
             public Lease(AssetInfoCache cache)
             {
-                _cache = cache;
+                _cache = cache ?? throw new System.ArgumentNullException(nameof(cache));
                 _isDisposed = false;
                 Value = null;
-                cache?.IncRef();
+                cache.IncRef();
             }
 
             public void Dispose()
@@ -52,11 +52,6 @@
 
                 Value = assetT;
                 return true;
-            }
-
-            internal static Lease<T> CreateUncached(T asset)
-            {
-                return new Lease<T>(null) { Value = asset };
             }
         }
     }

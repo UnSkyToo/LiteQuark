@@ -215,7 +215,6 @@ MonoBehaviour:
     Task:
       ConcurrencyLimit: 20
     Asset:
-      AssetMode: 0
       BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
@@ -228,9 +227,6 @@ MonoBehaviour:
       EnableRetain: 1
       BundleRetainTime: 300
       EditorForceStreamingAssets: 1
-      SimulateAsyncDelayInEditor: 1
-      AsyncDelayMinFrame: 1
-      AsyncDelayMaxFrame: 6
     Action:
       SafetyMode: 0
     Log:
@@ -263,7 +259,6 @@ MonoBehaviour:
     Task:
       ConcurrencyLimit: 20
     Asset:
-      AssetMode: 0
       BundleLocater: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
@@ -276,9 +271,6 @@ MonoBehaviour:
       EnableRetain: 1
       BundleRetainTime: 300
       EditorForceStreamingAssets: 1
-      SimulateAsyncDelayInEditor: 1
-      AsyncDelayMinFrame: 1
-      AsyncDelayMaxFrame: 6
     Action:
       SafetyMode: 0
     Log:

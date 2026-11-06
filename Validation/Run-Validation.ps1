@@ -29,8 +29,8 @@ $suites = [ordered]@{
     collector = @{ Runner = 'CollectorValidationRunner'; Cases = 15 }
     packages = @{ Runner = 'PackageValidationRunner'; Cases = 1 }
     tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 38 }
-    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 154 }
-    loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 27 }
+    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 148 }
+    loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 26 }
 }
 $selected = @($suites.Keys | Where-Object { $Suite -contains 'all' -or $Suite -contains $_ })
 

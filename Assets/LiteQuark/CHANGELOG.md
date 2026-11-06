@@ -30,6 +30,11 @@
 
 ### Asset
 
+- 破坏：删除 AssetEditorProvider、AssetProviderMode、AssetSetting.AssetMode，以及 SimulateAsyncDelayInEditor／AsyncDelayMinFrame／AsyncDelayMaxFrame；只通过 BundleLocater 选择模式。代码配置改为 BundleLocaterMode.Simulate、BuiltIn 或 Remote。
+- 迁移：BundleLocater 数值调整为 Simulate=0、BuiltIn=1、Remote=2。旧 AssetMode=Editor 的编辑器开发配置迁到 Simulate；旧 AssetMode=Bundle 的配置按语义将旧 BuiltIn=0→1、Remote=1→2、Simulate=2→0。外部场景、Prefab、设置资产和自定义数字配置须在更新后明确迁移，不能只删除 AssetMode 后沿用旧 Locater 数字。仓库内 Demo 与 LiteNexusEditorScene 已迁移并保留资产 GUID。
+- 调整：默认 Simulate 在 Editor 中执行清单收集及共享 Bundle 管理链路，在非 Editor（含 Development Build）自动使用 BuiltIn，仍需构建并部署本地资源包；原 Editor 配置若在 Player 使用 Remote，应明确改为 Remote。不会自动改写保存的 Locater 值。
+- 调整：移除无 Cache 的资源 Lease 和预先加载场景的特殊入口。模拟资源必须收录于初始化清单，缓存命中可能同步完成；删除旧直读模式的随机延迟行为，修改收录／分包／依赖后需重新初始化。
+
 - 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。失败会等待其余收尾后报告，不自动恢复；最终释放失败时可能已释放部分资源。
 - 迁移：Provider 实现改为 IDisposeAsync，关闭调用方须等待终结完成；Handle／Lease 仍同步 Dispose。业务须停止使用旧资源，遗漏 Handle 不延长系统生命周期。
 - 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；场景实际卸载结束后才归还 Bundle 引用。

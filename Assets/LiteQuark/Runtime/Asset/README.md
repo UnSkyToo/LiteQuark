@@ -78,7 +78,7 @@ sceneHandle.Dispose();
 
 Single 模式替换或外部卸载后，Result 为空，成功历史状态保留；业务仍应 Dispose，框架不会重复卸载或释放引用。Unity 拒绝卸载时（例如最后一个场景），Dispose 不保证场景消失，框架保留必要资源直到确认实际卸载；没有公开的 Handle 重试入口，也不自动逐帧重试。
 
-**需要同时加载的 Bundle 场景应使用不同文件名。** Unity 2022.3.62f3 的本地验证中，同名场景在同一个 Bundle 内会构建冲突，分到不同 Bundle 后并发装载也会冲突。Editor 直读可区分不同目录的同名场景，完整路径不能消除 Bundle 层限制。
+**需要同时加载的 Bundle 场景应使用不同文件名。** Unity 2022.3.62f3 的本地验证中，同名场景在同一个 Bundle 内会构建冲突，分到不同 Bundle 后并发装载也会冲突。Simulate 可区分不同目录的同名场景，完整路径不能消除 Bundle 层限制。
 
 ```csharp
 var paths = new[] { "UI/IconA.png", "UI/IconB.png" };
@@ -98,7 +98,7 @@ if (!preload.Result)
 
 ## 系统关闭
 
-AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Editor 模式同样会等待已有加载和延迟交付，关闭中的迟到结果不再成功交付。
+AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Simulate 同样会等待已有加载和任务收尾，关闭中的迟到结果不再成功交付。
 
 业务应先停止资源使用并释放 Handle；遗漏 Handle 不保留旧资源的可用性，实例仍由其拥有者销毁。Handle／Lease 的 Dispose 仍是同步归还，返回不代表原生卸载已经结束。系统关闭不主动执行全局 Resources.UnloadUnusedAssets 或 GC。
 
@@ -129,8 +129,7 @@ ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作�
 
 | 配置 | 含义 |
 | --- | --- |
-| `AssetMode` | Editor 直接访问项目资源；Bundle 使用 AssetBundle。非编辑器下 Editor 自动转为 Bundle |
-| `BundleLocater` | BuiltIn 使用本地文件；Remote 使用远端资源包；Simulate 在编辑器中使用项目资源验证 Bundle 管理流程 |
+| `BundleLocater` | 默认 Simulate：编辑器中使用项目资源验证 Bundle 管理流程；BuiltIn 使用本地文件；Remote 使用远端资源包。非 Editor 下 Simulate 自动按 BuiltIn 加载 |
 | `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 0.4）；传未编码路径名称，已有查询和 fragment 保留，勿配置框架保留参数 t |
 | `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |
@@ -138,11 +137,11 @@ ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作�
 
 BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
 
-编辑器中选择 `AssetMode = Bundle`、`BundleLocater = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
+编辑器中默认使用 `BundleLocater = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
 
-Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载；不使用 Editor 直读模式的随机延迟设置。`AssetMode = Editor` 仍是独立的快速直读模式。
+Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载。所有模式共用 AssetBundleProvider，资源 Lease 必须持有 Cache，场景 Cache 必须持有 Bundle Lease；Simulate 不提供随机交付延迟。
 
-模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 只支持编辑器，Player 中选择该值会报错。
+模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 在非 Editor 环境（包括 Development Build）自动按 BuiltIn 定位，配置值不被改写；仍需构建并部署随包资源。远端部署须明确选择 Remote。
 
 发布前通过 `Lite > Builder` 生成资源包和版本文件，随包资源放入对应 StreamingAssets。版本文件失败或 Bundle 依赖环会使系统初始化失败。URI 能正确组成不代表所有 Player 平台的读取链都经过验证。
 
@@ -162,7 +161,7 @@ var window = LiteRuntime.Asset.InstantiateHandle(
 - 优先级不保证完成顺序或整条加载链优先，也不绕过并发限制。持续高优先级请求可能使低优先级请求饥饿。
 - Loader 提交额度和 Asset 任务组额度分别生效；已提交但仍等待任务组准入的任务也占 Loader 名额。它们不占业务 Default 组，但逻辑额度不保证取消后的原生操作停止。
 - `AssetLoadPriority` 与 [TaskPriority](../Core/Async/Task/README.md#优先级与执行时序) 独立，不修改已提交任务的优先级。Asset 组中版本包和 Bundle 任务以 Urgent 提交，Asset/Scene 任务以 Normal 提交。
-- Editor 直读接受优先级参数，但不经过 Asset 组排队，也不模拟 Bundle 队列。Profiler 的 Bundle Begin 表示 Cache 接受请求，不代表实际提交顺序；Profiler 事件订阅者不得在事件内加载、释放或修改资源生命周期。
+- 三种 Locater 都经过相同的 Loader 队列和 Asset 任务组。Profiler 的 Bundle Begin 表示 Cache 接受请求，不代表实际提交顺序；Profiler 事件订阅者不得在事件内加载、释放或修改资源生命周期。
 
 ## 缓存与构建工具
 

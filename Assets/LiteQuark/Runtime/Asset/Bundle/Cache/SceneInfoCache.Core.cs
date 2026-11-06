@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
             _sceneKey = sceneKey;
             _loadPath = loadPath;
             _parameters = parameters;
-            _bundleLease = bundleLease;
+            _bundleLease = bundleLease ?? throw new ArgumentNullException(nameof(bundleLease));
         }
 
         public async UniTask DisposeAsync()

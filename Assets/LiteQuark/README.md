@@ -80,7 +80,7 @@ var tasks = LiteRuntime.Get<TaskSystem>();
 
 | 核心模块 | 说明 |
 | --- | --- |
-| [Asset](Runtime/Asset/README.md) | Editor / AssetBundle 加载、Handle 所有权、缓存与预加载 |
+| [Asset](Runtime/Asset/README.md) | Simulate / BuiltIn / Remote 加载、Handle 所有权、缓存与预加载 |
 | [Event](Runtime/Core/Event/README.md) | 类型化事件、Tag 注销、独立事件模块 |
 | [Task](Runtime/Core/Async/Task/README.md) | 协程、回调任务、并发限制、主线程投递 |
 | [Timer](Runtime/Core/Async/Timer/README.md) | 时间回调、重复执行、暂停与取消 |
@@ -94,7 +94,7 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 资源默认位于 `Assets/StandaloneAssets`，加载路径包含扩展名，可使用根目录相对路径或完整 Assets 项目路径。加载、实例化、预加载和场景所有权通过 Handle 管理；持有期间使用结果，结束时 Dispose。路径规则、错误处理和配置见 [Asset 指南](Runtime/Asset/README.md)。
 
-Editor 模式直接读取项目资源，非编辑器环境使用 Bundle。通过 `Lite > Builder` 构建资源包和版本文件；目标平台须安装对应 Unity 构建支持。命令行入口为 `LiteQuark.Editor.ProjectBuilderCommandLine.Build`，参数见 [ProjectBuilderCommandLine.cs](Editor/Builder/ProjectBuilderCommandLine.cs)。`-copyToStreaming true` 会删除并替换 `Assets/StreamingAssets/LiteQuark`，构建准备也可能修改项目设置，完成后检查差异。
+资源统一通过 Bundle 管理流程加载。默认 Simulate 在编辑器中收集项目资源进行模拟，非编辑器环境自动使用 BuiltIn 本地资源包；可显式选择 BuiltIn 或 Remote 验证真实 Bundle。通过 `Lite > Builder` 构建资源包和版本文件；目标平台须安装对应 Unity 构建支持。命令行入口为 `LiteQuark.Editor.ProjectBuilderCommandLine.Build`，参数见 [ProjectBuilderCommandLine.cs](Editor/Builder/ProjectBuilderCommandLine.cs)。`-copyToStreaming true` 会删除并替换 `Assets/StreamingAssets/LiteQuark`，构建准备也可能修改项目设置，完成后检查差异。
 
 ## 通用路径与文件操作
 

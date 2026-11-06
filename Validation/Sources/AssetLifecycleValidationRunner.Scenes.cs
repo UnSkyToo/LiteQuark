@@ -99,21 +99,28 @@ namespace LiteQuark.Editor
         private static async UniTask EditorShutdownDeliveries()
         {
             New();
-            foreach (var delayed in new[] { false, true })
+            foreach (var executing in new[] { false, true })
             {
-                await WithEditorScenes(delayed, async (assets, provider) =>
+                await WithSimulateScenes(async (assets, provider) =>
                 {
-                    var handle = assets.LoadAssetHandle<TextAsset>(TextPath);
+                    // Warm the Bundle so this close targets the Asset task, not Bundle work.
+                    using var warm = assets.LoadAssetHandle<UnityEngine.Object>(EditorTextPath);
+                    await Wait(() => warm.IsDone, "Simulate warm Bundle");
+                    var handle = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
                     Current.Handles.Add(handle);
+                    var task = TaskSnapshot().OfType<LoadSimulateAssetTask<TextAsset>>().Single();
+                    if (executing) await Wait(() => task.State == TaskState.Running, "Simulate Asset execution");
+                    Check(task.State == (executing ? TaskState.Running : TaskState.Pending) && !handle.IsDone,
+                        "Close targets a queued or executed Asset task before result delivery.");
                     var shutdown = assets.DisposeAsync();
-                    var rejected = assets.LoadAssetHandle<TextAsset>(SecondTextPath);
+                    var rejected = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
                     Current.Handles.Add(rejected);
                     Check(shutdown.Status == UniTaskStatus.Pending && rejected.State == AssetHandleState.Failed,
-                        "Editor close rejects new work while an existing ordinary or simulated delivery is pending.");
-                    await Wait(() => shutdown.Status.IsCompleted(), "Editor pending delivery shutdown");
+                        "Simulate close rejects new work while draining existing requests.");
                     await shutdown;
-                    Check(handle.State == AssetHandleState.Failed && handle.Result == null,
-                        "Editor shutdown drains and releases the old delivery without publishing a successful result.");
+                    Check(handle.State == AssetHandleState.Failed && handle.Result == null &&
+                        ((IResourceTaskCleanup)task).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded,
+                        "Shutdown ends pending Handles and completes Asset cleanup without late success.");
                 });
             }
         }
@@ -121,17 +128,22 @@ namespace LiteQuark.Editor
         private static async UniTask EditorShutdownScene()
         {
             New();
-            await WithEditorScenes(true, async (assets, provider) =>
+            await WithSimulateScenes(async (assets, provider) =>
             {
                 var handle = EditorScene(assets);
-                await Wait(() => SceneManager.GetSceneByName("editor_validation_scene").isLoaded, "Editor Scene before delayed delivery");
-                var scene = SceneManager.GetSceneByName("editor_validation_scene");
-                Check(!handle.IsDone && scene.isLoaded, "The native Editor scene exists before its delayed Handle delivery.");
+                // Start the queued native operation explicitly to close before the player loop completes it.
+                await Wait(() => TaskSnapshot().OfType<LoadEditorSceneTask>().Any(), "Simulate scene task admission");
+                var task = TaskSnapshot().OfType<LoadEditorSceneTask>().Single();
+                task.Execute();
+                var operation = (AsyncOperation)typeof(LoadSceneTask).GetField("_sceneRequest", Private).GetValue(task);
+                Check(operation != null && !operation.isDone && !handle.IsDone,
+                    "Close targets an actual native Editor scene load before result delivery.");
                 var shutdown = assets.DisposeAsync();
-                await Wait(() => shutdown.Status.IsCompleted(), "Editor Scene shutdown");
                 await shutdown;
-                Check(handle.State == AssetHandleState.Failed && (!scene.IsValid() || !scene.isLoaded),
-                    "Closing an Editor provider waits for delayed scene delivery and its actual native unload.");
+                Check(handle.State == AssetHandleState.Failed &&
+                    ((IResourceTaskCleanup)task).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded &&
+                    !Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).Any(scene => scene.path == EditorScenePath),
+                    "Simulate close waits for the late native scene to unload.");
             });
         }
 
@@ -772,30 +784,29 @@ namespace LiteQuark.Editor
             Check(h.LoadingNames.Count == 0 && !task.IsExecuted, "Task cancellation clears registration without starting Unity load.");
         }
 
-        private static async UniTask WithEditorScenes(bool delayed, Func<AssetSystem, AssetEditorProvider, UniTask> action)
+        private static async UniTask WithSimulateScenes(Func<AssetSystem, AssetBundleProvider, UniTask> action)
         {
             var setting = LiteRuntime.Setting.Asset;
-            var oldDelay = setting.SimulateAsyncDelayInEditor;
-            var oldMin = setting.AsyncDelayMinFrame;
-            var oldMax = setting.AsyncDelayMaxFrame;
+            var oldLocater = setting.BundleLocater;
             AssetSystem assets = null;
             try
             {
-                setting.SimulateAsyncDelayInEditor = delayed;
-                setting.AsyncDelayMinFrame = 59;
-                setting.AsyncDelayMaxFrame = 60;
-                var provider = new AssetEditorProvider();
-                Check(await provider.Initialize(), "Editor scene provider initializes; simulated delay=" + delayed);
+                setting.BundleLocater = BundleLocaterMode.Simulate;
                 assets = new AssetSystem();
-                Set(assets, "_provider", provider);
+                var provider = (AssetBundleProvider)Get<IAssetProvider>(assets, "_provider");
+                _simulateProvider = provider;
+                // The fixture Runtime already owns the Asset group.
+                Check(await provider.Initialize(), "Simulate initializes from collected project assets.");
                 await action(assets, provider);
             }
             finally
             {
-                if (assets != null) await assets.DisposeAsync();
-                setting.SimulateAsyncDelayInEditor = oldDelay;
-                setting.AsyncDelayMinFrame = oldMin;
-                setting.AsyncDelayMaxFrame = oldMax;
+                try { if (assets != null) await assets.DisposeAsync(); }
+                finally
+                {
+                    _simulateProvider = null;
+                    setting.BundleLocater = oldLocater;
+                }
             }
         }
 
@@ -806,10 +817,10 @@ namespace LiteQuark.Editor
             return handle;
         }
 
-        private static async UniTask EditorSceneLifetime(bool delayed)
+        private static async UniTask EditorSceneLifetime()
         {
             New();
-            await WithEditorScenes(delayed, async (assets, provider) =>
+            await WithSimulateScenes(async (assets, provider) =>
             {
                 var first = EditorScene(assets);
                 await Wait(() => first.IsDone, "First Editor scene");
@@ -821,8 +832,8 @@ namespace LiteQuark.Editor
                 var lease = Get<SceneInfoCache.Lease>(first, "_lease");
                 var entry = Get<SceneInfoCache>(lease, "_cache");
                 Check(a.handle != b.handle && entry.Stage == AssetCacheStage.Loaded &&
-                    Get<AssetBundleCache.Lease>(entry, "_bundleLease") == null,
-                    "Editor uses independent native instances and a Loaded scene entry without Bundle lease.");
+                    Get<AssetBundleCache.Lease>(entry, "_bundleLease") != null,
+                    "Simulate owns independent scene instances and each loaded entry holds a Bundle lease.");
                 first.Dispose();
                 lease.Dispose();
                 first.Dispose();
@@ -837,10 +848,10 @@ namespace LiteQuark.Editor
             });
         }
 
-        private static async UniTask EditorSceneCancellation(bool delayed)
+        private static async UniTask EditorSceneCancellation()
         {
             New();
-            await WithEditorScenes(delayed, async (assets, provider) =>
+            await WithSimulateScenes(async (assets, provider) =>
             {
                 using var cts = new CancellationTokenSource();
                 var canceled = EditorScene(assets, EditorScenePath, cts.Token);
@@ -865,7 +876,7 @@ namespace LiteQuark.Editor
         private static async UniTask EditorSceneFailure()
         {
             New();
-            await WithEditorScenes(false, async (assets, provider) =>
+            await WithSimulateScenes(async (assets, provider) =>
             {
                 using var cts = new CancellationTokenSource();
                 cts.Cancel();
@@ -888,41 +899,6 @@ namespace LiteQuark.Editor
                         "Invalid Editor scene request clears its name and can be retried, attempt " + i);
                 }
             });
-        }
-
-        private static async UniTask EditorSceneInvalidated()
-        {
-            New();
-            await WithEditorScenes(true, async (assets, provider) =>
-            {
-                var handle = EditorScene(assets);
-                Check(!handle.IsDone, "Editor request must remain pending before native completion and delayed delivery.");
-                await Wait(() => SceneManager.GetSceneByName("editor_validation_scene").isLoaded, "Native scene before delayed delivery");
-                var scene = SceneManager.GetSceneByName("editor_validation_scene");
-                Check(!handle.IsDone, "Native Editor scene exists while public result is still delayed.");
-                var operation = SceneManager.UnloadSceneAsync(scene);
-                Check(operation != null, "Explicit external unload was submitted.");
-                await Wait(() => operation.isDone, "External unload before Editor delivery");
-                Check(!handle.IsDone, "External unload completed before the simulated delivery deadline.");
-                await Wait(() => handle.IsDone, "Invalid Editor result delivery");
-                Check(handle.Result == null && Get<SceneInfoCache.Lease>(handle, "_lease") == null &&
-                    Get<HashSet<string>>(provider, "_loadingSceneSet").Count == 0,
-                    "Delivery-time validation rejects invalid scene, releases its lease and clears its name.");
-            });
-        }
-
-        private static async UniTask EditorNativeTiming()
-        {
-            New();
-            var scene = EditorSceneManager.LoadSceneInPlayMode(EditorScenePath,
-                new LoadSceneParameters(LoadSceneMode.Additive));
-            _case.evidence.Add("Immediately after native call: IsValid=" + scene.IsValid() + ", isLoaded=" + scene.isLoaded + ".");
-            Check(scene.IsValid(), "The native Editor API returns a valid scene identity.");
-            await Wait(() => scene.isLoaded, "Native Editor scene completion");
-            Check(scene.isLoaded, "The same scene identity becomes loaded after player-loop progress.");
-            var op = SceneManager.UnloadSceneAsync(scene);
-            Check(op != null, "Timing probe can explicitly unload its fixture.");
-            await Wait(() => op.isDone && !scene.isLoaded, "Native timing probe cleanup");
         }
 
         private static void RestoreValidationHost()
@@ -986,10 +962,10 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask EditorSceneAutomaticUnload(bool single, bool delayed)
+        private static async UniTask EditorSceneAutomaticUnload(bool single)
         {
             New();
-            await WithEditorScenes(delayed, async (assets, provider) =>
+            await WithSimulateScenes(async (assets, provider) =>
             {
                 try
                 {
@@ -1019,7 +995,7 @@ namespace LiteQuark.Editor
                     await Wait(() => firstEntry.Stage == AssetCacheStage.Unloaded, "Automatic Editor entry completion");
                     Check(!Get<bool>(first, "_isDisposed") && first.Result == null && !firstScene.isLoaded &&
                         Get<AssetBundleCache.Lease>(firstEntry, "_bundleLease") == null,
-                        "Editor uses common automatic completion without a Bundle lease or Handle disposal.");
+                        "Native unload returns the simulated scene Bundle lease before Handle disposal.");
                     first.Dispose(); first.Dispose(); firstLease.Dispose(); await firstEntry.DisposeAsync();
                     await Frame();
                     Check(second.Result.HasValue && second.Result.Value.isLoaded,

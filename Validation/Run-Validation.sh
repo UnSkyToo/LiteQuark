@@ -379,8 +379,8 @@ for name in $selected; do
         collector) runner=CollectorValidationRunner; expected=15 ;;
         packages) runner=PackageValidationRunner; expected=1 ;;
         tasks) runner=TaskSystemValidationRunner; expected=38 ;;
-        lifecycle) runner=AssetLifecycleValidationRunner; expected=154 ;;
-        loading) runner=AssetLoadingValidationRunner; expected=27 ;;
+        lifecycle) runner=AssetLifecycleValidationRunner; expected=148 ;;
+        loading) runner=AssetLoadingValidationRunner; expected=26 ;;
     esac
     mkdir -p "$reports/$name"
     remove_generated "$reports/$name/results.json" "$reports/$name"

@@ -3443,59 +3443,44 @@ namespace LiteQuark.Editor
 
         private static async UniTask EditorAssetLease()
         {
-            var setting = LiteRuntime.Setting.Asset;
-            var previousDelay = setting.SimulateAsyncDelayInEditor;
-            var previousMin = setting.AsyncDelayMinFrame;
-            var previousMax = setting.AsyncDelayMaxFrame;
-            try
+            New();
+            await WithSimulateScenes(async (assets, provider) =>
             {
-                foreach (var simulateDelay in new[] { false, true })
+                var nullOwnersRejected = 0;
+                try { new AssetInfoCache.Lease<TextAsset>(null); } catch (ArgumentNullException) { nullOwnersRejected++; }
+                try { new SceneInfoCache(null, EditorScenePath, EditorScenePath, new LoadSceneParameters(LoadSceneMode.Additive)); }
+                catch (ArgumentNullException) { nullOwnersRejected++; }
+                Check(nullOwnersRejected == 2, "Asset leases and scene entries require a cache or Bundle lease at construction.");
+                using var live = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
+                using var cts = new CancellationTokenSource();
+                var canceled = assets.LoadAssetHandle<TextAsset>(EditorTextPath, ct: cts.Token);
+                var disposed = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
+                using var failed = assets.LoadAssetHandle<Texture2D>(EditorTextPath);
+                Current.Handles.Add(canceled); Current.Handles.Add(disposed);
+                cts.Cancel(); disposed.Dispose();
+                foreach (var ended in new[] { canceled, disposed })
                 {
-                    setting.SimulateAsyncDelayInEditor = simulateDelay;
-                    setting.AsyncDelayMinFrame = 2;
-                    setting.AsyncDelayMaxFrame = 3;
-                    var provider = new AssetEditorProvider();
-                    Check(await provider.Initialize(), "Editor Provider initializes with simulated delay=" + simulateDelay);
-                    var assets = new AssetSystem();
-                    Set(assets, "_provider", provider);
-                    using var live = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
-                    using var cts = new CancellationTokenSource();
-                    using var canceled = assets.LoadAssetHandle<TextAsset>(EditorTextPath, ct: cts.Token);
-                    using var disposed = assets.LoadAssetHandle<TextAsset>(EditorTextPath);
-                    using var failed = assets.LoadAssetHandle<TextAsset>("Assets/StandaloneAssets/_session_validation/missing.txt");
-                    try
-                    {
-                        cts.Cancel(); disposed.Dispose();
-                        var tokenCanceled = false; var disposeCanceled = false;
-                        try { await canceled; } catch (OperationCanceledException) { tokenCanceled = true; }
-                        try { await disposed; } catch (OperationCanceledException) { disposeCanceled = true; }
-                        await Wait(() => live.IsDone && canceled.IsDone && disposed.IsDone && failed.IsDone, "Editor delayed results");
-                        var lease = Get<AssetInfoCache.Lease<TextAsset>>(live, "_lease");
-                        Check(live.Result != null && lease != null && Get<AssetInfoCache>(lease, "_cache") == null,
-                            "Editor success delivers an uncached Lease through the public Handle API.");
-                        Check(tokenCanceled && disposeCanceled && canceled.Result == null && disposed.Result == null &&
-                            Get<AssetInfoCache.Lease<TextAsset>>(canceled, "_lease") == null &&
-                            Get<AssetInfoCache.Lease<TextAsset>>(disposed, "_lease") == null,
-                            "Canceled and disposed Editor Handles release their late leases.");
-                        Check(failed.Result == null && Get<AssetInfoCache.Lease<TextAsset>>(failed, "_lease") == null,
-                            "Editor load failure has neither result nor Lease.");
-                        var asset = live.Result; live.Dispose(); live.Dispose(); lease.Dispose();
-                        Check(live.Result == null && lease.Value == null && asset != null,
-                            "Editor Lease disposal clears ownership without destroying the AssetDatabase asset.");
-                    }
-                    finally
-                    {
-                        live.Dispose(); canceled.Dispose(); disposed.Dispose(); failed.Dispose();
-                        await assets.DisposeAsync();
-                    }
+                    var wasCanceled = false;
+                    try { await ended; } catch (OperationCanceledException) { wasCanceled = true; }
+                    Check(wasCanceled && ended.State == AssetHandleState.Cancelled,
+                        "Simulate token cancellation and pending Dispose both cancel the public await.");
                 }
-            }
-            finally
-            {
-                setting.SimulateAsyncDelayInEditor = previousDelay;
-                setting.AsyncDelayMinFrame = previousMin;
-                setting.AsyncDelayMaxFrame = previousMax;
-            }
+                await Wait(() => live.IsDone && failed.IsDone, "Simulate asset results");
+                var lease = Get<AssetInfoCache.Lease<TextAsset>>(live, "_lease");
+                var cache = Get<AssetInfoCache>(lease, "_cache");
+                Check(live.Result != null && cache != null && Get<int>(cache, "_refCount") == 1,
+                    "Successful simulated loading owns a cached lease; canceled shared requests return their references.");
+                Check(canceled.Result == null && disposed.Result == null &&
+                    Get<AssetInfoCache.Lease<TextAsset>>(canceled, "_lease") == null &&
+                    Get<AssetInfoCache.Lease<TextAsset>>(disposed, "_lease") == null,
+                    "Canceled simulated Handles do not retain late leases.");
+                Check(failed.State == AssetHandleState.Failed && failed.Result == null &&
+                    Get<AssetInfoCache.Lease<Texture2D>>(failed, "_lease") == null,
+                    "A collected asset with an incompatible type fails without a lease.");
+                var asset = live.Result; live.Dispose(); live.Dispose(); lease.Dispose();
+                Check(live.Result == null && lease.Value == null && asset != null && Get<int>(cache, "_refCount") == 0,
+                    "Repeated simulated release returns cache ownership without destroying the project object.");
+            });
         }
 
         private static async UniTask RetentionDuringPause()

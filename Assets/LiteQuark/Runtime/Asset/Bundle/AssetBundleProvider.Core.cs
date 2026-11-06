@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
 
         public async UniTask<bool> Initialize()
         {
-            var bundleLocater = CreateLocater();
+            var bundleLocater = CreateLocater(UnityEngine.Application.isEditor);
             if (bundleLocater == null)
             {
                 return false;
@@ -210,9 +210,15 @@ namespace LiteQuark.Runtime
             _bundleLoader.RaiseBundlePriority(bundleInfo, priority);
         }
 
-        private IBundleLocater CreateLocater()
+        private IBundleLocater CreateLocater(bool isEditor)
         {
-            switch (LiteRuntime.Setting.Asset.BundleLocater)
+            var mode = LiteRuntime.Setting.Asset.BundleLocater;
+            // 默认模拟配置也可用于 Player；只有编辑器能访问项目资源。
+            if (!isEditor && mode == BundleLocaterMode.Simulate)
+            {
+                mode = BundleLocaterMode.BuiltIn;
+            }
+            switch (mode)
             {
                 case BundleLocaterMode.BuiltIn:
                     return new BundleBuiltInLocater
@@ -227,14 +233,12 @@ namespace LiteQuark.Runtime
                     {
                         DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
                     };
-                case BundleLocaterMode.Simulate:
 #if UNITY_EDITOR
+                case BundleLocaterMode.Simulate:
                     return new BundleSimulateLocater();
-#else
-                    throw new NotSupportedException("Bundle Simulate mode is only available in the Unity Editor");
 #endif
                 default:
-                    throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {LiteRuntime.Setting.Asset.BundleLocater}");
+                    throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {mode}");
             }
         }
     }

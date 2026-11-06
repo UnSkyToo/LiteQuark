@@ -5,22 +5,6 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class SceneInfoCache : IDisposeAsync
     {
-#if UNITY_EDITOR
-        internal void LoadSceneForEditor(Scene scene, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
-        {
-            if (Stage != AssetCacheStage.Idle)
-            {
-                return;
-            }
-
-            _sceneLoaderCallback = callback;
-            Stage = AssetCacheStage.Loading;
-
-            AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease?.BundlePath ?? string.Empty);
-            CompleteSceneLoad(true, scene, null);
-        }
-#endif
-
         public void LoadSceneAsync(IBundleResource bundle, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage != AssetCacheStage.Idle)

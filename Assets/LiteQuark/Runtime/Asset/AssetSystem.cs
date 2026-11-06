@@ -13,27 +13,7 @@ namespace LiteQuark.Runtime
 
         public AssetSystem()
         {
-            var mode = LiteRuntime.Setting.Asset.AssetMode;
-
-#if !UNITY_EDITOR
-            if (mode == AssetProviderMode.Editor)
-            {
-                mode = AssetProviderMode.Bundle;
-            }
-#endif
-            switch (mode)
-            {
-#if UNITY_EDITOR
-                case AssetProviderMode.Editor:
-                    _provider = new AssetEditorProvider();
-                    break;
-#endif
-                case AssetProviderMode.Bundle:
-                    _provider = new AssetBundleProvider();
-                    break;
-                default:
-                    throw new ArgumentException($"error {nameof(AssetProviderMode)} : {mode}");
-            }
+            _provider = new AssetBundleProvider();
         }
 
         public UniTask<bool> Initialize()

@@ -44,7 +44,6 @@ namespace LiteQuark.Editor
     //         {
     //             if (Foldout_)
     //             {
-    //                 EditorGUILayout.PropertyField(property.FindPropertyRelative("AssetMode"));
     //
     //                 var enableRetainProperty = property.FindPropertyRelative("EnableRetain");
     //                 EditorGUILayout.PropertyField(enableRetainProperty);
