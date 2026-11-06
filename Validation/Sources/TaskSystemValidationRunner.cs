@@ -132,7 +132,8 @@ namespace LiteQuark.Editor
                 await RunAsync("35 Runtime Restart rejects unsupported states and expires queued requests", RuntimeRestartStates,
                     "Enter <ErrorState>", "FrameworkError: Unknown", "FrameworkError: Startup",
                     $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed");
-                await RunAsync("36 Runtime Restart merges requests while shutdown keeps progressing", RuntimeRestartRequests);
+                await RunAsync("36 Runtime Restart merges requests while shutdown keeps progressing", RuntimeRestartRequests,
+                    "Enter <ErrorState>", "FrameworkError: Unknown");
                 // Terminal failure is last: retain the failed Runtime instead of forcing it back to Idle.
                 await RunAsync("37 Runtime shutdown failure stops all system ticks", RuntimeShutdownFailureStopsTick);
             }
@@ -1453,6 +1454,13 @@ namespace LiteQuark.Editor
                     var expected = target == "system 2" ? LiteRuntime.RuntimeState.InitSystem : LiteRuntime.RuntimeState.InitLogic;
                     Check(runtime.State == expected, "The real startup is held in " + expected + ".");
                     Throws<InvalidOperationException>(runtime.Restart, expected + " rejects Restart.");
+                    LiteRuntime.Setting.Common.AutoRestartInBackground = true;
+                    LiteRuntime.Setting.Common.BackgroundLimitTime = 0f;
+                    runtime.OnEnterBackground();
+                    runtime.OnEnterForeground();
+                    runtime.Tick(0f);
+                    Check(runtime.State == expected && runtime.IsFocus && !runtime.IsPause && fixture.Events.Count == 0,
+                        "An overdue foreground return resumes " + expected + " without requesting Restart.");
                     fixture.InitializationGate.TrySetResult(true);
                     await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Rejected request startup completion");
                     runtime.Tick(0f);
@@ -1470,6 +1478,10 @@ namespace LiteQuark.Editor
                 runtime.Restart();
                 runtime.EnterErrorState(FrameworkErrorCode.Unknown);
                 Throws<InvalidOperationException>(runtime.Restart, "Error rejects Restart.");
+                LiteRuntime.Setting.Common.AutoRestartInBackground = true;
+                LiteRuntime.Setting.Common.BackgroundLimitTime = 0f;
+                runtime.OnEnterBackground();
+                runtime.OnEnterForeground();
                 runtime.Tick(0f);
                 runtime.Tick(0f);
                 Check(runtime.State == LiteRuntime.RuntimeState.Error && queued.Events.Count == 0,
@@ -1526,6 +1538,7 @@ namespace LiteQuark.Editor
             var replacement = new ShutdownFixture();
             replacement.LogicGate.TrySetResult();
             replacement.SystemGate.TrySetResult();
+            var finalGeneration = replacement;
             try
             {
                 await BeginShutdownFixture(previous);
@@ -1556,13 +1569,43 @@ namespace LiteQuark.Editor
                 Check(previous.Instances.Values.All(probe => probe.Disposals == 1) && replacement.Instances.Count == 4 &&
                     replacement.Events.Count == 0 && !ReferenceEquals(oldSystem, LiteRuntime.Get<ShutdownSystemTwo>()),
                     "Exactly one replacement generation remains Running with no second queued shutdown.");
+
+                var foregroundReplacement = new ShutdownFixture();
+                foregroundReplacement.LogicGate.TrySetResult();
+                foregroundReplacement.SystemGate.TrySetResult();
+                finalGeneration = foregroundReplacement;
+                _shutdownFixture = foregroundReplacement;
+                var foregroundSystem = LiteRuntime.Get<ShutdownSystemTwo>();
+                LiteRuntime.Setting.Common.AutoRestartInBackground = true;
+                LiteRuntime.Setting.Common.BackgroundLimitTime = 0f;
+                runtime.OnEnterBackground();
+                runtime.OnEnterForeground();
+                runtime.Tick(0f);
+                Check(runtime.State == LiteRuntime.RuntimeState.ShuttingDown,
+                    "An overdue foreground return while Running requests the normal restart path.");
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Foreground replacement startup");
+                Check(!ReferenceEquals(foregroundSystem, LiteRuntime.Get<ShutdownSystemTwo>()) &&
+                    replacement.Instances.Values.All(probe => probe.Disposals == 1) && foregroundReplacement.Instances.Count == 4,
+                    "Foreground restart disposes the previous generation once and initializes a working replacement.");
+
+                void FailOnForeground(EnterForegroundEvent message) => runtime.EnterErrorState(FrameworkErrorCode.Unknown);
+                LiteRuntime.Event.Register<EnterForegroundEvent>(FailOnForeground);
+                try
+                {
+                    runtime.OnEnterBackground();
+                    runtime.OnEnterForeground();
+                    runtime.Tick(0f);
+                    Check(runtime.State == LiteRuntime.RuntimeState.Error && foregroundReplacement.Events.Count == 0,
+                        "Automatic restart uses the state after foreground listeners, so an event entering Error does not request restart.");
+                }
+                finally { LiteRuntime.Event.UnRegister<EnterForegroundEvent>(FailOnForeground); }
             }
             finally
             {
                 previous.LogicGate.TrySetResult();
                 previous.SystemGate.TrySetResult();
                 await WaitForRuntimeCondition(() => runtime.State != LiteRuntime.RuntimeState.ShuttingDown, "Pending restart completion");
-                await FinishShutdownFixture(replacement);
+                await FinishShutdownFixture(finalGeneration);
             }
         }
 
@@ -1571,7 +1614,6 @@ namespace LiteQuark.Editor
             var runtime = LiteRuntime.Instance;
             var fixture = new ShutdownFixture { FailedDisposal = "system 2" };
             fixture.LogicGate.TrySetResult();
-            fixture.SystemGate.TrySetResult();
             try
             {
                 await BeginShutdownFixture(fixture);
@@ -1580,9 +1622,20 @@ namespace LiteQuark.Editor
                 Check(fixture.Instances.Values.All(probe => probe.Ticks > 0),
                     "The probes participate in real Runtime updates before shutdown.");
                 var shutdown = runtime.Shutdown();
-                await WaitForRuntimeCondition(() => shutdown.Status != UniTaskStatus.Pending, "Partial disposal failure");
+                await WaitForRuntimeCondition(() => fixture.Events.Contains("system 2 start"), "Partial disposal waiting for Timer");
+                var ticksBeforeFailure = fixture.Instances.Values.Sum(probe => probe.Ticks);
+                var failureObservedInTimer = false;
+                LiteRuntime.Timer.NextFrame(() =>
+                {
+                    fixture.SystemGate.TrySetResult();
+                    failureObservedInTimer = runtime.State == LiteRuntime.RuntimeState.ShutdownFailed;
+                });
+                runtime.Tick(1f);
                 Exception error = null;
                 try { await shutdown; } catch (Exception ex) { error = ex; }
+                Check(failureObservedInTimer && fixture.Instances.Values.Sum(probe => probe.Ticks) == ticksBeforeFailure &&
+                    fixture.TicksAfterDispose == 0,
+                    "Timer resumes the failing Dispose inside Runtime.Tick; remaining systems are skipped in that same traversal.");
                 Check(ReferenceEquals(error, fixture.DisposalError) && runtime.State == LiteRuntime.RuntimeState.ShutdownFailed &&
                     fixture.Events.Contains("system 2 start") && !fixture.Events.Contains("system 2 end"),
                     "The original partial-system disposal error propagates and leaves Runtime in ShutdownFailed.");

@@ -290,7 +290,8 @@ namespace LiteQuark.Runtime
             LLog.Info("OnEnterForeground");
             Event?.Send<EnterForegroundEvent>();
 
-            if (_setting.Common.AutoRestartInBackground && Time.realtimeSinceStartup - _enterBackgroundTime >= _setting.Common.BackgroundLimitTime)
+            if (_state == RuntimeState.Running && _setting.Common.AutoRestartInBackground &&
+                Time.realtimeSinceStartup - _enterBackgroundTime >= _setting.Common.BackgroundLimitTime)
             {
                 Restart();
                 return;

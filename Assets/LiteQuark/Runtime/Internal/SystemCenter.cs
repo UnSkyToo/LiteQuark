@@ -27,6 +27,11 @@ namespace LiteQuark.Runtime
 
             foreach (var system in _systemList)
             {
+                if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShutdownFailed)
+                {
+                    break;
+                }
+
                 if (!_ownedSystems.Contains(system))
                 {
                     continue;
