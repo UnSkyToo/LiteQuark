@@ -55,7 +55,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void RetainCleanup(ILoadBundleTask task)
+        private void RetainCleanup(BaseTask task)
         {
             if (task is IResourceTaskCleanup resourceTask)
             {
@@ -158,7 +158,7 @@ namespace LiteQuark.Runtime
             while (!_isDisposed && _runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
-                ILoadBundleTask task = null;
+                BaseTask task = null;
 
                 try
                 {
@@ -224,9 +224,9 @@ namespace LiteQuark.Runtime
         private class RunningTask
         {
             public string Path { get; }
-            public ILoadBundleTask LoadTask { get; }
+            public BaseTask LoadTask { get; }
 
-            public RunningTask(string path, ILoadBundleTask loadTask)
+            public RunningTask(string path, BaseTask loadTask)
             {
                 Path = path;
                 LoadTask = loadTask;

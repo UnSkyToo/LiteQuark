@@ -25,13 +25,13 @@ namespace LiteQuark.Runtime
             return PathUtils.GetStreamingAssetsPath(LiteConst.Tag, path);
         }
 
-        public LoadVersionPackTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)
+        public BaseTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)
         {
             var versionPackUri = GetRuntimeFullPath(versionFileName);
             return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, callback);
         }
 
-        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<IBundleResource> callback)
+        public BaseTask LoadBundle(string bundlePath, string hash, System.Action<IBundleResource> callback)
         {
             var bundleUri = GetRuntimeFullPath(bundlePath);
             return LiteRuntime.Task.AddLoadLocalBundleTask(bundleUri,

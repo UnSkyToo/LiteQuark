@@ -1031,8 +1031,8 @@ namespace LiteQuark.Editor
         {
             internal LoadRemoteBundleTask Task;
             internal string UriOverride;
-            public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
+            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
                 Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null, bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
                 return Task;
@@ -1198,8 +1198,8 @@ namespace LiteQuark.Editor
             internal readonly Dictionary<string, ManualTask> Manual = new();
             internal readonly List<AssetBundle> Opened = new();
             internal Locator(bool manual, bool scheduleManual = false) { _manual = manual; _scheduleManual = scheduleManual; }
-            public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
+            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
                 Calls[path] = Calls.TryGetValue(path, out var count) ? count + 1 : 1;
                 Started.Add(path);

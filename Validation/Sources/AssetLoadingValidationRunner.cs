@@ -461,7 +461,7 @@ namespace LiteQuark.Editor
             try
             {
                 await Wait(() => bundleTask.IsDone, "BuiltIn Bundle load");
-                loadedBundle = bundleTask.GetBundle();
+                loadedBundle = bundleTask.Result as AssetBundle;
                 Check(loadedBundle != null && ReferenceEquals(loadedBundle, Get<AssetBundle>(callbackBundle, "_bundle")), "Public Bundle load completes from the same location policy.");
                 Check(loadedBundle.GetAllAssetNames().Contains(AssetPath.Resolve(TextA)) == persistent, "Different Bundle contents confirm the chosen location is " + marker);
                 var asset = loadedBundle.LoadAsset<TextAsset>(AssetPath.Resolve(ProbePath));
@@ -498,8 +498,8 @@ namespace LiteQuark.Editor
         private sealed class LocalLocator : IBundleLocater
         {
             public int Calls;
-            public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
+            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
                 Calls++;
                 return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
