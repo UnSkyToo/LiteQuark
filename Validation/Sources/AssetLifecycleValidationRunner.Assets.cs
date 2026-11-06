@@ -3717,7 +3717,8 @@ namespace LiteQuark.Editor
                 try { resource.GetAllScenePaths(); } catch (ObjectDisposedException) { rejected++; }
                 try { resource.CreateLoadAssetTask<TextAsset>(TextPath, null); } catch (ObjectDisposedException) { rejected++; }
                 try { resource.GetRuntimeMemorySize(); } catch (ObjectDisposedException) { rejected++; }
-                Check(rejected == 3, "A released container rejects queries and new read tasks.");
+                try { resource.CreateLoadSceneTask(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive), null); } catch (ObjectDisposedException) { rejected++; }
+                Check(rejected == 4, "A released container rejects queries and new read tasks.");
             }
             finally { resource.Dispose(); }
 

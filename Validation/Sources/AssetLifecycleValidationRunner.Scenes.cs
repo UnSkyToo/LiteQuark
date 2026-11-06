@@ -135,7 +135,7 @@ namespace LiteQuark.Editor
             });
         }
 
-        private static async UniTask RetireSceneTaskFixture(LoadSceneTask task, AsyncOperation request, bool expectCleanupFailure = false)
+        private static async UniTask RetireSceneTaskFixture(LoadSceneTask task, AsyncOperation request, bool expectCleanupFailure = false, string scenePath = ScenePath)
         {
             if (task == null) return;
             task.Cancel(); task.Dispose();
@@ -155,7 +155,7 @@ namespace LiteQuark.Editor
                 // Only fixture isolation restores a host; never retry or turn refused Task cleanup into success.
                 if (expectCleanupFailure) RestoreValidationHost();
                 var scenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
-                    .Where(scene => string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    .Where(scene => string.Equals(scene.path, scenePath, StringComparison.OrdinalIgnoreCase)).ToArray();
                 foreach (var scene in scenes)
                 {
                     if (!scene.IsValid() || !scene.isLoaded) continue;
@@ -167,6 +167,12 @@ namespace LiteQuark.Editor
         }
 
         private static async UniTask SceneTaskCleanup()
+        {
+            await SceneTaskCleanup(false);
+            await SceneTaskCleanup(true);
+        }
+
+        private static async UniTask SceneTaskCleanup(bool editor)
         {
             AssetBundle dependency = null;
             AssetBundle bundle = null;
@@ -184,16 +190,29 @@ namespace LiteQuark.Editor
             UnityEngine.Events.UnityAction<Scene, LoadSceneMode> captureLoad = null;
             try
             {
-                dependency = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
-                bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "scene.ab"));
-                Check(dependency != null && bundle != null, "Scene Task cleanup retains real Scene and dependency Bundles independently of cache ownership.");
+                var loadPath = EditorScenePath;
+                if (editor)
+                {
+                    Check(!UnityEditor.EditorBuildSettings.scenes.Any(scene => scene.path == loadPath),
+                        "Editor scene tasks load a project scene outside Build Settings and without a Bundle.");
+                }
+                else
+                {
+                    dependency = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
+                    bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "scene.ab"));
+                    Check(dependency != null && bundle != null, "Scene Task cleanup retains real Scene and dependency Bundles independently of cache ownership.");
+                    loadPath = bundle.GetAllScenePaths().Single();
+                }
+                LoadSceneTask CreateTask(Action<ITask> callback) => editor
+                    ? new LoadEditorSceneTask(loadPath, new LoadSceneParameters(LoadSceneMode.Additive), callback)
+                    : new LoadSceneTask(loadPath, new LoadSceneParameters(LoadSceneMode.Additive), callback);
                 var cancelledCalls = 0;
-                cancelled = new LoadSceneTask(bundle.GetAllScenePaths().Single(), new LoadSceneParameters(LoadSceneMode.Additive), _ => cancelledCalls++);
+                cancelled = CreateTask(_ => cancelledCalls++);
                 var first = ObserveResourceCleanup(cancelled);
                 var second = ObserveResourceCleanup(cancelled);
                 captureLoad = (scene, mode) =>
                 {
-                    if (!string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)) return;
+                    if (!string.Equals(scene.path, editor ? EditorScenePath : ScenePath, StringComparison.OrdinalIgnoreCase)) return;
                     lateScene = scene;
                     pendingAtLoad = first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending;
                 };
@@ -206,14 +225,14 @@ namespace LiteQuark.Editor
                 }
                 var unloadObservation = ObserveActualUnload();
                 cancelled.Execute();
-                cancelledRequest = Get<AsyncOperation>(cancelled, "_sceneRequest");
+                cancelledRequest = (AsyncOperation)typeof(LoadSceneTask).GetField("_sceneRequest", Private).GetValue(cancelled);
                 Check(cancelledRequest != null && !cancelledRequest.isDone, "Scene Task cancellation targets a submitted real Additive load.");
                 cancelled.Cancel(); cancelled.Dispose(); cancelled.Dispose();
                 Check(await cancelled.Task == null && first.Status == UniTaskStatus.Pending && second.Status == UniTaskStatus.Pending && cancelledCalls == 0,
                     "Cancelled Scene logic ends before native loading/unloading; early wrapper retirement sends no late business callback.");
                 await WaitForResourceCleanup(first, second, "Cancelled Additive Scene cleanup");
                 Check(await unloadObservation && pendingAtLoad && lateUnloaded && cancelled.State == TaskState.Cancelled &&
-                    cancelled.Error == null && cancelled.Result == null && cancelledCalls == 0 && bundle != null && dependency != null,
+                    cancelled.Error == null && cancelled.Result == null && cancelledCalls == 0 && (editor || (bundle != null && dependency != null)),
                     "Concurrent cleanup waiters finish after the late Scene's actual native unload event, despite early wrapper Dispose, without rewriting logic or releasing Bundles.");
                 await ObserveResourceCleanup(cancelled);
                 SceneManager.sceneLoaded -= captureLoad;
@@ -223,7 +242,7 @@ namespace LiteQuark.Editor
                 var events = new List<string>();
                 var delivered = default(Scene);
                 var calls = 0;
-                success = new LoadSceneTask(bundle.GetAllScenePaths().Single(), new LoadSceneParameters(LoadSceneMode.Additive), completed =>
+                success = CreateTask(completed =>
                 {
                     delivered = (Scene)completed.Result; calls++; events.Add("callback");
                 });
@@ -231,24 +250,24 @@ namespace LiteQuark.Editor
                 var successFirst = ObserveResourceCleanup(success);
                 var successSecond = ObserveResourceCleanup(success);
                 success.Execute();
-                successRequest = Get<AsyncOperation>(success, "_sceneRequest");
+                successRequest = (AsyncOperation)typeof(LoadSceneTask).GetField("_sceneRequest", Private).GetValue(success);
                 await WaitForResourceCleanup(successFirst, successSecond, "Successful Scene Task cleanup");
                 var awaited = await continuation;
                 await ObserveResourceCleanup(success);
                 await Frame(); await Frame();
                 Check(success.State == TaskState.Succeeded && success.Error == null && calls == 1 && delivered.IsValid() && delivered.isLoaded &&
                     awaited is Scene awaitedScene && awaitedScene.handle == delivered.handle && success.GetScene().handle == delivered.handle &&
-                    events.SequenceEqual(new[] { "await", "callback" }) && bundle != null && dependency != null,
+                    events.SequenceEqual(new[] { "await", "callback" }) && (editor || (bundle != null && dependency != null)),
                     "Immediate wrapper Dispose in the successful Scene await still delivers its Scene notification once; repeated cleanup observation never unloads the successful Scene.");
             }
             finally
             {
                 if (captureLoad != null) SceneManager.sceneLoaded -= captureLoad;
                 SceneManager.sceneUnloaded -= CaptureUnload;
-                try { await RetireSceneTaskFixture(cancelled, cancelledRequest); }
+                try { await RetireSceneTaskFixture(cancelled, cancelledRequest, scenePath: editor ? EditorScenePath : ScenePath); }
                 finally
                 {
-                    try { await RetireSceneTaskFixture(success, successRequest); }
+                    try { await RetireSceneTaskFixture(success, successRequest, scenePath: editor ? EditorScenePath : ScenePath); }
                     finally
                     {
                         if (bundle != null) bundle.Unload(true);

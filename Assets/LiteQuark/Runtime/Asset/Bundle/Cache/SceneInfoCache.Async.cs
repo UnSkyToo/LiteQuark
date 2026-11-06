@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
         }
 #endif
 
-        public void LoadSceneAsync(Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
+        public void LoadSceneAsync(IBundleResource bundle, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage != AssetCacheStage.Idle)
             {
@@ -35,7 +35,8 @@ namespace LiteQuark.Runtime
 
             try
             {
-                _loadSceneTask = LiteRuntime.Task.AddLoadSceneTask(_loadPath, _parameters, HandleSceneLoadCompleted);
+                _loadSceneTask = bundle.CreateLoadSceneTask(_loadPath, _parameters, HandleSceneLoadCompleted);
+                LiteRuntime.Task.AddTask(_loadSceneTask, LiteConst.TaskGroupId.Asset, TaskPriority.Normal);
             }
             catch (Exception ex)
             {

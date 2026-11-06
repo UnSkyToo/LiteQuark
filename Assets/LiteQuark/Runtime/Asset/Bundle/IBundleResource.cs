@@ -1,4 +1,5 @@
 using System;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -10,5 +11,6 @@ namespace LiteQuark.Runtime
 
         // 只构造任务；调用方提交到 TaskSystem，并持有 Bundle Lease 直到读取收尾。
         BaseTask CreateLoadAssetTask<T>(string assetKey, Action<ITask> callback) where T : UnityEngine.Object;
+        BaseTask CreateLoadSceneTask(string loadPath, LoadSceneParameters parameters, Action<ITask> callback);
     }
 }

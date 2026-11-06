@@ -63,6 +63,7 @@ Validation — 当前工作区的隔离 Unity 验证
   包含 Bundle 和 Editor 模式。具体用例见 Sources 与本轮报告。
   Bundle Resource 覆盖真实读取任务的创建/提交分离、重复释放和释放后入口拒绝；
   原有原生 Bundle/Scene 存活断言仍观察原生对象，不以包装对象非空代替原生有效性。
+  场景 Task 收尾用例同时覆盖真实 Bundle 与 LoadEditorSceneTask：后者读取未加入 Build Settings 的项目场景，验证取消后的迟到卸载和成功结果交接。
   ObjectPool 覆盖模板成功/失败/取消、移除时同 key 池替换、批量清理中的取消回调、预生成关闭、入池异常与剩余实例清理、真实 prefab Handle 释放和借出实例责任；
   Task 实例化用例覆盖原生完成但尚未发布时的清理，以及成功通知中的包装器释放。
   UI 覆盖同一轮 Update 中 A 关闭 B 后跳过 B 的更新，并保留下一次 Tick 通过关闭队列释放实例的时序。

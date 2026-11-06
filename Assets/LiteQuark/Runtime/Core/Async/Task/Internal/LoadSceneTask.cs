@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadSceneTask : BaseTask, IResourceTaskCleanup
+    internal class LoadSceneTask : BaseTask, IResourceTaskCleanup
     {
         public override string DebugName => $"LoadScene:{_scenePath}";
 
@@ -65,7 +65,7 @@ namespace LiteQuark.Runtime
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            _sceneRequest = SceneManager.LoadSceneAsync(_scenePath, _parameters);
+            _sceneRequest = StartLoadScene(_scenePath, _parameters);
 
             if (_sceneRequest == null)
             {
@@ -73,6 +73,11 @@ namespace LiteQuark.Runtime
                 return;
             }
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
+        }
+
+        protected virtual AsyncOperation StartLoadScene(string path, LoadSceneParameters parameters)
+        {
+            return SceneManager.LoadSceneAsync(path, parameters);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)

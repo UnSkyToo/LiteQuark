@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -28,6 +29,12 @@ namespace LiteQuark.Runtime
         {
             ThrowIfDisposed();
             return UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(_bundle);
+        }
+
+        public BaseTask CreateLoadSceneTask(string loadPath, LoadSceneParameters parameters, Action<ITask> callback)
+        {
+            ThrowIfDisposed();
+            return new LoadSceneTask(loadPath, parameters, callback);
         }
 
         public void Dispose()

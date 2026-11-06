@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
                 }
 
                 var cache = CreateSceneCache(sceneKey, loadPath, parameters, requestLease);
-                cache.LoadSceneAsync(result =>
+                cache.LoadSceneAsync(Bundle, result =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, result.Succeeded, errorMessage: result.Succeeded ? null : "Scene load failed");
                     LiteUtils.SafeInvoke(callback, result);

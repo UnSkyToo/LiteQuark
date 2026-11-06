@@ -216,7 +216,7 @@ namespace LiteQuark.Editor
                 await Run("104 Pending resource Tasks expose cleanup without execution", "four Task types, repeated cleanup waits and original terminal callbacks", PendingResourceTaskCleanup, "Bundle download failed");
                 await Run("105 Local Bundle cleanup survives wrapper retirement", "real native cancellation/failure and success await-Dispose handoff", LocalBundleTaskCleanup);
                 await Run("106 Asset cleanup waits without releasing its Bundle", "real AssetBundleRequest cancellation and success await-Dispose handoff", AssetTaskCleanup);
-                await Run("107 Scene cleanup unloads only cancelled late results", "real Additive scene, early wrapper disposal and success handoff", SceneTaskCleanup);
+                await Run("107 Scene cleanup unloads only cancelled late results", "Bundle and Editor Additive scenes, early wrapper disposal and success handoff", SceneTaskCleanup);
                 await Run("108 Refused late Single scene cleanup faults independently", "real last-scene refusal, repeated cleanup faults and null logical await", SceneTaskCleanupRefusal,
                     "Unloading the last loaded scene");
                 await Run("109 Remote cleanup follows request and timer retirement", "real file URI handoff, loopback cancellation and timeout retry timer", RemoteTaskCleanup,
@@ -385,7 +385,8 @@ namespace LiteQuark.Editor
         {
             var result = await task.Task;
             events.Add("await");
-            Check(Get<Delegate>(task, "_callback") == null, task.DebugName + " detaches its success callback before the await continuation.");
+            var callbackType = task is LoadSceneTask ? typeof(LoadSceneTask) : task.GetType();
+            Check(callbackType.GetField("_callback", Private).GetValue(task) == null, task.DebugName + " detaches its success callback before the await continuation.");
             task.Dispose();
             return result;
         }
