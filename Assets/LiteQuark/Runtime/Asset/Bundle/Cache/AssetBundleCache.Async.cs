@@ -77,11 +77,11 @@ namespace LiteQuark.Runtime
             });
         }
 
-        private void LoadBundleAsync(AssetLoadPriority priority, Action<AssetLoadResult<UnityEngine.AssetBundle>> callback)
+        private void LoadBundleAsync(AssetLoadPriority priority, Action<AssetLoadResult<IBundleResource>> callback)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<UnityEngine.AssetBundle>.Failure(new AssetError(BundlePath, "Bundle cache is unloading or unloaded")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IBundleResource>.Failure(new AssetError(BundlePath, "Bundle cache is unloading or unloaded")));
                 return;
             }
 
@@ -90,7 +90,7 @@ namespace LiteQuark.Runtime
                 AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Bundle, string.Empty, null, BundlePath, DependencyList, isCached: true);
                 AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, null, BundlePath, true, FileSize, isCached: true);
 
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<UnityEngine.AssetBundle>.Success(Bundle));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IBundleResource>.Success(Bundle));
                 return;
             }
 
@@ -109,7 +109,7 @@ namespace LiteQuark.Runtime
 
             var dependencies = DependencyList;
             AssetError firstError = null;
-            var acg = new AsyncCompletionGroup<UnityEngine.AssetBundle>(dependencies.Length + 1,
+            var acg = new AsyncCompletionGroup<IBundleResource>(dependencies.Length + 1,
                 (success, bundle) => HandleBundleLoadCompleted(success, bundle, firstError));
 
             foreach (var dependency in dependencies)
@@ -138,13 +138,13 @@ namespace LiteQuark.Runtime
             });
         }
 
-        private void HandleBundleLoadCompleted(bool success, UnityEngine.AssetBundle bundle, AssetError error)
+        private void HandleBundleLoadCompleted(bool success, IBundleResource bundle, AssetError error)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 if (bundle != null)
                 {
-                    bundle.Unload(true);
+                    bundle.Dispose();
                 }
                 return;
             }
@@ -153,7 +153,7 @@ namespace LiteQuark.Runtime
             {
                 if (bundle != null)
                 {
-                    bundle.Unload(true);
+                    bundle.Dispose();
                 }
 
                 ReleaseDependencyLeases();
@@ -168,9 +168,9 @@ namespace LiteQuark.Runtime
             }
 
             var result = isLoaded
-                ? AssetLoadResult<UnityEngine.AssetBundle>.Success(bundle)
-                : AssetLoadResult<UnityEngine.AssetBundle>.Failure(error);
-            var callbacks = new System.Collections.Generic.List<Action<AssetLoadResult<UnityEngine.AssetBundle>>>(_bundleLoaderCallbackList);
+                ? AssetLoadResult<IBundleResource>.Success(bundle)
+                : AssetLoadResult<IBundleResource>.Failure(error);
+            var callbacks = new System.Collections.Generic.List<Action<AssetLoadResult<IBundleResource>>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();
 
             AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Bundle, string.Empty, null, BundlePath, isLoaded, FileSize, errorMessage: isLoaded ? null : "Bundle load failed");

@@ -455,21 +455,21 @@ namespace LiteQuark.Editor
             var loadedPack = versionTask.Result as VersionPackInfo;
             Check(loadedPack != null && loadedPack.Version == marker && ReferenceEquals(loadedPack, callbackPack), "Public version load selects " + marker + ", forceStreaming=" + locator.EditorForceStreamingAssets);
             Check(loadedPack.GetBundleInfoFromAssetPath(ProbePath)?.BundlePath == bundlePath, "Selected version file builds the full-path resource index.");
-            AssetBundle callbackBundle = null;
+            IBundleResource callbackBundle = null;
             var bundleTask = locator.LoadBundle(bundlePath, string.Empty, bundle => callbackBundle = bundle);
             AssetBundle loadedBundle = null;
             try
             {
                 await Wait(() => bundleTask.IsDone, "BuiltIn Bundle load");
                 loadedBundle = bundleTask.GetBundle();
-                Check(loadedBundle != null && loadedBundle == callbackBundle, "Public Bundle load completes from the same location policy.");
+                Check(loadedBundle != null && ReferenceEquals(loadedBundle, Get<AssetBundle>(callbackBundle, "_bundle")), "Public Bundle load completes from the same location policy.");
                 Check(loadedBundle.GetAllAssetNames().Contains(AssetPath.Resolve(TextA)) == persistent, "Different Bundle contents confirm the chosen location is " + marker);
                 var asset = loadedBundle.LoadAsset<TextAsset>(AssetPath.Resolve(ProbePath));
                 Check(asset != null && asset.text == ProbeContent, "Selected BuiltIn Bundle supports complete-path asset loading.");
             }
             finally
             {
-                if (loadedBundle != null) loadedBundle.Unload(true);
+                callbackBundle?.Dispose();
             }
         }
 
@@ -499,10 +499,10 @@ namespace LiteQuark.Editor
         {
             public int Calls;
             public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<AssetBundle> callback)
+            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
                 Calls++;
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path), callback);
+                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
             }
         }
         private static async UniTask<EnvironmentContext> New(bool editor = false, bool delayed = false)

@@ -1942,7 +1942,7 @@ namespace LiteQuark.Editor
             var handle = h.Asset<TextAsset>(TextPath);
             var other = h.Asset<TextAsset>(SecondTextPath);
             await Wait(() => handle.IsDone && other.IsDone, "Assets before failing cleanup");
-            var bundle = h.Cache("text.ab").Bundle;
+            var bundle = NativeBundle(h.Cache("text.ab").Bundle);
             var first = new CleanupProbe();
             var second = new CleanupProbe();
             var error = new InvalidOperationException("Controlled resource cleanup failure");
@@ -3262,7 +3262,7 @@ namespace LiteQuark.Editor
         private static async UniTask EntryDispose()
         {
             var h = New(); var bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab")); h.Locater.Opened.Add(bundle);
-            var cache = h.Cache("text.ab"); typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, new object[] { bundle });
+            var cache = h.Cache("text.ab"); typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, new object[] { new AssetBundleResource(bundle) });
             var entry = new AssetInfoCache(cache, TextPath, typeof(TextAsset)); var calls = 0;
             entry.LoadAssetAsync(entry.AcquireLease<TextAsset>(), result => { calls++; result.Value?.Dispose(); }); await entry.DisposeAsync(); await entry.DisposeAsync();
             Check(entry.Stage == AssetCacheStage.Unloaded && calls == 1 && h.Refs("text.ab") == 0, "Dispose cancels queued task without reviving entry or double notification.");
@@ -3628,6 +3628,7 @@ namespace LiteQuark.Editor
 
         private static async UniTask LoaderShutdownHandoff()
         {
+            await BundleResourceReadAndRelease();
             var textInfo = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
             var deliveredInfo = new BundleInfo(2, "b.ab", new[] { MaterialPath }, null);
             var pendingInfo = new BundleInfo(3, "a.ab", new[] { PrefabPath }, null);
@@ -3642,20 +3643,20 @@ namespace LiteQuark.Editor
                 var discardedCallbacks = 0;
                 var deliveredCallbacks = 0;
                 var deliveredAlive = true;
-                AssetLoadResult<AssetBundle> deliveredResult = null;
+                AssetLoadResult<IBundleResource> deliveredResult = null;
                 loader.LoadBundle(textInfo, AssetLoadPriority.Normal, _ => discardedCallbacks++);
                 loader.LoadBundle(deliveredInfo, AssetLoadPriority.Normal, result =>
                 {
                     deliveredCallbacks++;
                     deliveredResult = result;
                     shutdowns.Add(loader.DisposeAsync()); shutdowns.Add(loader.DisposeAsync());
-                    deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(result.Value, delivered);
+                    deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(NativeBundle(result.Value), delivered);
                 });
                 loader.LoadBundle(deliveredInfo, AssetLoadPriority.Normal, result =>
                 {
                     deliveredCallbacks++;
                     deliveredAlive &= ReferenceEquals(result, deliveredResult);
-                    deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(result.Value, delivered);
+                    deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(NativeBundle(result.Value), delivered);
                 });
                 loader.LoadBundle(pendingInfo, AssetLoadPriority.Normal, _ => discardedCallbacks++);
                 loader.Tick(0);
@@ -3692,6 +3693,36 @@ namespace LiteQuark.Editor
             await UniTask.Yield();
         }
 
+        private static async UniTask BundleResourceReadAndRelease()
+        {
+            var native = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
+            var resource = new AssetBundleResource(native);
+            try
+            {
+                var before = TaskSnapshot().ToArray();
+                var task = resource.CreateLoadAssetTask<TextAsset>(TextPath, null);
+                Check(task.State == TaskState.Pending && !task.IsExecuted && TaskSnapshot().SequenceEqual(before),
+                    "Resource creates an unstarted read without submitting it to TaskSystem.");
+                LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Normal);
+                await task.Task;
+                await ((IResourceTaskCleanup)task).WaitForCleanupAsync();
+                Check(task.State == TaskState.Succeeded && task.Result is TextAsset && native != null,
+                    "The resource-created task reads the real Bundle and leaves container ownership with its caller.");
+                Check(resource.GetRuntimeMemorySize() == UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(native),
+                    "Bundle diagnostics retain the native runtime memory measurement through Resource.");
+                resource.Dispose(); resource.Dispose();
+                Check(native == null && (UnityEngine.Object)task.Result == null,
+                    "Repeated Resource Dispose unloads the native Bundle and its loaded contents.");
+                var rejected = 0;
+                try { resource.GetAllScenePaths(); } catch (ObjectDisposedException) { rejected++; }
+                try { resource.CreateLoadAssetTask<TextAsset>(TextPath, null); } catch (ObjectDisposedException) { rejected++; }
+                try { resource.GetRuntimeMemorySize(); } catch (ObjectDisposedException) { rejected++; }
+                Check(rejected == 3, "A released container rejects queries and new read tasks.");
+            }
+            finally { resource.Dispose(); }
+
+        }
+
         private static async UniTask ShutdownWithPendingDependency()
         {
             var h = New(true);
@@ -3721,7 +3752,7 @@ namespace LiteQuark.Editor
                     var callbacks = 0;
                     UniTask shutdown = default;
                     var waitingForDelivery = false;
-                    loader.LoadBundle(info, AssetLoadPriority.Normal, result => { callbacks++; bundle = result.Value; }); loader.Tick(0);
+                    loader.LoadBundle(info, AssetLoadPriority.Normal, result => { callbacks++; bundle = NativeBundle(result.Value); }); loader.Tick(0);
                     if (closeBeforeCallback)
                     {
                         locator.Task.Task.GetAwaiter().OnCompleted(() =>

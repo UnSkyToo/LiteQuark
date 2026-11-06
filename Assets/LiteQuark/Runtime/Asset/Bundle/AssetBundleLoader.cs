@@ -68,11 +68,11 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<AssetBundle>> callback)
+        public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<IBundleResource>> callback)
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetBundle>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle loader is disposed")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IBundleResource>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle loader is disposed")));
                 return;
             }
 
@@ -80,7 +80,7 @@ namespace LiteQuark.Runtime
 
             if (string.IsNullOrEmpty(bundlePath))
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<AssetBundle>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle load path is missing")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IBundleResource>.Failure(new AssetError(bundleInfo.BundlePath, "Bundle load path is missing")));
                 return;
             }
 
@@ -176,14 +176,14 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void CompletePendingTask(string bundlePath, AssetBundle bundle, Exception error)
+        private void CompletePendingTask(string bundlePath, IBundleResource bundle, Exception error)
         {
             // Complete 会先恢复 Task 续体；若续体已关闭 Loader，结果不能再交付。
             if (_isDisposed)
             {
                 if (bundle != null)
                 {
-                    bundle.Unload(true);
+                    bundle.Dispose();
                 }
                 return;
             }
@@ -194,8 +194,8 @@ namespace LiteQuark.Runtime
             }
 
             var result = bundle != null
-                ? AssetLoadResult<AssetBundle>.Success(bundle)
-                : AssetLoadResult<AssetBundle>.Failure(new AssetError(pendingTask.BundlePath,
+                ? AssetLoadResult<IBundleResource>.Success(bundle)
+                : AssetLoadResult<IBundleResource>.Failure(new AssetError(pendingTask.BundlePath,
                     error?.Message ?? "Bundle load returned no result", error));
             foreach (var callback in pendingTask.CallbackList)
             {
@@ -209,15 +209,15 @@ namespace LiteQuark.Runtime
             public string BundlePath { get; }
             public string Hash { get; }
             public AssetLoadPriority Priority { get; set; }
-            public List<Action<AssetLoadResult<AssetBundle>>> CallbackList { get; set; }
+            public List<Action<AssetLoadResult<IBundleResource>>> CallbackList { get; set; }
 
-            public PendingTask(string path, string bundlePath, string hash, AssetLoadPriority priority, Action<AssetLoadResult<AssetBundle>> callback)
+            public PendingTask(string path, string bundlePath, string hash, AssetLoadPriority priority, Action<AssetLoadResult<IBundleResource>> callback)
             {
                 Path = path;
                 BundlePath = bundlePath;
                 Hash = hash;
                 Priority = priority;
-                CallbackList = new List<Action<AssetLoadResult<AssetBundle>>> { callback };
+                CallbackList = new List<Action<AssetLoadResult<IBundleResource>>> { callback };
             }
         }
 

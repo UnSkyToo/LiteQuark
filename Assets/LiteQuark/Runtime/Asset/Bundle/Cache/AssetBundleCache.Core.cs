@@ -8,7 +8,7 @@ namespace LiteQuark.Runtime
     internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         public AssetCacheStage Stage { get; private set; }
-        public UnityEngine.AssetBundle Bundle { get; private set; }
+        public IBundleResource Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded;
         public bool IsRetained => Stage == AssetCacheStage.Loaded && _refCount == 0;
         internal string BundlePath => _bundleInfo?.BundlePath ?? string.Empty;
@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
 
         private readonly BundleInfo _bundleInfo;
         private readonly AssetBundleProvider _provider;
-        private readonly List<Action<AssetLoadResult<UnityEngine.AssetBundle>>> _bundleLoaderCallbackList = new();
+        private readonly List<Action<AssetLoadResult<IBundleResource>>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<(string, Type), AssetInfoCache> _assetCacheMap = new();
         private readonly List<SceneInfoCache> _sceneCacheMap = new();
 
@@ -59,9 +59,9 @@ namespace LiteQuark.Runtime
 
             if (_bundleLoaderCallbackList.Count > 0)
             {
-                var callbacks = new List<Action<AssetLoadResult<UnityEngine.AssetBundle>>>(_bundleLoaderCallbackList);
+                var callbacks = new List<Action<AssetLoadResult<IBundleResource>>>(_bundleLoaderCallbackList);
                 _bundleLoaderCallbackList.Clear();
-                var result = AssetLoadResult<UnityEngine.AssetBundle>.Failure(
+                var result = AssetLoadResult<IBundleResource>.Failure(
                     new AssetError(BundlePath, "Bundle cache was disposed before delivery"));
                 foreach (var callback in callbacks)
                 {
@@ -136,7 +136,7 @@ namespace LiteQuark.Runtime
 
             if (Bundle != null)
             {
-                Bundle.Unload(true);
+                Bundle.Dispose();
                 Bundle = null;
             }
 
@@ -275,7 +275,7 @@ namespace LiteQuark.Runtime
             return loadPath != null;
         }
 
-        private bool OnBundleLoaded(UnityEngine.AssetBundle bundle)
+        private bool OnBundleLoaded(IBundleResource bundle)
         {
             Bundle = bundle;
 

@@ -53,7 +53,8 @@ namespace LiteQuark.Runtime
 
             try
             {
-                _loadAssetTask = LiteRuntime.Task.AddLoadAssetTask<T>(_cache.Bundle, _assetPath, HandleAssetLoadCompleted);
+                _loadAssetTask = _cache.Bundle.CreateLoadAssetTask<T>(_assetPath, HandleAssetLoadCompleted);
+                LiteRuntime.Task.AddTask(_loadAssetTask, LiteConst.TaskGroupId.Asset, TaskPriority.Normal);
             }
             catch (Exception ex)
             {

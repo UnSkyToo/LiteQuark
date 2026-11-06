@@ -199,7 +199,7 @@ namespace LiteQuark.Editor
                 await Run("89 Task result views and one-shot delivery", "real local/remote-file Bundles and asset extraction", TaskResultViews,
                     "Injected validation result observer");
                 await Run("90 Failed local task releases a late Bundle", "real native request and controlled failure", FailedLocalBundleCleanup);
-                await Run("91 Loader shutdown during delivery preserves ownership", "shared callbacks, real Bundles and reentrant close", LoaderShutdownHandoff);
+                await Run("91 Loader shutdown during delivery preserves ownership", "Resource reads, shared callbacks, real Bundles and reentrant close", LoaderShutdownHandoff);
                 await Run("92 Shutdown rolls back main waiting for dependency", "controlled main delivery and pending dependency", ShutdownWithPendingDependency, "Bundle load failed");
                 await Run("93 Shutdown releases undelivered remote-file Bundle", "file URI immediate handoff and close before result callback", RemoteBundleShutdown);
                 await Run("94 Scene unload does not require a TaskSystem observer", "real native unload with Flow registration temporarily absent", SceneObserverFailure);
@@ -433,7 +433,7 @@ namespace LiteQuark.Editor
                     _case.evidence.Add("Fixture teardown after recorded close failure; this does not define a Runtime retry API.");
                     var caches = Get<Dictionary<string, AssetBundleCache>>(Current.Provider, "_bundleCacheMap");
                     // All close waits have settled; failure fixtures explicitly release their remaining native Bundles.
-                    foreach (var cache in caches.Values) if (cache.Bundle != null) cache.Bundle.Unload(true);
+                    foreach (var cache in caches.Values) if (cache.Bundle != null) cache.Bundle.Dispose();
                     caches.Clear();
                     Current.Disposed = true;
                 }

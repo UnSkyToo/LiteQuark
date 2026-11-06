@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     {
         internal BundleVisitorInfo GetVisitorInfo()
         {
-            var memSize = IsLoaded ? UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(Bundle) : 0L;
+            var memSize = IsLoaded ? Bundle.GetRuntimeMemorySize() : 0L;
             var info = new BundleVisitorInfo(_bundleInfo.BundlePath,
                 memSize,
                 _refCount,

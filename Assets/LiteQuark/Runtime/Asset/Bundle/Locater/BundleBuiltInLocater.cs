@@ -31,10 +31,11 @@ namespace LiteQuark.Runtime
             return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, callback);
         }
 
-        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
+        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<IBundleResource> callback)
         {
             var bundleUri = GetRuntimeFullPath(bundlePath);
-            return LiteRuntime.Task.AddLoadLocalBundleTask(bundleUri, callback);
+            return LiteRuntime.Task.AddLoadLocalBundleTask(bundleUri,
+                bundle => callback?.Invoke(bundle != null ? new AssetBundleResource(bundle) : null));
         }
     }
 }

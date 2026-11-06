@@ -41,10 +41,11 @@ namespace LiteQuark.Runtime
             return $"{uri}{separator}t={version}{fragment}";
         }
 
-        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<UnityEngine.AssetBundle> callback)
+        public ILoadBundleTask LoadBundle(string bundlePath, string hash, System.Action<IBundleResource> callback)
         {
             var bundleUri = PathUtils.ConcatUri(_remoteUri, bundlePath);
-            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash, callback);
+            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash,
+                bundle => callback?.Invoke(bundle != null ? new AssetBundleResource(bundle) : null));
         }
     }
 }

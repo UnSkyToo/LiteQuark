@@ -397,7 +397,7 @@ namespace LiteQuark.Editor
             loader = new AssetBundleLoader(locator, pack, 1);
             callbacks = 0;
             var failure = new InvalidOperationException("Controlled Bundle failure");
-            AssetLoadResult<AssetBundle> failedResult = null;
+            AssetLoadResult<IBundleResource> failedResult = null;
             try
             {
                 loader.LoadBundle(bundles[0], AssetLoadPriority.Normal, result =>
@@ -438,7 +438,7 @@ namespace LiteQuark.Editor
             var low = PriorityAsset<GameObject>(h, PrefabPath, AssetLoadPriority.Low);
             Check(CachePriority(h, "a.ab") == AssetLoadPriority.High && CachePriority(h, "b.ab") == AssetLoadPriority.High &&
                 CachePriority(h, "c.ab") == AssetLoadPriority.Low, "Higher request promotes its main and shared dependency without promoting an unrelated parent.");
-            Check(h.Refs("b.ab") == 2 && Get<List<Action<AssetLoadResult<AssetBundle>>>>(h.Cache("b.ab"), "_bundleLoaderCallbackList").Count == 2,
+            Check(h.Refs("b.ab") == 2 && Get<List<Action<AssetLoadResult<IBundleResource>>>>(h.Cache("b.ab"), "_bundleLoaderCallbackList").Count == 2,
                 "Promotion adds no dependency lease or completion subscription.");
             h.Finish("text.ab", true); h.Finish("b.ab", true); h.Finish("a.ab", true); h.Finish("c.ab", true);
             await Wait(() => blocker.IsDone && preload.IsDone && high.IsDone && low.IsDone, "Prioritized shared resources");

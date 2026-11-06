@@ -22,8 +22,8 @@ namespace LiteQuark.Editor
             var text = asset.Result;
             var scene = sceneHandle.Result.Value;
             var cache = h.Cache("scene.ab");
-            var bundle = cache.Bundle;
-            var dependency = h.Cache("b.ab").Bundle;
+            var bundle = NativeBundle(cache.Bundle);
+            var dependency = NativeBundle(h.Cache("b.ab").Bundle);
             var entry = h.SceneEntries().Single();
             var sawUnload = false;
             var protectedDuringUnload = true;
@@ -58,8 +58,8 @@ namespace LiteQuark.Editor
             var handle = QueueScene(h);
             var entry = h.SceneEntries().Single();
             var task = (LoadSceneTask)Get<BaseTask>(entry, "_loadSceneTask");
-            var bundle = h.Cache("scene.ab").Bundle;
-            var dependency = h.Cache("b.ab").Bundle;
+            var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
+            var dependency = NativeBundle(h.Cache("b.ab").Bundle);
             task.Execute();
             var operation = Get<AsyncOperation>(task, "_sceneRequest");
             Check(operation != null && !operation.isDone, "System close targets an actual native scene load.");
@@ -80,7 +80,7 @@ namespace LiteQuark.Editor
             h.Handles.Add(handle);
             await Wait(() => handle.IsDone, "Single Scene before close");
             var scene = handle.Result.Value;
-            var bundle = h.Cache("scene.ab").Bundle;
+            var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
             try
             {
                 Exception failure = null;
@@ -680,8 +680,8 @@ namespace LiteQuark.Editor
             var lateHandle = h.Scene();
             var lateEntry = h.SceneEntries().Last();
             var lateTask = (LoadSceneTask)Get<BaseTask>(lateEntry, "_loadSceneTask");
-            var bundle = h.Cache("scene.ab").Bundle;
-            var dependency = h.Cache("b.ab").Bundle;
+            var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
+            var dependency = NativeBundle(h.Cache("b.ab").Bundle);
             lateTask.Execute();
             var native = Get<AsyncOperation>(lateTask, "_sceneRequest");
             var disposal = lateEntry.DisposeAsync();

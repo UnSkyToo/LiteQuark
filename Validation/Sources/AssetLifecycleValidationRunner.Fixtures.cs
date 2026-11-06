@@ -1032,9 +1032,9 @@ namespace LiteQuark.Editor
             internal LoadRemoteBundleTask Task;
             internal string UriOverride;
             public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<AssetBundle> callback)
+            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
-                Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null, callback);
+                Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null, bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
                 return Task;
             }
         }
@@ -1186,6 +1186,8 @@ namespace LiteQuark.Editor
             }
         }
 
+        private static AssetBundle NativeBundle(IBundleResource resource) => resource == null ? null : Get<AssetBundle>(resource, "_bundle");
+
         private sealed class Locator : IBundleLocater
         {
             private readonly bool _manual;
@@ -1197,20 +1199,20 @@ namespace LiteQuark.Editor
             internal readonly List<AssetBundle> Opened = new();
             internal Locator(bool manual, bool scheduleManual = false) { _manual = manual; _scheduleManual = scheduleManual; }
             public LoadVersionPackTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash, Action<AssetBundle> callback)
+            public ILoadBundleTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
             {
                 Calls[path] = Calls.TryGetValue(path, out var count) ? count + 1 : 1;
                 Started.Add(path);
                 if (ThrowOnCreate) throw new InvalidOperationException("Injected locator failure");
                 if (_manual)
                 {
-                    var task = new ManualTask(callback);
+                    var task = new ManualTask(bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
                     Manual[path] = task;
                     if (_scheduleManual) LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
                     else task.Execute();
                     return task;
                 }
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, path), callback);
+                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
             }
             internal void FinishOutstanding()
             {
