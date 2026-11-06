@@ -378,7 +378,7 @@ for name in $selected; do
         manifest) runner=ManifestValidationRunner; expected=13 ;;
         collector) runner=CollectorValidationRunner; expected=15 ;;
         packages) runner=PackageValidationRunner; expected=1 ;;
-        tasks) runner=TaskSystemValidationRunner; expected=34 ;;
+        tasks) runner=TaskSystemValidationRunner; expected=37 ;;
         lifecycle) runner=AssetLifecycleValidationRunner; expected=153 ;;
         loading) runner=AssetLoadingValidationRunner; expected=27 ;;
     esac

@@ -4,6 +4,8 @@
 
 ### 核心接口
 
+- 破坏：Restart 仅在 Running 接受请求并在下一帧执行，多次请求合并；ShuttingDown 期间忽略请求，其他状态抛出 InvalidOperationException。启动错误回调中的直接 Restart 需改为等待清理回到 Idle 后再 Startup；已排队请求遇到错误或关闭会被放弃。
+- 修复：ShutdownFailed 停止 Runtime 对 System 和 Logic 的 Tick，避免继续更新部分释放的系统；保留失败对象供诊断，不自动重试清理。
 - 破坏：`ISystem`、`ILogic` 改为继承 `IDisposeAsync`，释放方法由 `void Dispose()` 改为 `UniTask DisposeAsync()`；自定义实现需要迁移，同步清理返回 `UniTask.CompletedTask`。已注册对象由 Runtime 统一释放，业务不要直接释放系统；Handle、Lease 等资源对象仍使用同步 Dispose。
 - 破坏：`LiteRuntime.Shutdown()` 改为返回 UniTask；框架集成层调用方需要等待完成，不能把调用返回前已启动的清理视为完成。初始化中的对象会在 Initialize 退出后统一释放，初始化失败且清理成功后回到 Idle；清理异常进入 ShutdownFailed，不自动重新启动。
 - 破坏：`ActionSystem.GetActionList()` 收为 internal，仅用于框架调试；外部业务通过 AddAction、StopAction、FindAction 等公开入口管理动作，不直接访问调度列表。

@@ -193,10 +193,20 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
+            if (_state == RuntimeState.ShutdownFailed)
+            {
+                return;
+            }
+
             if (_restartWhenNextFrame)
             {
-                RestartRuntime().Forget();
-                return;
+                _restartWhenNextFrame = false;
+
+                if (_state == RuntimeState.Running)
+                {
+                    RestartRuntime().Forget();
+                    return;
+                }
             }
 
             var isShuttingDown = _state == RuntimeState.ShuttingDown;
@@ -247,12 +257,21 @@ namespace LiteQuark.Runtime
 
         public void Restart()
         {
+            if (_state == RuntimeState.ShuttingDown)
+            {
+                return;
+            }
+
+            if (_state != RuntimeState.Running)
+            {
+                throw new System.InvalidOperationException($"Cannot restart runtime in state {_state}.");
+            }
+
             _restartWhenNextFrame = true;
         }
 
         private async UniTask RestartRuntime()
         {
-            _restartWhenNextFrame = false;
             Debug.ClearDeveloperConsole();
             await Shutdown();
             Startup(Launcher, _setting);

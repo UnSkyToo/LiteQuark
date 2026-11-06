@@ -81,6 +81,7 @@ Validation — 当前工作区的隔离 Unity 验证
   重启用例清理保留首个异常及其堆栈，同时报告额外异步／清理错误；先释放 Gate，等待当前关闭退出，ShutdownFailed 后不重试关闭，只有 Idle 才恢复基线。末项回归在真实 Runtime 关闭尾部的生命周期 CTS Dispose 注入故障，使系统已释放但 Runtime 保持 ShutdownFailed，检查原始主体／Dispose 故障可定位、无二次 Shutdown／非 Idle Startup、静态回调／Camera／Scratch 清理，以及没有主体异常时清理失败仍向上传播。该故障用例在本模块进程最后运行，不重置 Runtime 状态，不把预期故障当作生产恢复成功；不增加 Asset 原生 Cleanup 阻挡重启的集成覆盖。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
+  tasks 还覆盖 Restart 的状态限制、同帧合并、异步关闭中忽略请求且继续推进清理、普通关闭保持 Idle，以及已排队请求遇到 Error 后失效。末项在真实系统部分释放时抛错，检查 ShutdownFailed 保留登记但停止所有系统 Tick；用例保留终态，由隔离进程退出回收剩余对象。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS
   实机执行确认，Windows 结果不代表 macOS 结果。
   路径根和盘符组合按宿主文件系统语义断言；Windows 保留驱动器/UNC 覆盖，

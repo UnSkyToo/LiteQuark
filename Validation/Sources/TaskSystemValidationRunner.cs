@@ -129,6 +129,12 @@ namespace LiteQuark.Editor
                     "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("33 Runtime shutdown waits for in-flight initialization", RuntimeShutdownDuringInitialization);
                 await RunAsync("34 WhenAllComplete waits for success, failure and cancellation", WhenAllComplete);
+                await RunAsync("35 Runtime Restart rejects unsupported states and expires queued requests", RuntimeRestartStates,
+                    "Enter <ErrorState>", "FrameworkError: Unknown", "FrameworkError: Startup",
+                    $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed");
+                await RunAsync("36 Runtime Restart merges requests while shutdown keeps progressing", RuntimeRestartRequests);
+                // Terminal failure is last: retain the failed Runtime instead of forcing it back to Idle.
+                await RunAsync("37 Runtime shutdown failure stops all system ticks", RuntimeShutdownFailureStopsTick);
             }
             catch (Exception ex)
             {
@@ -136,13 +142,18 @@ namespace LiteQuark.Editor
             }
             finally
             {
+                if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShutdownFailed)
+                {
+                    // Suppress quit-time shutdown after the final terminal-state case and isolated task cleanup.
+                    UnityEngine.Object.DestroyImmediate(LiteRuntime.Instance.Launcher.gameObject);
+                }
                 Application.logMessageReceived -= CaptureError;
                 Results.finishedUtc = DateTime.UtcNow.ToString("O");
                 var path = SessionState.GetString(ReportKey, string.Empty);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllText(path, JsonUtility.ToJson(Results, true));
                 var success = Results.fatalError == null && Results.unexpectedErrors.Count == 0
-                    && Results.cases.Count == 34 && Results.cases.All(c => c.passed);
+                    && Results.cases.Count == 37 && Results.cases.All(c => c.passed);
                 Debug.Log($"TASK_SYSTEM_QUICK: {Results.cases.Count(c => c.passed)}/{Results.cases.Count}, assertions={Results.cases.Sum(c => c.assertions)}, GC={Results.steadyTickAllocatedBytes}");
                 EditorApplication.Exit(success ? 0 : 2);
             }
@@ -1146,7 +1157,10 @@ namespace LiteQuark.Editor
             internal readonly UniTaskCompletionSource LogicGate = new();
             internal readonly UniTaskCompletionSource SystemGate = new();
             internal UniTaskCompletionSource<bool> InitializationGate;
+            internal string GatedInitialization = "system 2";
             internal string FailedInitialization;
+            internal string FailedDisposal;
+            internal readonly Exception DisposalError = new InvalidOperationException("InjectedValidation partial system disposal");
             internal bool ThrowOnInitialize;
             internal bool InTimerCallback;
             internal bool DisposalStartedInTimerCallback;
@@ -1161,6 +1175,7 @@ namespace LiteQuark.Editor
             private readonly ShutdownFixture _fixture;
             private bool _disposed;
             internal int Disposals;
+            internal int Ticks;
 
             protected ShutdownProbe(string name)
             {
@@ -1178,13 +1193,14 @@ namespace LiteQuark.Editor
                         throw new InvalidOperationException("InjectedValidation runtime initialization");
                     return false;
                 }
-                if (_name == "system 2" && _fixture.InitializationGate != null)
+                if (_name == _fixture.GatedInitialization && _fixture.InitializationGate != null)
                     return await _fixture.InitializationGate.Task;
                 return true;
             }
 
             public void Tick(float deltaTime)
             {
+                Ticks++;
                 if (_disposed) _fixture.TicksAfterDispose++;
             }
 
@@ -1196,6 +1212,7 @@ namespace LiteQuark.Editor
                 if (_name == "logic 1") await _fixture.LogicGate.Task;
                 if (_name == "system 2") await _fixture.SystemGate.Task;
                 _disposed = true;
+                if (_name == _fixture.FailedDisposal) throw _fixture.DisposalError;
                 _fixture.Events.Add(_name + " end");
             }
         }
@@ -1415,6 +1432,188 @@ namespace LiteQuark.Editor
                 fixture.Events.SequenceEqual(new[] { "system 2 start", "system 2 end", "system 1 start", "system 1 end" }) &&
                 fixture.Instances.Values.All(probe => probe.Disposals == 1),
                 "In-flight initialization exits before exactly-once cleanup and no logic initialization follows.");
+        }
+
+        private static async UniTask RuntimeRestartStates(TaskSystem system)
+        {
+            var runtime = LiteRuntime.Instance;
+            if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
+            Throws<InvalidOperationException>(runtime.Restart, "Idle rejects Restart; startup remains explicit.");
+
+            foreach (var target in new[] { "system 2", "logic 1" })
+            {
+                var fixture = new ShutdownFixture
+                {
+                    InitializationGate = new UniTaskCompletionSource<bool>(),
+                    GatedInitialization = target
+                };
+                try
+                {
+                    await BeginShutdownFixture(fixture);
+                    var expected = target == "system 2" ? LiteRuntime.RuntimeState.InitSystem : LiteRuntime.RuntimeState.InitLogic;
+                    Check(runtime.State == expected, "The real startup is held in " + expected + ".");
+                    Throws<InvalidOperationException>(runtime.Restart, expected + " rejects Restart.");
+                    fixture.InitializationGate.TrySetResult(true);
+                    await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Rejected request startup completion");
+                    runtime.Tick(0f);
+                    Check(runtime.State == LiteRuntime.RuntimeState.Running && fixture.Events.Count == 0,
+                        "A rejected initialization request does not turn into a delayed restart.");
+                }
+                finally { await FinishShutdownFixture(fixture); }
+            }
+
+            var queued = new ShutdownFixture();
+            try
+            {
+                await BeginShutdownFixture(queued);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Queued request startup");
+                runtime.Restart();
+                runtime.EnterErrorState(FrameworkErrorCode.Unknown);
+                Throws<InvalidOperationException>(runtime.Restart, "Error rejects Restart.");
+                runtime.Tick(0f);
+                runtime.Tick(0f);
+                Check(runtime.State == LiteRuntime.RuntimeState.Error && queued.Events.Count == 0,
+                    "A request accepted before Error is consumed without starting shutdown or another generation.");
+            }
+            finally { await FinishShutdownFixture(queued); }
+
+            var failed = new ShutdownFixture { FailedInitialization = "system 2" };
+            var rejectedInCallback = false;
+            void OnStartupError(FrameworkErrorCode code, string message)
+            {
+                if (code != FrameworkErrorCode.Startup) return;
+                try { runtime.Restart(); }
+                catch (InvalidOperationException) { rejectedInCallback = true; }
+            }
+            LiteRuntime.OnFrameworkError += OnStartupError;
+            try
+            {
+                await BeginShutdownFixture(failed);
+                Check(rejectedInCallback && runtime.State == LiteRuntime.RuntimeState.ShuttingDown,
+                    "Restart is explicitly rejected inside the startup error callback while automatic cleanup still begins.");
+            }
+            finally
+            {
+                LiteRuntime.OnFrameworkError -= OnStartupError;
+                await FinishShutdownFixture(failed);
+            }
+            Check(runtime.State == LiteRuntime.RuntimeState.Idle && failed.Instances.Values.All(probe => probe.Disposals == 1),
+                "Failed initialization cleans up exactly once and returns to Idle without a retry.");
+
+            var closing = new ShutdownFixture();
+            UniTask? shutdown = null;
+            try
+            {
+                await BeginShutdownFixture(closing);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Explicit shutdown startup");
+                runtime.Restart();
+                shutdown = runtime.Shutdown();
+                runtime.Restart();
+                runtime.Tick(0f);
+                Check(runtime.State == LiteRuntime.RuntimeState.ShuttingDown && shutdown.Value.Status == UniTaskStatus.Pending,
+                    "Explicit Shutdown clears a queued restart and ignores requests received while closing.");
+            }
+            finally { await FinishShutdownFixture(closing, shutdown); }
+            runtime.Tick(0f);
+            Check(runtime.State == LiteRuntime.RuntimeState.Idle,
+                "Ordinary Shutdown stays Idle instead of being upgraded to Restart.");
+        }
+
+        private static async UniTask RuntimeRestartRequests(TaskSystem system)
+        {
+            var runtime = LiteRuntime.Instance;
+            var previous = new ShutdownFixture();
+            var replacement = new ShutdownFixture();
+            replacement.LogicGate.TrySetResult();
+            replacement.SystemGate.TrySetResult();
+            try
+            {
+                await BeginShutdownFixture(previous);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Restart request startup");
+                var oldSystem = LiteRuntime.Get<ShutdownSystemTwo>();
+                _shutdownFixture = replacement;
+                runtime.Restart();
+                runtime.Restart();
+                runtime.Tick(0f);
+                await WaitForRuntimeCondition(() => previous.Events.Contains("logic 1 start"), "Restart logic gate");
+                Check(runtime.State == LiteRuntime.RuntimeState.ShuttingDown && replacement.Instances.Count == 0,
+                    "Repeated Running requests start one shutdown and do not initialize replacements before disposal finishes.");
+
+                runtime.IsPause = true;
+                LiteRuntime.Setting.Common.TimeScale = 0f;
+                var timerFired = false;
+                LiteRuntime.Timer.NextFrame(() => { timerFired = true; previous.LogicGate.TrySetResult(); });
+                runtime.Restart();
+                runtime.Restart();
+                runtime.Tick(0f);
+                Check(timerFired && previous.Events.Contains("logic 1 end"),
+                    "Ignored closing requests do not skip the Tick that completes cleanup, even while paused.");
+                await WaitForRuntimeCondition(() => previous.Events.Contains("system 2 start"), "Restart system gate");
+                runtime.Restart();
+                LiteRuntime.Timer.NextFrame(() => previous.SystemGate.TrySetResult());
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Replacement startup");
+                for (var i = 0; i < 3; i++) { runtime.Tick(0f); await UniTask.NextFrame(); }
+                Check(previous.Instances.Values.All(probe => probe.Disposals == 1) && replacement.Instances.Count == 4 &&
+                    replacement.Events.Count == 0 && !ReferenceEquals(oldSystem, LiteRuntime.Get<ShutdownSystemTwo>()),
+                    "Exactly one replacement generation remains Running with no second queued shutdown.");
+            }
+            finally
+            {
+                previous.LogicGate.TrySetResult();
+                previous.SystemGate.TrySetResult();
+                await WaitForRuntimeCondition(() => runtime.State != LiteRuntime.RuntimeState.ShuttingDown, "Pending restart completion");
+                await FinishShutdownFixture(replacement);
+            }
+        }
+
+        private static async UniTask RuntimeShutdownFailureStopsTick(TaskSystem system)
+        {
+            var runtime = LiteRuntime.Instance;
+            var fixture = new ShutdownFixture { FailedDisposal = "system 2" };
+            fixture.LogicGate.TrySetResult();
+            fixture.SystemGate.TrySetResult();
+            try
+            {
+                await BeginShutdownFixture(fixture);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Partial disposal startup");
+                runtime.Tick(0f);
+                Check(fixture.Instances.Values.All(probe => probe.Ticks > 0),
+                    "The probes participate in real Runtime updates before shutdown.");
+                var shutdown = runtime.Shutdown();
+                await WaitForRuntimeCondition(() => shutdown.Status != UniTaskStatus.Pending, "Partial disposal failure");
+                Exception error = null;
+                try { await shutdown; } catch (Exception ex) { error = ex; }
+                Check(ReferenceEquals(error, fixture.DisposalError) && runtime.State == LiteRuntime.RuntimeState.ShutdownFailed &&
+                    fixture.Events.Contains("system 2 start") && !fixture.Events.Contains("system 2 end"),
+                    "The original partial-system disposal error propagates and leaves Runtime in ShutdownFailed.");
+                var failed = fixture.Instances["system 2"];
+                var remaining = fixture.Instances["system 1"];
+                var ticks = fixture.Instances.Values.Sum(probe => probe.Ticks);
+                Check(ReferenceEquals(LiteRuntime.Get<ShutdownSystemTwo>(), failed) &&
+                    ReferenceEquals(LiteRuntime.Get<ShutdownSystemOne>(), remaining) && failed.Disposals == 1 && remaining.Disposals == 0,
+                    "The failed system and the not-yet-disposed system remain registered for diagnosis.");
+                Throws<InvalidOperationException>(runtime.Restart, "ShutdownFailed rejects Restart.");
+                var timerFired = false;
+                LiteRuntime.Timer.NextFrame(() => timerFired = true);
+                foreach (var paused in new[] { false, true, false })
+                {
+                    runtime.IsPause = paused;
+                    runtime.Tick(1f);
+                    await UniTask.NextFrame();
+                }
+                Check(!timerFired && fixture.Instances.Values.Sum(probe => probe.Ticks) == ticks && fixture.TicksAfterDispose == 0 &&
+                    runtime.State == LiteRuntime.RuntimeState.ShutdownFailed && failed.Disposals == 1 && remaining.Disposals == 0,
+                    "Terminal Runtime ticks advance neither Timer nor any probe, retry disposal, or start a new generation.");
+            }
+            finally
+            {
+                if (runtime.State == LiteRuntime.RuntimeState.ShutdownFailed)
+                {
+                    // Final case in an isolated process; preserve the terminal Runtime through reporting.
+                    _shutdownFixture = null;
+                }
+                else { await FinishShutdownFixture(fixture); }
+            }
         }
 
         private static async UniTask WaitDone(TaskSystem system, ITask task)
