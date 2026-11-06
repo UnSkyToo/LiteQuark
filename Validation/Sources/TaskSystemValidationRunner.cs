@@ -318,7 +318,7 @@ namespace LiteQuark.Editor
             Throws<ArgumentException>(() => system.RegisterGroup(0, 1), "Default ID is reserved");
             Throws<ArgumentException>(() => system.RegisterGroup(LiteConst.TaskGroupId.Flow, null), "Flow ID is reserved");
             Throws<ArgumentOutOfRangeException>(() => system.RegisterGroup(9, 0), "Zero quota rejected");
-            Throws<ArgumentNullException>(() => system.AddTask((ITask)null), "Null task rejected");
+            Throws<ArgumentNullException>(() => system.AddTask((BaseTask)null), "Null task rejected");
             Throws<ArgumentException>(() => system.AddTask(new ProbeTask(), 99), "Unknown group rejected before registration");
             system.RegisterGroup(1, 2);
             var task = new ProbeTask();
@@ -478,10 +478,10 @@ namespace LiteQuark.Editor
             var callback = system.AddTask(done => done(true));
             var coroutine = system.AddTask(EmptyRoutine());
             var direct = new MainThreadTask(_ => called += 100, null);
-            system.AddTask((ITask)direct); system.Tick(0);
+            system.AddTask((BaseTask)direct); system.Tick(0);
             Check(dispatch.IsDone && called == 1, "Main-thread convenience entry runs in Flow despite saturated Default");
             Check(!callback.IsExecuted && !coroutine.IsExecuted, "Opaque callback/coroutine conveniences remain in Default");
-            Check(!direct.IsExecuted && system.PendingTaskCount == 3, "Generic ITask entry does not infer group from task type");
+            Check(!direct.IsExecuted && system.PendingTaskCount == 3, "BaseTask submission does not infer group from task type");
         }
 
         private static async UniTask ObserveAsyncResult(TaskSystem system)
@@ -514,9 +514,39 @@ namespace LiteQuark.Editor
             system.AddTask(parent, LiteConst.TaskGroupId.Flow); system.Tick(0);
             Check(parent.IsExecuted && !child.IsExecuted && system.PendingTaskCount == 1, "Flow parent submits Default child after Default's current turn");
             system.Tick(0);
-            Check(child.IsExecuted && system.RunningTaskCount == 2, "Flow parent does not hold the Default child's slot");
+            await UniTask.Yield(); await UniTask.Yield();
+            Check(child.IsExecuted && system.RunningTaskCount == 2 && !resumed && !parent.IsDone,
+                "UniTask coroutine adapter waits across frames without holding the Default child's slot");
             child.Finish(); await WaitDone(system, parent);
             Check(resumed && child.Disposals == 1 && system.RunningTaskCount == 0, "Real coroutine parent resumes after child without quota deadlock");
+
+            foreach (var state in new[] { TaskState.Failed, TaskState.Cancelled })
+            {
+                child = new ProbeTask(); resumed = false;
+                parent = new CoroutineTask(ParentRoutine(system, child, () => resumed = true), null);
+                system.AddTask(parent, LiteConst.TaskGroupId.Flow); system.Tick(0); system.Tick(0);
+                await UniTask.Yield(); await UniTask.Yield();
+                Check(!resumed && !parent.IsDone && child.State == TaskState.Running,
+                    "Coroutine adapter waits before child " + state);
+                var error = new InvalidOperationException("Expected adapted child failure");
+                if (state == TaskState.Failed) child.Fail(error); else child.Cancel();
+                await WaitDone(system, parent);
+                Check(resumed && parent.State == TaskState.Succeeded && child.State == state
+                    && child.Result == null && (state == TaskState.Failed ? ReferenceEquals(child.Error, error) : child.Error == null)
+                    && child.Disposals == 1 && system.RunningTaskCount == 0,
+                    "Coroutine adapter resumes without propagating child " + state + " or taking its cleanup ownership");
+            }
+
+            child = new ProbeTask(); resumed = false;
+            parent = new CoroutineTask(ParentRoutine(system, child, () => resumed = true), null);
+            system.AddTask(parent, LiteConst.TaskGroupId.Flow); system.Tick(0); system.Tick(0);
+            parent.Cancel(); system.Tick(0); await UniTask.Yield();
+            Check(!resumed && parent.State == TaskState.Cancelled && child.State == TaskState.Running
+                && child.Disposals == 0 && system.RunningTaskCount == 1,
+                "Cancelling the parent only releases its adapter and leaves the child scheduled");
+            child.Finish(); system.Tick(0); await UniTask.Yield();
+            Check(!resumed && child.State == TaskState.Succeeded && child.Disposals == 1 && system.RunningTaskCount == 0,
+                "Child completion after parent cancellation cannot resume the disposed coroutine");
         }
 
         private static void SteadyAllocations(TaskSystem system)
@@ -870,20 +900,21 @@ namespace LiteQuark.Editor
             var cleanup = taskType.GetMethod("OnDispose", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             Check(cleanup != null && cleanup.IsFamily && cleanup.IsVirtual && !cleanup.IsAbstract,
                 "Task subclasses customize cleanup through an optional protected hook.");
-            Check(typeof(IEnumerator).IsAssignableFrom(contract) && contract.GetMethod("Cancel") != null
-                && contract.GetProperty("Task") != null, "Cancellation and both existing waiting interfaces remain public.");
+            Check(!typeof(IEnumerator).IsAssignableFrom(contract) && !typeof(IEnumerator).IsAssignableFrom(taskType)
+                && contract.GetMethod("Cancel") != null && contract.GetProperty("Task") != null,
+                "Tasks expose cancellation and UniTask waiting without an IEnumerator contract.");
 
-            var foreign = new ForeignTask();
-            ITask unsupported = foreign;
-            Throws<ArgumentException>(() => system.AddTask(unsupported), "Independent ITask implementations are explicitly rejected.");
-            Check(foreign.Observations == 0 && system.PendingTaskCount == 0 && system.RunningTaskCount == 0
-                && Snapshot(system).Count == 0, "Rejection neither observes or drives the object nor registers a coroutine wrapper.");
+            var submissions = typeof(TaskSystem).GetMethods().Where(method => method.Name == "AddTask").ToArray();
+            Check(submissions.Any(method => method.GetParameters()[0].ParameterType == taskType),
+                "Task submission explicitly accepts the lifecycle implementation base.");
+            Check(submissions.All(method => !method.GetParameters()[0].ParameterType.IsAssignableFrom(contract)),
+                "An observation-only ITask cannot bind to a submission overload or an implicit coroutine wrapper.");
 
             var accepted = new ProbeTask();
             ITask view = accepted;
-            system.AddTask(view);
+            system.AddTask(accepted);
             Check(!view.IsExecuted && Snapshot(system).Count == 1 && ReferenceEquals(Snapshot(system)[0], accepted),
-                "An ITask-typed BaseTask keeps the original submission overload and deferred execution.");
+                "A submitted BaseTask can be held as ITask while retaining deferred execution.");
             var awaiter = view.Task.GetAwaiter();
             system.Tick(0); view.Cancel(); system.Tick(0);
             Check(accepted.Executions == 1 && accepted.Disposals == 1 && view.State == TaskState.Cancelled
@@ -1093,22 +1124,6 @@ namespace LiteQuark.Editor
                 File.Delete(binaryPath);
                 File.Delete(emptyPath);
             }
-        }
-
-        private sealed class ForeignTask : ITask
-        {
-            public int Observations;
-            public float Progress { get { Observations++; return 0f; } }
-            public bool IsExecuted { get { Observations++; return false; } }
-            public bool IsDone { get { Observations++; return false; } }
-            public object Result { get { Observations++; return null; } }
-            public Exception Error { get { Observations++; return null; } }
-            public TaskState State { get { Observations++; return TaskState.Pending; } }
-            public UniTask<object> Task { get { Observations++; return UniTask.FromResult<object>(null); } }
-            public void Cancel() { Observations++; }
-            public bool MoveNext() { Observations++; return true; }
-            public object Current { get { Observations++; return null; } }
-            public void Reset() { Observations++; }
         }
 
         private sealed class ThrowingCurrent : IEnumerator, IDisposable
@@ -1782,7 +1797,8 @@ namespace LiteQuark.Editor
         private static IEnumerator ParentRoutine(TaskSystem system, ProbeTask child, Action resumed)
         {
             system.AddTask(child);
-            yield return child;
+            ITask view = child;
+            yield return view.Task.ToCoroutine();
             resumed();
         }
 

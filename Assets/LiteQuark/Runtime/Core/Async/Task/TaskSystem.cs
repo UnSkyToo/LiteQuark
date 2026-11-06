@@ -259,7 +259,7 @@ namespace LiteQuark.Runtime
             return false;
         }
 
-        public void AddTask(ITask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)
+        public void AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)
         {
             if (_isClosing)
             {
@@ -271,28 +271,23 @@ namespace LiteQuark.Runtime
                 throw new ArgumentNullException(nameof(task));
             }
 
-            if (task is not BaseTask baseTask)
-            {
-                throw new ArgumentException("Scheduled tasks must inherit BaseTask.", nameof(task));
-            }
-
             var group = FindGroup(groupId);
             if (group == null)
             {
                 throw new ArgumentException($"Task group {groupId} does not exist.", nameof(groupId));
             }
 
-            if (ContainsTask(baseTask))
+            if (ContainsTask(task))
             {
                 throw new InvalidOperationException("Task is already registered.");
             }
 
-            if (baseTask.State != TaskState.Pending || baseTask.IsExecuted || baseTask.IsDone)
+            if (task.State != TaskState.Pending || task.IsExecuted || task.IsDone)
             {
                 throw new InvalidOperationException("Only a new pending task can be submitted.");
             }
 
-            var record = new TaskRecord(baseTask, group, priority);
+            var record = new TaskRecord(task, group, priority);
             _records.Add(record);
             group.Enqueue(record);
         }

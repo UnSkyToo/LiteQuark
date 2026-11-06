@@ -46,6 +46,8 @@
 
 ### Task
 
+- 破坏：ITask 不再继承 IEnumerator，BaseTask 移除迭代器实现。`yield return task` 改为 `yield return task.Task.ToCoroutine()`，异步方法使用 `await task.Task`；两者都只等待已提交任务。旧 yield 写法仍可能编译通过，需主动迁移，不能依赖编译检查发现遗漏。
+- 破坏：通用提交入口由 `AddTask(ITask, ...)` 改为 `AddTask(BaseTask, ...)`。提交任务的参数／工厂返回值使用 BaseTask 或具体派生类型；提交后用于观察、等待和取消的引用仍使用 ITask。独立实现 ITask 不提供调度资格。
 - 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
 - 调整：下载任务终结后停止重试并释放请求；释放失败会报告错误，准备重试时发生释放失败则终止重试，已有逻辑终态不变。
 - 新增：内置资源加载任务提供独立的原生收尾等待，AssetSystem 关闭已接入；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。

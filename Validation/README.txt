@@ -81,6 +81,7 @@ Validation — 当前工作区的隔离 Unity 验证
   重启用例清理保留首个异常及其堆栈，同时报告额外异步／清理错误；先释放 Gate，等待当前关闭退出，ShutdownFailed 后不重试关闭，只有 Idle 才恢复基线。末项回归在真实 Runtime 关闭尾部的生命周期 CTS Dispose 注入故障，使系统已释放但 Runtime 保持 ShutdownFailed，检查原始主体／Dispose 故障可定位、无二次 Shutdown／非 Idle Startup、静态回调／Camera／Scratch 清理，以及没有主体异常时清理失败仍向上传播。该故障用例在本模块进程最后运行，不重置 Runtime 状态，不把预期故障当作生产恢复成功；不增加 Asset 原生 Cleanup 阻挡重启的集成覆盖。
 
   各模块使用独立 Unity 进程，每组含多项断言；用例和断言数量以本轮报告为准。
+  tasks 覆盖 ITask 观察接口与 BaseTask 提交边界、任务不实现 IEnumerator，以及通过 UniTask.ToCoroutine 等待子任务成功／失败／取消；取消父协程不取消或释放子任务，子任务迟到完成也不恢复父协程。
   tasks 还覆盖 Restart 的状态限制、同帧合并、异步关闭中忽略请求且继续推进清理、普通关闭保持 Idle，以及已排队请求遇到 Error 后失效。后台超时返回覆盖 InitSystem／InitLogic 继续初始化、Running 正常自动重启和前台事件进入 Error 后跳过重启。末项由 Timer 回调解除真实系统的释放等待并触发部分释放失败，检查 ShutdownFailed 在同轮剩余遍历及后续帧均停止系统 Tick，并保留登记；用例保留终态，由隔离进程退出回收剩余对象。
   tasks 先实际启动仓库 Demo 场景，确认日志窗口和运行中的协程，再由 Editor 退出 Play Mode，检查退出期间的错误回调及编辑器原生日志，然后进入新的 Play Mode 执行其他用例。Demo 停止结果列在报告第 38 组，覆盖 Unity 先销毁对象、异步清理续体随后执行的时序，不以预先 await Shutdown 替代停止按钮路径。
   Windows 已有全量回归基线；macOS 入口及本机 Bundle 目标已适配，尚待 macOS

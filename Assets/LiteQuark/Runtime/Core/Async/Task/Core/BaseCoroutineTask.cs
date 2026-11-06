@@ -64,13 +64,12 @@ namespace LiteQuark.Runtime
                         _enumerators.Pop();
                         DisposeEnumerator(routine);
                     }
-                    else if (current is IEnumerator nested && current is not ITask)
+                    else if (current is IEnumerator nested)
                     {
                         _enumerators.Push(nested);
                     }
                     else
                     {
-                        // 已登记的 Task 只被等待，不接管其执行或释放。
                         yield return current;
                     }
                 }

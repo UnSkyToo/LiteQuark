@@ -1,9 +1,9 @@
 using System;
-using System.Collections;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
+    /// <summary>由 TaskSystem 调度的任务实现基类，统一管理状态和生命周期。</summary>
     public abstract class BaseTask : BaseObject, ITask
     {
         public override string DebugName => GetType().Name;
@@ -153,16 +153,5 @@ namespace LiteQuark.Runtime
         protected virtual void OnTick(float deltaTime)
         {
         }
-
-        bool IEnumerator.MoveNext()
-        {
-            return !IsDone;
-        }
-
-        void IEnumerator.Reset()
-        {
-        }
-
-        object IEnumerator.Current => null;
     }
 }

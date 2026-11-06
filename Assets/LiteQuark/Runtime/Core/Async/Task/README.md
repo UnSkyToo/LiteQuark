@@ -34,7 +34,20 @@ else if (task.State == TaskState.Cancelled)
 | `AddTask(Action<Action<bool>>)` | Default | 包装回调式操作，done(false) 表示失败 |
 | `AddInstantiateGoTask(...)`、`AddUnityWebGetRequestTask(...)` | Default | 异步实例化／下载 |
 
-上述便利入口使用 Normal 优先级。指定组或优先级时先构造 BaseTask 派生对象，再调用 `AddTask(ITask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。独立实现 ITask 的对象会被拒绝；通用入口只按传入组登记，不按类型自动分组。
+上述便利入口使用 Normal 优先级。指定组或优先级时先构造 BaseTask 派生对象，再调用 `AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。通用入口只按传入组登记，不按类型自动分组。
+
+ITask 是业务持有、观察、等待和取消任务的接口；BaseTask 是实现和提交可调度任务的基类。创建和提交时使用具体类型或 BaseTask，提交后仅需通用能力的字段、集合和回调参数使用 ITask。
+
+任务通过 `await task.Task` 等待，不实现 IEnumerator。已有协程需要等待任务时，先提交任务，再显式转换 UniTask：
+
+```csharp
+var task = new WaitCallbackTask(done => done(true));
+LiteRuntime.Task.AddTask(task);
+yield return task.Task.ToCoroutine();
+// 等待结束后仍按 State / Error 判断成功、失败或取消。
+```
+
+ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或释放。CoroutineTask / BaseCoroutineTask 仍支持用协程实现工作。
 
 ## 状态、结果与通知
 
@@ -56,7 +69,7 @@ AssetSystem 关闭会等待它拥有的资源任务收尾，再卸载 Bundle；T
 - Result 是最终结果；包装器清理不会清空它，但引用不代表独立的 Unity 资源所有权。
 - 完成通知至多一次，不承诺取消或关闭时发送 callback。回调异常被记录，不改写终态。
 - await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理完成。成功路径通常先发布等待结果再调用 callback，失败通知通常在已有等待恢复之前；续体可能同步重入，不能假定所有任务的通知顺序相同。
-- 协程捕获并释放自有嵌套迭代器，取消不调用成功回调；yield 其他 ITask 只等待，不传播其失败或接管其释放。
+- 协程捕获并释放自有嵌套迭代器，取消不调用成功回调；通过 `yield return task.Task.ToCoroutine()` 等待其他任务时，不传播其失败或接管其释放，取消父协程也不取消被等待的任务。
 - 异步实例化失败时，callback 收到空数组，Task / Result 为 null。
 
 `AddUnityWebGetRequestTask` 的成功结果为 `byte[]` 快照，callback、Result 和 await 返回同一数组，原生请求清理后仍可读取。按只读数据使用，需要修改时自行复制，文本由业务按协议解码。空响应成功时为空数组；失败结果为 null、失败回调传 null；取消不发送完成回调。快照由托管引用维持，业务无需 Dispose。
