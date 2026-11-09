@@ -215,7 +215,7 @@ MonoBehaviour:
     Task:
       ConcurrencyLimit: 20
     Asset:
-      BundleLocater: 0
+      BundleMode: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
       TaskConcurrencyLimit: 20
@@ -259,7 +259,7 @@ MonoBehaviour:
     Task:
       ConcurrencyLimit: 20
     Asset:
-      BundleLocater: 0
+      BundleMode: 0
       BundleRemoteUri: https://localhost:8000/
       ConcurrencyLimit: 5
       TaskConcurrencyLimit: 20

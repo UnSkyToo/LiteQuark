@@ -1,10 +1,13 @@
 using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal interface IAssetProvider : IInitializeAsync, ITick, IDisposeAsync
+    internal interface IAssetManager : ITick, IDisposeAsync
     {
+        UniTask<bool> Initialize(IBundleProvider bundleProvider);
+
         string GetVersion();
 
         bool HasAsset(string assetKey);

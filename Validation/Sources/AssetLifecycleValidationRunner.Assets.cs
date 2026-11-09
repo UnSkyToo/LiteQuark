@@ -1012,7 +1012,7 @@ namespace LiteQuark.Editor
                 Check(h.Audio(invalidID) == null, "The failed path enters the normal removal queue instead of waiting forever as an unloaded object.");
 
                 using var probe = new AudioFailureProbe();
-                Set(LiteRuntime.Asset, "_provider", probe);
+                Set(LiteRuntime.Asset, "_manager", probe);
                 var failedID = h.Play();
                 var failed = h.Audio(failedID);
                 var handle = Get<AssetHandle<AudioClip>>(failed, "_clipHandle");
@@ -1027,7 +1027,7 @@ namespace LiteQuark.Editor
                 h.Tick();
                 Check(h.Audio(failedID) == null && probe.Lease.Disposals == 1 && pool.CountActive == 0 && pool.CountInactive == 1,
                     "Explicit repeated Unload and the failure queue do not release a lease or carrier twice.");
-                Set(LiteRuntime.Asset, "_provider", h.Assets.Provider);
+                Set(LiteRuntime.Asset, "_manager", h.Assets.Provider);
                 var pendingID = h.Play();
                 var pending = h.Audio(pendingID);
                 CallAudio(h.System, "StopAudio", pendingID);
@@ -1497,7 +1497,7 @@ namespace LiteQuark.Editor
             var runtime = LiteRuntime.Instance;
             var setting = LiteRuntime.Setting;
             var assets = LiteRuntime.Asset;
-            var provider = Get<IAssetProvider>(assets, "_provider");
+            var provider = Get<IAssetManager>(assets, "_manager");
             var tasks = LiteRuntime.Task;
             var h = new UIOpenHarness();
             using var resources = new UIOpenResourceProbe();
@@ -1540,7 +1540,7 @@ namespace LiteQuark.Editor
             finally { h.OnClose = _ => { }; await h.Cleanup(); }
 
             Check(runtime.State == LiteRuntime.RuntimeState.Running && ReferenceEquals(LiteRuntime.Setting, setting) &&
-                ReferenceEquals(LiteRuntime.Asset, assets) && ReferenceEquals(Get<IAssetProvider>(assets, "_provider"), provider) &&
+                ReferenceEquals(LiteRuntime.Asset, assets) && ReferenceEquals(Get<IAssetManager>(assets, "_manager"), provider) &&
                 ReferenceEquals(LiteRuntime.Task, tasks),
                 "The case preserves the original running Runtime, settings, asset provider and task service for subsequent cases.");
             using var followup = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(EditorTextPath);
@@ -1874,8 +1874,8 @@ namespace LiteQuark.Editor
         {
             var h = New();
             var assets = LiteRuntime.Asset;
-            var original = Get<IAssetProvider>(assets, "_provider");
-            Set(assets, "_provider", h.Provider);
+            var original = Get<IAssetManager>(assets, "_manager");
+            Set(assets, "_manager", h.Provider);
             var pools = new ObjectPoolSystem();
             await pools.Initialize();
             try
@@ -1908,7 +1908,7 @@ namespace LiteQuark.Editor
             finally
             {
                 if (pools.GetPoolRoot() != null) await pools.DisposeAsync();
-                Set(assets, "_provider", original);
+                Set(assets, "_manager", original);
             }
         }
 

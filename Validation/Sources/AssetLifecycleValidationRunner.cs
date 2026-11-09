@@ -32,7 +32,7 @@ namespace LiteQuark.Editor
         private static readonly Report Results = new();
         private static readonly List<string> Errors = new();
         private static Harness Current;
-        private static AssetBundleProvider _simulateProvider;
+        private static AssetManager _simulateManager;
         private static bool _running;
         private static CaseResult _case;
 
@@ -357,7 +357,7 @@ namespace LiteQuark.Editor
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             if (Current != null && !Current.Disposed) Current.Provider.Tick(0);
-            _simulateProvider?.Tick(0);
+            _simulateManager?.Tick(0);
         }
 
         private static UniTask ObserveResourceCleanup(BaseTask task)

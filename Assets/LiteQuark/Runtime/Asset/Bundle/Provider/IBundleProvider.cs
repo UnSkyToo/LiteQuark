@@ -1,6 +1,6 @@
 namespace LiteQuark.Runtime
 {
-    internal interface IBundleLocater
+    internal interface IBundleProvider
     {
         BaseTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback);
         // 成功结果只交付一次；回调接收方负责 Dispose。

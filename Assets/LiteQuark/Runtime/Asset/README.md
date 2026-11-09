@@ -10,7 +10,7 @@
 | `InstantiateHandle(path, parent, ...)` | `GameObjectHandle` 持有实例；Dispose 销毁实例并释放 prefab 引用 |
 | `LoadSceneHandle(path, parameters, priority, ct)` | `SceneHandle` 持有实际场景实例；Dispose 发起异步卸载 |
 | `PreloadAssetHandle<T>(paths, priority, ct)` | `PreloadHandle<T>` 持有批量资源引用，Result 为成功标志 |
-| `HasAsset(path)` / `GetVersion()` | 查询当前 Provider 的资源收录情况／版本，不取得资源所有权 |
+| `HasAsset(path)` / `GetVersion()` | 查询当前 Manager 的资源收录情况／版本，不取得资源所有权 |
 | `UnloadUnusedAssets(maxDepth: 5)` | 清理零引用缓存；不宜逐帧调用 |
 
 加载入口的 priority 默认 `Normal`，ct 默认空令牌。建议使用 `priority:`、`ct:` 命名参数。完整重载见 [AssetSystem.cs](AssetSystem.cs)。示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 命名空间；调用在 Unity 主线程进行，含 await 的示例放在异步方法内，路径替换为实际资源。
@@ -74,7 +74,7 @@ if (sceneHandle.Result == null)
 sceneHandle.Dispose();
 ```
 
-`SceneHandle.Result` 为 `Scene?`，失败、释放或场景失效时为空。同一 Provider 内，规范化后同一路径的并发加载会被拒绝；一次加载完成后再次 Additive 加载，可创建独立实例，各 Handle 卸载自己的实例。限制不覆盖业务直接调用 Unity 场景 API。
+`SceneHandle.Result` 为 `Scene?`，失败、释放或场景失效时为空。同一 Manager 内，规范化后同一路径的并发加载会被拒绝；一次加载完成后再次 Additive 加载，可创建独立实例，各 Handle 卸载自己的实例。限制不覆盖业务直接调用 Unity 场景 API。
 
 Single 模式替换或外部卸载后，Result 为空，成功历史状态保留；业务仍应 Dispose，框架不会重复卸载或释放引用。Unity 拒绝卸载时（例如最后一个场景），Dispose 不保证场景消失，框架保留必要资源直到确认实际卸载；没有公开的 Handle 重试入口，也不自动逐帧重试。
 
@@ -125,11 +125,13 @@ AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束�
 
 ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作者数据，不接受磁盘绝对路径或真正的 UPM 路径。通用文件路径与 URI 操作见 [框架指南](../../README.md#通用路径与文件操作)。
 
+AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选择 IBundleProvider，再将后端传给 AssetManager。后端创建失败（例如非法模式或无效 Remote URI）通过返回的 UniTask 报错，await 时抛出原始异常；任务组重复注册等错误仍在调用时同步抛出。Manager 统一管理清单、缓存和加载协调；SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider 负责获取清单和 Bundle。IBundleResource、Cache／Lease 与 TaskSystem 的读取、所有权和调度职责保持独立。
+
 在 Launcher 的 Asset 设置中配置：
 
 | 配置 | 含义 |
 | --- | --- |
-| `BundleLocater` | 默认 Simulate：编辑器中使用项目资源验证 Bundle 管理流程；BuiltIn 使用本地文件；Remote 使用远端资源包。非 Editor 下 Simulate 自动按 BuiltIn 加载 |
+| `BundleMode` | 默认 Simulate：编辑器中使用项目资源验证 Bundle 管理流程；BuiltIn 使用本地文件；Remote 使用远端资源包。非 Editor 下 Simulate 自动按 BuiltIn 加载 |
 | `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 0.4）；传未编码路径名称，已有查询和 fragment 保留，勿配置框架保留参数 t |
 | `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |
@@ -137,9 +139,9 @@ ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作�
 
 BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
 
-编辑器中默认使用 `BundleLocater = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
+编辑器中默认使用 `BundleMode = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
 
-Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载。所有模式共用 AssetBundleProvider，资源 Lease 必须持有 Cache，场景 Cache 必须持有 Bundle Lease；Simulate 不提供随机交付延迟。
+Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载。所有模式共用 AssetManager，资源 Lease 必须持有 Cache，场景 Cache 必须持有 Bundle Lease；Simulate 不提供随机交付延迟。
 
 模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 在非 Editor 环境（包括 Development Build）自动按 BuiltIn 定位，配置值不被改写；仍需构建并部署随包资源。远端部署须明确选择 Remote。
 

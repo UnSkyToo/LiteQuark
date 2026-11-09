@@ -1,10 +1,10 @@
 namespace LiteQuark.Runtime
 {
-    internal class BundleBuiltInLocater : IBundleLocater
+    internal class BuiltInBundleProvider : IBundleProvider
     {
         public bool EditorForceStreamingAssets { get; set; } = true;
 
-        public BundleBuiltInLocater()
+        public BuiltInBundleProvider()
         {
         }
 

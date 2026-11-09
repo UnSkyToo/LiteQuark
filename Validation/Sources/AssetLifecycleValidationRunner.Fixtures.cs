@@ -86,12 +86,12 @@ namespace LiteQuark.Editor
             internal readonly List<string> Parsed = new();
             internal Action<string> OnParse;
             internal string LastText;
-            private readonly IAssetProvider _original;
+            private readonly IAssetManager _original;
 
             internal ConfigHarness(bool autoLoad = false)
             {
-                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
-                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                _original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+                Set(LiteRuntime.Asset, "_manager", Assets.Provider);
                 var property = System.GetType().GetProperty("Setting");
                 var setting = Activator.CreateInstance(property.PropertyType);
                 property.PropertyType.GetField("LoadAllOnInitialize").SetValue(setting, autoLoad);
@@ -143,7 +143,7 @@ namespace LiteQuark.Editor
                     await System.DisposeAsync();
                     await Assets.Shutdown();
                 }
-                finally { Set(LiteRuntime.Asset, "_provider", _original); }
+                finally { Set(LiteRuntime.Asset, "_manager", _original); }
             }
         }
 
@@ -331,12 +331,12 @@ namespace LiteQuark.Editor
             internal readonly GameObject Parent = new("EffectOwner");
             internal readonly EffectProbePool Pool;
             internal int Completions;
-            private readonly IAssetProvider _original;
+            private readonly IAssetManager _original;
 
             internal EffectHarness()
             {
-                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
-                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                _original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+                Set(LiteRuntime.Asset, "_manager", Assets.Provider);
                 Pool = LiteRuntime.ObjectPool.AddPool<EffectProbePool>(EffectPath, LiteRuntime.ObjectPool.GetPoolRoot());
             }
 
@@ -369,7 +369,7 @@ namespace LiteQuark.Editor
                 }
                 finally
                 {
-                    Set(LiteRuntime.Asset, "_provider", _original);
+                    Set(LiteRuntime.Asset, "_manager", _original);
                     UnityEngine.Object.DestroyImmediate(Parent);
                 }
             }
@@ -394,13 +394,13 @@ namespace LiteQuark.Editor
         {
             internal readonly Harness Assets = New();
             internal readonly ISystem System = NewAudioSystem();
-            private readonly IAssetProvider _original;
+            private readonly IAssetManager _original;
             internal EmptyGameObjectPool Pool => Get<EmptyGameObjectPool>(System, "_pool");
 
             internal AudioHarness()
             {
-                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
-                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                _original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+                Set(LiteRuntime.Asset, "_manager", Assets.Provider);
             }
 
             internal ulong Play(string path = AudioPath, bool music = false) => (ulong)(music
@@ -415,11 +415,11 @@ namespace LiteQuark.Editor
                     await System.DisposeAsync();
                     await Assets.Shutdown();
                 }
-                finally { Set(LiteRuntime.Asset, "_provider", _original); }
+                finally { Set(LiteRuntime.Asset, "_manager", _original); }
             }
         }
 
-        private sealed class AudioFailureProbe : IAssetProvider, IDisposable
+        private sealed class AudioFailureProbe : IAssetManager, IDisposable
         {
             private readonly AudioClip _clip = AudioClip.Create("AudioFailureProbe", 4410, 1, 44100, false);
             private Action _deliver;
@@ -443,7 +443,7 @@ namespace LiteQuark.Editor
                 _deliver = () => callback(AssetLoadResult<IAssetLease<T>>.Success((IAssetLease<T>)(object)Lease));
             }
             public void Dispose() { UnityEngine.Object.DestroyImmediate(_clip); }
-            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+            public UniTask<bool> Initialize(IBundleProvider bundleProvider) => UniTask.FromResult(true);
             public UniTask DisposeAsync() => UniTask.CompletedTask;
             public void Tick(float deltaTime) { }
             public string GetVersion() => "audio-failure-probe";
@@ -561,7 +561,7 @@ namespace LiteQuark.Editor
                 if (Generation == 2)
                 {
                     _fixture.PreviousRoundReleased = _fixture.Events.Last() == "system 1 disposed" &&
-                        Get<IAssetProvider>(_fixture.OldAsset, "_provider") == null &&
+                        Get<IAssetManager>(_fixture.OldAsset, "_manager") == null &&
                         Get<bool>(_fixture.OldTask, "_isClosing") && Get<List<TaskGroup>>(_fixture.OldTask, "_groups").Count == 0;
                 }
                 _fixture.Systems.Add(this);
@@ -640,7 +640,7 @@ namespace LiteQuark.Editor
             internal readonly Harness Assets = New();
             internal readonly ISystem System;
             private readonly GameObject _cameraObject = new("UIOpenCamera", typeof(Camera));
-            private readonly IAssetProvider _original;
+            private readonly IAssetManager _original;
             private readonly Type _probeType;
             private bool _closed;
             internal int Opens;
@@ -651,8 +651,8 @@ namespace LiteQuark.Editor
 
             internal UIOpenHarness(Type bindingAttribute = null)
             {
-                _original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
-                Set(LiteRuntime.Asset, "_provider", Assets.Provider);
+                _original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+                Set(LiteRuntime.Asset, "_manager", Assets.Provider);
                 var systemType = Type.GetType("LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons", true);
                 System = (ISystem)Activator.CreateInstance(systemType);
                 var settingType = Type.GetType("LiteQuark.Runtime.UISystemSetting, LiteQuark.Runtime.Addons", true);
@@ -698,7 +698,7 @@ namespace LiteQuark.Editor
                 }
                 finally
                 {
-                    Set(LiteRuntime.Asset, "_provider", _original);
+                    Set(LiteRuntime.Asset, "_manager", _original);
                     UnityEngine.Object.DestroyImmediate(_cameraObject);
                     _probeType.GetField("OnOpenCallback").SetValue(null, (Action<object>)(_ => { }));
                 }
@@ -734,7 +734,7 @@ namespace LiteQuark.Editor
 
         private sealed class UIResourceEvent : IEventData { }
 
-        private sealed class UIOpenResourceProbe : IAssetProvider, IDisposable
+        private sealed class UIOpenResourceProbe : IAssetManager, IDisposable
         {
             private const string SpritePath = "assets/__session_validation/pending_ui_sprite.asset";
             private readonly Texture2D _texture = new(2, 2);
@@ -779,13 +779,13 @@ namespace LiteQuark.Editor
                 Check(_events == 1, "The UI callback registers a working listener under the actual UI instance's event tag.");
                 _events = 0;
 
-                var original = Get<IAssetProvider>(LiteRuntime.Asset, "_provider");
+                var original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
                 try
                 {
-                    Set(LiteRuntime.Asset, "_provider", this);
+                    Set(LiteRuntime.Asset, "_manager", this);
                     _baseType.GetMethod("LoadSprite").Invoke(ui, new object[] { SpritePath, (Action<Sprite>)(_ => _sprites++) });
                 }
-                finally { Set(LiteRuntime.Asset, "_provider", original); }
+                finally { Set(LiteRuntime.Asset, "_manager", original); }
                 _handle = ((List<AssetHandle<Sprite>>)_baseType.GetField("_spriteHandleList", Private).GetValue(ui)).Single();
                 Check(_handle.State == AssetHandleState.Pending && _deliver != null,
                     "The real BaseUI.LoadSprite path owns an unfinished Handle before the UI callback exits.");
@@ -821,7 +821,7 @@ namespace LiteQuark.Editor
                 if (typeof(T) != typeof(Sprite) || assetKey != SpritePath || _deliver != null) throw new InvalidOperationException("Unexpected UI Sprite request.");
                 _deliver = () => callback(AssetLoadResult<IAssetLease<T>>.Success((IAssetLease<T>)(object)_lease));
             }
-            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+            public UniTask<bool> Initialize(IBundleProvider bundleProvider) => UniTask.FromResult(true);
             public UniTask DisposeAsync() => UniTask.CompletedTask;
             public void Tick(float deltaTime) { }
             public string GetVersion() => "ui-resource-probe";
@@ -960,7 +960,7 @@ namespace LiteQuark.Editor
 
         private sealed class Harness
         {
-            internal readonly AssetBundleProvider Provider = new();
+            internal readonly AssetManager Provider = new();
             internal readonly AssetSystem Assets = new();
             internal readonly Locator Locater;
             internal readonly List<IDisposable> Handles = new();
@@ -1006,7 +1006,7 @@ namespace LiteQuark.Editor
                 pack.Initialize();
                 Set(Provider, "_packInfo", pack);
                 Set(Provider, "_bundleLoader", new AssetBundleLoader(Locater, pack, concurrency));
-                Set(Assets, "_provider", Provider);
+                Set(Assets, "_manager", Provider);
             }
             internal AssetHandle<T> Asset<T>(string path, CancellationToken token = default) where T : UnityEngine.Object
             {
@@ -1033,7 +1033,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private sealed class FileRemoteLocator : IBundleLocater
+        private sealed class FileRemoteLocator : IBundleProvider
         {
             internal LoadRemoteBundleTask Task;
             internal string UriOverride;
@@ -1194,7 +1194,7 @@ namespace LiteQuark.Editor
 
         private static AssetBundle NativeBundle(IBundleResource resource) => resource == null ? null : Get<AssetBundle>(resource, "_bundle");
 
-        private sealed class Locator : IBundleLocater
+        private sealed class Locator : IBundleProvider
         {
             private readonly bool _manual;
             private readonly bool _scheduleManual;

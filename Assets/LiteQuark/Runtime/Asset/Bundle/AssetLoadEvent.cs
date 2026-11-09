@@ -111,7 +111,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                var isRemote = LiteRuntime.Setting?.Asset?.BundleLocater == BundleLocaterMode.Remote;
+                var isRemote = LiteRuntime.Setting?.Asset?.BundleMode == BundleLoadMode.Remote;
                 OnLoadEvent?.Invoke(new AssetLoadEventArgs(
                     AssetLoadEventTiming.Begin,
                     targetType,

@@ -1,12 +1,12 @@
 namespace LiteQuark.Runtime
 {
-    internal class BundleRemoteLocater : IBundleLocater
+    internal class RemoteBundleProvider : IBundleProvider
     {
         public bool DisableUnityWebCache { get; set; } = false;
 
         private readonly string _remoteUri;
 
-        public BundleRemoteLocater(string remoteUri)
+        public RemoteBundleProvider(string remoteUri)
         {
             _remoteUri = remoteUri;
             LLog.Info("BundleRemoteUri: {0}", _remoteUri);

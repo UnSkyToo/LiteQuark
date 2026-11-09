@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         internal long FileSize => _bundleInfo?.Size ?? 0;
 
         private readonly BundleInfo _bundleInfo;
-        private readonly AssetBundleProvider _provider;
+        private readonly AssetManager _manager;
         private readonly List<Action<AssetLoadResult<IBundleResource>>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<(string, Type), AssetInfoCache> _assetCacheMap = new();
         private readonly List<SceneInfoCache> _sceneCacheMap = new();
@@ -26,13 +26,13 @@ namespace LiteQuark.Runtime
         private float _retainTime;
         private AssetLoadPriority _loadPriority;
 
-        public AssetBundleCache(AssetBundleProvider provider, BundleInfo bundleInfo)
+        public AssetBundleCache(AssetManager manager, BundleInfo bundleInfo)
         {
             Stage = AssetCacheStage.Idle;
             Bundle = null;
 
             _bundleInfo = bundleInfo;
-            _provider = provider;
+            _manager = manager;
             _refCount = 0;
             _retainTime = 0;
         }
@@ -231,11 +231,11 @@ namespace LiteQuark.Runtime
             }
 
             _loadPriority = priority;
-            _provider.RaiseBundlePriority(_bundleInfo, priority);
+            _manager.RaiseBundlePriority(_bundleInfo, priority);
 
             foreach (var dependency in DependencyList)
             {
-                if (_provider.TryGetBundleCache(dependency, out var dependencyCache))
+                if (_manager.TryGetBundleCache(dependency, out var dependencyCache))
                 {
                     dependencyCache.RaiseLoadPriority(priority);
                 }

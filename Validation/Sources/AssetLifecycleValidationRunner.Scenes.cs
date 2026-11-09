@@ -46,7 +46,7 @@ namespace LiteQuark.Editor
                     "Manual and automatic cache reclamation remain stopped while close is waiting.");
                 await shutdown;
                 Check(sawUnload && protectedDuringUnload && (!scene.IsValid() || !scene.isLoaded) &&
-                    bundle == null && dependency == null && text == null && Get<IAssetProvider>(h.Assets, "_provider") == null,
+                    bundle == null && dependency == null && text == null && Get<IAssetManager>(h.Assets, "_manager") == null,
                     "Native scene unloading finishes before all cached resources and dependencies are destroyed, despite retained Handles.");
             }
             finally { SceneManager.sceneUnloaded -= ObserveUnload; }
@@ -86,7 +86,7 @@ namespace LiteQuark.Editor
                 Exception failure = null;
                 try { await h.Shutdown(); } catch (Exception ex) { failure = ex; }
                 Check(failure is InvalidOperationException && failure.Message.Contains("Scene has not been unloaded") &&
-                    scene.isLoaded && bundle != null && !h.Disposed && Get<IAssetProvider>(h.Assets, "_provider") != null,
+                    scene.isLoaded && bundle != null && !h.Disposed && Get<IAssetManager>(h.Assets, "_manager") != null,
                     "Refused native scene unloading fails shutdown without destroying its Bundle or clearing the Provider.");
             }
             finally
@@ -784,19 +784,19 @@ namespace LiteQuark.Editor
             Check(h.LoadingNames.Count == 0 && !task.IsExecuted, "Task cancellation clears registration without starting Unity load.");
         }
 
-        private static async UniTask WithSimulateScenes(Func<AssetSystem, AssetBundleProvider, UniTask> action)
+        private static async UniTask WithSimulateScenes(Func<AssetSystem, AssetManager, UniTask> action)
         {
             var setting = LiteRuntime.Setting.Asset;
-            var oldLocater = setting.BundleLocater;
+            var oldLocater = setting.BundleMode;
             AssetSystem assets = null;
             try
             {
-                setting.BundleLocater = BundleLocaterMode.Simulate;
+                setting.BundleMode = BundleLoadMode.Simulate;
                 assets = new AssetSystem();
-                var provider = (AssetBundleProvider)Get<IAssetProvider>(assets, "_provider");
-                _simulateProvider = provider;
+                var provider = (AssetManager)Get<IAssetManager>(assets, "_manager");
+                _simulateManager = provider;
                 // The fixture Runtime already owns the Asset group.
-                Check(await provider.Initialize(), "Simulate initializes from collected project assets.");
+                Check(await provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true })), "Simulate initializes from collected project assets.");
                 await action(assets, provider);
             }
             finally
@@ -804,8 +804,8 @@ namespace LiteQuark.Editor
                 try { if (assets != null) await assets.DisposeAsync(); }
                 finally
                 {
-                    _simulateProvider = null;
-                    setting.BundleLocater = oldLocater;
+                    _simulateManager = null;
+                    setting.BundleMode = oldLocater;
                 }
             }
         }

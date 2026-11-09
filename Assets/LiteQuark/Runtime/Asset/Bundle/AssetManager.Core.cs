@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleProvider : IAssetProvider
+    internal sealed partial class AssetManager : IAssetManager
     {
         private VersionPackInfo _packInfo = null;
         private AssetBundleLoader _bundleLoader = null;
@@ -15,19 +15,18 @@ namespace LiteQuark.Runtime
 
         private bool _isDisposed;
 
-        public AssetBundleProvider()
+        public AssetManager()
         {
         }
 
-        public async UniTask<bool> Initialize()
+        public async UniTask<bool> Initialize(IBundleProvider bundleProvider)
         {
-            var bundleLocater = CreateLocater(UnityEngine.Application.isEditor);
-            if (bundleLocater == null)
+            if (bundleProvider == null)
             {
                 return false;
             }
 
-            _packInfo = await bundleLocater.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
+            _packInfo = await bundleProvider.LoadVersionPack(AppUtils.GetVersionFileName(), null).Task as VersionPackInfo;
             if (_packInfo == null)
             {
                 return false;
@@ -43,7 +42,7 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
-            _bundleLoader = new AssetBundleLoader(bundleLocater, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
+            _bundleLoader = new AssetBundleLoader(bundleProvider, _packInfo, LiteRuntime.Setting.Asset.ConcurrencyLimit);
 
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
@@ -208,38 +207,6 @@ namespace LiteQuark.Runtime
         internal void RaiseBundlePriority(BundleInfo bundleInfo, AssetLoadPriority priority)
         {
             _bundleLoader.RaiseBundlePriority(bundleInfo, priority);
-        }
-
-        private IBundleLocater CreateLocater(bool isEditor)
-        {
-            var mode = LiteRuntime.Setting.Asset.BundleLocater;
-            // 默认模拟配置也可用于 Player；只有编辑器能访问项目资源。
-            if (!isEditor && mode == BundleLocaterMode.Simulate)
-            {
-                mode = BundleLocaterMode.BuiltIn;
-            }
-            switch (mode)
-            {
-                case BundleLocaterMode.BuiltIn:
-                    return new BundleBuiltInLocater
-                    {
-                        EditorForceStreamingAssets = LiteRuntime.Setting.Asset.EditorForceStreamingAssets
-                    };
-                case BundleLocaterMode.Remote:
-                    return new BundleRemoteLocater(PathUtils.ConcatUri(
-                        LiteRuntime.Setting.Asset.BundleRemoteUri,
-                        AppUtils.GetCurrentPlatformName().ToLowerInvariant(),
-                        AppUtils.GetMainVersion()))
-                    {
-                        DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
-                    };
-#if UNITY_EDITOR
-                case BundleLocaterMode.Simulate:
-                    return new BundleSimulateLocater();
-#endif
-                default:
-                    throw new ArgumentException($"error {nameof(BundleLocaterMode)} : {mode}");
-            }
         }
     }
 }

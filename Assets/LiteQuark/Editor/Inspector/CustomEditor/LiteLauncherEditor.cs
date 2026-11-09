@@ -204,7 +204,7 @@ namespace LiteQuark.Editor
 
             var asset = setting.Asset;
 
-            if (asset.BundleLocater == BundleLocaterMode.Remote &&
+            if (asset.BundleMode == BundleLoadMode.Remote &&
                 string.IsNullOrWhiteSpace(asset.BundleRemoteUri))
             {
                 EditorGUILayout.HelpBox("BundleRemoteUri is empty while using Remote mode.", MessageType.Warning);

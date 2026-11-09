@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
 {
     internal class AssetBundleLoader : ITick, IDisposeAsync
     {
-        private readonly IBundleLocater _bundleLocater;
+        private readonly IBundleProvider _bundleProvider;
         private readonly VersionPackInfo _packInfo;
         private readonly int _concurrencyLimit;
 
@@ -17,9 +17,9 @@ namespace LiteQuark.Runtime
         private readonly List<UniTask> _pendingCleanup = new();
         private bool _isDisposed;
 
-        public AssetBundleLoader(IBundleLocater locater, VersionPackInfo packInfo, int concurrencyLimit)
+        public AssetBundleLoader(IBundleProvider provider, VersionPackInfo packInfo, int concurrencyLimit)
         {
-            _bundleLocater = locater ?? throw new ArgumentNullException(nameof(locater));
+            _bundleProvider = provider ?? throw new ArgumentNullException(nameof(provider));
             _packInfo = packInfo ?? throw new ArgumentNullException(nameof(packInfo));
             _concurrencyLimit = Mathf.Max(1, concurrencyLimit);
 
@@ -162,7 +162,7 @@ namespace LiteQuark.Runtime
 
                 try
                 {
-                    task = _bundleLocater.LoadBundle(info.Path, info.Hash,
+                    task = _bundleProvider.LoadBundle(info.Path, info.Hash,
                         bundle => CompletePendingTask(info.Path, bundle, task?.Error));
                 }
                 catch (Exception ex)

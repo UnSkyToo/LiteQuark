@@ -3,13 +3,13 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleProvider : IAssetProvider
+    internal sealed partial class AssetManager : IAssetManager
     {
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset provider is disposed")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset manager is disposed")));
                 return;
             }
 
@@ -27,7 +27,7 @@ namespace LiteQuark.Runtime
         {
             if (_isDisposed)
             {
-                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Asset provider is disposed")));
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Asset manager is disposed")));
                 return;
             }
 

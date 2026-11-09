@@ -1,6 +1,6 @@
 namespace LiteQuark.Runtime
 {
-    public enum BundleLocaterMode : byte
+    public enum BundleLoadMode : byte
     {
         Simulate = 0,
         BuiltIn = 1,

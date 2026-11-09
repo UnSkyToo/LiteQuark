@@ -114,7 +114,7 @@ namespace LiteQuark.Runtime
 
             foreach (var dependency in dependencies)
             {
-                var dependencyCache = _provider.GetOrCreateBundleCache(dependency);
+                var dependencyCache = _manager.GetOrCreateBundleCache(dependency);
                 if (dependencyCache == null)
                 {
                     LLog.Error("Missing dependency bundle: {0} -> {1}", BundlePath, dependency);
@@ -131,7 +131,7 @@ namespace LiteQuark.Runtime
                 });
             }
 
-            _provider.LoadBundle(_bundleInfo, _loadPriority, result =>
+            _manager.LoadBundle(_bundleInfo, _loadPriority, result =>
             {
                 firstError ??= result.Error;
                 acg.SignalMain(result.Value);

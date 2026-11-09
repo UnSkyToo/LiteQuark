@@ -30,6 +30,12 @@
 
 ### Asset
 
+- 修复：后端创建移至 AssetSystem 后，非法模式和无效 Remote URI 继续通过初始化 UniTask 交付原始异常，不从 Initialize 调用同步抛出；任务组注册的同步异常语义不变。
+
+- 破坏：配置字段 BundleLocater 改名为 BundleMode，类型 BundleLocaterMode 改为 BundleLoadMode；代码调用方更新名称，枚举数值仍为 Simulate=0、BuiltIn=1、Remote=2。字段保留 FormerlySerializedAs("BundleLocater")，Unity 序列化的旧场景、Prefab 和配置资产可按原值读取；JSON 和其他自定义配置解析器需自行更新字段名。仓库场景只更新字段名，不调整模式。
+- 调整：AssetBundleProvider／IAssetProvider 改名为 AssetManager／IAssetManager；IBundleLocater 及实现改为 IBundleProvider、SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider。相关源码与 Provider 文件夹沿用原 meta GUID。
+- 调整：后端选择和非 Editor 的 Simulate→BuiltIn 回退集中在 AssetSystem.Initialize；Manager 初始化接收已选好的 IBundleProvider，不再自行判断模式或平台。缓存、依赖、Lease、Retention 与任务调度行为不变。
+
 - 破坏：删除 AssetEditorProvider、AssetProviderMode、AssetSetting.AssetMode，以及 SimulateAsyncDelayInEditor／AsyncDelayMinFrame／AsyncDelayMaxFrame；只通过 BundleLocater 选择模式。代码配置改为 BundleLocaterMode.Simulate、BuiltIn 或 Remote。
 - 迁移：BundleLocater 数值调整为 Simulate=0、BuiltIn=1、Remote=2。旧 AssetMode=Editor 的编辑器开发配置迁到 Simulate；旧 AssetMode=Bundle 的配置按语义将旧 BuiltIn=0→1、Remote=1→2、Simulate=2→0。外部场景、Prefab、设置资产和自定义数字配置须在更新后明确迁移，不能只删除 AssetMode 后沿用旧 Locater 数字。仓库内 Demo 与 LiteNexusEditorScene 已迁移并保留资产 GUID。
 - 调整：默认 Simulate 在 Editor 中执行清单收集及共享 Bundle 管理链路，在非 Editor（含 Development Build）自动使用 BuiltIn，仍需构建并部署本地资源包；原 Editor 配置若在 Player 使用 Remote，应明确改为 Remote。不会自动改写保存的 Locater 值。

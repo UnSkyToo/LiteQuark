@@ -9,11 +9,11 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class AssetSystem : ISystem, ITick
     {
-        private IAssetProvider _provider = null;
+        private IAssetManager _manager = null;
 
         public AssetSystem()
         {
-            _provider = new AssetBundleProvider();
+            _manager = new AssetManager();
         }
 
         public UniTask<bool> Initialize()
@@ -21,27 +21,38 @@ namespace LiteQuark.Runtime
             var concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Asset.TaskConcurrencyLimit);
             LiteRuntime.Task.RegisterGroup(LiteConst.TaskGroupId.Asset, concurrencyLimit);
 
-            return _provider.Initialize();
+            IBundleProvider bundleProvider;
+            try
+            {
+                bundleProvider = CreateBundleProvider(UnityEngine.Application.isEditor);
+            }
+            catch (Exception ex)
+            {
+                // 后端创建失败通过初始化任务交付；任务组注册保留同步异常语义。
+                return UniTask.FromException<bool>(ex);
+            }
+
+            return _manager.Initialize(bundleProvider);
         }
 
         public async UniTask DisposeAsync()
         {
-            if (_provider == null)
+            if (_manager == null)
             {
                 return;
             }
-            await _provider.DisposeAsync();
-            _provider = null;
+            await _manager.DisposeAsync();
+            _manager = null;
         }
 
         public void Tick(float deltaTime)
         {
-            _provider?.Tick(LiteTime.UnscaledDeltaTime);
+            _manager?.Tick(LiteTime.UnscaledDeltaTime);
         }
 
         public string GetVersion()
         {
-            return _provider?.GetVersion();
+            return _manager?.GetVersion();
         }
 
         public bool HasAsset(string assetPath)
@@ -51,7 +62,7 @@ namespace LiteQuark.Runtime
                 return false;
             }
 
-            return _provider?.HasAsset(assetKey) ?? false;
+            return _manager?.HasAsset(assetKey) ?? false;
         }
 
         public AssetHandle<T> LoadAssetHandle<T>(string assetPath, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
@@ -68,14 +79,14 @@ namespace LiteQuark.Runtime
         {
             return new AssetHandle<T>(assetKey, callback =>
             {
-                if (_provider == null)
+                if (_manager == null)
                 {
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(
-                        new AssetError(assetKey, "Asset provider is unavailable")));
+                        new AssetError(assetKey, "Asset manager is unavailable")));
                     return;
                 }
 
-                _provider.LoadAssetAsync(assetKey, priority, callback);
+                _manager.LoadAssetAsync(assetKey, priority, callback);
             }, ct);
         }
 
@@ -115,14 +126,14 @@ namespace LiteQuark.Runtime
 
             return new SceneHandle(callback =>
             {
-                if (_provider == null)
+                if (_manager == null)
                 {
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(
-                        new AssetError(sceneKey, "Asset provider is unavailable")));
+                        new AssetError(sceneKey, "Asset manager is unavailable")));
                     return;
                 }
 
-                _provider?.LoadSceneAsync(sceneKey, parameters, priority, callback);
+                _manager?.LoadSceneAsync(sceneKey, parameters, priority, callback);
             }, ct);
         }
 
@@ -132,15 +143,47 @@ namespace LiteQuark.Runtime
         /// <param name="maxDepth">释放引用的最大层数。例如：A->B->C，如果为2，则只释放到B这一层</param>
         public void UnloadUnusedAssets(int maxDepth = 5)
         {
-            _provider?.UnloadUnusedAssets(maxDepth);
+            _manager?.UnloadUnusedAssets(maxDepth);
+        }
+
+        private IBundleProvider CreateBundleProvider(bool isEditor)
+        {
+            var mode = LiteRuntime.Setting.Asset.BundleMode;
+            // 默认模拟配置也可用于 Player；只有编辑器能访问项目资源。
+            if (!isEditor && mode == BundleLoadMode.Simulate)
+            {
+                mode = BundleLoadMode.BuiltIn;
+            }
+            switch (mode)
+            {
+                case BundleLoadMode.BuiltIn:
+                    return new BuiltInBundleProvider
+                    {
+                        EditorForceStreamingAssets = LiteRuntime.Setting.Asset.EditorForceStreamingAssets
+                    };
+                case BundleLoadMode.Remote:
+                    return new RemoteBundleProvider(PathUtils.ConcatUri(
+                        LiteRuntime.Setting.Asset.BundleRemoteUri,
+                        AppUtils.GetCurrentPlatformName().ToLowerInvariant(),
+                        AppUtils.GetMainVersion()))
+                    {
+                        DisableUnityWebCache = LiteRuntime.Setting.Asset.DisableUnityWebCache
+                    };
+#if UNITY_EDITOR
+                case BundleLoadMode.Simulate:
+                    return new SimulateBundleProvider();
+#endif
+                default:
+                    throw new ArgumentException($"error {nameof(BundleLoadMode)} : {mode}");
+            }
         }
 
 #if UNITY_EDITOR
         internal VisitorInfo GetVisitorInfo()
         {
-            if (_provider is AssetBundleProvider provider)
+            if (_manager is AssetManager manager)
             {
-                return provider.GetVisitorInfo();
+                return manager.GetVisitorInfo();
             }
 
             return new VisitorInfo(null, Array.Empty<BundleVisitorInfo>());

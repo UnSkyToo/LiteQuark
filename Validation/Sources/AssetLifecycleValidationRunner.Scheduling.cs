@@ -17,7 +17,7 @@ namespace LiteQuark.Editor
         {
             New();
             var setting = LiteRuntime.Setting.Asset;
-            var oldLocater = setting.BundleLocater;
+            var oldLocater = setting.BundleMode;
             var oldLimit = setting.ConcurrencyLimit;
             var oldRetain = setting.BundleRetainTime;
             var handles = new List<IDisposable>();
@@ -26,10 +26,10 @@ namespace LiteQuark.Editor
             T Keep<T>(T handle) where T : IDisposable { handles.Add(handle); return handle; }
             try
             {
-                setting.BundleLocater = BundleLocaterMode.Simulate;
+                setting.BundleMode = BundleLoadMode.Simulate;
                 setting.ConcurrencyLimit = 1;
                 assets = new AssetSystem();
-                var provider = Get<IAssetProvider>(assets, "_provider") as AssetBundleProvider;
+                var provider = Get<IAssetManager>(assets, "_manager") as AssetManager;
                 Check(provider != null, "Simulate selects the existing Bundle Provider through normal AssetSystem construction.");
                 UniTask Pump(Func<bool> done, string label) => Wait(() => { provider.Tick(0); return done(); }, label);
 
@@ -37,7 +37,7 @@ namespace LiteQuark.Editor
                 gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
                 await Wait(() => gates.All(task => task.IsExecuted), "Simulate version admission gate");
                 // The running fixture Runtime already owns the Asset group; initialize the selected Provider directly.
-                var initialization = provider.Initialize();
+                var initialization = provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true }));
                 var versionTask = TaskSnapshot().OfType<LoadSimulateVersionPackTask>().Single();
                 Check(versionTask.State == TaskState.Pending && !initialization.Status.IsCompleted(),
                     "Manifest collection is submitted to the Asset group and waits for admission.");
@@ -146,12 +146,16 @@ namespace LiteQuark.Editor
                     "A closed simulated AssetSystem rejects new requests.");
 
                 assets = new AssetSystem();
-                provider = (AssetBundleProvider)Get<IAssetProvider>(assets, "_provider");
-                Check(await provider.Initialize() && !ReferenceEquals(pack, Get<VersionPackInfo>(provider, "_packInfo")),
+                provider = (AssetManager)Get<IAssetManager>(assets, "_manager");
+                var backend = (IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true });
+                setting.BundleMode = BundleLoadMode.BuiltIn;
+                Check(await provider.Initialize(backend) && !ReferenceEquals(pack, Get<VersionPackInfo>(provider, "_packInfo")),
                     "A new Simulate Provider collects a separate manifest session.");
+                Check(ReferenceEquals(Get<IBundleProvider>(Get<AssetBundleLoader>(provider, "_bundleLoader"), "_bundleProvider"), backend),
+                    "The manager uses its injected backend without reselecting from the global mode.");
                 await assets.DisposeAsync();
                 assets = new AssetSystem();
-                Check(Get<IAssetProvider>(assets, "_provider") is AssetBundleProvider,
+                Check(Get<IAssetManager>(assets, "_manager") is AssetManager,
                     "All modes use the same Bundle Provider.");
             }
             finally
@@ -161,7 +165,7 @@ namespace LiteQuark.Editor
                 try { if (assets != null) await assets.DisposeAsync(); }
                 finally
                 {
-                    setting.BundleLocater = oldLocater;
+                    setting.BundleMode = oldLocater;
                     setting.ConcurrencyLimit = oldLimit;
                     setting.BundleRetainTime = oldRetain;
                 }
@@ -197,7 +201,7 @@ namespace LiteQuark.Editor
                 });
                 File.WriteAllBytes(Path.Combine(content, AppUtils.GetVersionFileName()), pack.ToBinaryData());
                 var setting = new LiteSetting();
-                setting.Asset.BundleLocater = BundleLocaterMode.Remote;
+                setting.Asset.BundleMode = BundleLoadMode.Remote;
                 setting.Asset.BundleRemoteUri = new Uri(fixture.Scratch + Path.DirectorySeparatorChar).AbsoluteUri;
                 setting.Asset.DisableUnityWebCache = true;
                 setting.Asset.TaskConcurrencyLimit = 1;
@@ -217,7 +221,7 @@ namespace LiteQuark.Editor
                 var oldRoot = GetUICanvasRoot(oldUI);
                 fixture.OldAsset = LiteRuntime.Asset;
                 fixture.OldTask = LiteRuntime.Task;
-                var provider = Get<AssetBundleProvider>(fixture.OldAsset, "_provider");
+                var provider = Get<AssetManager>(fixture.OldAsset, "_manager");
 
                 // Warm only the Object-typed cache: GameObject extraction must still enter the real Asset task group.
                 using (var warmup = LiteRuntime.Asset.LoadAssetHandle<UnityEngine.Object>(PrefabPath))
@@ -280,7 +284,7 @@ namespace LiteQuark.Editor
                 await WaitWithoutLoaderTick(() => updates > 0, "New UI participates in Runtime Tick");
                 newUI.GetType().GetMethods().Single(method => method.Name == "CloseUI" && !method.IsGenericMethod).Invoke(newUI, new[] { ui });
                 await WaitWithoutLoaderTick(() => go == null, "New UI deferred close destruction");
-                var newProvider = Get<AssetBundleProvider>(LiteRuntime.Asset, "_provider");
+                var newProvider = Get<AssetManager>(LiteRuntime.Asset, "_manager");
                 var newEntry = Get<Dictionary<(string, Type), AssetInfoCache>>(newProvider.GetOrCreateBundleCache("a.ab"), "_assetCacheMap")[(PrefabPath, typeof(GameObject))];
                 Check(closes == 1 && probeType.GetProperty("State").GetValue(ui).ToString() == "Closed" &&
                     (GameObject)probeType.GetProperty("Go").GetValue(ui) == null && Get<int>(newEntry, "_refCount") == 0,

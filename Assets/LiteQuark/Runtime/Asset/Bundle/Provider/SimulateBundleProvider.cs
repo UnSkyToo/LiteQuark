@@ -4,7 +4,7 @@ using LiteQuark.Editor;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class BundleSimulateLocater : IBundleLocater
+    internal sealed class SimulateBundleProvider : IBundleProvider
     {
         private readonly ResCollector _collector = new();
         private BaseTask _versionTask;

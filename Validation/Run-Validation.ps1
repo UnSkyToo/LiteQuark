@@ -30,7 +30,7 @@ $suites = [ordered]@{
     packages = @{ Runner = 'PackageValidationRunner'; Cases = 1 }
     tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 38 }
     lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 148 }
-    loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 26 }
+    loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 28 }
 }
 $selected = @($suites.Keys | Where-Object { $Suite -contains 'all' -or $Suite -contains $_ })
 

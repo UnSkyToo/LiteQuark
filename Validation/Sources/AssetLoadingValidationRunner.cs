@@ -210,6 +210,30 @@ namespace LiteQuark.Editor
             }.Concat(packageBundles).ToArray());
             File.WriteAllBytes(Path.Combine(Reports, "version.bytes"), pack.ToBinaryData());
             File.WriteAllText(Path.Combine(Reports, "fixture-assets.json"), JsonUtility.ToJson(new FixturePaths { assets = builds.SelectMany(b => b.assetNames).ToArray() }, true));
+            BuildLegacySettingsFixtures();
+        }
+
+        private static void BuildLegacySettingsFixtures()
+        {
+            Directory.CreateDirectory(Fixture + "/Settings");
+            foreach (var mode in new[] { BundleLoadMode.Simulate, BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
+            {
+                var path = Fixture + "/Settings/" + mode + ".prefab";
+                var go = new GameObject("Legacy bundle settings");
+                go.SetActive(false);
+                try
+                {
+                    var launcher = go.AddComponent<LiteLauncher>();
+                    launcher.DebugSetting.Asset.BundleMode = mode;
+                    launcher.ReleaseSetting.Asset.BundleMode = mode;
+                    PrefabUtility.SaveAsPrefabAsset(go, path);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(go); }
+                var yaml = File.ReadAllText(path);
+                if (!yaml.Contains("BundleMode: " + (int)mode)) throw new Exception("Expected text-serialized settings fixture.");
+                File.WriteAllText(path, yaml.Replace("BundleMode:", "BundleLocater:"));
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            }
         }
         [Serializable] private sealed class FixturePaths { public string[] assets; }
         [Serializable] private sealed class BuildOptionEvidence
@@ -253,6 +277,10 @@ namespace LiteQuark.Editor
                 await Run("25 Full manifest paths load assets directories and default resources", FullManifestResources);
                 await Run("26 BuiltIn locator preserves override and persistent priority", BuiltInLocation);
                 await Run("27 Remote URI configuration and version query composition", RemoteUriComposition);
+                await Run("28 Invalid mode initialization fails through its returned task",
+                    () => InitializationFailure((BundleLoadMode)byte.MaxValue, "https://example.invalid/", typeof(ArgumentException)));
+                await Run("29 Invalid Remote URI initialization fails through its returned task",
+                    () => InitializationFailure(BundleLoadMode.Remote, "http://[", typeof(UriFormatException)));
             }
             catch (Exception ex) { Report.fatalError = ex.ToString(); }
             finally
@@ -351,7 +379,7 @@ namespace LiteQuark.Editor
         private static async UniTask RemoteUriComposition()
         {
             var versionQuery = "t=" + Uri.EscapeDataString(AppUtils.GetVersion());
-            var compose = typeof(BundleRemoteLocater).GetMethod("GetVersionPackUri", Private);
+            var compose = typeof(RemoteBundleProvider).GetMethod("GetVersionPackUri", Private);
             foreach (var item in new[] {
                 (Base: "https://cdn.example/res", Query: versionQuery, Fragment: ""),
                 (Base: "https://cdn.example/res?token=a%2Bb#part", Query: "token=a%2Bb&" + versionQuery, Fragment: "#part"),
@@ -360,7 +388,7 @@ namespace LiteQuark.Editor
                 (Base: "https://cdn.example/res#part?note=1", Query: versionQuery, Fragment: "#part?note=1"),
                 (Base: "https://cdn.example/res??flag#part", Query: "?flag&" + versionQuery, Fragment: "#part") })
             {
-                var locator = new BundleRemoteLocater(item.Base);
+                var locator = new RemoteBundleProvider(item.Base);
                 var result = (string)compose.Invoke(locator, new object[] { "version #?.txt" });
                 var expected = "https://cdn.example/res/version%20%23%3F.txt?" + item.Query + item.Fragment;
                 Check(result == expected, "Version URI expected=[" + expected + "]; actual=[" + result + "]");
@@ -369,16 +397,16 @@ namespace LiteQuark.Editor
             }
 
             var setting = LiteRuntime.Setting.Asset;
-            var previousMode = setting.BundleLocater;
+            var previousMode = setting.BundleMode;
             var previousUri = setting.BundleRemoteUri;
             var previousCache = setting.DisableUnityWebCache;
-            var provider = new AssetBundleProvider();
+            var assets = new AssetSystem();
             try
             {
-                setting.BundleLocater = BundleLocaterMode.Remote;
+                setting.BundleMode = BundleLoadMode.Remote;
                 setting.BundleRemoteUri = "https://cdn.example/base%20dir?token=a%2Bb#part";
                 setting.DisableUnityWebCache = true;
-                var locator = (BundleRemoteLocater)typeof(AssetBundleProvider).GetMethod("CreateLocater", Private).Invoke(provider, new object[] { true });
+                var locator = (RemoteBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true });
                 var platform = Uri.EscapeDataString(AppUtils.GetCurrentPlatformName().ToLowerInvariant());
                 var version = Uri.EscapeDataString(AppUtils.GetMainVersion());
                 var expectedBase = "https://cdn.example/base%20dir/" + platform + "/" + version;
@@ -389,8 +417,8 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                await provider.DisposeAsync();
-                setting.BundleLocater = previousMode;
+                await assets.DisposeAsync();
+                setting.BundleMode = previousMode;
                 setting.BundleRemoteUri = previousUri;
                 setting.DisableUnityWebCache = previousCache;
             }
@@ -409,7 +437,7 @@ namespace LiteQuark.Editor
                     throw new InvalidOperationException("Locator fixture already exists: " + folder);
             var relativeBundle = leaf + "/probe.ab";
             var relativeVersion = leaf + "/version.txt";
-            var locator = new BundleBuiltInLocater();
+            var locator = new BuiltInBundleProvider();
             try
             {
                 Directory.CreateDirectory(persistent);
@@ -431,7 +459,7 @@ namespace LiteQuark.Editor
                 File.Delete(Path.Combine(persistent, "probe.ab"));
                 await AssertBuiltInLocation(locator, relativeVersion, relativeBundle, "streaming-marker", false);
 
-                var resolve = typeof(BundleBuiltInLocater).GetMethod("GetRuntimeFullPath", Private);
+                var resolve = typeof(BuiltInBundleProvider).GetMethod("GetRuntimeFullPath", Private);
                 File.WriteAllText(Path.Combine(persistent, "probe.ab"), "intentionally-not-a-bundle");
                 Check((string)resolve.Invoke(locator, new object[] { relativeBundle }) == PathUtils.GetPersistentDataPath(LiteConst.Tag, relativeBundle), "Selection remains existence-based; it does not inspect or silently bypass corrupt persistent content.");
                 File.Delete(Path.Combine(persistent, "probe.ab"));
@@ -446,7 +474,7 @@ namespace LiteQuark.Editor
             Check(!Directory.Exists(persistent) && !Directory.Exists(streaming), "Only this run's unique locator fixtures are removed.");
         }
 
-        private static async UniTask AssertBuiltInLocation(BundleBuiltInLocater locator, string versionPath, string bundlePath, string marker, bool persistent)
+        private static async UniTask AssertBuiltInLocation(BuiltInBundleProvider locator, string versionPath, string bundlePath, string marker, bool persistent)
         {
             VersionPackInfo callbackPack = null;
             var versionTask = locator.LoadVersionPack(versionPath, pack => callbackPack = pack);
@@ -486,15 +514,15 @@ namespace LiteQuark.Editor
         {
             public readonly AssetSystem Assets = new();
             public readonly List<IDisposable> Handles = new();
-            public AssetBundleProvider Provider;
+            public AssetManager Provider;
             public LocalLocator Locator;
-            public IAssetProvider ActualProvider;
+            public IAssetManager ActualProvider;
             public T Keep<T>(T value) where T : IDisposable { Handles.Add(value); return value; }
             public AssetHandle<T> Asset<T>(string path) where T : UnityEngine.Object => Keep(Assets.LoadAssetHandle<T>(path));
             public SceneHandle Scene(string path) => Keep(Assets.LoadSceneHandle(path, new LoadSceneParameters(LoadSceneMode.Additive)));
             public int Loading => Get<HashSet<string>>(ActualProvider, "_loadingSceneSet").Count;
         }
-        private sealed class LocalLocator : IBundleLocater
+        private sealed class LocalLocator : IBundleProvider
         {
             public int Calls;
             public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
@@ -511,23 +539,23 @@ namespace LiteQuark.Editor
             LiteRuntime.Setting.Asset.BundleRetainTime = 300;
             if (editor)
             {
-                var previous = LiteRuntime.Setting.Asset.BundleLocater;
-                LiteRuntime.Setting.Asset.BundleLocater = BundleLocaterMode.Simulate;
-                var provider = new AssetBundleProvider();
-                try { Check(await provider.Initialize(), "Simulate initializes a fresh collected manifest."); }
-                finally { LiteRuntime.Setting.Asset.BundleLocater = previous; }
+                var previous = LiteRuntime.Setting.Asset.BundleMode;
+                LiteRuntime.Setting.Asset.BundleMode = BundleLoadMode.Simulate;
+                var provider = new AssetManager();
+                try { Check(await provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(Context.Assets, new object[] { true })), "Simulate initializes a fresh collected manifest."); }
+                finally { LiteRuntime.Setting.Asset.BundleMode = previous; }
                 Context.ActualProvider = provider;
             }
             else
             {
-                Context.Provider = new AssetBundleProvider();
+                Context.Provider = new AssetManager();
                 Context.Locator = new LocalLocator();
                 var pack = ReadPack();
                 Set(Context.Provider, "_packInfo", pack);
                 Set(Context.Provider, "_bundleLoader", new AssetBundleLoader(Context.Locator, pack, 5));
                 Context.ActualProvider = Context.Provider;
             }
-            Set(Context.Assets, "_provider", Context.ActualProvider);
+            Set(Context.Assets, "_manager", Context.ActualProvider);
             return Context;
         }
         private static Scene[] FixtureScenes() => Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
@@ -773,41 +801,123 @@ namespace LiteQuark.Editor
             return UniTask.CompletedTask;
         }
 
+        private static async UniTask InitializationFailure(BundleLoadMode mode, string remoteUri, Type expectedException)
+        {
+            var setting = LiteRuntime.Setting.Asset;
+            var previousMode = setting.BundleMode;
+            var previousUri = setting.BundleRemoteUri;
+            var tasks = LiteRuntime.Task;
+            var groups = Get<List<TaskGroup>>(tasks, "_groups");
+            var originalGroups = groups.ToArray();
+            var assetGroupIndex = groups.FindIndex(group => group.Id == LiteConst.TaskGroupId.Asset);
+            var originalAssetGroup = groups[assetGroupIndex];
+            var assets = new AssetSystem();
+            try
+            {
+                setting.BundleMode = mode;
+                setting.BundleRemoteUri = remoteUri;
+                Exception registrationError = null;
+                try { _ = assets.Initialize(); } catch (Exception ex) { registrationError = ex; }
+                Check(registrationError is ArgumentException argument && argument.ParamName == "groupId",
+                    "Duplicate Asset group registration still throws synchronously before backend creation.");
+
+                var pending = tasks.PendingTaskCount;
+                var running = tasks.RunningTaskCount;
+                UniTask<bool> initialization = default;
+                Exception synchronousError = null;
+                TaskGroup registeredGroup = null;
+                // Isolate this public Initialize call from the fixture Runtime's existing group.
+                // No await or player-loop tick occurs until the original group has been restored.
+                groups.RemoveAt(assetGroupIndex);
+                try
+                {
+                    try { initialization = assets.Initialize(); }
+                    catch (Exception ex) { synchronousError = ex; }
+                    registeredGroup = groups.SingleOrDefault(group => group.Id == LiteConst.TaskGroupId.Asset);
+                }
+                finally
+                {
+                    groups.RemoveAll(group => group.Id == LiteConst.TaskGroupId.Asset);
+                    groups.Insert(assetGroupIndex, originalAssetGroup);
+                }
+                Check(synchronousError == null, "Backend creation failure does not escape the Initialize call synchronously.");
+                Check(initialization.Status == UniTaskStatus.Faulted, "Initialize returns a faulted task rather than a successful false result.");
+                Exception failure = null;
+                try { await initialization; } catch (Exception ex) { failure = ex; }
+                Check(failure?.GetType() == expectedException && failure.StackTrace.Contains("CreateBundleProvider"),
+                    "Await preserves the original backend exception type and creation stack.");
+                Check(registeredGroup != null && registeredGroup.ConcurrencyLimit == Math.Max(1, setting.TaskConcurrencyLimit) &&
+                    registeredGroup.PendingTaskCount == 0 && registeredGroup.RunningTaskCount == 0,
+                    "The Asset group is registered before the failure, without submitting resource work.");
+                Check(groups.SequenceEqual(originalGroups) && tasks.PendingTaskCount == pending && tasks.RunningTaskCount == running,
+                    "The fixture restores the original group objects and order without changing existing tasks.");
+                var manager = Get<AssetManager>(assets, "_manager");
+                Check(Get<VersionPackInfo>(manager, "_packInfo") == null && Get<AssetBundleLoader>(manager, "_bundleLoader") == null &&
+                    setting.BundleMode == mode && setting.BundleRemoteUri == remoteUri,
+                    "Failed backend creation leaves manager content empty and does not rewrite configuration.");
+            }
+            finally
+            {
+                setting.BundleMode = previousMode;
+                setting.BundleRemoteUri = previousUri;
+                await assets.DisposeAsync();
+            }
+        }
+
         private static UniTask DefaultOptions()
         {
             var setting = LiteRuntime.Setting.Asset;
-            var previous = setting.BundleLocater;
-            var provider = new AssetBundleProvider();
-            var factory = typeof(AssetBundleProvider).GetMethod("CreateLocater", Private);
+            var previous = setting.BundleMode;
+            var assets = new AssetSystem();
+            var factory = typeof(AssetSystem).GetMethod("CreateBundleProvider", Private);
             try
             {
-                Check(new LiteSetting.AssetSetting().BundleLocater == BundleLocaterMode.Simulate &&
-                    (byte)BundleLocaterMode.Simulate == 0 && (byte)BundleLocaterMode.BuiltIn == 1 && (byte)BundleLocaterMode.Remote == 2,
+                var manager = Get<AssetManager>(LiteRuntime.Asset, "_manager");
+                var loader = Get<AssetBundleLoader>(manager, "_bundleLoader");
+                Check(Get<IBundleProvider>(loader, "_bundleProvider") is SimulateBundleProvider,
+                    "Normal Runtime startup wires the simulated backend through AssetSystem initialization.");
+                Check(new LiteSetting.AssetSetting().BundleMode == BundleLoadMode.Simulate &&
+                    (byte)BundleLoadMode.Simulate == 0 && (byte)BundleLoadMode.BuiltIn == 1 && (byte)BundleLoadMode.Remote == 2,
                     "The single mode field defaults to Simulate with explicit serialized enum values.");
-                setting.BundleLocater = BundleLocaterMode.Simulate;
-                Check(factory.Invoke(provider, new object[] { true }) is BundleSimulateLocater &&
-                    factory.Invoke(provider, new object[] { false }) is BundleBuiltInLocater && setting.BundleLocater == BundleLocaterMode.Simulate,
+                setting.BundleMode = BundleLoadMode.Simulate;
+                Check(factory.Invoke(assets, new object[] { true }) is SimulateBundleProvider &&
+                    factory.Invoke(assets, new object[] { false }) is BuiltInBundleProvider && setting.BundleMode == BundleLoadMode.Simulate,
                     "Editor selects simulation; the same configuration selects BuiltIn in Player without rewriting settings.");
-                foreach (var mode in new[] { BundleLocaterMode.BuiltIn, BundleLocaterMode.Remote })
+                foreach (var mode in new[] { BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
                 {
-                    setting.BundleLocater = mode;
-                    var expected = mode == BundleLocaterMode.BuiltIn ? typeof(BundleBuiltInLocater) : typeof(BundleRemoteLocater);
-                    Check(factory.Invoke(provider, new object[] { true }).GetType() == expected &&
-                        factory.Invoke(provider, new object[] { false }).GetType() == expected,
+                    setting.BundleMode = mode;
+                    var expected = mode == BundleLoadMode.BuiltIn ? typeof(BuiltInBundleProvider) : typeof(RemoteBundleProvider);
+                    Check(factory.Invoke(assets, new object[] { true }).GetType() == expected &&
+                        factory.Invoke(assets, new object[] { false }).GetType() == expected,
                         "Explicit " + mode + " is preserved in both environments.");
                 }
                 var serialized = new SerializedObject(ScriptableObject.CreateInstance<SettingProbe>());
                 try
                 {
                     var asset = serialized.FindProperty("Asset");
-                    Check(asset.FindPropertyRelative("BundleLocater") != null && asset.FindPropertyRelative("AssetMode") == null &&
+                    Check(asset.FindPropertyRelative("BundleMode") != null && asset.FindPropertyRelative("BundleLocater") == null && asset.FindPropertyRelative("AssetMode") == null &&
                         asset.FindPropertyRelative("SimulateAsyncDelayInEditor") == null && asset.FindPropertyRelative("AsyncDelayMinFrame") == null &&
                         asset.FindPropertyRelative("AsyncDelayMaxFrame") == null,
                         "The serialized settings expose one mode selector and no direct-read delay fields.");
                 }
                 finally { UnityEngine.Object.DestroyImmediate(serialized.targetObject); serialized.Dispose(); }
+                foreach (var mode in new[] { BundleLoadMode.Simulate, BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
+                {
+                    var path = Fixture + "/Settings/" + mode + ".prefab";
+                    var yaml = File.ReadAllText(path);
+                    Check(yaml.Contains("BundleLocater: " + (int)mode) && !yaml.Contains("BundleMode:"),
+                        "The imported " + mode + " fixture still stores the former YAML field name.");
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    var launcher = prefab.GetComponent<LiteLauncher>();
+                    Check(launcher.DebugSetting.Asset.BundleMode == mode && launcher.ReleaseSetting.Asset.BundleMode == mode,
+                        "Unity deserializes both legacy settings as " + mode + " without changing their values.");
+                    PrefabUtility.SavePrefabAsset(prefab);
+                    var saved = File.ReadAllText(path);
+                    Check(saved.Contains("BundleMode: " + (int)mode) && !saved.Contains("BundleLocater:"),
+                        "Saving the migrated " + mode + " Prefab writes only the new field name.");
+                }
             }
-            finally { setting.BundleLocater = previous; }
+            finally { setting.BundleMode = previous; }
             var options = new ResBuildConfig().Options;
             Check((options & BuildAssetBundleOptions.ChunkBasedCompression) != 0, "Default compression remains ChunkBasedCompression.");
             Check((options & BuildAssetBundleOptions.DisableLoadAssetByFileName) != 0, "Default disables extensionless filename lookup.");
