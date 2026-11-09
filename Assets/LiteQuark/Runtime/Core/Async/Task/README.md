@@ -62,12 +62,13 @@ ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或�
 
 取消结束逻辑任务，不保证 Unity 原生操作停止。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
 
-内置 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理未交付的迟到 Bundle／Scene，成功结果由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
+内置 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理取消／失败后的迟到 Bundle／Scene；Bundle 成功结果由持有任务的 Loader 管理，交付后由 Cache 管理。其他成功结果仍由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
 
 AssetSystem 关闭会等待它拥有的资源任务收尾，再卸载 Bundle；TaskSystem 本身只取消任务和回收包装器。其他资源拥有者也不能依据 IsDone 提前卸载在途操作依赖的资源。
 
 - Result 是最终结果；包装器清理不会清空它，但引用不代表独立的 Unity 资源所有权。
-- 完成通知至多一次，不承诺取消或关闭时发送 callback。回调异常被记录，不改写终态。
+- Bundle 加载任务通过 Task 发布 IBundleResource，不提供结果 callback；Loader 在 Tick 中读取终态、接收成功结果，并负责关闭时未交付容器的释放。取消／失败后的迟到原生资源仍由任务清理。
+- 其他任务的完成通知至多一次，不承诺取消或关闭时发送 callback。回调异常被记录，不改写终态。
 - await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理完成。成功路径通常先发布等待结果再调用 callback，失败通知通常在已有等待恢复之前；续体可能同步重入，不能假定所有任务的通知顺序相同。
 - 协程捕获并释放自有嵌套迭代器，取消不调用成功回调；通过 `yield return task.Task.ToCoroutine()` 等待其他任务时，不传播其失败或接管其释放，取消父协程也不取消被等待的任务。
 - 异步实例化失败时，callback 收到空数组，Task / Result 为 null。

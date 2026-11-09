@@ -2040,10 +2040,10 @@ namespace LiteQuark.Editor
                 var callbacks = new int[4];
                 var tasks = new BaseTask[]
                 {
-                    new LoadLocalBundleTask("unused.ab", _ => callbacks[0]++),
+                    new LoadLocalBundleTask("unused.ab"),
                     new LoadAssetTask<TextAsset>(null, TextPath, _ => callbacks[1]++),
                     new LoadSceneTask(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive), _ => callbacks[2]++),
-                    new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null, _ => callbacks[3]++)
+                    new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null)
                 };
                 try
                 {
@@ -2066,10 +2066,10 @@ namespace LiteQuark.Editor
                         task.Dispose(); task.Dispose(); task.Cancel(); task.Fail(error);
                         await WaitForResourceCleanup(first, second, "Pending resource cleanup");
                         await ObserveResourceCleanup(task);
-                        var expectedCallbacks = fail || i == 1 || i == 2 ? 1 : 0;
-                        Check(callbacks[i] == expectedCallbacks && task.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
+                        var deliveryMatches = task is ILoadBundleTask bundleTask ? bundleTask.GetBundle() == null : callbacks[i] == 1;
+                        Check(deliveryMatches && task.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
                             task.Result == null && ReferenceEquals(task.Error, fail ? error : null) && !task.IsExecuted,
-                            task.DebugName + " repeated cleanup preserves the original terminal callback count, error and null result.");
+                            task.DebugName + " repeated cleanup preserves the remaining Asset/Scene callback count, error and null result.");
                     }
                 }
                 finally
@@ -2082,6 +2082,7 @@ namespace LiteQuark.Editor
         private static async UniTask RetireLocalBundleFixture(LoadLocalBundleTask task, AssetBundleCreateRequest request)
         {
             task.Cancel(); task.Dispose();
+            task.GetBundle()?.Dispose();
             if (request == null) return;
             await WaitWithoutLoaderTick(() => request.isDone, "Local Bundle fixture native completion");
             if (request.assetBundle != null) request.assetBundle.Unload(true);
@@ -2091,8 +2092,7 @@ namespace LiteQuark.Editor
         {
             foreach (var fail in new[] { false, true })
             {
-                var callbacks = 0;
-                var task = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), _ => callbacks++);
+                var task = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"));
                 AssetBundleCreateRequest request = null;
                 try
                 {
@@ -2111,10 +2111,10 @@ namespace LiteQuark.Editor
                     await WaitForResourceCleanup(first, second, "Retired local Bundle cleanup");
                     await ObserveResourceCleanup(task);
                     task.Cancel(); task.Fail(new Exception("Must not replace local terminal state"));
-                    Check(request.isDone && request.assetBundle == null && callbacks == (fail ? 1 : 0) &&
+                    Check(request.isDone && request.assetBundle == null && task.GetBundle() == null &&
                         task.State == (fail ? TaskState.Failed : TaskState.Cancelled) && task.Result == null &&
                         ReferenceEquals(task.Error, fail ? error : null) && await task.Task == null,
-                        "Both cleanup waiters finish only after late Bundle unloading, preserving the original logical outcome and callback count.");
+                        "Both cleanup waiters finish only after late Bundle unloading, preserving the original logical outcome and null typed result.");
                 }
                 finally
                 {
@@ -2123,12 +2123,7 @@ namespace LiteQuark.Editor
             }
 
             var events = new List<string>();
-            AssetBundle delivered = null;
-            var calls = 0;
-            var success = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), bundle =>
-            {
-                delivered = bundle; calls++; events.Add("callback");
-            });
+            var success = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"));
             AssetBundleCreateRequest successRequest = null;
             try
             {
@@ -2140,9 +2135,9 @@ namespace LiteQuark.Editor
                 await WaitForResourceCleanup(first, second, "Successful local Bundle cleanup");
                 var awaited = await continuation;
                 await ObserveResourceCleanup(success);
-                Check(success.State == TaskState.Succeeded && success.Error == null && delivered != null && calls == 1 &&
-                    ReferenceEquals(awaited, delivered) && ReferenceEquals(success.GetBundle(), delivered) &&
-                    events.SequenceEqual(new[] { "await", "callback" }),
+                Check(success.State == TaskState.Succeeded && success.Error == null && NativeBundle(success.GetBundle()) != null &&
+                    ReferenceEquals(awaited, success.Result) && ReferenceEquals(success.GetBundle(), success.Result) &&
+                    events.SequenceEqual(new[] { "await" }),
                     "Immediate wrapper Dispose in the local Bundle await continuation preserves the one-shot success handoff and does not unload the Bundle.");
             }
             finally
@@ -2215,19 +2210,13 @@ namespace LiteQuark.Editor
             task.Cancel(); task.Dispose();
             await WaitWithoutLoaderTick(() => GetDownloadField<UnityWebRequest>(task, "_request") == null &&
                 GetDownloadField<ulong>(task, "_retryTimerID") == 0 && !TaskSnapshot().Contains(task), "Remote fixture retirement");
-            var bundle = task.GetBundle();
-            if (bundle != null) bundle.Unload(true);
+            task.GetBundle()?.Dispose();
         }
 
         private static async UniTask RemoteTaskCleanup()
         {
             var events = new List<string>();
-            var calls = 0;
-            AssetBundle delivered = null;
-            var success = new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null, bundle =>
-            {
-                delivered = bundle; calls++; events.Add("callback");
-            });
+            var success = new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null);
             try
             {
                 var continuation = DisposeInResourceTaskAwait(success, events);
@@ -2238,22 +2227,22 @@ namespace LiteQuark.Editor
                 {
                     await first;
                     events.Add("cleanup");
-                    deliveredAtCleanup = calls == 1 && delivered != null &&
+                    deliveredAtCleanup = NativeBundle(success.GetBundle()) != null &&
                         GetDownloadField<UnityWebRequest>(success, "_request") == null;
                 }
                 var handoff = ObserveHandoff();
                 LiteRuntime.Task.AddTask(success, LiteConst.TaskGroupId.Asset);
                 await WaitForResourceCleanup(first, second, "Successful remote-file cleanup");
                 await handoff;
-                Check(deliveredAtCleanup && events.SequenceEqual(new[] { "await", "callback", "cleanup" }),
+                Check(deliveredAtCleanup && events.SequenceEqual(new[] { "await", "cleanup" }),
                     "The cleanup continuation resumes only after request disposal and the success notification, without waiting for record retirement.");
                 var awaited = await continuation;
                 await WaitWithoutLoaderTick(() => !TaskSnapshot().Contains(success), "Successful remote wrapper retirement");
                 await ObserveResourceCleanup(success);
-                Check(success.State == TaskState.Succeeded && success.Error == null && delivered != null && calls == 1 &&
-                    ReferenceEquals(awaited, delivered) && ReferenceEquals(success.GetBundle(), delivered) &&
+                Check(success.State == TaskState.Succeeded && success.Error == null && NativeBundle(success.GetBundle()) != null &&
+                    ReferenceEquals(awaited, success.Result) && ReferenceEquals(success.GetBundle(), success.Result) &&
                     GetDownloadField<UnityWebRequest>(success, "_request") == null && GetDownloadField<ulong>(success, "_retryTimerID") == 0 &&
-                    events.SequenceEqual(new[] { "await", "callback", "cleanup" }),
+                    events.SequenceEqual(new[] { "await", "cleanup" }),
                     "Remote-file success survives await-Dispose handoff once; repeated cleanup waits finish after request/timer release without unloading the delivered Bundle.");
             }
             finally
@@ -2265,8 +2254,7 @@ namespace LiteQuark.Editor
             using (var server = new BundleHttpServer(body))
             {
                 var baseline = AssetBundle.GetAllLoadedAssetBundles().Select(bundle => bundle.GetInstanceID()).ToHashSet();
-                var cancelledCalls = 0;
-                var cancelled = new LoadRemoteBundleTask(server.Url, null, _ => cancelledCalls++);
+                var cancelled = new LoadRemoteBundleTask(server.Url, null);
                 try
                 {
                     var first = ObserveResourceCleanup(cancelled);
@@ -2283,14 +2271,14 @@ namespace LiteQuark.Editor
                         GetDownloadField<UnityWebRequest>(cancelled, "_request") == null,
                         "Cancellation ends logical waiting and releases its request without waiting for scheduler retirement.");
                     await WaitForResourceCleanup(first, second, "Cancelled HTTP cleanup without retirement");
-                    Check(TaskSnapshot().Contains(cancelled) && cancelledCalls == 0,
+                    Check(TaskSnapshot().Contains(cancelled) && cancelled.GetBundle() == null,
                         "Cleanup completes while the scheduler still holds the task record.");
                     await WaitWithoutLoaderTick(() => !TaskSnapshot().Contains(cancelled), "Cancelled HTTP wrapper retirement");
                     await ObserveResourceCleanup(cancelled);
                     Check(GetDownloadField<UnityWebRequest>(cancelled, "_request") == null && GetDownloadField<ulong>(cancelled, "_retryTimerID") == 0 &&
-                        cancelled.State == TaskState.Cancelled && cancelled.Result == null && cancelled.Error == null && cancelledCalls == 0 &&
+                        cancelled.State == TaskState.Cancelled && cancelled.Result == null && cancelled.Error == null && cancelled.GetBundle() == null &&
                         !AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
-                        "Multiple HTTP cleanup waiters observe request/timer release and no late callback or extracted Bundle.");
+                        "Multiple HTTP cleanup waiters observe request/timer release and no late typed result or extracted Bundle.");
                 }
                 finally
                 {
@@ -2311,8 +2299,7 @@ namespace LiteQuark.Editor
                 foreach (var fail in new[] { false, true })
                 {
                     using var server = new BundleHttpServer(body);
-                    var terminalCalls = 0;
-                    var retry = new LoadRemoteBundleTask(server.Url, null, _ => terminalCalls++);
+                    var retry = new LoadRemoteBundleTask(server.Url, null);
                     try
                     {
                         var first = ObserveResourceCleanup(retry);
@@ -2338,7 +2325,7 @@ namespace LiteQuark.Editor
                         await ObserveResourceCleanup(retry);
                         Check(GetDownloadField<ulong>(retry, "_retryTimerID") == 0 &&
                             GetDownloadField<UnityWebRequest>(retry, "_request") == null && retry.State == (fail ? TaskState.Failed : TaskState.Cancelled) &&
-                            retry.Result == null && ReferenceEquals(retry.Error, fail ? error : null) && terminalCalls == (fail ? 1 : 0) && await retry.Task == null,
+                            retry.Result == null && ReferenceEquals(retry.Error, fail ? error : null) && retry.GetBundle() == null && await retry.Task == null,
                             "An overdue retry tick cannot restart downloading or rewrite either terminal outcome.");
                     }
                     finally
@@ -3565,9 +3552,10 @@ namespace LiteQuark.Editor
             var waitingForDelivery = false;
             task.Task.GetAwaiter().OnCompleted(() =>
             {
-                bundle = task.GetBundle();
+                bundle = NativeBundle(task.GetBundle());
+                var aliveBeforeClose = bundle != null;
                 shutdown = h.Shutdown();
-                waitingForDelivery = bundle != null && !shutdown.Status.IsCompleted();
+                waitingForDelivery = aliveBeforeClose && !shutdown.Status.IsCompleted();
             });
             try
             {
@@ -3590,8 +3578,7 @@ namespace LiteQuark.Editor
 
         private static async UniTask FailedLocalBundleCleanup()
         {
-            var callbacks = 0;
-            var task = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), _ => callbacks++);
+            var task = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"));
             task.Execute();
             var request = Get<AssetBundleCreateRequest>(task, "_bundleRequest");
             var error = new InvalidOperationException("Controlled local Bundle failure");
@@ -3602,7 +3589,7 @@ namespace LiteQuark.Editor
                 await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
                 Check(request.assetBundle == null, "A failed and already-disposed task releases its late native Bundle without Loader Tick.");
                 Check(task.State == TaskState.Failed && ReferenceEquals(task.Error, error) && task.Result == null
-                    && callbacks == 1 && await task.Task == null, "Late native cleanup preserves the failure, null await result and one failure callback.");
+                    && task.GetBundle() == null && await task.Task == null, "Late native cleanup preserves the failure, null await result and null typed result.");
             }
             finally
             {
@@ -3614,6 +3601,7 @@ namespace LiteQuark.Editor
         private static async UniTask LoaderShutdownHandoff()
         {
             await BundleResourceReadAndRelease();
+            await LoaderUnclaimedReleaseFailure();
             var textInfo = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
             var deliveredInfo = new BundleInfo(2, "b.ab", new[] { MaterialPath }, null);
             var pendingInfo = new BundleInfo(3, "a.ab", new[] { PrefabPath }, null);
@@ -3651,6 +3639,7 @@ namespace LiteQuark.Editor
                 delivered = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "b.ab"));
                 Check(earlierDelivered != null && delivered != null, "The handoff fixture contains two independent real Bundles.");
                 locator.Manual["text.ab"].Finish(earlierDelivered);
+                loader.Tick(0);
                 locator.Manual["b.ab"].Finish(delivered);
                 locator.Manual["b.ab"].Dispose();
                 loader.Tick(0);
@@ -3709,6 +3698,40 @@ namespace LiteQuark.Editor
 
         }
 
+        private static async UniTask LoaderUnclaimedReleaseFailure()
+        {
+            var infos = new[]
+            {
+                new BundleInfo(1, "first.ab", Array.Empty<string>(), null),
+                new BundleInfo(2, "second.ab", Array.Empty<string>(), null)
+            };
+            var pack = new VersionPackInfo("unclaimed", "windows", false, false, infos);
+            pack.Initialize();
+            var locator = new Locator(true);
+            var loader = new AssetBundleLoader(locator, pack, 2);
+            var failure = new InvalidOperationException("Controlled unclaimed Bundle release failure");
+            var first = new ReleaseProbeResource { Error = failure };
+            var second = new ReleaseProbeResource();
+            var callbacks = 0;
+            try
+            {
+                foreach (var info in infos) loader.LoadBundle(info, AssetLoadPriority.Normal, _ => callbacks++);
+                loader.Tick(0);
+                locator.Manual["first.ab"].FinishResource(first);
+                locator.Manual["second.ab"].FinishResource(second);
+                Check(callbacks == 0 && locator.Manual.Values.All(task => task.State == TaskState.Succeeded),
+                    "Successful containers remain unclaimed until Loader Tick.");
+                Exception actual = null;
+                try { await loader.DisposeAsync(); } catch (Exception ex) { actual = ex; }
+                Check(ReferenceEquals(actual, failure) && first.Disposals == 1 && second.Disposals == 1 && callbacks == 0,
+                    "Shutdown reports an unclaimed release failure after attempting every other successful container.");
+                await loader.DisposeAsync();
+                Check(first.Disposals == 1 && second.Disposals == 1,
+                    "Repeated Loader disposal does not release unclaimed results twice.");
+            }
+            finally { await loader.DisposeAsync(); }
+        }
+
         private static async UniTask ShutdownWithPendingDependency()
         {
             var h = New(true);
@@ -3743,9 +3766,10 @@ namespace LiteQuark.Editor
                     {
                         locator.Task.Task.GetAwaiter().OnCompleted(() =>
                         {
-                            bundle = locator.Task.GetBundle();
+                            bundle = NativeBundle(locator.Task.GetBundle());
+                            var aliveBeforeClose = bundle != null;
                             shutdown = loader.DisposeAsync();
-                            waitingForDelivery = bundle != null && !shutdown.Status.IsCompleted();
+                            waitingForDelivery = aliveBeforeClose && !shutdown.Status.IsCompleted();
                         });
                     }
                     await WaitWithoutLoaderTick(() => locator.Task.WaitForCleanupAsync().Status.IsCompleted(), "Remote-file Bundle callback cleanup");
@@ -3757,8 +3781,11 @@ namespace LiteQuark.Editor
                     }
                     else
                     {
+                        Check(bundle == null && callbacks == 0 && NativeBundle(locator.Task.GetBundle()) != null,
+                            "Successful Remote work waits for Loader Tick before ownership is delivered.");
+                        loader.Tick(0);
                         Check(bundle != null && callbacks == 1,
-                            "The Remote Task delivers its Bundle without another Loader Tick.");
+                            "Loader Tick delivers the completed Remote container exactly once.");
                     }
                     await loader.DisposeAsync(); await loader.DisposeAsync();
                     Check(locator.Task.State == TaskState.Succeeded && (closeBeforeCallback ? bundle == null && callbacks == 0 : bundle != null && callbacks == 1),
@@ -3830,10 +3857,11 @@ namespace LiteQuark.Editor
         private static async UniTask TaskResultViews()
         {
             var canceledCalls = 0;
-            var canceledBundle = new LoadLocalBundleTask("unused.ab", _ => canceledCalls++);
+            var canceledBundle = new LoadLocalBundleTask("unused.ab");
             canceledBundle.Cancel(); canceledBundle.Dispose();
-            Check(canceledBundle.GetBundle() == null && canceledBundle.Result == null && canceledCalls == 0,
-                "Queued Bundle cancellation still ends with null and no completion callback.");
+            Check(canceledBundle.GetBundle() == null && canceledBundle.Result == null &&
+                canceledBundle.State == TaskState.Cancelled && await canceledBundle.Task == null,
+                "Queued Bundle cancellation preserves null through both typed and awaited result views.");
             var canceledAsset = new LoadAssetTask<TextAsset>(null, TextPath, _ => canceledCalls++);
             canceledAsset.Cancel(); canceledAsset.Dispose();
             Check(canceledAsset.GetAsset() == null && canceledAsset.Result == null && canceledCalls == 1,
@@ -3847,21 +3875,20 @@ namespace LiteQuark.Editor
                 var bundleCalls = 0;
                 var bundleMatches = false;
                 LoadLocalBundleTask local = null;
-                local = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), bundle =>
+                local = new LoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"));
+                var bundleWait = local.Task.GetAwaiter();
+                bundleWait.OnCompleted(() =>
                 {
-                    bundleCalls++; events.Add("callback"); localBundle = bundle;
-                    bundleMatches = ReferenceEquals(bundle, local.Result) && ReferenceEquals(bundle, local.GetBundle())
-                        && Get<Delegate>(local, "_callback") == null;
+                    bundleCalls++; events.Add("await"); localBundle = NativeBundle(local.GetBundle());
+                    bundleMatches = local.Result is IBundleResource && ReferenceEquals(local.Result, local.GetBundle());
                     local.Cancel();
                 });
-                var bundleWait = local.Task.GetAwaiter();
-                bundleWait.OnCompleted(() => events.Add("await"));
                 LiteRuntime.Task.AddTask(local);
                 await Wait(() => local.IsDone, "Local Bundle result view");
                 local.Dispose();
                 Check(local.State == TaskState.Succeeded && localBundle != null && bundleCalls == 1 && bundleMatches
-                    && events.SequenceEqual(new[] { "await", "callback" }), "Local Bundle keeps success notification order and one result identity.");
-                Check(ReferenceEquals(local.GetBundle(), local.Result) && ReferenceEquals(bundleWait.GetResult(), localBundle),
+                    && events.SequenceEqual(new[] { "await" }), "Local Bundle keeps success notification order and one result identity.");
+                Check(ReferenceEquals(local.GetBundle(), local.Result) && ReferenceEquals(bundleWait.GetResult(), local.GetBundle()),
                     "Bundle getter and await result survive wrapper cleanup without transferring new ownership.");
 
                 events.Clear();
@@ -3889,30 +3916,26 @@ namespace LiteQuark.Editor
                 Check(ReferenceEquals(assetTask.GetAsset(), loadedAsset) && ReferenceEquals(assetTask.Result, loadedAsset)
                     && ReferenceEquals(assetWait.GetResult(), loadedAsset), "GetAsset keeps the same committed result after cleanup.");
 
-                localBundle.Unload(true); localBundle = null;
+                local.GetBundle().Dispose(); localBundle = null;
                 events.Clear();
                 var remoteCalls = 0;
                 var remoteMatches = false;
                 LoadRemoteBundleTask remote = null;
-                remote = new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null, bundle =>
-                {
-                    remoteCalls++; events.Add("callback"); remoteBundle = bundle;
-                    remoteMatches = ReferenceEquals(bundle, remote.Result) && ReferenceEquals(bundle, remote.GetBundle())
-                        && Get<Delegate>(remote, "_callback") == null;
-                    if (remoteCalls == 1)
-                    {
-                        var request = typeof(UnityDownloadBaseTask).GetField("_request", Private).GetValue(remote);
-                        typeof(LoadRemoteBundleTask).GetMethod("OnSuccess", Private).Invoke(remote, new[] { request });
-                    }
-                });
+                remote = new LoadRemoteBundleTask(new Uri(Path.Combine(BundleFolder, "text.ab")).AbsoluteUri, null);
                 var remoteWait = remote.Task.GetAwaiter();
-                remoteWait.OnCompleted(() => events.Add("await"));
+                remoteWait.OnCompleted(() =>
+                {
+                    remoteCalls++; events.Add("await"); remoteBundle = NativeBundle(remote.GetBundle());
+                    remoteMatches = remote.Result is IBundleResource && ReferenceEquals(remote.Result, remote.GetBundle());
+                    var request = typeof(UnityDownloadBaseTask).GetField("_request", Private).GetValue(remote);
+                    typeof(LoadRemoteBundleTask).GetMethod("OnSuccess", Private).Invoke(remote, new[] { request });
+                });
                 LiteRuntime.Task.AddTask(remote);
                 await Wait(() => remote.IsDone, "Remote adapter file Bundle result view");
                 remote.Dispose();
                 Check(remote.State == TaskState.Succeeded && remoteBundle != null && remoteCalls == 1 && remoteMatches
-                    && events.SequenceEqual(new[] { "await", "callback" }), "Repeated native success cannot deliver the remote Bundle twice.");
-                Check(ReferenceEquals(remote.GetBundle(), remote.Result) && ReferenceEquals(remoteWait.GetResult(), remoteBundle),
+                    && events.SequenceEqual(new[] { "await" }), "Repeated native success cannot deliver the remote Bundle twice.");
+                Check(ReferenceEquals(remote.GetBundle(), remote.Result) && ReferenceEquals(remoteWait.GetResult(), remote.GetBundle()),
                     "Remote Bundle getter reads the committed result after request cleanup.");
             }
             finally

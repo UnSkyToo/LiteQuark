@@ -62,6 +62,7 @@ Validation — 当前工作区的隔离 Unity 验证
 
   资源生命周期覆盖迟到结果清理、结果交接、引用与依赖保护、关闭等待及失败传播，
   包含真实 Bundle 和 Simulate 模式。具体用例见 Sources 与本轮报告。
+  Bundle 任务统一结果覆盖三种任务的 Result／await／GetBundle 身份、Loader Tick 交付成功／失败／取消、失败重试与关闭重入；关闭覆盖未交付的本地／远端／模拟容器，以及单项释放失败后继续处理其他容器。
   Bundle Resource 覆盖真实读取任务的创建/提交分离、重复释放和释放后入口拒绝；
   原有原生 Bundle/Scene 存活断言仍观察原生对象，不以包装对象非空代替原生有效性。
   场景 Task 收尾用例同时覆盖真实 Bundle 与 LoadEditorSceneTask：后者读取未加入 Build Settings 的项目场景，验证取消后的迟到卸载和成功结果交接。

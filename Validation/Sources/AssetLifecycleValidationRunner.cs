@@ -382,8 +382,16 @@ namespace LiteQuark.Editor
         {
             var result = await task.Task;
             events.Add("await");
-            var callbackType = task is LoadSceneTask ? typeof(LoadSceneTask) : task.GetType();
-            Check(callbackType.GetField("_callback", Private).GetValue(task) == null, task.DebugName + " detaches its success callback before the await continuation.");
+            if (task is ILoadBundleTask bundleTask)
+            {
+                Check(result is IBundleResource && ReferenceEquals(result, bundleTask.GetBundle()),
+                    task.DebugName + " publishes the same typed container before resuming await.");
+            }
+            else
+            {
+                var callbackType = task is LoadSceneTask ? typeof(LoadSceneTask) : task.GetType();
+                Check(callbackType.GetField("_callback", Private).GetValue(task) == null, task.DebugName + " detaches its success callback before the await continuation.");
+            }
             task.Dispose();
             return result;
         }

@@ -41,8 +41,7 @@ namespace LiteQuark.Runtime
 
             foreach (var task in _runningTasks)
             {
-                task.LoadTask.Cancel();
-                RetainCleanup(task.LoadTask);
+                TrackTaskCleanup(task.LoadTask, discardResult: true);
             }
             _runningTasks.Clear();
             try
@@ -55,15 +54,35 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void RetainCleanup(BaseTask task)
+        private void TrackTaskCleanup(ILoadBundleTask task, bool discardResult)
         {
-            if (task is IResourceTaskCleanup resourceTask)
+            var cleanup = CleanupTaskAsync(task, discardResult);
+            if (cleanup.Status != UniTaskStatus.Succeeded)
             {
-                var cleanup = resourceTask.WaitForCleanupAsync();
-                if (cleanup.Status != UniTaskStatus.Succeeded)
+                // 归还 Loader 名额后，仍保留未结束或失败的原生收尾。
+                _pendingCleanup.Add(cleanup);
+            }
+        }
+
+        private static async UniTask CleanupTaskAsync(ILoadBundleTask task, bool discardResult)
+        {
+            if (discardResult)
+            {
+                task.Cancel();
+            }
+            try
+            {
+                // 正常交付保留容器；关闭时释放尚未交付的成功结果。
+                if (discardResult && task.State == TaskState.Succeeded)
                 {
-                    // 归还 Loader 名额后，仍保留未结束或失败的原生收尾。
-                    _pendingCleanup.Add(cleanup);
+                    task.GetBundle()?.Dispose();
+                }
+            }
+            finally
+            {
+                if (task is IResourceTaskCleanup cleanup)
+                {
+                    await cleanup.WaitForCleanupAsync();
                 }
             }
         }
@@ -144,26 +163,23 @@ namespace LiteQuark.Runtime
                 var runningTask = _runningTasks[i];
                 if (runningTask.LoadTask.IsDone)
                 {
-                    RetainCleanup(runningTask.LoadTask);
+                    TrackTaskCleanup(runningTask.LoadTask, discardResult: false);
                     _runningTasks.RemoveAt(i);
 
-                    // Cancel 不发送结果回调，退休时结束对应请求。
-                    if (runningTask.LoadTask.State == TaskState.Cancelled)
-                    {
-                        CompletePendingTask(runningTask.Path, null, runningTask.LoadTask.Error);
-                    }
+                    // 先移出运行列表再交付，回调内关闭 Loader 不会释放已交付的容器。
+                    var bundle = runningTask.LoadTask.State == TaskState.Succeeded ? runningTask.LoadTask.GetBundle() : null;
+                    CompletePendingTask(runningTask.Path, bundle, runningTask.LoadTask.Error);
                 }
             }
 
             while (!_isDisposed && _runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
             {
                 var info = _pendingTaskQueue.Dequeue();
-                BaseTask task = null;
+                ILoadBundleTask task;
 
                 try
                 {
-                    task = _bundleProvider.LoadBundle(info.Path, info.Hash,
-                        bundle => CompletePendingTask(info.Path, bundle, task?.Error));
+                    task = _bundleProvider.LoadBundle(info.Path, info.Hash);
                 }
                 catch (Exception ex)
                 {
@@ -178,7 +194,7 @@ namespace LiteQuark.Runtime
 
         private void CompletePendingTask(string bundlePath, IBundleResource bundle, Exception error)
         {
-            // Complete 会先恢复 Task 续体；若续体已关闭 Loader，结果不能再交付。
+            // 已关闭的 Loader 不再交付结果。
             if (_isDisposed)
             {
                 if (bundle != null)
@@ -224,9 +240,9 @@ namespace LiteQuark.Runtime
         private class RunningTask
         {
             public string Path { get; }
-            public BaseTask LoadTask { get; }
+            public ILoadBundleTask LoadTask { get; }
 
-            public RunningTask(string path, BaseTask loadTask)
+            public RunningTask(string path, ILoadBundleTask loadTask)
             {
                 Path = path;
                 LoadTask = loadTask;

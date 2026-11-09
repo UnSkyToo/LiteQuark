@@ -153,7 +153,19 @@ namespace LiteQuark.Editor
                     "A new Simulate Provider collects a separate manifest session.");
                 Check(ReferenceEquals(Get<IBundleProvider>(Get<AssetBundleLoader>(provider, "_bundleLoader"), "_bundleProvider"), backend),
                     "The manager uses its injected backend without reselecting from the global mode.");
+                var unclaimed = Keep(assets.LoadAssetHandle<TextAsset>(prefix + "Low/Value.txt"));
+                provider.Tick(0);
+                var completedTask = TaskSnapshot().OfType<LoadSimulateBundleTask>().Single();
+                await WaitWithoutLoaderTick(() => completedTask.IsDone, "Simulated success before Loader delivery");
+                var completedResource = completedTask.GetBundle();
+                Check(completedTask.State == TaskState.Succeeded && completedResource is SimulateBundleResource && !unclaimed.IsDone &&
+                    ReferenceEquals(completedTask.Result, completedResource) && ReferenceEquals(await completedTask.Task, completedResource),
+                    "Simulate publishes the same typed container through Task, Result and GetBundle before Loader delivery.");
                 await assets.DisposeAsync();
+                disposed = false;
+                try { completedResource.GetAllScenePaths(); } catch (ObjectDisposedException) { disposed = true; }
+                Check(disposed && completedTask.State == TaskState.Succeeded && unclaimed.IsDone && unclaimed.Result == null && projectAsset != null,
+                    "Shutdown releases a successful unclaimed simulated container without changing Task history or destroying project assets.");
                 assets = new AssetSystem();
                 Check(Get<IAssetManager>(assets, "_manager") is AssetManager,
                     "All modes use the same Bundle Provider.");
@@ -533,10 +545,10 @@ namespace LiteQuark.Editor
                 loader.Tick(0);
                 Check(locator.Started.Count == 2 && locator.Manual.Values.Count(t => !t.IsDone) == 2, "Promotion neither preempts running work nor exceeds the concurrency limit.");
                 locator.Manual["queue0.ab"].Finish(null);
-                Check(callbacks == 1 && locator.Started.Count == 2,
-                    "Task completion delivers its result immediately but does not recursively start queued work.");
+                Check(callbacks == 0 && locator.Started.Count == 2,
+                    "Task completion publishes its result without delivering before Loader Tick.");
                 loader.Tick(0);
-                Check(locator.Started.Last() == "queue4.ab", "Shared queued request stays High despite a later Low request.");
+                Check(callbacks == 1 && locator.Started.Last() == "queue4.ab", "Shared queued request stays High despite a later Low request.");
                 locator.Manual["queue1.ab"].Finish(null); loader.Tick(0);
                 Check(locator.Started.Last() == "queue2.ab", "Remaining Normal work resumes FIFO.");
                 for (var tick = 0; tick < 6 && callbacks < 7; tick++)
@@ -565,11 +577,11 @@ namespace LiteQuark.Editor
                 });
                 loader.Tick(0);
                 locator.Manual["queue0.ab"].Fail(failure);
-                Check(callbacks == 1 && ReferenceEquals(failedResult.Error.Exception, failure) && locator.Started.Count == 1,
-                    "Failure delivers the original error immediately; same-path retry stays queued until Tick.");
+                Check(callbacks == 0 && failedResult == null && locator.Started.Count == 1,
+                    "Failure remains on the Task until Loader Tick processes its terminal state.");
                 loader.Tick(0);
-                Check(locator.Calls["queue0.ab"] == 2 && callbacks == 1,
-                    "Retiring the old failed task does not remove or notify the replacement request.");
+                Check(locator.Calls["queue0.ab"] == 2 && callbacks == 1 && ReferenceEquals(failedResult.Error.Exception, failure),
+                    "Loader delivers the original error once and preserves the new same-path retry.");
                 locator.Manual["queue0.ab"].Cancel();
                 loader.Tick(0); loader.Tick(0);
                 Check(callbacks == 2, "A cancelled task without a result callback ends its request once when retired.");
@@ -787,8 +799,8 @@ namespace LiteQuark.Editor
                 bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
                 Check(bundle != null, "Factory routing fixture is a real loaded Bundle.");
                 tasks.Add(LiteRuntime.Task.AddLoadVersionPackTask(new Uri(Path.Combine(BundleFolder, "unused-version.bytes")).AbsoluteUri, null));
-                tasks.Add(LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab"), null));
-                tasks.Add(LiteRuntime.Task.AddLoadRemoteBundleTask("http://127.0.0.1/validation-not-sent.ab", null, null));
+                tasks.Add(LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab")));
+                tasks.Add(LiteRuntime.Task.AddLoadRemoteBundleTask("http://127.0.0.1/validation-not-sent.ab", null));
                 tasks.Add(LiteRuntime.Task.AddLoadAssetTask<TextAsset>(bundle, "payload.txt", null));
                 tasks.Add(LiteRuntime.Task.AddLoadSceneTask("validation_scene", new LoadSceneParameters(LoadSceneMode.Additive), null));
                 for (var i = 0; i < tasks.Count; i++)

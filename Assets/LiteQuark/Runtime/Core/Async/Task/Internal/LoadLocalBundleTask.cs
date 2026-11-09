@@ -9,33 +9,19 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"LoadBundle {PathUtils.GetFileName(_bundleUri)}";
 
         private readonly string _bundleUri;
-        private Action<AssetBundle> _callback;
         private AssetBundleCreateRequest _bundleRequest;
         private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
         public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
-        public LoadLocalBundleTask(string bundleUri, Action<AssetBundle> callback)
+        public LoadLocalBundleTask(string bundleUri)
             : base()
         {
             _bundleUri = bundleUri;
-            _callback = callback;
-        }
-
-        protected override void OnDispose()
-        {
-            _callback = null;
         }
 
         protected override void OnTerminated()
         {
-            if (State == TaskState.Failed)
-            {
-                var callback = _callback;
-                _callback = null;
-                LiteUtils.SafeInvoke(callback, null);
-            }
-
             if (_bundleRequest == null && State != TaskState.Succeeded)
             {
                 _cleanupCompletion.TrySetResult();
@@ -80,11 +66,10 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                var callback = _callback;
-                _callback = null;
-                if (Complete(bundle))
+                var resource = new AssetBundleResource(bundle);
+                if (!Complete(resource))
                 {
-                    LiteUtils.SafeInvoke(callback, bundle);
+                    resource.Dispose();
                 }
             }
             catch (Exception ex)
@@ -106,6 +91,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public AssetBundle GetBundle() => Result as AssetBundle;
+        public IBundleResource GetBundle() => Result as IBundleResource;
     }
 }

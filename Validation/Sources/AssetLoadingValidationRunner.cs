@@ -476,27 +476,25 @@ namespace LiteQuark.Editor
 
         private static async UniTask AssertBuiltInLocation(BuiltInBundleProvider locator, string versionPath, string bundlePath, string marker, bool persistent)
         {
-            VersionPackInfo callbackPack = null;
-            var versionTask = locator.LoadVersionPack(versionPath, pack => callbackPack = pack);
+            var versionTask = locator.LoadVersionPack(versionPath);
             await Wait(() => versionTask.IsDone, "BuiltIn version load");
             var loadedPack = versionTask.Result as VersionPackInfo;
-            Check(loadedPack != null && loadedPack.Version == marker && ReferenceEquals(loadedPack, callbackPack), "Public version load selects " + marker + ", forceStreaming=" + locator.EditorForceStreamingAssets);
+            Check(loadedPack != null && loadedPack.Version == marker && ReferenceEquals(loadedPack, await versionTask.Task), "Public version load selects " + marker + ", forceStreaming=" + locator.EditorForceStreamingAssets);
             Check(loadedPack.GetBundleInfoFromAssetPath(ProbePath)?.BundlePath == bundlePath, "Selected version file builds the full-path resource index.");
-            IBundleResource callbackBundle = null;
-            var bundleTask = locator.LoadBundle(bundlePath, string.Empty, bundle => callbackBundle = bundle);
+            var bundleTask = locator.LoadBundle(bundlePath, string.Empty);
             AssetBundle loadedBundle = null;
             try
             {
                 await Wait(() => bundleTask.IsDone, "BuiltIn Bundle load");
-                loadedBundle = bundleTask.Result as AssetBundle;
-                Check(loadedBundle != null && ReferenceEquals(loadedBundle, Get<AssetBundle>(callbackBundle, "_bundle")), "Public Bundle load completes from the same location policy.");
+                loadedBundle = Get<AssetBundle>(bundleTask.GetBundle(), "_bundle");
+                Check(loadedBundle != null && ReferenceEquals(bundleTask.GetBundle(), bundleTask.Result) && ReferenceEquals(await bundleTask.Task, bundleTask.Result), "Public Bundle load completes from the same location policy.");
                 Check(loadedBundle.GetAllAssetNames().Contains(AssetPath.Resolve(TextA)) == persistent, "Different Bundle contents confirm the chosen location is " + marker);
                 var asset = loadedBundle.LoadAsset<TextAsset>(AssetPath.Resolve(ProbePath));
                 Check(asset != null && asset.text == ProbeContent, "Selected BuiltIn Bundle supports complete-path asset loading.");
             }
             finally
             {
-                callbackBundle?.Dispose();
+                bundleTask.GetBundle()?.Dispose();
             }
         }
 
@@ -525,11 +523,11 @@ namespace LiteQuark.Editor
         private sealed class LocalLocator : IBundleProvider
         {
             public int Calls;
-            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
+            public ILoadBundleTask LoadBundle(string path, string hash)
             {
                 Calls++;
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
+                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path));
             }
         }
         private static async UniTask<EnvironmentContext> New(bool editor = false)

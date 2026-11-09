@@ -1,28 +1,27 @@
 #if UNITY_EDITOR
-using System;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Editor;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadSimulateBundleTask : BaseTask, IResourceTaskCleanup
+    internal sealed class LoadSimulateBundleTask : BaseTask, ILoadBundleTask, IResourceTaskCleanup
     {
         public override string DebugName => $"SimulateBundle {_bundleInfo.BundlePath}";
 
         private readonly BundleInfo _bundleInfo;
         private readonly ResCollector _collector;
-        private Action<IBundleResource> _callback;
         private IBundleResource _resource;
         private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
-        public LoadSimulateBundleTask(BundleInfo bundleInfo, ResCollector collector, Action<IBundleResource> callback)
+        public LoadSimulateBundleTask(BundleInfo bundleInfo, ResCollector collector)
         {
             _bundleInfo = bundleInfo;
             _collector = collector;
-            _callback = callback;
         }
 
         public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
+
+        public IBundleResource GetBundle() => Result as IBundleResource;
 
         protected override void OnExecute()
         {
@@ -33,13 +32,11 @@ namespace LiteQuark.Runtime
         {
             var resource = _resource;
             _resource = null;
-            var callback = _callback;
-            _callback = null;
             try
             {
-                if (Complete(resource))
+                if (!Complete(resource))
                 {
-                    LiteUtils.SafeInvoke(callback, resource);
+                    resource.Dispose();
                 }
             }
             finally
@@ -56,18 +53,7 @@ namespace LiteQuark.Runtime
             }
             _resource?.Dispose();
             _resource = null;
-            var callback = _callback;
-            _callback = null;
-            if (State == TaskState.Failed)
-            {
-                LiteUtils.SafeInvoke(callback, null);
-            }
             _cleanupCompletion.TrySetResult();
-        }
-
-        protected override void OnDispose()
-        {
-            _callback = null;
         }
     }
 }

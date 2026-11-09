@@ -348,16 +348,16 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri, Action<UnityEngine.AssetBundle> callback)
+        internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri)
         {
-            var task = new LoadLocalBundleTask(bundleUri, callback);
+            var task = new LoadLocalBundleTask(bundleUri);
             AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
             return task;
         }
 
-        internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash, Action<UnityEngine.AssetBundle> callback)
+        internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash)
         {
-            var task = new LoadRemoteBundleTask(bundleUri, hash, callback);
+            var task = new LoadRemoteBundleTask(bundleUri, hash);
             AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
             return task;
         }

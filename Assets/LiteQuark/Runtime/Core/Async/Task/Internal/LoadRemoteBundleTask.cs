@@ -11,23 +11,15 @@ namespace LiteQuark.Runtime
 
         private readonly string _bundleUri;
         private readonly string _hash;
-        private Action<AssetBundle> _callback;
         private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
         public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
-        public LoadRemoteBundleTask(string bundleUri, string hash, Action<AssetBundle> callback)
+        public LoadRemoteBundleTask(string bundleUri, string hash)
             : base(bundleUri, LiteRuntime.Setting.Asset.BundleDownloadRetry, false)
         {
             _bundleUri = bundleUri;
             _hash = hash;
-            _callback = callback;
-        }
-
-        protected override void OnDispose()
-        {
-            _callback = null;
-            base.OnDispose();
         }
 
         protected override void OnResourcesReleased(Exception error)
@@ -56,15 +48,15 @@ namespace LiteQuark.Runtime
         {
             base.OnFailed();
 
-            var callback = _callback;
-            _callback = null;
-            LiteUtils.SafeInvoke(callback, null);
-
             LiteRuntime.FrameworkError(FrameworkErrorCode.LoadRemoteBundle, "Bundle download failed");
         }
 
         protected override void OnSuccess(UnityWebRequest request)
         {
+            if (IsDone)
+            {
+                return;
+            }
             base.OnSuccess(request);
 
             var bundle = DownloadHandlerAssetBundle.GetContent(request);
@@ -75,15 +67,17 @@ namespace LiteQuark.Runtime
             }
 
             var downloadedBytes = request.downloadedBytes;
-            var callback = _callback;
-            _callback = null;
-            if (Complete(bundle))
+            var resource = new AssetBundleResource(bundle);
+            if (Complete(resource))
             {
-                LiteUtils.SafeInvoke(callback, bundle);
                 LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, downloadedBytes / 1024);
+            }
+            else
+            {
+                resource.Dispose();
             }
         }
 
-        public AssetBundle GetBundle() => Result as AssetBundle;
+        public IBundleResource GetBundle() => Result as IBundleResource;
     }
 }

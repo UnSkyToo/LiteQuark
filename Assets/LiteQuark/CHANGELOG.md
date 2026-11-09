@@ -30,6 +30,10 @@
 
 ### Asset
 
+- 调整：本地、远端和模拟 Bundle Task 统一交付 IBundleResource；Provider 的清单和 Bundle 加载接口移除结果 callback，清单通过返回任务读取，Bundle 由 Loader.Tick 统一接收终态。依赖任务成功后到 Cache 收到结果之间可能多一次 Loader Tick；已交付缓存的命中行为不变。
+- 破坏：ILoadBundleTask 改为内部接口，GetBundle 返回 IBundleResource；任务结果观察不取得额外所有权。外部资源消费者继续使用 AssetSystem Handle API，不依赖内部 Bundle 任务。
+- 修复：Loader 关闭释放已成功但尚未交付的容器，释放失败时仍处理其他容器并等待原生收尾；已交付容器仍归 Cache，取消／失败的迟到原生结果仍归 Task。
+
 - 修复：后端创建移至 AssetSystem 后，非法模式和无效 Remote URI 继续通过初始化 UniTask 交付原始异常，不从 Initialize 调用同步抛出；任务组注册的同步异常语义不变。
 
 - 破坏：配置字段 BundleLocater 改名为 BundleMode，类型 BundleLocaterMode 改为 BundleLoadMode；代码调用方更新名称，枚举数值仍为 Simulate=0、BuiltIn=1、Remote=2。字段保留 FormerlySerializedAs("BundleLocater")，Unity 序列化的旧场景、Prefab 和配置资产可按原值读取；JSON 和其他自定义配置解析器需自行更新字段名。仓库场景只更新字段名，不调整模式。

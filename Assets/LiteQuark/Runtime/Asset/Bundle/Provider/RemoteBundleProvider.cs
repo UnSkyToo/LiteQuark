@@ -12,10 +12,10 @@ namespace LiteQuark.Runtime
             LLog.Info("BundleRemoteUri: {0}", _remoteUri);
         }
 
-        public BaseTask LoadVersionPack(string versionFileName, System.Action<VersionPackInfo> callback)
+        public BaseTask LoadVersionPack(string versionFileName)
         {
             var versionPackUri = GetVersionPackUri(versionFileName);
-            return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, callback);
+            return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, null);
         }
 
         private string GetVersionPackUri(string versionFileName)
@@ -41,11 +41,10 @@ namespace LiteQuark.Runtime
             return $"{uri}{separator}t={version}{fragment}";
         }
 
-        public BaseTask LoadBundle(string bundlePath, string hash, System.Action<IBundleResource> callback)
+        public ILoadBundleTask LoadBundle(string bundlePath, string hash)
         {
             var bundleUri = PathUtils.ConcatUri(_remoteUri, bundlePath);
-            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash,
-                bundle => callback?.Invoke(bundle != null ? new AssetBundleResource(bundle) : null));
+            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash);
         }
     }
 }

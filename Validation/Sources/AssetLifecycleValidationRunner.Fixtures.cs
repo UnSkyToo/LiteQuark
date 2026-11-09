@@ -1037,10 +1037,10 @@ namespace LiteQuark.Editor
         {
             internal LoadRemoteBundleTask Task;
             internal string UriOverride;
-            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
+            public ILoadBundleTask LoadBundle(string path, string hash)
             {
-                Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null, bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
+                Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null);
                 return Task;
             }
         }
@@ -1204,21 +1204,21 @@ namespace LiteQuark.Editor
             internal readonly Dictionary<string, ManualTask> Manual = new();
             internal readonly List<AssetBundle> Opened = new();
             internal Locator(bool manual, bool scheduleManual = false) { _manual = manual; _scheduleManual = scheduleManual; }
-            public BaseTask LoadVersionPack(string name, Action<VersionPackInfo> callback) => throw new NotSupportedException();
-            public BaseTask LoadBundle(string path, string hash, Action<IBundleResource> callback)
+            public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
+            public ILoadBundleTask LoadBundle(string path, string hash)
             {
                 Calls[path] = Calls.TryGetValue(path, out var count) ? count + 1 : 1;
                 Started.Add(path);
                 if (ThrowOnCreate) throw new InvalidOperationException("Injected locator failure");
                 if (_manual)
                 {
-                    var task = new ManualTask(bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
+                    var task = new ManualTask();
                     Manual[path] = task;
                     if (_scheduleManual) LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
                     else task.Execute();
                     return task;
                 }
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, path), bundle => callback(bundle != null ? new AssetBundleResource(bundle) : null));
+                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, path));
             }
             internal void FinishOutstanding()
             {
@@ -1228,24 +1228,30 @@ namespace LiteQuark.Editor
 
         private sealed class ManualTask : BaseTask, ILoadBundleTask
         {
-            private Action<AssetBundle> _callback;
-            internal ManualTask(Action<AssetBundle> callback = null) { _callback = callback; }
-            public AssetBundle GetBundle() => Result as AssetBundle;
+            public IBundleResource GetBundle() => Result as IBundleResource;
+            internal void FinishResource(IBundleResource resource) => Complete(resource);
             internal void Finish(AssetBundle bundle)
             {
-                var callback = _callback;
-                _callback = null;
-                if (Complete(bundle)) LiteUtils.SafeInvoke(callback, bundle);
-            }
-            protected override void OnTerminated()
-            {
-                if (State != TaskState.Failed) return;
-                var callback = _callback;
-                _callback = null;
-                LiteUtils.SafeInvoke(callback, null);
+                if (IsDone)
+                {
+                    if (bundle != null && (State != TaskState.Succeeded || !ReferenceEquals(NativeBundle(GetBundle()), bundle)))
+                        bundle.Unload(true);
+                    return;
+                }
+                Complete(bundle != null ? new AssetBundleResource(bundle) : null);
             }
             protected override void OnExecute() { }
-            protected override void OnDispose() { _callback = null; }
+        }
+
+        private sealed class ReleaseProbeResource : IBundleResource
+        {
+            internal int Disposals;
+            internal Exception Error;
+            public void Dispose() { Disposals++; if (Error != null) throw Error; }
+            public string[] GetAllScenePaths() => Array.Empty<string>();
+            public long GetRuntimeMemorySize() => 0;
+            public BaseTask CreateLoadAssetTask<T>(string path, Action<ITask> callback) where T : UnityEngine.Object => throw new NotSupportedException();
+            public BaseTask CreateLoadSceneTask(string path, LoadSceneParameters parameters, Action<ITask> callback) => throw new NotSupportedException();
         }
     }
 }
