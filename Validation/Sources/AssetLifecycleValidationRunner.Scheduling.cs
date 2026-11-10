@@ -541,24 +541,31 @@ namespace LiteQuark.Editor
                 Check(locator.Started.SequenceEqual(new[] { "queue0.ab", "queue1.ab" }), "Two oldest equal-priority tasks start; remaining tasks stay queued.");
                 loader.RaiseBundlePriority(bundles[0], AssetLoadPriority.High);
                 loader.RaiseBundlePriority(bundles[4], AssetLoadPriority.High);
-                loader.LoadBundle(bundles[4], AssetLoadPriority.Low, _ => callbacks++);
+                var rejected = 0;
+                foreach (var index in new[] { 0, 4 })
+                {
+                    try { loader.LoadBundle(bundles[index], AssetLoadPriority.Low, _ => callbacks++); }
+                    catch (ArgumentException) { rejected++; }
+                }
+                Check(rejected == 2, "Loader rejects duplicate running and queued logical Bundles without adding receivers.");
+                loader.RaiseBundlePriority(bundles[4], AssetLoadPriority.Low);
                 loader.Tick(0);
                 Check(locator.Started.Count == 2 && locator.Manual.Values.Count(t => !t.IsDone) == 2, "Promotion neither preempts running work nor exceeds the concurrency limit.");
                 locator.Manual["queue0.ab"].Finish(null);
                 Check(callbacks == 0 && locator.Started.Count == 2,
                     "Task completion publishes its result without delivering before Loader Tick.");
                 loader.Tick(0);
-                Check(callbacks == 1 && locator.Started.Last() == "queue4.ab", "Shared queued request stays High despite a later Low request.");
+                Check(callbacks == 1 && locator.Started.Last() == "queue4.ab", "Queued task stays High despite a later Low priority update.");
                 locator.Manual["queue1.ab"].Finish(null); loader.Tick(0);
                 Check(locator.Started.Last() == "queue2.ab", "Remaining Normal work resumes FIFO.");
-                for (var tick = 0; tick < 6 && callbacks < 7; tick++)
+                for (var tick = 0; tick < 6 && callbacks < 6; tick++)
                 {
                     locator.FinishOutstanding(); loader.Tick(0);
                     if (locator.Manual.Values.Count(t => !t.IsDone) > 2) throw new Exception("Concurrency exceeded.");
                 }
                 Check(locator.Started.SequenceEqual(new[] { "queue0.ab", "queue1.ab", "queue4.ab", "queue2.ab", "queue3.ab", "queue5.ab" }) &&
-                    locator.Calls.Values.All(count => count == 1) && callbacks == 7,
-                    "Each physical Bundle starts once; seven logical callbacks complete exactly once.");
+                    locator.Calls.Values.All(count => count == 1) && callbacks == 6,
+                    "Each logical Bundle starts once and delivers exactly once to its sole receiver.");
             }
             finally { await loader.DisposeAsync(); }
 
@@ -587,6 +594,37 @@ namespace LiteQuark.Editor
                 Check(callbacks == 2, "A cancelled task without a result callback ends its request once when retired.");
             }
             finally { await loader.DisposeAsync(); }
+
+            // Controlled colliding physical paths exercise scheduling identity without loading native Bundles.
+            var firstInfo = new BundleInfo(0, "folder/item.ab", Array.Empty<string>(), null);
+            var secondInfo = new BundleInfo(1, "folder_item.ab", Array.Empty<string>(), null);
+            pack = new VersionPackInfo("identity", "windows", false, true, new[] { firstInfo, secondInfo });
+            pack.Initialize();
+            var physicalPath = pack.GetBundleFileLoadPath(firstInfo);
+            locator = new Locator(true);
+            loader = new AssetBundleLoader(locator, pack, 1);
+            var results = new Dictionary<string, AssetLoadResult<IBundleResource>>();
+            var resource = new ReleaseProbeResource();
+            try
+            {
+                Check(physicalPath == pack.GetBundleFileLoadPath(secondInfo), "Distinct logical Bundles share the controlled physical path.");
+                loader.LoadBundle(firstInfo, AssetLoadPriority.Low, result => results.Add(firstInfo.BundlePath, result));
+                loader.LoadBundle(secondInfo, AssetLoadPriority.Normal, result => results.Add(secondInfo.BundlePath, result));
+                loader.RaiseBundlePriority(firstInfo, AssetLoadPriority.High);
+                loader.Tick(0);
+                Check(locator.Started.Count == 1 && results.Count == 0, "Independent logical requests still respect the single Loader slot.");
+                locator.Manual[physicalPath].FinishResource(resource);
+                loader.Tick(0);
+                Check(results.Count == 1 && results.TryGetValue(firstInfo.BundlePath, out var firstResult) &&
+                    ReferenceEquals(firstResult.Value, resource) && locator.Calls[physicalPath] == 2,
+                    "Logical promotion selects only the first request; its container is not broadcast to the second request.");
+                locator.Manual[physicalPath].Fail(failure);
+                loader.Tick(0);
+                Check(results.Count == 2 && results[secondInfo.BundlePath].Error.ResourceKey == secondInfo.BundlePath &&
+                    ReferenceEquals(results[secondInfo.BundlePath].Error.Exception, failure) && resource.Disposals == 0,
+                    "Second request keeps its logical error identity without releasing the first receiver's container.");
+            }
+            finally { await loader.DisposeAsync(); resource.Dispose(); }
         }
 
         private static AssetLoadPriority CachePriority(Harness h, string path) => Get<AssetLoadPriority>(h.Cache(path), "_loadPriority");

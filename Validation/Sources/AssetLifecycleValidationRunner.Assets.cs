@@ -3628,6 +3628,12 @@ namespace LiteQuark.Editor
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { textInfo, deliveredInfo, pendingInfo });
             var locator = new Locator(true);
             var loader = new AssetBundleLoader(locator, pack, 3);
+            var manager = new AssetManager();
+            Set(manager, "_bundleLoader", loader);
+            var deliveredCache = new AssetBundleCache(manager, deliveredInfo);
+            void RequestDelivered(Action<AssetLoadResult<IBundleResource>> callback) =>
+                typeof(AssetBundleCache).GetMethod("LoadBundleAsync", Private).Invoke(deliveredCache,
+                    new object[] { AssetLoadPriority.Normal, callback });
             AssetBundle earlierDelivered = null;
             AssetBundle delivered = null;
             var shutdowns = new List<UniTask>();
@@ -3638,14 +3644,14 @@ namespace LiteQuark.Editor
                 var deliveredAlive = true;
                 AssetLoadResult<IBundleResource> deliveredResult = null;
                 loader.LoadBundle(textInfo, AssetLoadPriority.Normal, _ => discardedCallbacks++);
-                loader.LoadBundle(deliveredInfo, AssetLoadPriority.Normal, result =>
+                RequestDelivered(result =>
                 {
                     deliveredCallbacks++;
                     deliveredResult = result;
                     shutdowns.Add(loader.DisposeAsync()); shutdowns.Add(loader.DisposeAsync());
                     deliveredAlive &= result.Succeeded && result.Error == null && result.Value != null && ReferenceEquals(NativeBundle(result.Value), delivered);
                 });
-                loader.LoadBundle(deliveredInfo, AssetLoadPriority.Normal, result =>
+                RequestDelivered(result =>
                 {
                     deliveredCallbacks++;
                     deliveredAlive &= ReferenceEquals(result, deliveredResult);
@@ -3664,8 +3670,9 @@ namespace LiteQuark.Editor
                 locator.Manual["b.ab"].Dispose();
                 loader.Tick(0);
                 foreach (var shutdown in shutdowns) await shutdown;
-                Check(deliveredCallbacks == 2 && deliveredAlive && delivered != null,
-                    "Closing from the first callback preserves the delivered Bundle and finishes shared callback dispatch.");
+                Check(deliveredCallbacks == 2 && deliveredAlive && delivered != null && locator.Calls["b.ab"] == 1 &&
+                    ReferenceEquals(deliveredCache.Bundle, deliveredResult.Value),
+                    "Cache merges two waiters into one Loader request; closing Loader in the first callback preserves Cache ownership and dispatch.");
                 Check(earlierDelivered != null && discardedCallbacks == 1 && reentries == 1
                     && locator.Manual["a.ab"].State == TaskState.Cancelled,
                     "Shutdown preserves the earlier callback's Bundle, suppresses pending delivery and tolerates cancellation-continuation reentry.");
@@ -3681,6 +3688,7 @@ namespace LiteQuark.Editor
             finally
             {
                 await loader.DisposeAsync();
+                await deliveredCache.DisposeAsync();
                 if (earlierDelivered != null) earlierDelivered.Unload(true);
                 if (delivered != null) delivered.Unload(true);
             }

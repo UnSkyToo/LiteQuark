@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime
         private readonly VersionPackInfo _packInfo;
         private readonly int _concurrencyLimit;
 
+        // 按逻辑 Bundle 定位调度项；共享请求由 Cache 合并，每项只有一个接收方。
         private readonly Dictionary<string, PendingTask> _taskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
@@ -103,15 +104,8 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            if (_taskMap.TryGetValue(bundlePath, out var task))
-            {
-                task.CallbackList.Add(callback);
-                RaisePendingPriority(task, priority);
-                return;
-            }
-
-            task = new PendingTask(bundlePath, bundleInfo.BundlePath, bundleInfo.Hash, priority, callback);
-            _taskMap.Add(bundlePath, task);
+            var task = new PendingTask(bundlePath, bundleInfo.BundlePath, bundleInfo.Hash, priority, callback);
+            _taskMap.Add(bundleInfo.BundlePath, task);
             _pendingTaskQueue.Enqueue(task);
         }
 
@@ -122,14 +116,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            var bundlePath = _packInfo.GetBundleFileLoadPath(bundleInfo);
-
-            if (string.IsNullOrEmpty(bundlePath))
-            {
-                return;
-            }
-
-            if (_taskMap.TryGetValue(bundlePath, out var task))
+            if (_taskMap.TryGetValue(bundleInfo.BundlePath, out var task))
             {
                 RaisePendingPriority(task, priority);
             }
@@ -168,7 +155,7 @@ namespace LiteQuark.Runtime
 
                     // 先移出运行列表再交付，回调内关闭 Loader 不会释放已交付的容器。
                     var bundle = runningTask.LoadTask.State == TaskState.Succeeded ? runningTask.LoadTask.GetBundle() : null;
-                    CompletePendingTask(runningTask.Path, bundle, runningTask.LoadTask.Error);
+                    CompletePendingTask(runningTask.BundlePath, bundle, runningTask.LoadTask.Error);
                 }
             }
 
@@ -184,11 +171,11 @@ namespace LiteQuark.Runtime
                 catch (Exception ex)
                 {
                     LLog.Exception(ex, "Create bundle load task failed : {0}", info.Path);
-                    CompletePendingTask(info.Path, null, ex);
+                    CompletePendingTask(info.BundlePath, null, ex);
                     break;
                 }
 
-                _runningTasks.Add(new RunningTask(info.Path, task));
+                _runningTasks.Add(new RunningTask(info.BundlePath, task));
             }
         }
 
@@ -213,10 +200,7 @@ namespace LiteQuark.Runtime
                 ? AssetLoadResult<IBundleResource>.Success(bundle)
                 : AssetLoadResult<IBundleResource>.Failure(new AssetError(pendingTask.BundlePath,
                     error?.Message ?? "Bundle load returned no result", error));
-            foreach (var callback in pendingTask.CallbackList)
-            {
-                LiteUtils.SafeInvoke(callback, result);
-            }
+            LiteUtils.SafeInvoke(pendingTask.Callback, result);
         }
 
         private class PendingTask
@@ -225,7 +209,7 @@ namespace LiteQuark.Runtime
             public string BundlePath { get; }
             public string Hash { get; }
             public AssetLoadPriority Priority { get; set; }
-            public List<Action<AssetLoadResult<IBundleResource>>> CallbackList { get; set; }
+            public Action<AssetLoadResult<IBundleResource>> Callback { get; }
 
             public PendingTask(string path, string bundlePath, string hash, AssetLoadPriority priority, Action<AssetLoadResult<IBundleResource>> callback)
             {
@@ -233,18 +217,18 @@ namespace LiteQuark.Runtime
                 BundlePath = bundlePath;
                 Hash = hash;
                 Priority = priority;
-                CallbackList = new List<Action<AssetLoadResult<IBundleResource>>> { callback };
+                Callback = callback;
             }
         }
 
         private class RunningTask
         {
-            public string Path { get; }
+            public string BundlePath { get; }
             public ILoadBundleTask LoadTask { get; }
 
-            public RunningTask(string path, ILoadBundleTask loadTask)
+            public RunningTask(string bundlePath, ILoadBundleTask loadTask)
             {
-                Path = path;
+                BundlePath = bundlePath;
                 LoadTask = loadTask;
             }
         }
