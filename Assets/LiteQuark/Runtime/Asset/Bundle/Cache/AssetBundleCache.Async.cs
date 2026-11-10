@@ -109,8 +109,9 @@ namespace LiteQuark.Runtime
 
             var dependencies = DependencyList;
             AssetError firstError = null;
-            var acg = new AsyncCompletionGroup<IBundleResource>(dependencies.Length + 1,
-                (success, bundle) => HandleBundleLoadCompleted(success, bundle, firstError));
+            // 汇合只记录完成状态；主包由 Cache 持有，不再暂存在汇合结果中。
+            var acg = new AsyncCompletionGroup(dependencies.Length + 1,
+                success => HandleBundleLoadCompleted(success, firstError));
 
             foreach (var dependency in dependencies)
             {
@@ -119,7 +120,7 @@ namespace LiteQuark.Runtime
                 {
                     LLog.Error("Missing dependency bundle: {0} -> {1}", BundlePath, dependency);
                     firstError ??= new AssetError(dependency, "Dependency bundle is not in the manifest");
-                    acg.SignalSub(false);
+                    acg.Signal(false);
                     continue;
                 }
 
@@ -127,40 +128,40 @@ namespace LiteQuark.Runtime
                 dependencyCache.LoadBundleAsync(_loadPriority, result =>
                 {
                     firstError ??= result.Error;
-                    acg.SignalSub(result.Succeeded);
+                    acg.Signal(result.Succeeded);
                 });
             }
 
             _manager.LoadBundle(_bundleInfo, _loadPriority, result =>
             {
                 firstError ??= result.Error;
-                acg.SignalMain(result.Value);
+                if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
+                {
+                    result.Value?.Dispose();
+                }
+                else
+                {
+                    Bundle = result.Value;
+                }
+                acg.Signal(result.Succeeded);
             });
         }
 
-        private void HandleBundleLoadCompleted(bool success, IBundleResource bundle, AssetError error)
+        private void HandleBundleLoadCompleted(bool success, AssetError error)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
-                if (bundle != null)
-                {
-                    bundle.Dispose();
-                }
+                ReleaseBundle();
                 return;
             }
 
-            if (!success || bundle == null)
+            if (!success || Bundle == null)
             {
-                if (bundle != null)
-                {
-                    bundle.Dispose();
-                }
-
+                ReleaseBundle();
                 ReleaseDependencyLeases();
-                bundle = null;
             }
 
-            var isLoaded = OnBundleLoaded(bundle);
+            var isLoaded = OnBundleLoaded();
 
             if (!isLoaded)
             {
@@ -168,7 +169,7 @@ namespace LiteQuark.Runtime
             }
 
             var result = isLoaded
-                ? AssetLoadResult<IBundleResource>.Success(bundle)
+                ? AssetLoadResult<IBundleResource>.Success(Bundle)
                 : AssetLoadResult<IBundleResource>.Failure(error);
             var callbacks = new System.Collections.Generic.List<Action<AssetLoadResult<IBundleResource>>>(_bundleLoaderCallbackList);
             _bundleLoaderCallbackList.Clear();

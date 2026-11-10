@@ -626,12 +626,17 @@ namespace LiteQuark.Editor
             h.Provider.Tick(0);
             Check(h.Locater.Started.SequenceEqual(new[] { "a.ab" }), "Main starts while its dependency remains queued.");
             AssetHandle<TextAsset> blocker = null;
+            IBundleResource mainResource = null;
             if (completeMain)
             {
                 blocker = h.Asset<TextAsset>(TextPath);
                 h.Finish("a.ab", true);
+                mainResource = h.Locater.Manual["a.ab"].GetBundle();
                 Check(h.Locater.Started.Last() == "text.ab" && !first.IsDone && h.Cache("a.ab").Stage == AssetCacheStage.Loading,
                     "Physical main is complete, but Cache and asset remain pending on queued dependency.");
+                Check(ReferenceEquals(h.Cache("a.ab").Bundle, mainResource) && NativeBundle(mainResource) != null &&
+                    !h.Cache("a.ab").IsLoaded && h.Entry("a.ab", PrefabPath, typeof(GameObject)).Stage == AssetCacheStage.Idle,
+                    "Cache owns the delivered main while dependency is queued, without starting asset extraction.");
             }
             var second = PriorityAsset<GameObject>(h, PrefabPath, AssetLoadPriority.High);
             Check(CachePriority(h, "b.ab") == AssetLoadPriority.High && h.Locater.Calls["a.ab"] == 1 && h.Refs("b.ab") == 1,
@@ -642,6 +647,9 @@ namespace LiteQuark.Editor
             await Wait(() => first.IsDone && second.IsDone && (blocker == null || blocker.IsDone), "Main-before-dependency delivery");
             Check(first.Result != null && first.Result == second.Result && first.Result.GetComponent<Renderer>().sharedMaterial != null,
                 "Arbitrary Bundle order preserves real dependency references and shared asset delivery.");
+            if (completeMain)
+                Check(h.Cache("a.ab").IsLoaded && ReferenceEquals(h.Cache("a.ab").Bundle, mainResource),
+                    "Dependency completion makes the same owned main container ready without replacing it.");
         }
 
         private static async UniTask PriorityCanceledRequest()

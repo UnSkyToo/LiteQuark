@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
     internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
     {
         public AssetCacheStage Stage { get; private set; }
+        // 主包交付后即持有；只有 Stage 为 Loaded 时，本包及依赖才全部就绪。
         public IBundleResource Bundle { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded;
         public bool IsRetained => Stage == AssetCacheStage.Loaded && _refCount == 0;
@@ -134,16 +135,20 @@ namespace LiteQuark.Runtime
                 LLog.Warning("Unload bundle leak : {0}({1})", _bundleInfo.BundlePath, _refCount);
             }
 
+            ReleaseBundle();
+            ReleaseDependencyLeases();
+
+            _refCount = 0;
+            Stage = AssetCacheStage.Unloaded;
+        }
+
+        private void ReleaseBundle()
+        {
             if (Bundle != null)
             {
                 Bundle.Dispose();
                 Bundle = null;
             }
-
-            ReleaseDependencyLeases();
-
-            _refCount = 0;
-            Stage = AssetCacheStage.Unloaded;
         }
 
         public void Tick(float deltaTime)
@@ -275,11 +280,9 @@ namespace LiteQuark.Runtime
             return loadPath != null;
         }
 
-        private bool OnBundleLoaded(IBundleResource bundle)
+        private bool OnBundleLoaded()
         {
-            Bundle = bundle;
-
-            if (bundle == null)
+            if (Bundle == null)
             {
                 Stage = AssetCacheStage.Idle;
                 LLog.Error("Load bundle failed : {0}", _bundleInfo.BundlePath);

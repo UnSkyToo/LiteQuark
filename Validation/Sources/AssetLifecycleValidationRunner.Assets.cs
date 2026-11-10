@@ -3190,6 +3190,24 @@ namespace LiteQuark.Editor
                 h.Refs("a.ab") == 0 && h.Refs("b.ab") == 0,
                 "Preload keeps the requested path separate from the failed dependency and preserves error identity after rollback.");
             await UniTask.Yield();
+
+            await Cleanup();
+            h = New(true);
+            a = h.Asset<GameObject>(PrefabPath);
+            h.Provider.Tick(0);
+            var resource = new ReleaseProbeResource();
+            h.Locater.Manual["a.ab"].FinishResource(resource);
+            h.Provider.Tick(0);
+            var cache = h.Cache("a.ab");
+            Check(ReferenceEquals(cache.Bundle, resource) && !cache.IsLoaded && !a.IsDone && resource.Disposals == 0,
+                "A successful main remains owned and undisposed until its dependency settles.");
+            h.Locater.Manual["b.ab"].Fail(original);
+            Get<AssetBundleLoader>(h.Provider, "_bundleLoader").Tick(0);
+            Check(a.State == AssetHandleState.Failed && ReferenceEquals(a.Error.Exception, original) &&
+                cache.Stage == AssetCacheStage.Idle && cache.Bundle == null && resource.Disposals == 1 && h.Refs("b.ab") == 0,
+                "Dependency failure releases the owned main once, clears its field and preserves the original error.");
+            await h.Shutdown();
+            Check(resource.Disposals == 1, "Shutdown does not release the rolled-back main again.");
         }
 
         private static async UniTask SharedFailure()
@@ -3249,7 +3267,9 @@ namespace LiteQuark.Editor
         private static async UniTask EntryDispose()
         {
             var h = New(); var bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab")); h.Locater.Opened.Add(bundle);
-            var cache = h.Cache("text.ab"); typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, new object[] { new AssetBundleResource(bundle) });
+            var cache = h.Cache("text.ab");
+            typeof(AssetBundleCache).GetProperty(nameof(AssetBundleCache.Bundle)).SetValue(cache, new AssetBundleResource(bundle));
+            typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, null);
             var entry = new AssetInfoCache(cache, TextPath, typeof(TextAsset)); var calls = 0;
             entry.LoadAssetAsync(entry.AcquireLease<TextAsset>(), result => { calls++; result.Value?.Dispose(); }); await entry.DisposeAsync(); await entry.DisposeAsync();
             Check(entry.Stage == AssetCacheStage.Unloaded && calls == 1 && h.Refs("text.ab") == 0, "Dispose cancels queued task without reviving entry or double notification.");
@@ -3738,13 +3758,31 @@ namespace LiteQuark.Editor
             var handle = h.Asset<GameObject>(PrefabPath);
             h.Provider.Tick(0);
             var main = h.Finish("a.ab", true);
+            var cache = h.Cache("a.ab");
             var loader = Get<AssetBundleLoader>(h.Provider, "_bundleLoader");
-            Check(main != null && !handle.IsDone && h.Refs("b.ab") == 1,
+            Check(main != null && NativeBundle(cache.Bundle) == main && !cache.IsLoaded && !handle.IsDone && h.Refs("b.ab") == 1,
                 "The main Bundle has arrived, but the Handle still waits for its protected dependency.");
             await h.Shutdown(); await loader.DisposeAsync(); await h.Provider.DisposeAsync();
-            Check(main == null && handle.IsDone && handle.Result == null && h.Locater.Manual["b.ab"].State == TaskState.Cancelled,
+            Check(main == null && cache.Bundle == null && handle.IsDone && handle.Result == null && h.Locater.Manual["b.ab"].State == TaskState.Cancelled,
                 "Cache shutdown settles dependency callbacks and rolls back the already-delivered main Bundle.");
             await UniTask.Yield();
+
+            await Cleanup();
+            h = New(true);
+            handle = h.Asset<GameObject>(PrefabPath);
+            h.Provider.Tick(0);
+            var resource = new ReleaseProbeResource();
+            h.Locater.Manual["a.ab"].FinishResource(resource);
+            h.Provider.Tick(0);
+            cache = h.Cache("a.ab");
+            await cache.DisposeAsync();
+            Check(cache.Bundle == null && cache.Stage == AssetCacheStage.Unloaded && resource.Disposals == 1 &&
+                handle.IsDone && !h.Locater.Manual["b.ab"].IsDone,
+                "Cache disposal releases its held main even before the dependency callback settles.");
+            h.Finish("b.ab", true);
+            await h.Shutdown();
+            Check(resource.Disposals == 1 && cache.Bundle == null && cache.Stage == AssetCacheStage.Unloaded,
+                "Late dependency completion and repeated close neither release twice nor revive the main.");
         }
 
         private static async UniTask RemoteBundleShutdown()

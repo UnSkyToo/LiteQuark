@@ -143,6 +143,8 @@ BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制�
 
 Provider 返回已提交到 Asset 组的任务，不通过结果 callback 交付。版本任务成功结果为已初始化的 VersionPackInfo；三种 Bundle 任务的 Result、await 结果和 GetBundle 均观察同一个 IBundleResource。Loader 在 Tick 中统一处理成功、失败和取消，随后向 Cache 交付；任务成功不代表 Cache 已接收，关闭时 Loader 释放所有未交付成功容器并等待原生收尾。
 
+Cache 收到主包后即由 Bundle 字段持有；依赖未就绪时仍处于 Loading，不启动资源读取。正常加载等主包和依赖全部返回后才发布成功或失败，失败或关闭时由 Cache 释放已接收的主包。
+
 Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载。所有模式共用 AssetManager，资源 Lease 必须持有 Cache，场景 Cache 必须持有 Bundle Lease；Simulate 不提供随机交付延迟。
 
 模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 在非 Editor 环境（包括 Development Build）自动按 BuiltIn 定位，配置值不被改写；仍需构建并部署随包资源。远端部署须明确选择 Remote。
