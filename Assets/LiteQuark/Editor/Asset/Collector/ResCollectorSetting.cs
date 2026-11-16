@@ -1,6 +1,4 @@
-#if UNITY_EDITOR
 using System.Collections.Generic;
-using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,9 +11,6 @@ namespace LiteQuark.Editor
         public List<string> IgnorePathList = new();
 
         private const string RES_SETTING_ASSET_PATH = "Assets/Editor/ResSetting.asset";
-        private static ResCollectorSetting _setting = null;
-        private static int _wasPreferencesDirCreated = 0;
-        private static int _wasPreferencesAssetCreated = 0;
 
         public bool IsIgnorePath(string path)
         {
@@ -37,31 +32,28 @@ namespace LiteQuark.Editor
             }
         }
 
-        internal static ResCollectorSetting GetOrCreateSetting()
+        internal static ResCollectorSetting LoadSetting()
         {
-            if (_setting != null)
+            var setting = AssetDatabase.LoadAssetAtPath<ResCollectorSetting>(RES_SETTING_ASSET_PATH);
+            return setting != null ? setting : FindSettingPreferences();
+        }
+
+        // 仅供明确的配置编辑操作调用；收集和 Inspector 绘制使用 LoadSetting。
+        internal static ResCollectorSetting CreateSetting()
+        {
+            var setting = LoadSetting();
+            if (setting != null)
             {
-                return _setting;
+                return setting;
             }
 
-            _setting = AssetDatabase.LoadAssetAtPath<ResCollectorSetting>(RES_SETTING_ASSET_PATH);
-            if (_setting == null)
+            if (!AssetDatabase.IsValidFolder("Assets/Editor"))
             {
-                _setting = FindSettingPreferences();
+                AssetDatabase.CreateFolder("Assets", "Editor");
             }
-            if (_setting == null)
-            {
-                _setting = CreateInstance<ResCollectorSetting>();
-                if (!AssetDatabase.IsValidFolder("Assets/Editor") && Interlocked.Exchange(ref _wasPreferencesDirCreated, 1) == 0)
-                {
-                    AssetDatabase.CreateFolder("Assets", "Editor");
-                }
-                if (Interlocked.Exchange(ref _wasPreferencesAssetCreated, 1) == 0)
-                {
-                    AssetDatabase.CreateAsset(_setting, RES_SETTING_ASSET_PATH);
-                }
-            }
-            return _setting;
+            setting = CreateInstance<ResCollectorSetting>();
+            AssetDatabase.CreateAsset(setting, RES_SETTING_ASSET_PATH);
+            return setting;
         }
 
         private static ResCollectorSetting FindSettingPreferences()
@@ -81,4 +73,3 @@ namespace LiteQuark.Editor
         }
     }
 }
-#endif

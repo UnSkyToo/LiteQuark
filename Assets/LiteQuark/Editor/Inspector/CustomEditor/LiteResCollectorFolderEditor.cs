@@ -29,10 +29,12 @@ namespace LiteQuark.Editor
         private void DrawFolder(string path)
         {
             EditorGUI.BeginChangeCheck();
-            var setting = ResCollectorSetting.GetOrCreateSetting();
-            var ignore = !EditorGUILayout.Toggle("Individual Bundle", !setting.IsIgnorePath(path));
+            var setting = ResCollectorSetting.LoadSetting();
+            var ignore = !EditorGUILayout.Toggle("Individual Bundle", setting == null || !setting.IsIgnorePath(path));
             if (EditorGUI.EndChangeCheck())
             {
+                setting = setting != null ? setting : ResCollectorSetting.CreateSetting();
+                Undo.RecordObject(setting, "Change Individual Bundle");
                 setting.SetIgnorePath(path, ignore);
                 EditorUtility.SetDirty(setting);
                 AssetDatabase.SaveAssetIfDirty(setting);

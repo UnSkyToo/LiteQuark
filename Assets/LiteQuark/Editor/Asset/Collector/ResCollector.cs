@@ -1,6 +1,6 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -14,15 +14,38 @@ namespace LiteQuark.Editor
         private readonly Dictionary<string, BundleInfo> _bundleInfoCache = new();
         private readonly Dictionary<string, string[]> _dependencyCache = new();
         private readonly Dictionary<string, string> _assetSourcePathMap = new(StringComparer.Ordinal);
-        private ResCollectorSetting _setting = null;
+        private readonly HashSet<string> _ignorePaths = new(StringComparer.Ordinal);
+        private readonly bool _useProjectSetting;
         private VersionPackInfo _packInfo = null;
         private int _bundleID = 1;
+
+        public ResCollector()
+        {
+            _useProjectSetting = true;
+        }
+
+        internal ResCollector(IEnumerable<string> ignorePaths)
+        {
+            _ignorePaths.UnionWith(ignorePaths ?? Array.Empty<string>());
+        }
+
+        internal IReadOnlyDictionary<string, string> GetAssetSourcePathsSnapshot()
+        {
+            // 清理或再次收集时，不影响已经交付的源路径快照。
+            return new ReadOnlyDictionary<string, string>(
+                new Dictionary<string, string>(_assetSourcePathMap, StringComparer.Ordinal));
+        }
 
         public VersionPackInfo GetVersionPackInfo(string version, BuildTarget target, bool hashMode, bool flatMode)
         {
             if (_packInfo == null)
             {
-                _setting = ResCollectorSetting.GetOrCreateSetting();
+                // 构建回调可以在收集前修改配置；本次收集开始后固定规则。
+                if (_useProjectSetting)
+                {
+                    _ignorePaths.Clear();
+                    _ignorePaths.UnionWith(ResCollectorSetting.LoadSetting()?.IgnorePathList ?? Enumerable.Empty<string>());
+                }
                 _bundleInfoCache.Clear();
                 _dependencyCache.Clear();
                 _assetSourcePathMap.Clear();
@@ -49,7 +72,6 @@ namespace LiteQuark.Editor
             _dependencyCache.Clear();
             _assetSourcePathMap.Clear();
             _bundleID = 1;
-            _setting = null;
             _packInfo = null;
         }
 
@@ -122,7 +144,6 @@ namespace LiteQuark.Editor
                     continue;
                 }
 
-                // assetList.Add(GetManifestAssetPath(assetKey));
                 assetList.Add(assetKey);
 
                 foreach (var dependency in GetDependencyList(sourcePath))
@@ -195,7 +216,7 @@ namespace LiteQuark.Editor
 
         private string GetRealBundlePathBySetting(string bundlePath)
         {
-            if (_setting.IgnorePathList.Count == 0)
+            if (_ignorePaths.Count == 0)
             {
                 return bundlePath;
             }
@@ -204,7 +225,7 @@ namespace LiteQuark.Editor
 
             while (!string.IsNullOrEmpty(bundlePath))
             {
-                if (_setting.IsIgnorePath(bundlePath))
+                if (_ignorePaths.Contains(bundlePath))
                 {
                     lastIndividualPath = PathUtils.GetParentPath(bundlePath);
                     bundlePath = lastIndividualPath;
@@ -234,11 +255,6 @@ namespace LiteQuark.Editor
 
             _assetSourcePathMap.Add(assetKey, sourcePath);
             return true;
-        }
-
-        private static string GetManifestAssetPath(string assetKey)
-        {
-            return AssetPath.TryGetRelativeToRoot(assetKey, LiteConst.AssetRootPath, out var relativePath) ? relativePath : assetKey;
         }
 
         internal string GetAssetSourcePath(string assetPath)
@@ -305,4 +321,3 @@ namespace LiteQuark.Editor
         }
     }
 }
-#endif

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace LiteQuark.Editor
@@ -41,13 +42,121 @@ namespace LiteQuark.Editor
                 Run("13 Ordinary packages directory collection and mapping", PackagesDirectory);
                 Run("14 BundleViewer builds both modes from real source paths", BundleViewerPaths);
                 Run("15 FlatMode build path collisions fail before Bundle build", FlatBuildCollision);
+                Run("16 Collection reads settings without creating assets", ReadOnlySettings);
+                Run("17 Simulate snapshot survives collector cleanup and task delivery", SimulateSnapshot);
+                new RegistrationSessions().Begin();
             }
-            catch (Exception ex) { Results.fatalError = ex.ToString(); }
-            finally
+            catch (Exception ex)
             {
-                Results.unityVersion = Application.unityVersion;
-                File.WriteAllText(Path.Combine(ReportRoot, "results.json"), JsonUtility.ToJson(Results, true));
-                EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
+                Results.fatalError = ex.ToString();
+                Finish();
+            }
+        }
+
+        private static void Finish()
+        {
+            Results.unityVersion = Application.unityVersion;
+            File.WriteAllText(Path.Combine(ReportRoot, "results.json"), JsonUtility.ToJson(Results, true));
+            EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
+        }
+
+        private sealed class RegistrationSessions
+        {
+            private readonly bool _optionsEnabled = EditorSettings.enterPlayModeOptionsEnabled;
+            private readonly EnterPlayModeOptions _options = EditorSettings.enterPlayModeOptions;
+            private readonly SceneSetup[] _scenes = EditorSceneManager.GetSceneManagerSetup();
+            private readonly Func<(VersionPackInfo PackInfo, IReadOnlyDictionary<string, string> AssetSourcePaths)> _source = SimulatePackSource.Collect;
+            private readonly List<(VersionPackInfo PackInfo, IReadOnlyDictionary<string, string> AssetSourcePaths)> _snapshots = new();
+            private double _deadline;
+            private bool _finished;
+
+            internal void Begin()
+            {
+                Active = new Case { name = "18 Simulate registration survives repeated Play Mode without Domain Reload" };
+                Results.cases.Add(Active);
+                EditorApplication.playModeStateChanged += OnPlayMode;
+                EditorApplication.update += Tick;
+                try
+                {
+                    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                    EditorSettings.enterPlayModeOptionsEnabled = true;
+                    EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload | EnterPlayModeOptions.DisableSceneReload;
+                    Enter();
+                }
+                catch (Exception ex) { Fail(ex); }
+            }
+
+            private void Enter()
+            {
+                _deadline = EditorApplication.timeSinceStartup + 60;
+                SimulatePackSource.Collect = null;
+                EditorApplication.EnterPlaymode();
+            }
+
+            private void OnPlayMode(PlayModeStateChange state)
+            {
+                try
+                {
+                    if (state == PlayModeStateChange.EnteredPlayMode)
+                    {
+                        Check(SimulatePackSource.Collect != null, "Entering Play Mode restores editor registration without Domain Reload.");
+                        var task = new LoadSimulateVersionPackTask();
+                        try
+                        {
+                            task.Execute();
+                            Check(task.State == TaskState.Succeeded && task.Result is VersionPackInfo pack && pack.IsValid && task.AssetSourcePaths != null,
+                                "The real registered collector produces a usable version task result in Play Mode.");
+                            _snapshots.Add(((VersionPackInfo)task.Result, task.AssetSourcePaths));
+                        }
+                        finally { task.Dispose(); }
+                        EditorApplication.ExitPlaymode();
+                    }
+                    else if (state == PlayModeStateChange.EnteredEditMode)
+                    {
+                        if (Active.failure != null) { End(); return; }
+                        if (_snapshots.Count < 2) { Enter(); return; }
+                        Check(!ReferenceEquals(_snapshots[0].PackInfo, _snapshots[1].PackInfo) &&
+                            !ReferenceEquals(_snapshots[0].AssetSourcePaths, _snapshots[1].AssetSourcePaths),
+                            "Repeated Play Mode creates independent manifest and path snapshots.");
+                        Active.passed = true;
+                        End();
+                    }
+                }
+                catch (Exception ex) { Fail(ex); }
+            }
+
+            private void Tick()
+            {
+                if (EditorApplication.timeSinceStartup > _deadline)
+                {
+                    Active.failure = "Play Mode registration validation timed out.";
+                    End();
+                }
+            }
+
+            private void Fail(Exception ex)
+            {
+                Active.failure = ex.ToString();
+                if (EditorApplication.isPlaying) EditorApplication.ExitPlaymode();
+                else End();
+            }
+
+            private void End()
+            {
+                if (_finished) return;
+                _finished = true;
+                EditorApplication.playModeStateChanged -= OnPlayMode;
+                EditorApplication.update -= Tick;
+                try
+                {
+                    EditorSettings.enterPlayModeOptionsEnabled = _optionsEnabled;
+                    EditorSettings.enterPlayModeOptions = _options;
+                    SimulatePackSource.Collect = _source;
+                    if (!EditorApplication.isPlaying && _scenes.Length > 0) EditorSceneManager.RestoreSceneManagerSetup(_scenes);
+                }
+                catch (Exception ex) { Active.passed = false; Active.failure += "\nCleanup: " + ex; }
+                Debug.Log("COLLECTOR_REVIEW " + (Active.passed ? "PASS " : "FAIL ") + Active.name);
+                Finish();
             }
         }
         private static void Run(string name, Action test)
@@ -89,14 +198,228 @@ namespace LiteQuark.Editor
         }
         private static ResCollector Collect(string folder, ResCollectorSetting setting = null)
         {
-            var collector = new ResCollector();
-            typeof(ResCollector).GetField("_setting", Private).SetValue(collector, setting ?? Setting());
+            var collector = new ResCollector(setting?.IgnorePathList ?? new List<string>());
             Call(collector, "CollectBundleInfo", new[] { typeof(string) }, folder);
             return collector;
         }
         private static BundleInfo[] Bundles(ResCollector collector) => Field<Dictionary<string, BundleInfo>>(collector, "_bundleInfoCache").Values.ToArray();
         private static BundleInfo Owner(ResCollector collector, string path) => Bundles(collector).Single(b => b.AssetList.Any(a => AssetPath.Resolve(a) == AssetPath.Resolve(path)));
         private static string BundlePath(object collector, string path) => (string)Call(collector, "GetBundlePathFromFullPath", new[] { typeof(string) }, path);
+
+        private static void ReadOnlySettings()
+        {
+            const string defaultPath = "Assets/Editor/ResSetting.asset";
+            const string alternatePath = Root + "/AlternateSetting.asset";
+            var saved = new Dictionary<string, byte[]>();
+            var settings = AssetDatabase.FindAssets("t:ResCollectorSetting").Select(AssetDatabase.GUIDToAssetPath).ToArray();
+            foreach (var path in settings)
+            {
+                saved.Add(path, File.ReadAllBytes(path));
+                saved.Add(path + ".meta", File.ReadAllBytes(path + ".meta"));
+            }
+            try
+            {
+                foreach (var path in settings) Check(AssetDatabase.DeleteAsset(path), "Temporarily remove isolated settings asset: " + path);
+                var before = AssetDatabase.GetAllAssetPaths().OrderBy(path => path).ToArray();
+                Check(ResCollectorSetting.LoadSetting() == null, "Missing configuration is represented by null, without a transient settings object.");
+                var buildPack = new ResCollector().GetVersionPackInfo("default", ValidationEnvironment.BundleTarget, false, false);
+                var simulate = SimulatePackSource.CreateSnapshot();
+                Check(buildPack.BundleList.Length == simulate.PackInfo.BundleList.Length && buildPack.BundleList.Length > 0,
+                    "Build and registered simulation collection both work with default rules and no settings asset.");
+                Check(before.SequenceEqual(AssetDatabase.GetAllAssetPaths().OrderBy(path => path)) &&
+                    !File.Exists(defaultPath) && !File.Exists(defaultPath + ".meta") && ResCollectorSetting.LoadSetting() == null,
+                    "Read-only settings lookup and both collection paths create no asset, meta or directory.");
+
+                var created = ResCollectorSetting.CreateSetting();
+                created.SetIgnorePath(Root + "/Grouping/Merged/Child", true);
+                EditorUtility.SetDirty(created);
+                AssetDatabase.SaveAssetIfDirty(created);
+                Check(File.Exists(defaultPath) && ReferenceEquals(created, ResCollectorSetting.LoadSetting()) &&
+                    ReferenceEquals(created, ResCollectorSetting.CreateSetting()), "Explicit editing creates and reuses one persisted settings asset.");
+                Check(AssetDatabase.MoveAsset(defaultPath, alternatePath) == string.Empty, "Move settings to a non-default project path.");
+                Check(ReferenceEquals(created, ResCollectorSetting.LoadSetting()), "Read-only lookup still finds settings outside the default path.");
+                CollectionRuleTiming(created);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(defaultPath);
+                AssetDatabase.DeleteAsset(alternatePath);
+                foreach (var pair in saved) File.WriteAllBytes(pair.Key, pair.Value);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        private sealed class CollectorRuleBuildCallback : IBuildCallback
+        {
+            internal ResCollectorSetting Setting;
+            internal string Folder;
+            internal bool AtProject;
+            internal int Changes;
+
+            public CollectorRuleBuildCallback() { }
+
+            public void PreProjectBuild(ProjectBuildConfig config)
+            {
+                if (AtProject) ChangeRule();
+            }
+
+            public void PreStepBuild(ProjectBuildConfig config, Type stepType, string stepName)
+            {
+                if (!AtProject && stepType == typeof(ResCollectInfoStep)) ChangeRule();
+            }
+
+            public void PostStepBuild(ProjectBuildConfig config, Type stepType, string stepName) { }
+            public void PostProjectBuild(ProjectBuildConfig config, ProjectBuildReport report) { }
+
+            private void ChangeRule()
+            {
+                // 自动发现的未配置实例不影响其他构建验证。
+                if (Setting == null) return;
+                Setting.SetIgnorePath(Folder, true);
+                Changes++;
+            }
+        }
+
+        private static void CollectionRuleTiming(ResCollectorSetting setting)
+        {
+            const string folder = Root + "/Grouping/Merged/Child";
+            const string sourcePath = folder + "/Other.asset";
+            var mergedBundle = AssetPath.NormalizeBundlePath(AssetPath.ToRootRelativePath(Root + "/Grouping/Merged")) + LiteConst.BundleFileExt;
+            var individualBundle = AssetPath.NormalizeBundlePath(AssetPath.ToRootRelativePath(folder)) + LiteConst.BundleFileExt;
+            foreach (var atProject in new[] { true, false })
+            {
+                setting.IgnorePathList.Clear();
+                var collector = new ResCollector();
+                var callback = new CollectorRuleBuildCallback { Setting = setting, Folder = folder, AtProject = atProject };
+                var builder = new ProjectBuilder();
+                var config = new ProjectBuildConfig(ValidationEnvironment.BundleTarget, PlayerSettings.bundleVersion,
+                    new ResBuildConfig { HashMode = false, FlatMode = false, CopyToStreamingAssets = false },
+                    new AppBuildConfig { Enable = false }, null);
+                typeof(ProjectBuilder).GetProperty("BuildConfig").SetValue(builder, config);
+                typeof(ProjectBuilder).GetProperty("Collector").SetValue(builder, collector);
+                typeof(ProjectBuilder).GetField("_buildCallbacks", Private).SetValue(builder, new IBuildCallback[] { callback });
+                // 执行真实构建回调和收集步骤，不执行项目设置、文件清理或发布步骤。
+                var report = (ProjectBuildReport)Call(builder, "Execute", new[] { typeof(IBuildStep[]) },
+                    (object)new IBuildStep[] { new ResCollectInfoStep() });
+                var stage = atProject ? "PreProjectBuild" : "PreStepBuild";
+                Check(report.IsSuccess && callback.Changes == 1 &&
+                    builder.Builds.Single(build => build.assetNames.Contains(sourcePath)).assetBundleName == mergedBundle,
+                    stage + " changes rules after Collector construction and affects the actual build mapping.");
+
+                var pack = collector.GetVersionPackInfo(config.Version, config.Target, false, false);
+                pack.Initialize();
+                setting.IgnorePathList.Clear();
+                Check(ReferenceEquals(pack, collector.GetVersionPackInfo(config.Version, config.Target, false, false)) &&
+                    pack.GetBundleInfoFromAssetPath(sourcePath).BundlePath == mergedBundle,
+                    "Configuration changes do not alter the cached manifest after " + stage + ".");
+                collector.CleanVersionPackInfo();
+                var refreshed = collector.GetVersionPackInfo(config.Version, config.Target, false, false);
+                refreshed.Initialize();
+                Check(!ReferenceEquals(pack, refreshed) && refreshed.GetBundleInfoFromAssetPath(sourcePath).BundlePath == individualBundle &&
+                    pack.GetBundleInfoFromAssetPath(sourcePath).BundlePath == mergedBundle,
+                    "After cleanup, default collection refreshes the rules without changing the previous manifest.");
+            }
+
+            var rules = new List<string> { folder };
+            var explicitCollector = new ResCollector(rules);
+            rules.Clear();
+            setting.SetIgnorePath(Root + "/Grouping/Merged", true);
+            var explicitPack = explicitCollector.GetVersionPackInfo("explicit", ValidationEnvironment.BundleTarget, false, false);
+            explicitPack.Initialize();
+            Check(explicitPack.GetBundleInfoFromAssetPath(sourcePath).BundlePath == mergedBundle,
+                "Explicit rules are copied on construction and ignore later input and project configuration changes.");
+            explicitCollector.CleanVersionPackInfo();
+            var explicitRefresh = explicitCollector.GetVersionPackInfo("explicit-next", ValidationEnvironment.BundleTarget, false, false);
+            explicitRefresh.Initialize();
+            Check(!ReferenceEquals(explicitPack, explicitRefresh) && explicitRefresh.GetBundleInfoFromAssetPath(sourcePath).BundlePath == mergedBundle,
+                "Cleaning an explicitly configured Collector preserves its supplied rules.");
+        }
+
+        private static void SimulateSnapshot()
+        {
+            var path = Root + "/Snapshot/MixedCase.asset";
+            var asset = Node(path);
+            var collector = new ResCollector(Array.Empty<string>());
+            var snapshot = (PackInfo: collector.GetVersionPackInfo("snapshot", ValidationEnvironment.BundleTarget, false, false),
+                AssetSourcePaths: collector.GetAssetSourcePathsSnapshot());
+            var key = AssetPath.Resolve(path);
+            var sources = Field<Dictionary<string, string>>(collector, "_assetSourcePathMap");
+            sources[key] = "Assets/Wrong.asset";
+            collector.CleanVersionPackInfo();
+            snapshot.PackInfo.Initialize();
+            var info = snapshot.PackInfo.GetBundleInfoFromAssetPath(path);
+            Check(snapshot.AssetSourcePaths[key] == path && info != null,
+                "Manifest and mixed-case source mapping survive changes to the collector dictionary and collector cleanup.");
+            var immutable = false;
+            try { ((IDictionary<string, string>)snapshot.AssetSourcePaths)[key] = "Assets/Wrong.asset"; }
+            catch (NotSupportedException) { immutable = true; }
+            Check(immutable, "Consumers cannot modify the published source mapping.");
+            var next = (PackInfo: collector.GetVersionPackInfo("next", ValidationEnvironment.BundleTarget, false, false),
+                AssetSourcePaths: collector.GetAssetSourcePathsSnapshot());
+            Check(!ReferenceEquals(snapshot.PackInfo, next.PackInfo) && !ReferenceEquals(snapshot.AssetSourcePaths, next.AssetSourcePaths) &&
+                snapshot.PackInfo.Version == "snapshot", "Recollection creates independent manifest and source snapshots.");
+
+            var original = SimulatePackSource.Collect;
+            LoadSimulateVersionPackTask versionTask = null;
+            LoadSimulateBundleTask bundleTask = null;
+            BaseTask assetTask = null;
+            IBundleResource resource = null;
+            try
+            {
+                var collections = 0;
+                SimulatePackSource.Collect = () => { collections++; return snapshot; };
+                var continuationSawData = false;
+                versionTask = new LoadSimulateVersionPackTask();
+                var awaiter = versionTask.Task.GetAwaiter();
+                awaiter.OnCompleted(() => continuationSawData =
+                    ReferenceEquals(awaiter.GetResult(), versionTask.Result) && ReferenceEquals(versionTask.AssetSourcePaths, snapshot.AssetSourcePaths));
+                Check(collections == 0 && versionTask.AssetSourcePaths == null, "Task construction does not collect or publish data.");
+                versionTask.Execute();
+                Check(collections == 1 && continuationSawData && ReferenceEquals(versionTask.Result, snapshot.PackInfo),
+                    "Version execution publishes the snapshot before completion and keeps VersionPackInfo as its Result.");
+                bundleTask = new LoadSimulateBundleTask(info, versionTask.AssetSourcePaths);
+                bundleTask.Execute();
+                bundleTask.Tick(0);
+                resource = bundleTask.GetBundle();
+                assetTask = resource.CreateLoadAssetTask<CollectorValidationAsset>(key, null);
+                assetTask.Execute();
+                assetTask.Tick(0);
+                Check(assetTask.State == TaskState.Succeeded && ReferenceEquals(assetTask.Result, asset),
+                    "Simulation loads the real mixed-case source using only the data snapshot after Collector cleanup.");
+                SimulatePackSource.Collect = null;
+                var rejected = false;
+                try { SimulatePackSource.CreateSnapshot(); }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("not registered")) { rejected = true; }
+                Check(rejected, "An absent editor registration reports a clear failure instead of silently using another backend.");
+                var incompleteSnapshots = new[]
+                {
+                    (PackInfo: (VersionPackInfo)null, snapshot.AssetSourcePaths),
+                    (snapshot.PackInfo, AssetSourcePaths: (IReadOnlyDictionary<string, string>)null)
+                };
+                foreach (var incomplete in incompleteSnapshots)
+                {
+                    SimulatePackSource.Collect = () => incomplete;
+                    rejected = false;
+                    try { SimulatePackSource.CreateSnapshot(); }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("incomplete snapshot")) { rejected = true; }
+                    Check(rejected, "An incomplete tuple is rejected before manifest or source data can be published.");
+                }
+                Check(typeof(ResCollector).Assembly.GetName().Name == "LiteQuark.Editor" &&
+                    typeof(ResCollectorSetting).Assembly.GetName().Name == "LiteQuark.Editor" &&
+                    typeof(SimulateBundleProvider).Assembly == typeof(VersionPackInfo).Assembly &&
+                    !typeof(VersionPackInfo).Assembly.GetTypes().Any(type => type.Namespace == "LiteQuark.Editor"),
+                    "Collector and settings belong to Editor; Simulate remains in Runtime without Editor namespace types.");
+            }
+            finally
+            {
+                SimulatePackSource.Collect = original;
+                assetTask?.Dispose();
+                resource?.Dispose();
+                bundleTask?.Dispose();
+                versionTask?.Dispose();
+                AssetDatabase.DeleteAsset(Root + "/Snapshot");
+            }
+        }
 
         private static void FlatBuildCollision()
         {
@@ -331,7 +654,6 @@ namespace LiteQuark.Editor
             collector.CleanVersionPackInfo();
             Check(Field<Dictionary<string, string>>(collector, "_assetSourcePathMap").Count == 0 && Bundles(collector).Length == 0 && Field<Dictionary<string, string[]>>(collector, "_dependencyCache").Count == 0, "Cleanup empties all collection dictionaries.");
             Check(Field<int>(collector, "_bundleID") == 1 && Field<VersionPackInfo>(collector, "_packInfo") == null, "Cleanup resets numbering and cached pack.");
-            typeof(ResCollector).GetField("_setting", Private).SetValue(collector, Setting());
             Call(collector, "CollectBundleInfo", new[] { typeof(string) }, Root + "/Reset");
             Check(collector.GetAssetSourcePath(path) == path && Bundles(collector).Length == 1, "Collector can collect again after cleanup.");
         }
@@ -404,12 +726,9 @@ namespace LiteQuark.Editor
             var pack = new VersionPackInfo("cycle", "windows", false, false, Bundles(collector));
             var actualCycles = AssetBundleDependencyValidator.FindUniqueCycles(pack);
             Check(actualCycles.Count > 0, "The produced Bundle graph contains the expected cross-Bundle cycle.");
-            var settingField = typeof(ResCollectorSetting).GetField("_setting", BindingFlags.Static | BindingFlags.NonPublic);
-            var previous = settingField.GetValue(null);
             try
             {
-                settingField.SetValue(null, Setting());
-                var publicCollector = new ResCollector();
+                var publicCollector = new ResCollector(Array.Empty<string>());
                 var rejected = false;
                 try { publicCollector.GetVersionPackInfo("cycle", ValidationEnvironment.BundleTarget, false, false); }
                 catch (InvalidOperationException ex) when (ex.Message.Contains("发现循环依赖")) { rejected = true; }
@@ -424,7 +743,6 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                settingField.SetValue(null, previous);
                 AssetDatabase.DeleteAsset(folder);
             }
             Check(!AssetDatabase.IsValidFolder(folder), "The intentional cycle fixture is removed before other suites collect the project.");

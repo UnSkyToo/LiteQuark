@@ -44,6 +44,9 @@ namespace LiteQuark.Editor
                 await ReleaseGates(gates); gates.Clear();
                 Check(await initialization, "Simulate initializes from project collection without a built version file.");
                 var pack = Get<VersionPackInfo>(provider, "_packInfo");
+                Check(ReferenceEquals(versionTask.Result, pack) &&
+                    versionTask.AssetSourcePaths[AssetPath.Resolve(EditorTextPath)] == EditorTextPath,
+                    "Awaiting initialization observes the matching manifest and source snapshot before any Bundle load.");
                 Check(!pack.HashMode && !pack.FlatMode && assets.GetVersion() == AppUtils.GetVersion() && assets.HasAsset(EditorTextPath) &&
                     !assets.HasAsset("Assets/LiteQuark/Runtime/Asset/AssetSystem.cs"),
                     "Simulate uses initialized logical manifest keys and rejects existing project files outside collection.");

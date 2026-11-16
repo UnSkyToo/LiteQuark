@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LiteQuark.Editor;
 using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
@@ -11,11 +10,11 @@ namespace LiteQuark.Runtime
     {
         private Dictionary<string, string> _sourcePaths = new(StringComparer.Ordinal);
 
-        public SimulateBundleResource(BundleInfo bundleInfo, ResCollector collector)
+        public SimulateBundleResource(BundleInfo bundleInfo, IReadOnlyDictionary<string, string> sourcePaths)
         {
             foreach (var assetKey in bundleInfo.AssetList)
             {
-                _sourcePaths.Add(assetKey, collector.GetAssetSourcePath(assetKey));
+                _sourcePaths.Add(assetKey, sourcePaths[assetKey]);
             }
         }
 

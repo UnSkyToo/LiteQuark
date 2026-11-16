@@ -205,8 +205,7 @@ namespace LiteQuark.Editor
             {
                 foreach (var path in files) { Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, path); }
                 AssetDatabase.Refresh();
-                var collector = new ResCollector();
-                typeof(ResCollector).GetField("_setting", flags).SetValue(collector, ScriptableObject.CreateInstance<ResCollectorSetting>());
+                var collector = new ResCollector(Array.Empty<string>());
                 var create = typeof(ResCollector).GetMethod("CreateBundleInfo", flags, null, new[] { typeof(string), typeof(string[]) }, null);
                 foreach (var path in files) create.Invoke(collector, new object[] { Path.GetDirectoryName(path).Replace('\\', '/'), new[] { path } });
                 var bundles = ((Dictionary<string, BundleInfo>)typeof(ResCollector).GetField("_bundleInfoCache", flags).GetValue(collector)).Values.ToArray();

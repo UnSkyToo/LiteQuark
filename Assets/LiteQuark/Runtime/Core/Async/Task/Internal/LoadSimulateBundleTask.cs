@@ -1,6 +1,6 @@
 #if UNITY_EDITOR
 using Cysharp.Threading.Tasks;
-using LiteQuark.Editor;
+using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
@@ -9,14 +9,14 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"SimulateBundle {_bundleInfo.BundlePath}";
 
         private readonly BundleInfo _bundleInfo;
-        private readonly ResCollector _collector;
+        private readonly IReadOnlyDictionary<string, string> _sourcePaths;
         private IBundleResource _resource;
         private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
-        public LoadSimulateBundleTask(BundleInfo bundleInfo, ResCollector collector)
+        public LoadSimulateBundleTask(BundleInfo bundleInfo, IReadOnlyDictionary<string, string> sourcePaths)
         {
             _bundleInfo = bundleInfo;
-            _collector = collector;
+            _sourcePaths = sourcePaths;
         }
 
         public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
 
         protected override void OnExecute()
         {
-            _resource = new SimulateBundleResource(_bundleInfo, _collector);
+            _resource = new SimulateBundleResource(_bundleInfo, _sourcePaths);
         }
 
         protected override void OnTick(float deltaTime)

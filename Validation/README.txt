@@ -54,6 +54,9 @@ Validation — 当前工作区的隔离 Unity 验证
   paths       路径组合、原生根目录、URI、StreamingAssets、文件操作与导航
   manifest    完整路径清单、依赖 ID、Hash/Flat 命名、重复身份和旧格式边界
   collector   Bundle 归属、共享依赖、循环、路径映射、设置资产与 Inspector、BundleViewer 和 Flat 冲突
+              配置只读查找与显式创建、默认规则、Collector 清理后的模拟快照隔离、不完整快照拒绝、程序集归属与版本任务交付
+              PreProjectBuild／PreStepBuild 修改分包规则、默认规则延迟读取与清理后刷新、显式规则副本保持、版本任务 await 续体的数据可见性
+              关闭 Domain Reload 后连续两次进入 Play Mode 的注册恢复与独立快照
   packages    真实 UPM 纹理、隐式/显式依赖打包及框架索引边界
   tasks       任务调度、终态与结果通知、异步等待的失败/取消传播、Runtime 初始化与关闭
   lifecycle   Handle/Lease、缓存、场景、取消、关闭、资源 Task 原生收尾、优先级和并发限制

@@ -376,7 +376,7 @@ for name in $selected; do
     case "$name" in
         paths) runner=PathValidationRunner; expected=16 ;;
         manifest) runner=ManifestValidationRunner; expected=13 ;;
-        collector) runner=CollectorValidationRunner; expected=15 ;;
+        collector) runner=CollectorValidationRunner; expected=18 ;;
         packages) runner=PackageValidationRunner; expected=1 ;;
         tasks) runner=TaskSystemValidationRunner; expected=38 ;;
         lifecycle) runner=AssetLifecycleValidationRunner; expected=148 ;;

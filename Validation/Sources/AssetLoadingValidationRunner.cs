@@ -165,8 +165,7 @@ namespace LiteQuark.Editor
                 new AssetBundleBuild { assetBundleName = SceneBundleC, assetNames = new[] { ProjectPath(SceneC) } }
             };
             // Use the actual collector and build mapping for the ordinary packages folder.
-            var packageCollector = new ResCollector();
-            Set(packageCollector, "_setting", ScriptableObject.CreateInstance<ResCollectorSetting>());
+            var packageCollector = new ResCollector(Array.Empty<string>());
             typeof(ResCollector).GetMethod("CreateBundleInfo", Private, null, new[] { typeof(string), typeof(string[]) }, null)
                 .Invoke(packageCollector, new object[] { Path.GetDirectoryName(ProjectPath(PackagesTextPath)).Replace('\\', '/'), new[] { ProjectPath(PackagesTextPath) } });
             foreach (var relative in SpecialTexts)

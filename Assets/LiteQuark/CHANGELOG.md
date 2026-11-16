@@ -30,6 +30,10 @@
 
 ### Asset
 
+- 调整：ResCollector 和 ResCollectorSetting 移回 LiteQuark.Editor 程序集，保留命名空间及脚本 GUID；Simulate 的 Provider、Task 和 Resource 继续位于 Runtime，通过 Editor 注册入口取得清单与独立源路径快照。
+- 修复：默认 Collector 在实际收集时取得配置快照，保留 PreProjectBuild／PreStepBuild 修改分包规则的行为；清理清单缓存后重新读取配置。模拟版本任务只通过任务结果交付清单，移除未使用的 callback 通道。
+- 行为变更：缺少收集配置时使用默认分包规则，Simulate、构建收集、Bundle Viewer 和文件夹 Inspector 的只读绘制不再自动创建 ResSetting.asset。依赖自动生成配置的工具需改为显式创建；现有配置无需重建，文件夹分包选项实际修改时仍会创建并保存配置。
+
 - 调整：本地、远端和模拟 Bundle Task 统一交付 IBundleResource；Provider 的清单和 Bundle 加载接口移除结果 callback，清单通过返回任务读取，Bundle 由 Loader.Tick 统一接收终态。依赖任务成功后到 Cache 收到结果之间可能多一次 Loader Tick；已交付缓存的命中行为不变。
 - 破坏：ILoadBundleTask 改为内部接口，GetBundle 返回 IBundleResource；任务结果观察不取得额外所有权。外部资源消费者继续使用 AssetSystem Handle API，不依赖内部 Bundle 任务。
 - 修复：Loader 关闭释放已成功但尚未交付的容器，释放失败时仍处理其他容器并等待原生收尾；已交付容器仍归 Cache，取消／失败的迟到原生结果仍归 Task。

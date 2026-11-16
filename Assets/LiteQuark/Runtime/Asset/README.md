@@ -139,7 +139,9 @@ AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选�
 
 BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
 
-编辑器中默认使用 `BundleMode = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。初始化通过 ResCollector 按当前 Editor 构建目标收集并初始化清单；资源必须被清单收录，读取时使用收集的真实源路径。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。缺少收集配置时仍沿用收集器创建 `Assets/Editor/ResSetting.asset` 的行为。
+编辑器中默认使用 `BundleMode = Simulate` 可复用真实 Bundle 的依赖持有、排队、缓存、Lease、Retention 和关闭流程，无需预先构建资源包。版本任务执行时通过 Editor 注册的收集入口，按当前构建目标取得清单和保留大小写的源路径快照；资源必须被清单收录。收录、分包和依赖是本次初始化的快照，修改这些内容后重新初始化。Simulate 的 Provider、Task 和 Resource 保留在 Runtime 并受 `UNITY_EDITOR` 保护，只消费快照，不依赖 Editor Collector 类型。
+
+收集配置优先读取 `Assets/Editor/ResSetting.asset`，不存在时查找项目中的 ResCollectorSetting；仍不存在则使用默认分包规则。Simulate、构建收集和 Bundle Viewer 均不会自动创建配置。只有实际修改文件夹 Inspector 的 Individual Bundle 选项或通过 Create 菜单明确创建配置时才写入资产。默认 Collector 在首次收集时读取并复制分包规则，因此构建前和收集步骤前的回调修改配置仍会生效；清单缓存期间不重新读取，清理缓存后再次收集时刷新规则。显式传入规则的 Collector 在构造时复制规则，清理缓存后也继续使用该副本。
 
 Provider 返回已提交到 Asset 组的任务，不通过结果 callback 交付。版本任务成功结果为已初始化的 VersionPackInfo；三种 Bundle 任务的 Result、await 结果和 GetBundle 均观察同一个 IBundleResource。Loader 在 Tick 中统一处理成功、失败和取消，随后向 Cache 交付；任务成功不代表 Cache 已接收，关闭时 Loader 释放所有未交付成功容器并等待原生收尾。
 

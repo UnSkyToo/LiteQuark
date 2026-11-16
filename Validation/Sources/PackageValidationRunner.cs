@@ -57,8 +57,7 @@ namespace LiteQuark.Editor
                 AssetDatabase.SaveAssets();
                 Check(AssetDatabase.GetDependencies(MaterialPath).Contains(PackageAsset), "GetDependencies reports the referenced package texture as Packages/... .");
                 var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-                var collector = new ResCollector();
-                typeof(ResCollector).GetField("_setting", flags).SetValue(collector, ScriptableObject.CreateInstance<ResCollectorSetting>());
+                var collector = new ResCollector(Array.Empty<string>());
                 typeof(ResCollector).GetMethod("CollectBundleInfo", flags).Invoke(collector, new object[] { Fixture });
                 var collected = ((Dictionary<string, BundleInfo>)typeof(ResCollector).GetField("_bundleInfoCache", flags).GetValue(collector)).Values.ToArray();
                 Check(collected.Length == 1 && collected[0].AssetList.Length == 1 &&
