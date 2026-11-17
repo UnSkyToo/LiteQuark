@@ -219,6 +219,7 @@ namespace LiteQuark.Editor
                     "RequestReleaseProbe failed:");
                 await Run("111 System close waits for retired Bundle cleanup", "native Bundle outlives logical failure and Loader retirement", ShutdownWaitsForRetiredBundle, "Load bundle failed");
                 await Run("112 System close releases retained asset and scene Handles", "real scene unload and cached Bundle dependencies", ShutdownReleasesHeldResources);
+                await Run("156 System close continues after Bundle release failure", "actual Cache leases and controlled final release failures", ShutdownContinuesAfterBundleReleaseFailure);
                 await Run("113 System close waits for cancelled native scene", "native loading, early task disposal and retained dependencies", ShutdownWaitsForNativeScene);
                 await Run("114 System close reports refused scene unload", "real last-scene refusal and retained Bundle", ShutdownReportsSceneRefusal,
                     "Start scene unload failed", "Unloading the last loaded scene");

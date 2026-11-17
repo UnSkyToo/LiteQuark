@@ -1936,6 +1936,64 @@ namespace LiteQuark.Editor
                 "System close waits for the earlier native cleanup and ends the other request without leaking its late Bundle.");
         }
 
+        private static async UniTask ShutdownContinuesAfterBundleReleaseFailure()
+        {
+            var infos = new[]
+            {
+                new BundleInfo(0, "parent.ab", Array.Empty<string>(), new[] { "dependency.ab" }),
+                new BundleInfo(1, "dependency.ab", Array.Empty<string>(), null),
+                new BundleInfo(2, "other.ab", Array.Empty<string>(), null),
+                new BundleInfo(3, "last.ab", Array.Empty<string>(), null)
+            };
+            foreach (var multipleFailures in new[] { false, true })
+            {
+                foreach (var order in new[] { new[] { 0, 1, 2, 3 }, new[] { 2, 3, 1, 0 } })
+                {
+                    var pack = new VersionPackInfo("release-failure", "windows", false, false, infos);
+                    pack.Initialize();
+                    var manager = new AssetManager();
+                    Set(manager, "_packInfo", pack);
+                    var caches = new Dictionary<string, AssetBundleCache>();
+                    var resources = new Dictionary<string, ReleaseProbeResource>();
+                    foreach (var index in order)
+                    {
+                        var info = infos[index];
+                        var cache = manager.GetOrCreateBundleCache(info.BundlePath);
+                        var resource = new ReleaseProbeResource
+                        {
+                            Error = index == 0 || (multipleFailures && index == 2)
+                                ? new InvalidOperationException("Controlled Bundle release failure: " + info.BundlePath) : null
+                        };
+                        caches.Add(info.BundlePath, cache);
+                        resources.Add(info.BundlePath, resource);
+                        typeof(AssetBundleCache).GetProperty(nameof(AssetBundleCache.Bundle)).SetValue(cache, resource);
+                        typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, null);
+                    }
+                    Get<List<AssetBundleCache.Lease>>(caches["parent.ab"], "_dependencyLeases")
+                        .Add(caches["dependency.ab"].AcquireLease());
+                    var expected = Get<Dictionary<string, AssetBundleCache>>(manager, "_bundleCacheMap").Values
+                        .Select(cache => resources[cache.BundlePath].Error).First(error => error != null);
+                    Exception actual = null;
+                    try { await manager.DisposeAsync(); } catch (Exception ex) { actual = ex; }
+                    Check(resources.Values.All(resource => resource.Disposals == 1),
+                        "Final close attempts every Bundle, including the failed parent's dependency and unrelated Bundles, before reporting failure.");
+                    Check(ReferenceEquals(actual, expected) && actual.StackTrace.Contains(nameof(ReleaseProbeResource)),
+                        "One or multiple release failures preserve the first original exception and its disposal stack in either registration order.");
+                    Check(caches.All(pair => resources[pair.Key].Error != null
+                        ? pair.Value.Stage == AssetCacheStage.Unloading && ReferenceEquals(pair.Value.Bundle, resources[pair.Key])
+                        : pair.Value.Stage == AssetCacheStage.Unloaded && pair.Value.Bundle == null),
+                        "Successful releases clear their containers; failures do not masquerade as successful disposal.");
+                    AssetLoadResult<IAssetLease<TextAsset>> rejected = null;
+                    manager.LoadAssetAsync<TextAsset>(TextPath, AssetLoadPriority.Normal, result => rejected = result);
+                    Check(rejected != null && !rejected.Succeeded,
+                        "Manager remains closed to new requests after final Bundle release fails.");
+                    await manager.DisposeAsync();
+                    Check(resources.Values.All(resource => resource.Disposals == 1),
+                        "Repeated Manager close does not retry the failed release or dispose successful containers again.");
+                }
+            }
+        }
+
         private static async UniTask ShutdownWaitsAfterCleanupFailure()
         {
             var h = New();
