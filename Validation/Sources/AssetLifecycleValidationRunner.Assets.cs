@@ -453,13 +453,12 @@ namespace LiteQuark.Editor
                 Check(h.Active == 1 && queued.Status == UniTaskStatus.Pending && !queuedServer.Accepted,
                     "A real HTTP transfer holds the only slot while another accepted request waits without sending.");
                 var shutdown = h.System.DisposeAsync().Preserve();
-                Check(shutdown.Status == UniTaskStatus.Pending && h.Active == 1,
-                    "Shutdown does not zero occupied slots or return before accepted operations exit.");
+                Check(shutdown.Status == UniTaskStatus.Succeeded && h.Active == 1,
+                    "Shutdown returns immediately while the accepted transfer still owns its slot.");
                 var rejected = false;
                 try { await h.Send(queuedServer.Url); }
                 catch (ObjectDisposedException) { rejected = true; }
                 Check(rejected, "A cached HttpClient rejects new requests during shutdown with ObjectDisposedException.");
-                await Wait(() => shutdown.Status.IsCompleted(), "Network shutdown with occupied and queued slots");
                 await shutdown;
                 Check(NetworkCancelled(await active) && NetworkCancelled(await queued) && h.Active == 0 && !queuedServer.Accepted,
                     "Both accepted calls finish cancelled, no queued request sends, and the slot count returns to zero without becoming negative.");
@@ -494,9 +493,9 @@ namespace LiteQuark.Editor
                     if (closeSystem)
                     {
                         var shutdown = h.System.DisposeAsync().Preserve();
-                        Check(shutdown.Status == UniTaskStatus.Pending && retry.Status == UniTaskStatus.Pending,
-                            "With no sending slot occupied, shutdown still waits for the accepted retry delay to observe cancellation on the main thread.");
-                        await Wait(() => shutdown.Status.IsCompleted(), "Shutdown drains cancelled retry delay");
+                        Check(shutdown.Status == UniTaskStatus.Succeeded && retry.Status == UniTaskStatus.Pending,
+                            "Shutdown returns before the retry delay observes cancellation on the main thread.");
+                        await Wait(() => retry.Status.IsCompleted(), "Retry observes shutdown while timeScale is zero");
                         await shutdown;
                     }
                     else
@@ -538,9 +537,8 @@ namespace LiteQuark.Editor
                 Check(batch.Status == UniTaskStatus.Pending && !servers[2].Accepted && !servers[3].Accepted,
                     "The first batch item completes while a second real request holds later groups back.");
                 var shutdown = h.System.DisposeAsync().Preserve();
-                await Wait(() => shutdown.Status.IsCompleted(), "Batch shutdown");
                 await shutdown;
-                Check(batch.Status == UniTaskStatus.Succeeded, "The batch has already completed when shutdown returns, without separate batch ownership accounting.");
+                Check(batch.Status == UniTaskStatus.Pending, "The caller can await its accepted batch after shutdown returns.");
                 var results = (Array)await batch;
                 Check(results.Length == 4 && NetworkProperty<bool>(results.GetValue(0), "IsSuccess") &&
                     NetworkProperty<NetworkPayload>(results.GetValue(0), "Data").Value == 7,
@@ -579,15 +577,14 @@ namespace LiteQuark.Editor
                     var shutdown = h.System.DisposeAsync().Preserve();
                     await UniTask.NextFrame();
                     await UniTask.NextFrame();
-                    Check(shutdown.Status == UniTaskStatus.Pending && send.Status == UniTaskStatus.Pending,
-                        "Shutdown waits for an already-entered asynchronous interceptor instead of claiming it was forcibly terminated.");
+                    Check(shutdown.Status == UniTaskStatus.Succeeded && send.Status == UniTaskStatus.Pending,
+                        "Shutdown completes while the entered interceptor remains suspended.");
                     gate.TrySetResult();
-                    await Wait(() => shutdown.Status.IsCompleted(), "Interceptor exits during shutdown");
                     await shutdown;
                     Check(NetworkCancelled(await send) && laterCallbacks == 0 && h.Active == 0 && server.Accepted == responseStage,
                         "After the interceptor exits, cancellation prevents remaining callbacks and, in OnRequest, prevents the first native send.");
                     Check(Get<System.Collections.ICollection>(h.Client, "_interceptors").Count == 0,
-                        "The closed client clears interceptor references only after accepted pipelines have drained.");
+                        "The closed client clears interceptor references even when an old pipeline resumes later.");
                 }
                 finally
                 {
@@ -616,7 +613,6 @@ namespace LiteQuark.Editor
                     await Wait(() => activeServer.BodyStarted, "File transfer response held mid-body");
                     var queued = Start(queuedServer.Url);
                     var shutdown = h.System.DisposeAsync().Preserve();
-                    await Wait(() => shutdown.Status.IsCompleted(), "File transfer shutdown");
                     await shutdown;
                     foreach (var request in new[] { active, queued })
                     {

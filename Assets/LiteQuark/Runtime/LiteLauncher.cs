@@ -92,7 +92,7 @@ namespace LiteQuark.Runtime
         {
             try
             {
-                LiteRuntime.Instance.Shutdown().Forget();
+                LiteRuntime.Instance.OnApplicationQuit();
             }
             catch (Exception ex)
             {

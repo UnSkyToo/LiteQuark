@@ -60,11 +60,11 @@ POST/PUT 的对象通过 LitJson 编码；泛型响应通过 `UnityEngine.JsonUt
 
 ## 生命周期
 
-Runtime 等待 `DisposeAsync()` 完成：关闭开始后拒绝新请求，取消重试延迟，停止排队及批处理的新发送，主动 Abort 在途传输，并等待已接受的发送和重试流程退出、释放 UnityWebRequest 和并发名额后清理客户端。`ActiveRequests` 只表示占用的名额，不能代替等待 DisposeAsync。
+`DisposeAsync()` 发出取消并立即完成。旧请求在恢复时终止传输并归还并发名额，排队和未发送的批次停止发送。`ActiveRequests` 在旧请求退出时归零。
 
 - 关闭开始后访问 `Http` 或通过已缓存的 HttpClient 发起请求，抛 `ObjectDisposedException`，包括空批处理；不要继续使用旧系统或客户端。
 - 关闭前已接受的普通请求、上传、重试和未完成的批处理项，以失败响应结束（`StatusCode = 0`）；下载抛 `OperationCanceledException`。批处理保留输入顺序和已经完成的结果；已交付响应不被改写。
-- 关闭等待已经进入的异步拦截器返回，不强行终止业务代码；返回后不继续发送或调用后续拦截器。拦截器不得等待本系统的关闭完成，否则会互相等待。关闭完成后不再调用进度 Report；IProgress 实现自己排队的业务通知不由框架撤销。
+- 已经进入的拦截器和调用方续体可能在重启后返回。框架阻止后续拦截器和发送；业务须避免旧续体或已排队的进度通知更新新会话。
 - Abort 只终止本地传输，不撤销服务端已经执行的写入。必须取得结果的请求应由业务在 Shutdown 前等待；必要的保存不要依赖应用退出时的跨帧关闭。
 
 `INetworkChannel`、`IProtocolCodec` 是扩展接口；仓库没有内置 TCP/WebSocket 通道实现。详见 [HttpClient.cs](Http/HttpClient.cs)、[请求](Http/HttpRequest.cs) 和 [响应](Http/HttpResponse.cs)。

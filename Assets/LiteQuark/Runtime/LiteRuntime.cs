@@ -29,9 +29,9 @@ namespace LiteQuark.Runtime
         private LiteSetting _setting = null;
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
+        private bool _quitRequested;
         private CancellationTokenSource _startupCts = null;
-        private UniTaskCompletionSource _initializationExited;
-        private bool _isTicking;
+        private UniTask<bool> _initialization;
 
         private RuntimeState _state = RuntimeState.Idle;
         internal RuntimeState State => _state;
@@ -54,92 +54,89 @@ namespace LiteQuark.Runtime
             IsDebugMode = Debug.isDebugBuild && _setting.Common.DebugMode;
             _enterBackgroundTime = 0.0f;
             _restartWhenNextFrame = false;
+            _quitRequested = false;
 
             Application.targetFrameRate = _setting.Common.TargetFrameRate;
             Input.multiTouchEnabled = _setting.Common.MultiTouch;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Random.InitState((int)System.DateTime.Now.Ticks);
 
-            _initializationExited = new UniTaskCompletionSource();
             _startupCts = new CancellationTokenSource();
             _state = RuntimeState.InitSystem;
 
-            StartupAsync(_startupCts.Token).Forget();
+            var ct = _startupCts.Token;
+            // Startup and an external shutdown can both await the same initialization.
+            _initialization = InitializeAsync(ct).ToAsyncLazy().Task;
+            CompleteStartupAsync(ct).Forget();
         }
 
-        private async UniTask StartupAsync(CancellationToken ct)
+        private async UniTask<bool> InitializeAsync(CancellationToken ct)
         {
-            var startupFailed = false;
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            if (!await SystemCenter.Instance.InitializeSystem(ct) || ct.IsCancellationRequested)
+            {
+                return false;
+            }
+            LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
 
+            _state = RuntimeState.InitLogic;
+            watch.Restart();
+            if (!await LogicCenter.Instance.InitializeLogic(ct) || ct.IsCancellationRequested)
+            {
+                return false;
+            }
+            LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
+            return true;
+        }
+
+        private async UniTask CompleteStartupAsync(CancellationToken ct)
+        {
+            bool ready;
             try
             {
-                var watch = new System.Diagnostics.Stopwatch();
-
-                _state = RuntimeState.InitSystem;
-                watch.Restart();
-                if (!await SystemCenter.Instance.InitializeSystem(ct))
-                {
-                    if (!ct.IsCancellationRequested)
-                    {
-                        startupFailed = true;
-                        EnterErrorState(FrameworkErrorCode.Startup);
-                    }
-
-                    return;
-                }
-
-                LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
-
-                if (ct.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                _state = RuntimeState.InitLogic;
-                watch.Restart();
-                if (!await LogicCenter.Instance.InitializeLogic(ct))
-                {
-                    if (!ct.IsCancellationRequested)
-                    {
-                        startupFailed = true;
-                        EnterErrorState(FrameworkErrorCode.Startup);
-                    }
-
-                    return;
-                }
-
-                LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
-
-                if (ct.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                _state = RuntimeState.Running;
-            }
-            catch (System.OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                // Shutdown triggered during startup, silently exit
+                ready = await _initialization;
             }
             catch (System.Exception ex)
             {
-                startupFailed = true;
-
-                LLog.Exception(ex);
-                EnterErrorState(FrameworkErrorCode.Startup);
-            }
-            finally
-            {
-                _initializationExited.TrySetResult();
-
-                if (startupFailed && _state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+                // An external shutdown observes the original disposal exception itself.
+                if (!ct.IsCancellationRequested)
                 {
-                    await Shutdown();
+                    _state = RuntimeState.ShutdownFailed;
+                    LLog.Exception(ex);
                 }
+                return;
+            }
+
+            _initialization = default;
+            if (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            if (ready)
+            {
+                _state = RuntimeState.Running;
+                return;
+            }
+
+            LiteUtils.SafeInvoke(EnterErrorState, FrameworkErrorCode.Startup);
+            if (!ct.IsCancellationRequested)
+            {
+                await Shutdown();
             }
         }
 
-        public async UniTask Shutdown()
+        public UniTask Shutdown() => Shutdown(false);
+
+        internal void OnApplicationQuit()
+        {
+            _quitRequested = true;
+            if (_state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+            {
+                Shutdown(true).Forget();
+            }
+        }
+
+        private async UniTask Shutdown(bool atFrameBoundary)
         {
             if (_state == RuntimeState.Idle)
             {
@@ -158,12 +155,11 @@ namespace LiteQuark.Runtime
             {
                 _startupCts?.Cancel();
 
-                if (_initializationExited != null)
+                if (!atFrameBoundary)
                 {
-                    await _initializationExited.Task;
+                    await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
                 }
-
-                await UniTask.NextFrame();
+                await FinishAtFrameBoundary(_initialization.AsUniTask());
 
                 await LogicCenter.Instance.DisposeAsync();
                 await SystemCenter.Instance.DisposeAsync();
@@ -193,7 +189,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
-            if (_state == RuntimeState.ShutdownFailed)
+            if (_state is RuntimeState.Idle or RuntimeState.Error or RuntimeState.ShutdownFailed)
             {
                 return;
             }
@@ -231,27 +227,21 @@ namespace LiteQuark.Runtime
 
             LiteTime.DeltaTime = tickDeltaTime;
 
-            _isTicking = true;
-            try
+            SystemCenter.Instance.Tick(tickDeltaTime);
+            if (_state == RuntimeState.Running)
             {
-                SystemCenter.Instance.Tick(tickDeltaTime);
-
-                if (_state == RuntimeState.Running)
-                {
-                    LogicCenter.Instance.Tick(tickDeltaTime);
-                }
-            }
-            finally
-            {
-                _isTicking = false;
+                LogicCenter.Instance.Tick(tickDeltaTime);
             }
         }
 
-        internal async UniTask WaitForTickExitAsync()
+        internal static async UniTask FinishAtFrameBoundary(UniTask task)
         {
-            while (_isTicking)
+            var pending = task.Status == UniTaskStatus.Pending;
+            await task;
+            if (pending)
             {
-                await UniTask.NextFrame();
+                // A Timer or Task tick may have resumed this continuation inline.
+                await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             }
         }
 
@@ -273,8 +263,11 @@ namespace LiteQuark.Runtime
         private async UniTask RestartRuntime()
         {
             Debug.ClearDeveloperConsole();
-            await Shutdown();
-            Startup(Launcher, _setting);
+            await Shutdown(true);
+            if (!_quitRequested)
+            {
+                Startup(Launcher, _setting);
+            }
         }
 
         public void OnEnterForeground()

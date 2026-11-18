@@ -41,13 +41,13 @@ public sealed class GameLogic : ILogic
 
 正常启动为 `Idle → InitSystem → InitLogic → Running`，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `ILogic.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
 
-Runtime 统一管理已注册 System 和 Logic 的生命周期。对象创建成功即纳入清理，初始化成功后才参与正常更新和服务查询。初始化返回 false 或抛异常时报告启动错误，并清理已创建对象；清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间请求关闭，会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
+Runtime 统一管理已注册 System 和 Logic 的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。当前实例释放成功后，Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间请求关闭，会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
 
-`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待 Logic，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，清理异常进入 ShutdownFailed。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止正常 Logic 更新，系统推进不受 IsPause 和业务时间缩放阻挡；已完成释放的对象不再被 Center 更新。ShutdownFailed 停止 Runtime 对所有 System 和 Logic 的 Tick；如果失败发生在某个系统的 Tick 内，该调用返回后停止推进后续系统。尚未成功释放的对象保留用于诊断，Unity 原生操作和 UniTask 续体仍按各自机制执行。
+`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待 Logic，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，释放已发布或未发布实例抛异常时进入 ShutdownFailed，停止更新并拒绝再次关闭或启动。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止正常 Logic 更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
 
 业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。System 和 Logic 的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
 
-Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。Idle、InitSystem、InitLogic、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
+Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。如果重启期间收到应用退出通知，旧系统继续关闭，完成后停在 Idle。Idle、InitSystem、InitLogic、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
 
 等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。Asset 的在途加载和场景卸载等限制仍以[模块指南](Runtime/Asset/README.md)为准，当前不承诺任意加载状态下的安全即时重启。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 

@@ -9,8 +9,6 @@ namespace LiteQuark.Runtime
         public NetworkSystemSetting Setting { get; set; }
 
         private int _activeRequests = 0;
-        // Includes slot waiters and retry delays.
-        private int _pendingOperations;
         private readonly CancellationTokenSource _shutdownCts = new();
         private HttpClient _httpClient;
 
@@ -24,16 +22,12 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
-        public async UniTask DisposeAsync()
+        public UniTask DisposeAsync()
         {
             _shutdownCts.Cancel();
-            while (_pendingOperations > 0)
-            {
-                await UniTask.Yield();
-            }
-
             _httpClient?.ClearInterceptors();
             _httpClient = null;
+            return UniTask.CompletedTask;
         }
 
         public HttpClient Http => IsClosing ? throw new ObjectDisposedException(nameof(NetworkSystem)) : _httpClient;
@@ -53,17 +47,6 @@ namespace LiteQuark.Runtime
             {
                 throw new ObjectDisposedException(nameof(NetworkSystem));
             }
-        }
-
-        internal void BeginOperation()
-        {
-            ThrowIfClosing();
-            _pendingOperations++;
-        }
-
-        internal void EndOperation()
-        {
-            _pendingOperations--;
         }
 
         internal void ThrowIfCancellationRequested(CancellationToken cancellationToken = default)

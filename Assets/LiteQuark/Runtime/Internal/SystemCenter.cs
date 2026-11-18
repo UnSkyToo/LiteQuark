@@ -7,133 +7,108 @@ namespace LiteQuark.Runtime
 {
     internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, IDisposeAsync
     {
-        private readonly List<ISystem> _addList = new();
         private readonly List<ISystem> _systemList = new();
-        private readonly List<ISystem> _ownedSystems = new();
         private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new();
 
         private SystemCenter()
         {
         }
 
-        public async UniTask DisposeAsync()
-        {
-            await UnInitializeSystem();
-        }
-
         public void Tick(float deltaTime)
         {
-            ProcessAddList();
-
-            foreach (var system in _systemList)
+            // Completing an initialization inside Tick can append newly published systems.
+            var count = _systemList.Count;
+            for (var i = 0; i < count && i < _systemList.Count; i++)
             {
-                if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShutdownFailed)
+                if (LiteRuntime.Instance.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed)
                 {
                     break;
                 }
 
-                if (!_ownedSystems.Contains(system))
-                {
-                    continue;
-                }
-
-                if (system is ITick tickSys)
+                if (_systemList[i] is ITick tickSys)
                 {
                     tickSys.Tick(deltaTime);
                 }
             }
         }
 
-        private void ProcessAddList()
-        {
-            if (_addList.Count > 0)
-            {
-                foreach (var system in _addList)
-                {
-                    _systemList.Add(system);
-                }
-
-                _addList.Clear();
-            }
-        }
-
         internal async UniTask<bool> InitializeSystem(CancellationToken ct = default)
         {
-            if (_ownedSystems.Count > 0)
+            ISystem unpublished = null;
+            try
             {
-                throw new System.InvalidOperationException("Previous systems have not been disposed.");
+                foreach (var assemblyQualifiedName in GetAllSystemList())
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    var systemType = System.Type.GetType(assemblyQualifiedName);
+                    if (systemType == null)
+                    {
+                        throw new System.Exception($"cannot find system class type : {assemblyQualifiedName}");
+                    }
+
+                    unpublished = System.Activator.CreateInstance(systemType) as ISystem;
+                    if (unpublished == null)
+                    {
+                        throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
+                    }
+
+                    LLog.Info("Initialize {0}", assemblyQualifiedName);
+                    TryInjectSetting(unpublished);
+                    var initialized = await unpublished.Initialize();
+                    if (ct.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    if (!initialized)
+                    {
+                        LLog.Error("Initialize {0} failed", assemblyQualifiedName);
+                        return false;
+                    }
+
+                    _systemTypeMap.Add(systemType, unpublished);
+                    _systemList.Add(unpublished);
+                    unpublished = null;
+                }
+
+                return !ct.IsCancellationRequested;
             }
-
-            var systemList = GetAllSystemList();
-
-            foreach (var assemblyQualifiedName in systemList)
+            catch (System.OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                if (ct.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                var systemType = System.Type.GetType(assemblyQualifiedName);
-                if (systemType == null)
-                {
-                    throw new System.Exception($"cannot find system class type : {assemblyQualifiedName}");
-                }
-
-                if (System.Activator.CreateInstance(systemType) is not ISystem system)
-                {
-                    throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
-                }
-
-                _ownedSystems.Add(system);
-
-                LLog.Info("Initialize {0}", assemblyQualifiedName);
-
-                TryInjectSetting(system);
-
-                var result = await system.Initialize();
-
-                if (ct.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                if (!result)
-                {
-                    LLog.Error("Initialize {0} failed", assemblyQualifiedName);
-                    return false;
-                }
-
-                _addList.Add(system);
-                _systemTypeMap.Add(system.GetType(), system);
+                return false;
             }
-
-            return !ct.IsCancellationRequested;
+            catch (System.Exception ex)
+            {
+                LLog.Exception(ex);
+                return false;
+            }
+            finally
+            {
+                if (unpublished != null)
+                {
+                    await unpublished.DisposeAsync();
+                }
+            }
         }
 
-        internal async UniTask UnInitializeSystem()
+        public async UniTask DisposeAsync()
         {
-            await LiteRuntime.Instance.WaitForTickExitAsync();
-
-            while (_ownedSystems.Count > 0)
+            while (_systemList.Count > 0)
             {
-                var index = _ownedSystems.Count - 1;
-                var system = _ownedSystems[index];
-
-                await system.DisposeAsync();
-
-                _ownedSystems.RemoveAt(index);
-
-                var systemType = system.GetType();
-                if (_systemTypeMap.TryGetValue(systemType, out var registeredSystem) && ReferenceEquals(registeredSystem, system))
-                {
-                    _systemTypeMap.Remove(systemType);
-                }
-
-                await LiteRuntime.Instance.WaitForTickExitAsync();
-
-                _addList.Remove(system);
-                _systemList.Remove(system);
+                var index = _systemList.Count - 1;
+                var system = _systemList[index];
+                _systemList.RemoveAt(index);
+                await LiteRuntime.FinishAtFrameBoundary(DisposeSystem(system));
             }
+        }
+
+        private async UniTask DisposeSystem(ISystem system)
+        {
+            await system.DisposeAsync();
+            _systemTypeMap.Remove(system.GetType());
         }
 
         public T GetSystem<T>() where T : ISystem

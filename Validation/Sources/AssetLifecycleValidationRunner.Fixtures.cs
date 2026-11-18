@@ -533,20 +533,6 @@ namespace LiteQuark.Editor
             }
         }
 
-        private sealed class RestartDisposeFailure : CancellationTokenSource
-        {
-            internal readonly Exception Error = new InvalidOperationException("Injected restart fixture shutdown Dispose failure");
-            internal int Disposals;
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-                if (!disposing) return;
-                Disposals++;
-                throw Error;
-            }
-        }
-
         private static RestartFixture _restartFixture;
 
         private sealed class RestartSystemProbe : ISystem

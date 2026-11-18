@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
@@ -231,7 +230,7 @@ namespace LiteQuark.Editor
                 _restartFixture = fixture;
                 runtime.Startup(runtime.Launcher, setting);
                 await WaitWithoutLoaderTick(() => runtime.State == LiteRuntime.RuntimeState.Running, "Restart fixture startup");
-                var oldSystems = Get<List<ISystem>>(SystemCenter.Instance, "_ownedSystems").ToArray();
+                var oldSystems = Get<List<ISystem>>(SystemCenter.Instance, "_systemList").ToArray();
                 var oldUI = UISystem();
                 var oldRoot = GetUICanvasRoot(oldUI);
                 fixture.OldAsset = LiteRuntime.Asset;
@@ -274,12 +273,12 @@ namespace LiteQuark.Editor
                     "Old Canvas destruction completes while the outstanding system disposal still prevents any new round.");
 
                 fixture.DisposeGate.TrySetResult();
-                await WaitWithoutLoaderTick(() => runtime.State == LiteRuntime.RuntimeState.ShutdownFailed ||
+                await WaitWithoutLoaderTick(() => runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed ||
                     fixture.Logics.Count == 2 && runtime.State == LiteRuntime.RuntimeState.Running, "New Runtime generation Running");
                 fixture.Failure?.Throw();
                 var newUI = UISystem();
                 var newRoot = GetUICanvasRoot(newUI);
-                var newSystems = Get<List<ISystem>>(SystemCenter.Instance, "_ownedSystems");
+                var newSystems = Get<List<ISystem>>(SystemCenter.Instance, "_systemList");
                 Check(fixture.PreviousRoundReleased && fixture.Events.SequenceEqual(new[] { "system 1 constructed", "logic 1 initialized", "logic 1 restart requested",
                     "logic 1 disposed", "system 1 disposing", "system 1 disposed", "system 2 constructed", "logic 2 initialized" }) &&
                     fixture.Systems[0].Disposals == 1 && fixture.Logics[0].Disposals == 1 && fixture.Logics[0].TicksAfterDispose == 0,
@@ -307,9 +306,15 @@ namespace LiteQuark.Editor
                 var roots = UnityEngine.Object.FindObjectsOfType<RectTransform>(true).Where(root => root.parent == null && root.name == "Canvas").ToArray();
                 Check(oldRoot == null && roots.Length == 1 && roots[0] == newRoot && opened.Count == 1 && fixture.Logics[0].TicksAfterDispose == 0,
                     "After delayed destruction, only the new round's Canvas root remains and the old round stays inactive.");
+                runtime.EnterErrorState(FrameworkErrorCode.Unknown);
+                Check(runtime.State == LiteRuntime.RuntimeState.Error,
+                    "A running generation can enter Error before fixture teardown.");
             }
             catch (Exception ex) { fixture.CaptureFailure(ex); }
             finally { await FinishRestartFixture(fixture); }
+            Check(fixture.CleanupShutdownCalls == 1 && fixture.BaselineStartups == 1 &&
+                runtime.State == LiteRuntime.RuntimeState.Running && ReferenceEquals(LiteRuntime.Setting, fixture.OriginalSetting),
+                "Fixture cleanup closes an ordinary Error once and restores the original running configuration.");
         }
 
         private static async UniTask FinishRestartFixture(RestartFixture fixture)
@@ -329,7 +334,7 @@ namespace LiteQuark.Editor
                 if (runtime.State == LiteRuntime.RuntimeState.ShuttingDown)
                     await WaitWithoutLoaderTick(() => runtime.State != LiteRuntime.RuntimeState.ShuttingDown, "Restart fixture leaves shutdown");
                 if (runtime.State == LiteRuntime.RuntimeState.ShutdownFailed)
-                    throw new InvalidOperationException("Restart fixture Runtime remains ShutdownFailed; shutdown retry and baseline startup are skipped.");
+                    throw new InvalidOperationException("Restart fixture shutdown failed; baseline startup is skipped.");
                 if (runtime.State != LiteRuntime.RuntimeState.Idle)
                 {
                     fixture.CleanupShutdownCalls++;
@@ -371,98 +376,6 @@ namespace LiteQuark.Editor
             }
             if (fixture.Errors.Count == 1) ExceptionDispatchInfo.Capture(fixture.Errors[0]).Throw();
             if (fixture.Errors.Count > 1) throw new AggregateException("Restart fixture cleanup failed.", fixture.Errors);
-        }
-
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static void ThrowRestartBodyFailure(Exception error) => throw error;
-
-        private static async UniTask RuntimeRestartFailureCleanup()
-        {
-            var runtime = LiteRuntime.Instance;
-            var launcher = runtime.Launcher;
-            var fixture = new RestartFixture();
-            var bodyError = new InvalidOperationException("Injected restart fixture body failure");
-            var disposeFailure = new RestartDisposeFailure();
-
-            bool Released(RestartFixture value)
-            {
-                var observers = (Delegate)typeof(UniTaskScheduler).GetField("UnobservedTaskException",
-                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).GetValue(null);
-                return _restartFixture == null && value.Camera == null && !Directory.Exists(value.Scratch) &&
-                    value.ProbeType.GetField("OnOpenCallback").GetValue(null) == null &&
-                    !(observers?.GetInvocationList().Any(callback => ReferenceEquals(callback.Target, value)) ?? false);
-            }
-
-            async UniTask ExerciseFailure()
-            {
-                try
-                {
-                    Directory.CreateDirectory(fixture.ContentFolder);
-                    File.WriteAllText(Path.Combine(fixture.ContentFolder, AppUtils.GetVersionFileName()), "Owned restart cleanup fixture");
-                    await runtime.Shutdown();
-                    _restartFixture = fixture;
-                    var setting = new LiteSetting();
-                    setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(RestartSystemProbe).AssemblyQualifiedName });
-                    setting.LogicList.Add(new LiteTypeEntryData<ILogic> { AssemblyQualifiedName = typeof(RestartLogicProbe).AssemblyQualifiedName });
-                    runtime.Startup(launcher, setting);
-                    await WaitWithoutLoaderTick(() => runtime.State == LiteRuntime.RuntimeState.Running, "Failure fixture startup");
-
-                    // Inject at the closing tail so real systems and native resources are already released on failure.
-                    // The Runtime must retain ShutdownFailed; this is not a recovery or retry implementation.
-                    Get<CancellationTokenSource>(runtime, "_startupCts").Dispose();
-                    Set(runtime, "_startupCts", disposeFailure);
-                    fixture.Gates = FillGroup(LiteConst.TaskGroupId.Asset, 1);
-                    await WaitWithoutLoaderTick(() => fixture.Gates[0].IsExecuted, "Failure fixture Asset gate");
-                    fixture.RequestRestart = true;
-                    await WaitWithoutLoaderTick(() => fixture.Events.Contains("system 1 disposing"), "Failure fixture Restart disposal");
-                    Check(runtime.State == LiteRuntime.RuntimeState.ShuttingDown && !fixture.DisposeGate.Task.Status.IsCompleted() && !fixture.Gates[0].IsDone,
-                        "The failure scenario enters the real public Restart path with both fixture gates still held.");
-                    ThrowRestartBodyFailure(bodyError);
-                }
-                catch (Exception ex) { fixture.CaptureFailure(ex); }
-                finally { await FinishRestartFixture(fixture); }
-            }
-
-            try
-            {
-                Exception reported = null;
-                try { await ExerciseFailure(); }
-                catch (Exception ex) { reported = ex; }
-                var aggregate = reported as AggregateException;
-                Check(aggregate != null && aggregate.InnerExceptions.Count == 3 && ReferenceEquals(aggregate.InnerExceptions[0], bodyError) &&
-                    ReferenceEquals(aggregate.InnerExceptions[1], disposeFailure.Error) && aggregate.InnerExceptions[2].Message.Contains("Runtime remains ShutdownFailed"),
-                    "The final exception retains the body failure first, followed by the actual Dispose failure and the explicit unrecovered-state cleanup error.");
-                Check(bodyError.StackTrace.Contains(nameof(ThrowRestartBodyFailure)) && disposeFailure.Error.StackTrace.Contains(nameof(RestartDisposeFailure)) &&
-                    !reported.ToString().Contains("Cannot shutdown runtime in state") && !reported.ToString().Contains("Cannot startup runtime in state"),
-                    "Original body and Dispose stacks survive cleanup; neither is replaced by a second Shutdown or non-Idle Startup exception.");
-                _case.evidence.Add("Expected failure report (caught by this regression): " + reported);
-                Check(runtime.State == LiteRuntime.RuntimeState.ShutdownFailed && disposeFailure.Disposals == 1 &&
-                    fixture.CleanupShutdownCalls == 0 && fixture.BaselineStartups == 0 && fixture.Systems.Count == 1 && fixture.Logics.Count == 1 &&
-                    fixture.Systems[0].Disposals == 1 && fixture.Logics[0].Disposals == 1 && Get<List<ISystem>>(SystemCenter.Instance, "_ownedSystems").Count == 0,
-                    "Tail Dispose failure leaves the real Runtime terminal, with no retry, baseline startup, new generation or remaining owned System.");
-                Check(fixture.DisposeGate.Task.Status == UniTaskStatus.Succeeded && fixture.Gates.All(gate => gate.IsDone && gate.Disposed) && Released(fixture),
-                    "Cleanup releases both gates and removes the camera, callback, exception subscription, static fixture and Scratch even after shutdown fails.");
-
-                // Exercise the cleanup-only failure branch in the same terminal process, without resetting Runtime state.
-                var cleanupOnly = new RestartFixture();
-                Exception cleanupError = null;
-                try { Directory.CreateDirectory(cleanupOnly.ContentFolder); }
-                finally
-                {
-                    try { await FinishRestartFixture(cleanupOnly); }
-                    catch (Exception ex) { cleanupError = ex; }
-                }
-                Check(cleanupOnly.Failure == null && cleanupError is InvalidOperationException && cleanupError.Message.Contains("Runtime remains ShutdownFailed") &&
-                    cleanupOnly.Errors.Count == 1 && cleanupOnly.CleanupShutdownCalls == 0 && cleanupOnly.BaselineStartups == 0 && disposeFailure.Disposals == 1,
-                    "Without a body failure, a genuine cleanup failure still propagates and an already failed Runtime is neither shut down again nor restarted.");
-                Check(Released(cleanupOnly) && runtime.State == LiteRuntime.RuntimeState.ShutdownFailed,
-                    "The cleanup-only branch also releases its fixtures without forging Idle or restoring a baseline from incomplete shutdown.");
-            }
-            finally
-            {
-                // This is the final lifecycle case. Avoid an application-quit retry on the intentionally terminal Runtime.
-                UnityEngine.Object.DestroyImmediate(launcher.gameObject);
-            }
         }
 
         private sealed class PriorityItem

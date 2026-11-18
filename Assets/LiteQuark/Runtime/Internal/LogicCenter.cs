@@ -7,7 +7,6 @@ namespace LiteQuark.Runtime
     internal sealed class LogicCenter : Singleton<LogicCenter>, ITick, IDisposeAsync
     {
         private readonly List<ILogic> _logicList = new();
-        private readonly List<ILogic> _ownedLogics = new();
 
         private LogicCenter()
         {
@@ -15,95 +14,78 @@ namespace LiteQuark.Runtime
 
         public async UniTask DisposeAsync()
         {
-            await UnInitializeLogic();
+            foreach (var logic in _logicList)
+            {
+                await LiteRuntime.FinishAtFrameBoundary(logic.DisposeAsync());
+            }
+            _logicList.Clear();
         }
 
         public void Tick(float deltaTime)
         {
             foreach (var logic in _logicList)
             {
-                if (!_ownedLogics.Contains(logic))
-                {
-                    continue;
-                }
-
                 logic.Tick(deltaTime);
             }
         }
 
         internal async UniTask<bool> InitializeLogic(CancellationToken ct = default)
         {
-            if (_ownedLogics.Count > 0)
+            ILogic unpublished = null;
+            try
             {
-                throw new System.InvalidOperationException("Previous logic objects have not been disposed.");
+                foreach (var logicEntry in LiteRuntime.Setting.LogicList)
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    if (logicEntry.Disabled)
+                    {
+                        continue;
+                    }
+
+                    unpublished = TypeUtils.CreateEntryInstance(logicEntry);
+                    if (unpublished == null)
+                    {
+                        throw new System.InvalidOperationException($"Cannot create logic: {logicEntry.AssemblyQualifiedName}");
+                    }
+
+                    LLog.Info("Initialize {0} logic", logicEntry.AssemblyQualifiedName);
+                    var initialized = await unpublished.Initialize();
+                    if (ct.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+                    if (!initialized)
+                    {
+                        LLog.Error("Initialize {0} failed", logicEntry.AssemblyQualifiedName);
+                        return false;
+                    }
+
+                    _logicList.Add(unpublished);
+                    unpublished = null;
+                }
+
+                return !ct.IsCancellationRequested;
             }
-
-            foreach (var logicEntry in LiteRuntime.Setting.LogicList)
+            catch (System.OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                if (ct.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                if (logicEntry.Disabled)
-                {
-                    continue;
-                }
-
-                var logic = TypeUtils.CreateEntryInstance(logicEntry);
-                if (logic == null)
-                {
-                    throw new System.InvalidOperationException($"Cannot create logic: {logicEntry.AssemblyQualifiedName}");
-                }
-
-                _ownedLogics.Add(logic);
-
-                LLog.Info("Initialize {0} logic", logicEntry.AssemblyQualifiedName);
-
-                var result = await logic.Initialize();
-                if (ct.IsCancellationRequested)
-                {
-                    return false;
-                }
-
-                if (!result)
-                {
-                    LLog.Error("Initialize {0} failed", logicEntry.AssemblyQualifiedName);
-                    return false;
-                }
-
-                _logicList.Add(logic);
+                return false;
             }
-
-            return !ct.IsCancellationRequested;
-        }
-
-        internal async UniTask UnInitializeLogic()
-        {
-            await LiteRuntime.Instance.WaitForTickExitAsync();
-
-            for (var index = _ownedLogics.Count - 1; index >= 0; index--)
+            catch (System.Exception ex)
             {
-                var logic =  _ownedLogics[index];
-                if (!_logicList.Contains(logic))
+                LLog.Exception(ex);
+                return false;
+            }
+            finally
+            {
+                if (unpublished != null)
                 {
-                    await DisposeOwnedLogic(logic);
+                    await unpublished.DisposeAsync();
                 }
             }
-
-            while (_ownedLogics.Count > 0)
-            {
-                await DisposeOwnedLogic(_ownedLogics[0]);
-            }
-        }
-
-        private async UniTask DisposeOwnedLogic(ILogic logic)
-        {
-            await logic.DisposeAsync();
-            _ownedLogics.Remove(logic);
-
-            await LiteRuntime.Instance.WaitForTickExitAsync();
-            _logicList.Remove(logic);
         }
     }
 }
