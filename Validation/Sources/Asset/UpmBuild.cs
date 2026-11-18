@@ -9,75 +9,46 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal static class PackageValidationRunner
+    internal sealed class UpmBuild : EditorValidation
     {
         private const string PackageAsset = "Packages/com.unity.ai.navigation/Gizmos/NavMeshSurface Icon.png";
         private const string Fixture = "Assets/StandaloneAssets/__PackageValidationRunner20261022";
         private const string MaterialPath = Fixture + "/Probe.mat";
         private static string Root => Directory.GetParent(Application.dataPath).Parent.FullName;
-        private static readonly Result Report = new();
-        [Serializable] private sealed class Result
+        internal static void Validate()
         {
-            public string name = "UPM dependencies and path boundary";
-            public string unityVersion;
-            public int checks;
-            public bool passed;
-            public string failure;
-            public string packageAssetPath;
-            public List<string> evidence = new();
-        }
-        private static void Check(bool condition, string evidence)
-        {
-            Report.checks++;
-            if (!condition) throw new Exception(evidence);
-            Report.evidence.Add(evidence);
-        }
-        public static void Begin()
-        {
-            var reports = ValidationEnvironment.Reports("packages");
-            Directory.CreateDirectory(reports);
-            try
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(PackageAsset);
+            Check(texture != null, "AssetDatabase loads an actual package Texture2D using its Packages/... path.");
+            var packageAssetPath = AssetDatabase.GetAssetPath(texture);
+            Check(packageAssetPath == PackageAsset, "GetAssetPath returns the logical Packages/... path, not PackageCache's disk path.");
+            Directory.CreateDirectory(Fixture);
+            AssetDatabase.Refresh();
+            var material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
+            if (material == null)
             {
-                var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(PackageAsset);
-                Check(texture != null, "AssetDatabase loads an actual package Texture2D using its Packages/... path.");
-                Report.packageAssetPath = AssetDatabase.GetAssetPath(texture);
-                Check(Report.packageAssetPath == PackageAsset, "GetAssetPath returns the logical Packages/... path, not PackageCache's disk path.");
-                Directory.CreateDirectory(Fixture);
-                AssetDatabase.Refresh();
-                var material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
-                if (material == null)
-                {
-                    var shader = Shader.Find("Unlit/Texture");
-                    if (shader == null) throw new Exception("Fixture shader unavailable.");
-                    material = new Material(shader);
-                    AssetDatabase.CreateAsset(material, MaterialPath);
-                }
-                material.mainTexture = texture;
-                EditorUtility.SetDirty(material);
-                AssetDatabase.SaveAssets();
-                Check(AssetDatabase.GetDependencies(MaterialPath).Contains(PackageAsset), "GetDependencies reports the referenced package texture as Packages/... .");
-                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-                var collector = new ResCollector(Array.Empty<string>());
-                typeof(ResCollector).GetMethod("CollectBundleInfo", flags).Invoke(collector, new object[] { Fixture });
-                var collected = ((Dictionary<string, BundleInfo>)typeof(ResCollector).GetField("_bundleInfoCache", flags).GetValue(collector)).Values.ToArray();
-                Check(collected.Length == 1 && collected[0].AssetList.Length == 1 &&
-                    !collected.SelectMany(b => b.AssetList).Any(p => p.StartsWith("packages/", StringComparison.OrdinalIgnoreCase)),
-                    "Current collector explicitly records the material but filters the package dependency out of its own AssetList.");
-                ProbeBundles(texture.width, texture.height);
-                ProbeManifest();
-                var rootRelativeKey = AssetPath.Resolve(PackageAsset);
-                Check(rootRelativeKey == (LiteConst.AssetRootPath + "/" + PackageAsset).ToLowerInvariant(), "Package-looking public input is interpreted under the Assets resource root, never as the real UPM asset.");
-                Check(AssetDatabase.LoadAssetAtPath<Texture2D>(rootRelativeKey) == null, "The mapped resource-root counterpart is absent even though the real UPM texture exists.");
-                Report.passed = true;
+                var shader = Shader.Find("Unlit/Texture");
+                if (shader == null) throw new Exception("Fixture shader unavailable.");
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, MaterialPath);
             }
-            catch (Exception ex) { Report.failure = ex.ToString(); Debug.LogException(ex); }
-            finally
-            {
-                Report.unityVersion = Application.unityVersion;
-                File.WriteAllText(Path.Combine(reports, "results.json"), JsonUtility.ToJson(Report, true));
-                EditorApplication.Exit(Report.passed ? 0 : 2);
-            }
+            material.mainTexture = texture;
+            EditorUtility.SetDirty(material);
+            AssetDatabase.SaveAssets();
+            Check(AssetDatabase.GetDependencies(MaterialPath).Contains(PackageAsset), "GetDependencies reports the referenced package texture as Packages/... .");
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var collector = new ResCollector(Array.Empty<string>());
+            typeof(ResCollector).GetMethod("CollectBundleInfo", flags).Invoke(collector, new object[] { Fixture });
+            var collected = ((Dictionary<string, BundleInfo>)typeof(ResCollector).GetField("_bundleInfoCache", flags).GetValue(collector)).Values.ToArray();
+            Check(collected.Length == 1 && collected[0].AssetList.Length == 1 &&
+                !collected.SelectMany(b => b.AssetList).Any(p => p.StartsWith("packages/", StringComparison.OrdinalIgnoreCase)),
+                "Current collector explicitly records the material but filters the package dependency out of its own AssetList.");
+            ProbeBundles(texture.width, texture.height);
+            ProbeManifest();
+            var rootRelativeKey = AssetPath.Resolve(PackageAsset);
+            Check(rootRelativeKey == (LiteConst.AssetRootPath + "/" + PackageAsset).ToLowerInvariant(), "Package-looking public input is interpreted under the Assets resource root, never as the real UPM asset.");
+            Check(AssetDatabase.LoadAssetAtPath<Texture2D>(rootRelativeKey) == null, "The mapped resource-root counterpart is absent even though the real UPM texture exists.");
         }
+
         private static void ProbeBundles(int width, int height)
         {
             var implicitRoot = Path.Combine(Root, "Bundles", "package-probe-implicit");

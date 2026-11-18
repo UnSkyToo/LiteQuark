@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -34,13 +33,10 @@ namespace LiteQuark.Editor
         private const BuildAssetBundleOptions FilenameFlags =
             BuildAssetBundleOptions.DisableLoadAssetByFileName |
             BuildAssetBundleOptions.DisableLoadAssetByFileNameWithExtension;
-        private const string PrefabA = RelativeRoot + "/Prefabs/A/Same.prefab";
-        private const string PrefabB = RelativeRoot + "/Prefabs/B/Same.prefab";
         private const string SceneA = RelativeRoot + "/Scenes/A/Battle.unity";
         private const string SceneB = RelativeRoot + "/Scenes/B/Battle.unity";
         private const string SceneC = RelativeRoot + "/Scenes/C/OtherBattle.unity";
         private const string TextBundle = RelativeRoot + "/text.ab";
-        private const string PrefabBundle = RelativeRoot + "/prefabs.ab";
         private const string SceneBundle = RelativeRoot + "/scenes/a.ab";
         private const string SceneBundleB = RelativeRoot + "/scenes/b.ab";
         private const string SceneBundleC = RelativeRoot + "/scenes/c.ab";
@@ -50,37 +46,17 @@ namespace LiteQuark.Editor
         private static string Reports => ValidationEnvironment.Reports("loading");
         private static string Bundles => Path.Combine(Root, "Bundles", "loading");
         private static string ControlBundles => Path.Combine(Root, "Bundles", "loading-control");
-        private static readonly Result Report = new();
+        private static readonly ValidationReport Report = new();
         private static readonly List<string> Errors = new();
-        private static Case Active;
+        private static ValidationCase Active;
         private static EnvironmentContext Context;
         private static bool Running;
         private const string SceneCollisionId = "UNITY-SAME-NAME-SCENE-BUNDLES";
-        private const string NativeCollisionCase = "17 Native same-name Bundle collision diagnostic";
+        private const string NativeCollisionCase = "loading/same-name-native";
 
         private sealed class KnownSceneCollisionException : Exception
         {
             internal KnownSceneCollisionException() : base("Unity rejects concurrent Bundles containing same-name scenes; confirmed separately by the native diagnostic.") { }
-        }
-
-        [Serializable] private sealed class Result
-        {
-            public string unityVersion;
-            public string finishedUtc;
-            public string fatalError;
-            public List<Case> cases = new();
-        }
-        [Serializable] private sealed class Case
-        {
-            public string name;
-            public bool passed;
-            public string status;
-            public string limitationId;
-            public bool diagnostic;
-            public int assertions;
-            public string failure;
-            public List<string> evidence = new();
-            public List<string> errors = new();
         }
 
         public static void Begin()
@@ -122,7 +98,7 @@ namespace LiteQuark.Editor
         private static string ProjectPath(string input) => input.StartsWith("Assets/", StringComparison.Ordinal) ? input : "Assets/StandaloneAssets/" + input;
         private static void BuildFixtures()
         {
-            foreach (var folder in new[] { "Text/A", "Text/B", "Prefabs/A", "Prefabs/B", "Scenes/A", "Scenes/B", "Scenes/C" })
+            foreach (var folder in new[] { "Text/A", "Text/B", "Scenes/A", "Scenes/B", "Scenes/C" })
                 Directory.CreateDirectory(Fixture + "/" + folder);
             Directory.CreateDirectory(Path.GetDirectoryName(Outside));
             Directory.CreateDirectory(Bundles);
@@ -139,13 +115,6 @@ namespace LiteQuark.Editor
             File.WriteAllText(ProjectPath(ProbePath), ProbeContent);
             File.WriteAllText(Outside, "outside-root");
             AssetDatabase.Refresh();
-            foreach (var pair in new[] { (PrefabA, "prefab-A"), (PrefabB, "prefab-B") })
-            {
-                var go = new GameObject(pair.Item2);
-                new GameObject(pair.Item2).transform.SetParent(go.transform);
-                PrefabUtility.SaveAsPrefabAsset(go, ProjectPath(pair.Item1));
-                UnityEngine.Object.DestroyImmediate(go);
-            }
             foreach (var pair in new[] { (SceneA, "marker-A"), (SceneB, "marker-B"), (SceneC, "marker-C") })
             {
                 var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -156,32 +125,15 @@ namespace LiteQuark.Editor
             var host = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             EditorSceneManager.SaveScene(host, Fixture + "/Host.unity");
             AssetDatabase.SaveAssets();
+            var textFiles = new[] { ProjectPath(TextA), ProjectPath(TextB), Outside, ProjectPath(ProbePath), ProjectPath(PackagesTextPath) }
+                .Concat(SpecialTexts.Select(ProjectPath)).ToArray();
             var builds = new[]
             {
-                new AssetBundleBuild { assetBundleName = TextBundle, assetNames = new[] { ProjectPath(TextA), ProjectPath(TextB), Outside, ProjectPath(ProbePath) } },
-                new AssetBundleBuild { assetBundleName = PrefabBundle, assetNames = new[] { ProjectPath(PrefabA), ProjectPath(PrefabB) } },
+                new AssetBundleBuild { assetBundleName = TextBundle, assetNames = textFiles },
                 new AssetBundleBuild { assetBundleName = SceneBundle, assetNames = new[] { ProjectPath(SceneA) } },
                 new AssetBundleBuild { assetBundleName = SceneBundleB, assetNames = new[] { ProjectPath(SceneB) } },
                 new AssetBundleBuild { assetBundleName = SceneBundleC, assetNames = new[] { ProjectPath(SceneC) } }
             };
-            // Use the actual collector and build mapping for the ordinary packages folder.
-            var packageCollector = new ResCollector(Array.Empty<string>());
-            typeof(ResCollector).GetMethod("CreateBundleInfo", Private, null, new[] { typeof(string), typeof(string[]) }, null)
-                .Invoke(packageCollector, new object[] { Path.GetDirectoryName(ProjectPath(PackagesTextPath)).Replace('\\', '/'), new[] { ProjectPath(PackagesTextPath) } });
-            foreach (var relative in SpecialTexts)
-                typeof(ResCollector).GetMethod("CreateBundleInfo", Private, null, new[] { typeof(string), typeof(string[]) }, null)
-                    .Invoke(packageCollector, new object[] { Path.GetDirectoryName(ProjectPath(relative)).Replace('\\', '/'), new[] { ProjectPath(relative) } });
-            var packageBundles = Get<Dictionary<string, BundleInfo>>(packageCollector, "_bundleInfoCache").Values.ToArray();
-            for (var i = 0; i < packageBundles.Length; i++) packageBundles[i].BundleID = 6 + i;
-            var packagePack = new VersionPackInfo("package-probe", "windows", false, false, packageBundles);
-            var packageBuilder = new ProjectBuilder();
-            typeof(ProjectBuilder).GetProperty("Collector").SetValue(packageBuilder, packageCollector);
-            typeof(ResCollectInfoStep).GetMethod("CollectAssetBundleBuilds", Private)
-                .Invoke(new ResCollectInfoStep(), new object[] { packageBuilder, packagePack });
-            if (!packageBundles.Any(b => b.AssetList.Contains(ProjectPath(PackagesTextPath).ToLowerInvariant())) ||
-                !packageBuilder.Builds.SelectMany(b => b.assetNames).Contains(ProjectPath(PackagesTextPath)))
-                throw new Exception("Unexpected packages collection or source mapping.");
-            builds = builds.Concat(packageBuilder.Builds).ToArray();
             var buildOptions = new ResBuildConfig().Options;
             var manifest = BuildPipeline.BuildAssetBundles(Bundles, builds, buildOptions, ValidationEnvironment.BundleTarget);
             if (manifest == null) throw new Exception("Fixture Bundle build failed.");
@@ -199,14 +151,9 @@ namespace LiteQuark.Editor
                 mainOptions = buildOptions.ToString(), mainValue = (int)buildOptions,
                 controlOptions = controlOptions.ToString(), controlValue = (int)controlOptions
             }, true));
-            var pack = new VersionPackInfo("path-validation", "windows", false, false, new[]
-            {
-                new BundleInfo(1, TextBundle, new[] { ProjectPath(TextA).ToLowerInvariant(), ProjectPath(TextB).ToLowerInvariant(), Outside.ToLowerInvariant(), ProjectPath(ProbePath).ToLowerInvariant() }, null),
-                new BundleInfo(2, PrefabBundle, new[] { ProjectPath(PrefabA).ToLowerInvariant(), ProjectPath(PrefabB).ToLowerInvariant() }, null),
-                new BundleInfo(3, SceneBundle, new[] { ProjectPath(SceneA).ToLowerInvariant() }, null),
-                new BundleInfo(4, SceneBundleB, new[] { ProjectPath(SceneB).ToLowerInvariant() }, null),
-                new BundleInfo(5, SceneBundleC, new[] { ProjectPath(SceneC).ToLowerInvariant() }, null)
-            }.Concat(packageBundles).ToArray());
+            var pack = new VersionPackInfo("path-validation", AppUtils.GetCurrentPlatformName(), false, false,
+                builds.Select((build, index) => new BundleInfo(index + 1, build.assetBundleName,
+                    build.assetNames.Select(AssetPath.ResolveProjectAssetPath).ToArray(), null)).ToArray());
             File.WriteAllBytes(Path.Combine(Reports, "version.bytes"), pack.ToBinaryData());
             File.WriteAllText(Path.Combine(Reports, "fixture-assets.json"), JsonUtility.ToJson(new FixturePaths { assets = builds.SelectMany(b => b.assetNames).ToArray() }, true));
             BuildLegacySettingsFixtures();
@@ -243,6 +190,35 @@ namespace LiteQuark.Editor
             public int controlValue;
         }
 
+        private static async UniTask Address()
+        {
+            await PathRules();
+            foreach (var simulate in new[] { false, true })
+            {
+                var env = await New(simulate);
+                var first = env.Asset<TextAsset>(TextA);
+                var alias = env.Asset<TextAsset>(ProjectPath(TextA).ToUpperInvariant());
+                var other = env.Asset<TextAsset>(TextB);
+                var packages = env.Asset<TextAsset>(PackagesTextPath);
+                var outside = env.Asset<TextAsset>(Outside);
+                Check(AssetDatabase.LoadAssetAtPath<Texture2D>(UpmTexturePath) != null, "UPM texture exists outside the resource index.");
+                var upm = env.Asset<Texture2D>(UpmTexturePath);
+                await Wait(() => first.IsDone && other.IsDone && alias.IsDone && packages.IsDone && outside.IsDone && upm.IsDone, "Public asset addresses");
+                Check(first.Result.text == "text-A" && other.Result.text == "text-B" && alias.Result == first.Result,
+                    "Same filenames use their full paths and aliases share an asset.");
+                Check(packages.Result.text == "ordinary-packages-folder" && upm.Result == null && !env.Assets.HasAsset(UpmTexturePath),
+                    "Only the collected packages directory is public.");
+                Check(simulate ? outside.Result == null : outside.Result.text == "outside-root", "Root-external access follows the active manifest.");
+                foreach (var relative in SpecialTexts)
+                {
+                    var item = env.Asset<TextAsset>(ProjectPath(relative));
+                    await Wait(() => item.IsDone, "Full manifest path");
+                    Check(item.Result.text == "full-path:" + relative, "Exact full key resolves " + relative);
+                }
+                await Cleanup();
+            }
+        }
+
         private static async UniTask RunAll()
         {
             Application.logMessageReceived += Capture;
@@ -250,42 +226,34 @@ namespace LiteQuark.Editor
             {
                 new GameObject("AssetPathValidationLauncher").AddComponent<LiteLauncher>();
                 await Wait(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Running, "Runtime startup");
-                await Run("01 Path normalization and invalid input", PathRules);
-                await Run("02 Full-path version file and public lookup", Manifest);
-                await Run("03 Bundle same-name assets and independent instances", BundleNames);
-                await Run("04 Bundle aliases, typed cache and retention", BundleAliases);
-                await Run("05 Preload deduplication and failed canonical paths", Preload);
-                await Run("06 Invalid requests start no Bundle work", InvalidRequests);
-                await Run("07 Root-external resource explicit path", OutsideRoot);
-                await Run("08 Bundle same-name scenes in different folders", () => DifferentScenes(false));
-                await Run("09 Bundle alias guard and sequential instances", () => SceneInstances(false), "Scene is already loading");
-                await Run("10 Bundle scene cancellation and release", SceneCancellation);
-                await Run("11 Simulate assets and path aliases", EditorAssets);
-                await Run("12 Simulate same-name scenes in different folders", () => DifferentScenes(true));
-                await Run("13 Simulate alias guard and sequential instances", () => SceneInstances(true), "Scene is already loading");
-                await Run("15 Scene lookup failure does not poison retry", MissingScene);
-                await Run("16 Bundle distinct-name scenes load concurrently", () => DifferentScenes(false, true));
+                await Run("loading/address", Address);
+                await Run("loading/scene-paths", async () =>
+                {
+                    await DifferentScenes(true);
+                    await Cleanup();
+                    await DifferentScenes(false, true);
+                });
+                await Run("loading/builtin", BuiltInLocation);
+                await Run("loading/remote", RemoteUriComposition, "VersionPack is invalid");
+                await Run("loading/backend-init", async () =>
+                {
+                    await DefaultOptions();
+                    await InitializationFailure((BundleLoadMode)byte.MaxValue, "https://example.invalid/", typeof(ArgumentException));
+                    await InitializationFailure(BundleLoadMode.Remote, "http://[", typeof(UriFormatException));
+                });
+                await Run("loading/filename-flags", async () =>
+                {
+                    await LookupProbe(false);
+                    await LookupProbe(true);
+                });
+                await Run("loading/same-name-limit", () => DifferentScenes(false));
                 await Run(NativeCollisionCase, NativeCollision);
-                await Run("18 Default modes, Player selection and filename flags", DefaultOptions);
-                await Run("19 Synchronous full-path versus filename lookup with control", () => LookupProbe(false));
-                await Run("20 Asynchronous full-path versus filename lookup with control", () => LookupProbe(true));
-                await Run("21 Collected packages path loads through Bundle public API", () => PackagesFolderLoad(false));
-                await Run("22 Packages aliases load through Simulate public API", () => PackagesFolderLoad(true));
-                await Run("23 Existing UPM texture is not a Bundle fallback", () => UpmNotSupported(false));
-                await Run("24 Existing UPM texture is not a Simulate fallback", () => UpmNotSupported(true));
-                await Run("25 Full manifest paths load assets directories and default resources", FullManifestResources);
-                await Run("26 BuiltIn locator preserves override and persistent priority", BuiltInLocation);
-                await Run("27 Remote URI configuration and version query composition", RemoteUriComposition);
-                await Run("28 Invalid mode initialization fails through its returned task",
-                    () => InitializationFailure((BundleLoadMode)byte.MaxValue, "https://example.invalid/", typeof(ArgumentException)));
-                await Run("29 Invalid Remote URI initialization fails through its returned task",
-                    () => InitializationFailure(BundleLoadMode.Remote, "http://[", typeof(UriFormatException)));
             }
             catch (Exception ex) { Report.fatalError = ex.ToString(); }
             finally
             {
                 Application.logMessageReceived -= Capture;
-                var diagnostic = Report.cases.SingleOrDefault(c => c.name == NativeCollisionCase);
+                var diagnostic = Report.cases.SingleOrDefault(c => c.id == NativeCollisionCase);
                 foreach (var item in Report.cases.Where(c => c.status == "pending_known_limitation"))
                 {
                     if (diagnostic != null && diagnostic.passed)
@@ -307,8 +275,9 @@ namespace LiteQuark.Editor
 
         private static async UniTask Run(string name, Func<UniTask> test, params string[] expectedErrors)
         {
-            Active = new Case { name = name, diagnostic = name == NativeCollisionCase };
+            Active = new ValidationCase { id = name, diagnostic = name == NativeCollisionCase };
             Report.cases.Add(Active);
+            var start = Time.realtimeSinceStartup;
             Errors.Clear();
             try { await test(); Active.passed = true; }
             catch (KnownSceneCollisionException ex) { Active.status = "pending_known_limitation"; Active.failure = ex.ToString(); }
@@ -324,6 +293,7 @@ namespace LiteQuark.Editor
                 if (unexpected.Length > 0) { Active.passed = false; Active.status = "failed"; Active.failure += "\nUnexpected: " + string.Join("\n", unexpected); }
                 if (Active.status != "pending_known_limitation")
                     Active.status = Active.passed ? (Active.diagnostic ? "diagnostic_passed" : "passed") : "failed";
+                Active.seconds = Time.realtimeSinceStartup - start;
                 Debug.Log("ASSET_PATH_VALIDATION " + Active.status + " " + name);
                 Save();
                 Active = null;
@@ -335,9 +305,7 @@ namespace LiteQuark.Editor
         }
         private static void Check(bool condition, string evidence)
         {
-            Active.assertions++;
-            if (!condition) throw new Exception(evidence);
-            Active.evidence.Add(evidence);
+            Active.Check(condition, evidence);
         }
         private static void Throws(Action action, string evidence)
         {
@@ -345,13 +313,7 @@ namespace LiteQuark.Editor
             catch (ArgumentException) { Check(true, evidence); return; }
             Check(false, evidence);
         }
-        private static void Save()
-        {
-            Directory.CreateDirectory(Reports);
-            Report.unityVersion = Application.unityVersion;
-            Report.finishedUtc = DateTime.UtcNow.ToString("O");
-            File.WriteAllText(Path.Combine(Reports, "results.json"), JsonUtility.ToJson(Report, true));
-        }
+        private static void Save() => Report.Save("loading");
         private static async UniTask Frame()
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
@@ -421,7 +383,30 @@ namespace LiteQuark.Editor
                 setting.BundleRemoteUri = previousUri;
                 setting.DisableUnityWebCache = previousCache;
             }
-            Active.evidence.Add("No version or remote Bundle task was started; all remote URI assertions are offline.");
+            var packBytes = File.ReadAllBytes(Path.Combine(Reports, "version.bytes"));
+            using var versionServer = new BundleHttpServer(packBytes);
+            versionServer.ReleaseBody();
+            var origin = new Uri(versionServer.Url).GetLeftPart(UriPartial.Authority);
+            var versionTask = new RemoteBundleProvider(origin + "/content?token=a%2Bb#part").LoadVersionPack("version file.txt");
+            await Wait(() => versionTask.IsDone && versionServer.Work.IsCompleted, "Loopback version response");
+            Check(versionTask.Result is VersionPackInfo received && received.IsValid &&
+                versionServer.RequestLine.Contains("/content/version%20file.txt?token=a%2Bb&" + versionQuery),
+                "Server received the escaped version request and returned a usable manifest.");
+
+            using var bundleServer = new BundleHttpServer(File.ReadAllBytes(Path.Combine(Bundles, TextBundle)));
+            bundleServer.ReleaseBody();
+            var remote = new RemoteBundleProvider(new Uri(bundleServer.Url).GetLeftPart(UriPartial.Authority)) { DisableUnityWebCache = true };
+            var download = remote.LoadBundle(TextBundle, string.Empty);
+            await Wait(() => ((BaseTask)download).IsDone, "Loopback Bundle response");
+            try { Check(download.GetBundle() != null && bundleServer.RequestLine.Contains(TextBundle), "Remote provider extracts the requested native Bundle."); }
+            finally { download.GetBundle()?.Dispose(); }
+
+            var invalidBytes = System.Text.Encoding.UTF8.GetBytes("{\"IsValid\":false,\"BundleList\":[]}");
+            using var invalid = new BundleHttpServer(LiteConst.SecurityMode ? SecurityUtils.EncryptBytes(invalidBytes, LiteConst.SecurityKey) : invalidBytes);
+            invalid.ReleaseBody();
+            var failed = new RemoteBundleProvider(new Uri(invalid.Url).GetLeftPart(UriPartial.Authority)).LoadVersionPack("invalid.txt");
+            await Wait(() => failed.IsDone, "Invalid version response");
+            Check(failed.State == TaskState.Failed && failed.Error != null, "Invalid version content fails the returned task.");
         }
 
         private static async UniTask BuiltInLocation()
@@ -566,7 +551,6 @@ namespace LiteQuark.Editor
             try
             {
                 await Wait(() => Context.Loading == 0, "Pending scene requests settle");
-                for (var i = 0; i < 8; i++) await Frame();
                 await Wait(() => FixtureScenes().Length == 0, "Handle-owned scene cleanup");
                 Check(true, "All fixture scenes unloaded through production ownership.");
             }
@@ -603,79 +587,7 @@ namespace LiteQuark.Editor
             Throws(() => AssetPath.ResolveScene(TextA), "Scene extension is required.");
             return UniTask.CompletedTask;
         }
-        private static UniTask Manifest()
-        {
-            var pack = VersionPackInfo.FromBinaryData(File.ReadAllBytes(Path.Combine(Reports, "version.bytes")));
-            var before = pack.BundleList.SelectMany(b => b.AssetList).ToArray();
-            pack.Initialize();
-            Check(before.SequenceEqual(pack.BundleList.SelectMany(b => b.AssetList)), "Initialize does not rewrite stored AssetList.");
-            var expected = pack.GetBundleInfoFromAssetPath(TextA);
-            Check(expected != null && expected.BundlePath == TextBundle, "Business relative lookup from full-path manifest succeeds.");
-            Check(ReferenceEquals(expected, pack.GetBundleInfoFromAssetPath(ProjectPath(TextA))), "Mixed-case full path maps to same BundleInfo.");
-            Check(ReferenceEquals(expected, pack.GetBundleInfoFromAssetPath(AssetPath.Resolve(TextA))), "Canonical key maps to same BundleInfo.");
-            Check(pack.GetBundleInfoFromAssetPath(Outside) == expected, "External project path survives serialized round trip.");
-            return UniTask.CompletedTask;
-        }
-        private static async UniTask BundleNames()
-        {
-            var env = await New();
-            var a = env.Asset<TextAsset>(TextA); var b = env.Asset<TextAsset>(TextB);
-            var pa = env.Asset<GameObject>(PrefabA); var pb = env.Asset<GameObject>(PrefabB);
-            await Wait(() => a.IsDone && b.IsDone && pa.IsDone && pb.IsDone, "Same-name assets");
-            Check(a.Result != null && a.Result.text == "text-A" && b.Result != null && b.Result.text == "text-B", "Two Same.txt files in one Bundle resolve independently.");
-            Check(pa.Result != null && pa.Result.transform.Find("prefab-A") != null && pb.Result != null && pb.Result.transform.Find("prefab-B") != null, "Two Same.prefab files in one Bundle resolve independently by their distinct child contents.");
-            var ia = env.Keep(env.Assets.InstantiateHandle(PrefabA, null));
-            var ib = env.Keep(env.Assets.InstantiateHandle(ProjectPath(PrefabB), null, Vector3.one, Quaternion.identity));
-            await Wait(() => ia.IsDone && ib.IsDone, "Instantiation");
-            Check(ia.Result != null && ib.Result != null && ia.Result != ib.Result && ib.Result.transform.position == Vector3.one, "Both instantiate overloads resolve paths and own independent objects.");
-        }
-        private static async UniTask BundleAliases()
-        {
-            var env = await New();
-            var a = env.Asset<TextAsset>(TextA); var b = env.Asset<TextAsset>(ProjectPath(TextA).ToUpperInvariant());
-            await Wait(() => a.IsDone && b.IsDone, "Aliases");
-            Check(a.Result != null && a.Result == b.Result, "Aliases return the same loaded object.");
-            var cache = env.Provider.GetOrCreateBundleCache(TextBundle);
-            var entries = Get<Dictionary<(string, Type), AssetInfoCache>>(cache, "_assetCacheMap");
-            Check(entries.Count == 1 && entries.ContainsKey((AssetPath.Resolve(TextA), typeof(TextAsset))), "Aliases share one typed cache key.");
-            var objectHandle = env.Asset<UnityEngine.Object>(TextA);
-            await Wait(() => objectHandle.IsDone, "Different requested type");
-            Check(objectHandle.Result == a.Result && entries.Count == 2, "Requested types retain independent cache entries.");
-            var asset = a.Result;
-            a.Dispose(); b.Dispose(); objectHandle.Dispose();
-            Check(cache.IsRetained, "Final Handle release retains Bundle.");
-            var retry = env.Asset<TextAsset>(ProjectPath(TextA));
-            Check(retry.IsDone && retry.Result == asset && env.Locator.Calls == 1, "Retained alias load is a synchronous cache hit without reloading Bundle.");
-        }
-        private static async UniTask Preload()
-        {
-            var env = await New();
-            var preload = env.Keep(env.Assets.PreloadAssetHandle<TextAsset>(new[] { TextA, ProjectPath(TextA), TextA.Replace('/', '\\'), TextB }));
-            await Wait(() => preload.IsDone, "Preload");
-            Check(preload.Result && preload.TotalCount == 2 && preload.LoadedCount == 2, "Preload deduplicates all aliases before loading.");
-            var missing = RelativeRoot + "/Text/Missing.txt";
-            var failed = env.Keep(env.Assets.PreloadAssetHandle<TextAsset>(new[] { TextA, missing, ProjectPath(missing) }));
-            await Wait(() => failed.IsDone, "Failed preload");
-            Check(!failed.Result && failed.TotalCount == 2 && failed.FailedCount == 1 && failed.FailedPaths.Single() == AssetPath.Resolve(missing), "FailedPaths contains the canonical full key exactly once.");
-        }
-        private static async UniTask InvalidRequests()
-        {
-            var env = await New();
-            Throws(() => env.Assets.PreloadAssetHandle<TextAsset>(new[] { TextA, "../invalid.txt" }), "Batch validation rejects before any request.");
-            Throws(() => env.Assets.LoadAssetHandle<TextAsset>("C:/invalid.txt"), "LoadAsset rejects disk path synchronously.");
-            Throws(() => env.Assets.InstantiateHandle("../invalid.prefab", null), "Instantiate rejects traversal synchronously.");
-            Throws(() => env.Assets.LoadSceneHandle(TextA, new LoadSceneParameters(LoadSceneMode.Additive)), "LoadScene rejects wrong extension synchronously.");
-            Check(!env.Assets.HasAsset("../invalid.txt") && !env.Assets.HasAsset("missing.txt"), "HasAsset returns false for invalid and absent paths.");
-            await Frame();
-            Check(env.Locator.Calls == 0 && Get<Dictionary<string, AssetBundleCache>>(env.Provider, "_bundleCacheMap").Count == 0, "Invalid batch starts no Bundle or cache work.");
-        }
-        private static async UniTask OutsideRoot()
-        {
-            var env = await New();
-            var asset = env.Asset<TextAsset>(Outside);
-            await Wait(() => asset.IsDone, "External root asset");
-            Check(env.Assets.HasAsset(Outside) && asset.Result != null && asset.Result.text == "outside-root", "Explicit root-external resource loads from Bundle.");
-        }
+
         private static async UniTask DifferentScenes(bool editor, bool distinctName = false)
         {
             var env = await New(editor);
@@ -711,57 +623,6 @@ namespace LiteQuark.Editor
             await Wait(() => !sa.IsValid() || !sa.isLoaded, "Independent scene unload");
             Check(b.Result.HasValue && b.Result.Value.isLoaded, "Disposing one same-name scene leaves the other alive.");
         }
-        private static async UniTask SceneInstances(bool editor)
-        {
-            var env = await New(editor);
-            var first = env.Scene(SceneA);
-            var rejected = env.Scene(ProjectPath(SceneA).ToUpperInvariant());
-            Check(rejected.IsDone && rejected.Result == null, "Concurrent alias request rejected before another scene operation.");
-            await Wait(() => first.IsDone, "First scene");
-            Check(first.Result.HasValue && env.Loading == 0, "First scene succeeds and clears loading guard.");
-            var second = env.Scene(ProjectPath(SceneA));
-            await Wait(() => second.IsDone, "Second instance");
-            Check(second.Result.HasValue && second.Result.Value.handle != first.Result.Value.handle, "Sequential same-path Additive load creates independent instance.");
-            var firstScene = first.Result.Value;
-            await SceneManager.UnloadSceneAsync(firstScene).ToUniTask();
-            await Frame();
-            Check(first.Result == null && second.Result.HasValue, "External unload clears only the matching Handle.");
-            first.Dispose(); first.Dispose();
-            Check(second.Result.Value.isLoaded, "Repeated disposal preserves the other instance.");
-        }
-        private static async UniTask SceneCancellation()
-        {
-            var env = await New();
-            using var cts = new CancellationTokenSource();
-            cts.Cancel();
-            var canceled = env.Keep(env.Assets.LoadSceneHandle(SceneA, new LoadSceneParameters(LoadSceneMode.Additive), ct: cts.Token));
-            Check(canceled.IsDone && env.Loading == 0 && env.Locator.Calls == 0, "Pre-cancelled scene registers no request.");
-            var pending = env.Scene(SceneA);
-            pending.Dispose();
-            await Wait(() => env.Loading == 0, "Released pending scene settles");
-            for (var i = 0; i < 8; i++) await Frame();
-            await Wait(() => FixtureScenes().Length == 0, "Late scene result is released");
-            Check(pending.Result == null, "Disposed pending Handle never exposes a late scene.");
-        }
-        private static async UniTask EditorAssets()
-        {
-            var env = await New(true);
-            var a = env.Asset<TextAsset>(TextA); var b = env.Asset<TextAsset>(ProjectPath(TextA).ToUpperInvariant());
-            var outside = env.Asset<TextAsset>(Outside);
-            await Wait(() => a.IsDone && b.IsDone && outside.IsDone, "Editor assets");
-            Check(a.Result != null && a.Result.text == "text-A" && a.Result == b.Result, "Editor aliases select the same asset.");
-            Check(outside.State == AssetHandleState.Failed && !env.Assets.HasAsset(Outside), "Simulate rejects an existing external resource absent from its collected manifest.");
-            Check(env.Assets.HasAsset(TextA) && env.Assets.HasAsset(ProjectPath(TextA)) && !env.Assets.HasAsset("../invalid.txt"), "Editor HasAsset shares input rules.");
-        }
-        private static async UniTask MissingScene()
-        {
-            var env = await New();
-            var missing = env.Scene(RelativeRoot + "/Scenes/Missing/Battle.unity");
-            Check(missing.IsDone && missing.Result == null && env.Loading == 0, "Missing scene metadata clears its loading guard.");
-            var actual = env.Scene(SceneA);
-            await Wait(() => actual.IsDone, "Valid same-name scene after missing path");
-            Check(actual.Result.HasValue, "Valid same-name scene loads after failed lookup.");
-        }
 
         private static bool IsNativeSceneCollisionLog(string message)
         {
@@ -784,13 +645,15 @@ namespace LiteQuark.Editor
                 first = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundle));
                 Check(first != null && first.GetAllScenePaths().Single().ToLowerInvariant() == ProjectPath(SceneA).ToLowerInvariant(), "Native API loads A Bundle and confirms its exact scene path.");
                 second = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundleB));
-                Check(second == null, "Native API rejects simultaneous B Bundle before any framework or scene loading call.");
+                Check(second == null && Errors.Count == 1 && IsNativeSceneCollisionLog(Errors[0]) && Errors[0].Contains(Path.GetFileName(SceneBundleB)),
+                    "Native API rejects B with its exact same-file collision.");
                 first.Unload(true);
                 first = null;
                 second = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundleB));
                 Check(second != null && second.GetAllScenePaths().Single().ToLowerInvariant() == ProjectPath(SceneB).ToLowerInvariant(), "B Bundle loads independently after unloading A; build outputs represent different scene paths.");
                 first = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundle));
-                Check(first == null, "Native collision also reproduces with the loading order reversed.");
+                Check(first == null && Errors.Count == 2 && IsNativeSceneCollisionLog(Errors[1]) && Errors[1].Contains(Path.GetFileName(SceneBundle)),
+                    "Reversed order rejects A with its exact same-file collision.");
             }
             finally
             {
@@ -890,16 +753,6 @@ namespace LiteQuark.Editor
                         factory.Invoke(assets, new object[] { false }).GetType() == expected,
                         "Explicit " + mode + " is preserved in both environments.");
                 }
-                var serialized = new SerializedObject(ScriptableObject.CreateInstance<SettingProbe>());
-                try
-                {
-                    var asset = serialized.FindProperty("Asset");
-                    Check(asset.FindPropertyRelative("BundleMode") != null && asset.FindPropertyRelative("BundleLocater") == null && asset.FindPropertyRelative("AssetMode") == null &&
-                        asset.FindPropertyRelative("SimulateAsyncDelayInEditor") == null && asset.FindPropertyRelative("AsyncDelayMinFrame") == null &&
-                        asset.FindPropertyRelative("AsyncDelayMaxFrame") == null,
-                        "The serialized settings expose one mode selector and no direct-read delay fields.");
-                }
-                finally { UnityEngine.Object.DestroyImmediate(serialized.targetObject); serialized.Dispose(); }
                 foreach (var mode in new[] { BundleLoadMode.Simulate, BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
                 {
                     var path = Fixture + "/Settings/" + mode + ".prefab";
@@ -923,73 +776,6 @@ namespace LiteQuark.Editor
             Check((options & BuildAssetBundleOptions.DisableLoadAssetByFileNameWithExtension) != 0, "Default disables filename-with-extension lookup.");
             Check(options == (BuildAssetBundleOptions.ChunkBasedCompression | FilenameFlags), "No unrelated default build flags changed.");
             return UniTask.CompletedTask;
-        }
-
-        private sealed class SettingProbe : ScriptableObject
-        {
-            public LiteSetting.AssetSetting Asset = new();
-        }
-
-        private static async UniTask PackagesFolderLoad(bool editor)
-        {
-            var env = await New(editor);
-            var first = env.Asset<TextAsset>(PackagesTextPath);
-            var second = env.Asset<TextAsset>(PackagesTextPath.ToUpperInvariant());
-            var full = env.Asset<TextAsset>(ProjectPath(PackagesTextPath));
-            await Wait(() => first.IsDone && second.IsDone && full.IsDone, "Ordinary packages folder aliases");
-            Check(first.Result != null && first.Result.text == "ordinary-packages-folder", "Public loading returns the actual root-relative packages resource.");
-            Check(first.Result == second.Result && first.Result == full.Result, "Short, case-variant and complete project paths resolve the same object.");
-            Check(env.Assets.HasAsset(PackagesTextPath) && env.Assets.HasAsset(ProjectPath(PackagesTextPath)), "HasAsset recognizes both public forms.");
-            var preload = env.Keep(env.Assets.PreloadAssetHandle<TextAsset>(new[] { PackagesTextPath, ProjectPath(PackagesTextPath) }));
-            await Wait(() => preload.IsDone, "Packages preload");
-            Check(preload.Result && preload.TotalCount == 1, "Preload deduplicates root-relative packages aliases.");
-            if (!editor)
-            {
-                var pack = ReadPack();
-                var info = pack.GetBundleInfoFromAssetPath(PackagesTextPath);
-                Check(info != null && info.AssetList.Contains(AssetPath.Resolve(PackagesTextPath)), "The actual collector's full path survives serialization and indexing.");
-                var entries = Get<Dictionary<(string, Type), AssetInfoCache>>(env.Provider.GetOrCreateBundleCache(info.BundlePath), "_assetCacheMap");
-                Check(entries.Count == 1 && env.Locator.Calls == 1, "Aliases share a single typed cache entry and one Bundle load.");
-            }
-        }
-
-        private static async UniTask FullManifestResources()
-        {
-            var env = await New();
-            var pack = ReadPack();
-            Check(pack.BundleList.SelectMany(b => b.AssetList).All(p => p == AssetPath.ResolveProjectAssetPath(p)), "All loaded manifest entries are full canonical project paths.");
-            foreach (var relative in SpecialTexts)
-            {
-                var fullPath = ProjectPath(relative);
-                var info = pack.GetBundleInfoFromAssetPath(fullPath);
-                Check(info != null && info.AssetList.Contains(fullPath.ToLowerInvariant()), "Full identity survives collection and storage: " + fullPath);
-                var handle = env.Asset<TextAsset>(fullPath);
-                await Wait(() => handle.IsDone, "Full-path manifest asset");
-                Check(handle.Result != null && handle.Result.text == "full-path:" + relative, "Actual Bundle loading returns the distinct content: " + relative);
-                if (!relative.StartsWith("assets/", StringComparison.Ordinal))
-                {
-                    var alias = env.Asset<TextAsset>(relative);
-                    await Wait(() => alias.IsDone, "Business relative alias");
-                    Check(alias.Result == handle.Result, "Business relative path shares the full-path resource.");
-                }
-            }
-            Check(pack.GetBundleInfoFromAssetPath(ProjectPath(SpecialTexts[4])).BundlePath == "__pathutilsdotted.v2.ab", "Dotted source folder builds and loads from its own Bundle.");
-            Check(pack.GetBundleInfoFromAssetPath(ProjectPath(SpecialTexts[2])).BundlePath == "default.ab" &&
-                pack.GetBundleInfoFromAssetPath(ProjectPath(SpecialTexts[3])).BundlePath == "default.ab", "Root and default-folder assets retain existing default.ab grouping.");
-        }
-
-        private static async UniTask UpmNotSupported(bool editor)
-        {
-            Check(AssetDatabase.LoadAssetAtPath<Texture2D>(UpmTexturePath) != null, "The genuine UPM texture exists in this project.");
-            var mappedKey = AssetPath.Resolve(UpmTexturePath);
-            Check(mappedKey == (LiteConst.AssetRootPath + "/" + UpmTexturePath).ToLowerInvariant(), "Public input maps under the resource root, not under project Packages.");
-            Check(AssetDatabase.LoadAssetAtPath<Texture2D>(mappedKey) == null, "No same-named resource-root counterpart exists.");
-            var env = await New(editor);
-            Check(!env.Assets.HasAsset(UpmTexturePath), "HasAsset does not fall back to the existing UPM resource.");
-            var handle = env.Asset<Texture2D>(UpmTexturePath);
-            await Wait(() => handle.IsDone, "Missing root-relative counterpart");
-            Check(handle.Result == null, "LoadAssetHandle does not load the real UPM texture by fallback.");
-            if (!editor) Check(env.Locator.Calls == 0, "Missing package-looking key starts no Bundle load.");
         }
 
         private static async UniTask LookupProbe(bool useAsync)

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -10,50 +9,37 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal static class ManifestValidationRunner
+    internal sealed class ManifestValidationRunner : EditorValidation
     {
-        private static readonly Report Results = new();
-        private static Case Active;
         private static string Reports => ValidationEnvironment.Reports("manifest");
-        [Serializable] private sealed class Report { public string unityVersion; public string fatalError; public List<Case> cases = new(); }
-        [Serializable] private sealed class Case { public string name; public bool passed; public int checks; public string failure; public List<string> evidence = new(); }
 
         public static void Begin()
         {
             Directory.CreateDirectory(Reports);
             try
             {
-                Run("01 Full paths retain repeated directory segments", () => RoundTrip("a/b/c.ab", "a/b/c/d.png", "a/b/c/sub/a/b/c/d.png"));
-                Run("02 Root and default folder identities remain distinct", () => RoundTrip("default.ab", "config.json", "default/config.json", "default/sub/config.json"));
-                Run("03 Project paths are independent of Bundle names", ExternalPaths);
-                Run("04 Assets and packages directory names survive verbatim", () => RoundTrip("data.ab", "data/assets.json", "data/assets_icon.png", "data/assetsbackup/icon.png", "data/assets/icon.png", "assets/demo/icon.png", "packages/demo/icon.png"));
-                Run("05 Internal complete-path contract rejects relative and UPM input", StrictPaths);
-                Run("06 Sparse dependency IDs round trip under all hash and flat modes", Dependencies);
-                Run("07 Repeated JSON and binary exports preserve live dependencies", JsonAndBinary);
-                Run("08 Unknown dependency paths and IDs fail", InvalidDependencies);
-                Run("09 Legacy relative manifests require regeneration", LegacyRelative);
-                Run("10 No format field means ambiguous legacy assets paths cannot be detected", LegacyAmbiguity);
-                Run("11 Actual collector and build mapping use full identities", CollectorIntegration);
-                Run("12 Duplicate full canonical identities are rejected", Duplicates);
-                Run("13 Bundle build and load names preserve mode rules", BundleNames);
+                Run("manifest/asset-keys", () =>
+                {
+                    RoundTrip("default.ab", "config.json", "default/config.json", "data/assets/icon.png", "packages/demo/a.txt", "a/b/a/b/d.png");
+                    ExternalPaths();
+                    StrictPaths();
+                    Duplicates();
+                    LegacyRelative();
+                    LegacyAmbiguity();
+                });
+                Run("manifest/dependency-ids", () =>
+                {
+                    Dependencies();
+                    JsonAndBinary();
+                    InvalidDependencies();
+                }, "Failed to deserialize VersionPackInfo", "Dependency ID not found: 999");
+                Run("manifest/bundle-filenames", BundleNames);
             }
             catch (Exception ex) { Results.fatalError = ex.ToString(); }
-            Results.unityVersion = Application.unityVersion;
-            File.WriteAllText(Path.Combine(Reports, "results.json"), JsonUtility.ToJson(Results, true));
+            Results.Save("manifest");
             EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
         }
-        private static void Run(string name, Action action)
-        {
-            Active = new Case { name = name }; Results.cases.Add(Active);
-            try { action(); Active.passed = true; } catch (Exception ex) { Active.failure = ex.ToString(); }
-            Debug.Log("FULL_PATH_MANIFEST " + (Active.passed ? "PASS " : "FAIL ") + name);
-        }
-        private static void Check(bool condition, string evidence)
-        {
-            Active.checks++;
-            if (!condition) throw new Exception(evidence);
-            Active.evidence.Add(evidence);
-        }
+
         private static string Key(string relative) => (LiteConst.AssetRootPath + "/" + relative).ToLowerInvariant();
         private static BundleInfo Bundle(int id, string path, string[] assets, params string[] deps) => new(id, path, assets, deps) { Hash = "hash" + id, Size = 1000 + id };
         private static VersionPackInfo Pack(params BundleInfo[] bundles) => new("review", "windows", false, false, bundles);
@@ -209,27 +195,7 @@ namespace LiteQuark.Editor
             Check(restored.BundleList[0].AssetList.Single() == "assets/icon.png", "An ambiguous old token can look like a full project path.");
             Check(!restored.TryGetBundleInfoByAssetKey(Key("data/assets/icon.png"), out _) && restored.TryGetBundleInfoByAssetKey("assets/icon.png", out _), "Without a format marker, parse success cannot establish legacy compatibility (documented limitation).");
         }
-        private static void CollectorIntegration()
-        {
-            var files = new[] { LiteConst.AssetRootPath + "/__FullManifestCollect.txt", LiteConst.AssetRootPath + "/default/__FullManifestCollect.txt", LiteConst.AssetRootPath + "/assets/demo/__FullManifestCollect.txt" };
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            try
-            {
-                foreach (var path in files) { Directory.CreateDirectory(Path.GetDirectoryName(path)); File.WriteAllText(path, path); }
-                AssetDatabase.Refresh();
-                var collector = new ResCollector(Array.Empty<string>());
-                var create = typeof(ResCollector).GetMethod("CreateBundleInfo", flags, null, new[] { typeof(string), typeof(string[]) }, null);
-                foreach (var path in files) create.Invoke(collector, new object[] { Path.GetDirectoryName(path).Replace('\\', '/'), new[] { path } });
-                var bundles = ((Dictionary<string, BundleInfo>)typeof(ResCollector).GetField("_bundleInfoCache", flags).GetValue(collector)).Values.ToArray();
-                Check(bundles.SelectMany(b => b.AssetList).OrderBy(p => p).SequenceEqual(files.Select(p => p.ToLowerInvariant()).OrderBy(p => p)), "Actual collection stores all complete canonical identities.");
-                Check(bundles.Single(b => b.BundlePath == "default.ab").AssetList.Length == 2, "Existing root/default grouping remains intact.");
-                foreach (var path in files) Check(collector.GetAssetSourcePath(path.ToLowerInvariant()) == path, "Build source mapping retains casing: " + path);
-                var restored = VersionPackInfo.FromBinaryData(Pack(bundles).ToBinaryData());
-                restored.Initialize();
-                foreach (var path in files) Check(restored.GetBundleInfoFromAssetPath(path) != null, "Collected full path remains queryable after storage: " + path);
-            }
-            finally { foreach (var path in files) AssetDatabase.DeleteAsset(path); }
-        }
+
         private static void Duplicates()
         {
             var rejected = false;

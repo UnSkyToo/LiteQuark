@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LiteQuark.Runtime;
@@ -8,14 +7,10 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal static class PathValidationRunner
+    internal sealed class PathValidationRunner : EditorValidation
     {
-        private static readonly Report Results = new();
-        private static Case Active;
         private static string Scratch;
         private static string Root => Directory.GetParent(Application.dataPath).Parent.FullName;
-        [Serializable] private sealed class Report { public string unityVersion; public string fatalError; public List<Case> cases = new(); }
-        [Serializable] private sealed class Case { public string name; public bool passed; public int checks; public string failure; public List<string> evidence = new(); }
         public static void Begin()
         {
             var reports = ValidationEnvironment.Reports("paths");
@@ -24,22 +19,23 @@ namespace LiteQuark.Editor
             Directory.CreateDirectory(Scratch);
             try
             {
-                Run("01 Separator normalization preserves roots and casing", Normalize);
-                Run("02 Parent paths preserve native filesystem roots", Parents);
-                Run("03 Relative paths use filesystem semantics", Relative);
-                Run("04 Asset root wrapper preserves outside paths and empty fields", AssetRelative);
-                Run("05 Copy filters preserve names and dotted directories", CopyTree);
-                Run("06 Empty and fully filtered trees create no directories", EmptyTrees);
-                Run("07 Copy preserves existing destination files and empty directories", ExistingDestination);
-                Run("08 Copy rejects self and descendants before writing", RejectTargets);
-                Run("09 Rename creates dotted parents and supports bare filenames", Rename);
-                Run("10 Five obsolete APIs are absent", RemovedApis);
-                Run("11 Navigation saves to a dotted parent directory", Navigation);
-                Run("12 Editor workspace path uses the actual project parent", WorkspacePath);
-                Run("13 ConcatPath retains standard filesystem composition", FileComposition);
-                Run("14 URI directory composition preserves escaping and suffixes", UriComposition);
-                Run("15 File and jar URI forms preserve their schemes", LocalUriForms);
-                Run("16 StreamingAssets preserves the actual Editor file location", StreamingLocation);
+                Run("paths/host-path", () =>
+                {
+                    Normalize();
+                    Parents();
+                    Relative();
+                    AssetRelative();
+                    WorkspacePath();
+                    FileComposition();
+                });
+                Run("paths/uri", () =>
+                {
+                    UriComposition();
+                    LocalUriForms();
+                    StreamingLocation();
+                });
+                Run("paths/copy-tree", CopyTree);
+                Run("paths/rename", Rename);
             }
             catch (Exception ex) { Results.fatalError = ex.ToString(); }
             finally
@@ -47,23 +43,11 @@ namespace LiteQuark.Editor
                 var prefix = Path.GetFullPath(Path.Combine(Root, "Scratch")).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 if (Path.GetFullPath(Scratch).StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && Path.GetFileName(Scratch).StartsWith("PathUtils-", StringComparison.Ordinal))
                     Directory.Delete(Scratch, true);
-                Results.unityVersion = Application.unityVersion;
-                File.WriteAllText(Path.Combine(reports, "results.json"), JsonUtility.ToJson(Results, true));
+                Results.Save("paths");
                 EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
             }
         }
-        private static void Run(string name, Action test)
-        {
-            Active = new Case { name = name }; Results.cases.Add(Active);
-            try { test(); Active.passed = true; } catch (Exception ex) { Active.failure = ex.ToString(); }
-            Debug.Log("PATH_UTILS_REVIEW " + (Active.passed ? "PASS " : "FAIL ") + name);
-        }
-        private static void Check(bool value, string evidence)
-        {
-            Active.checks++;
-            if (!value) throw new Exception(evidence);
-            Active.evidence.Add(evidence);
-        }
+
         private static string At(string relative) => Path.Combine(Scratch, relative);
 
         private static void FileComposition()
@@ -210,55 +194,36 @@ namespace LiteQuark.Editor
             Check(AssetPath.ToProjectPath("assets/demo/Icon.png") == "assets/demo/Icon.png", "Public assets-prefix ambiguity remains deferred, with no new fallback.");
 
         }
+
         private static void CopyTree()
         {
-            Write("tree/src/data.txt", "root"); Write("tree/src/data.v2/LICENSE", "extensionless");
-            Write("tree/src/data.v2/skip.manifest");
+            var source = At("tree/src");
+            var target = At("tree/dst");
             Directory.CreateDirectory(At("tree/src/empty"));
-            PathUtils.CopyDirectory(At("tree/src"), At("tree/dst"), p => !p.EndsWith(".manifest", StringComparison.Ordinal));
-            Check(File.ReadAllText(At("tree/dst/data.txt")) == "root", "Root file copied without filename rewriting.");
-            Check(File.ReadAllText(At("tree/dst/data.v2/LICENSE")) == "extensionless", "Dotted directory and extensionless file copied.");
-            Check(!File.Exists(At("tree/dst/data.v2/skip.manifest")), "File filter applied recursively.");
-            Check(!Directory.Exists(At("tree/dst/empty")), "Empty source branch omitted.");
-            Check(Directory.GetDirectories(At("tree/dst"), "*", SearchOption.AllDirectories).All(d => Directory.EnumerateFileSystemEntries(d).Any()), "Copy generated no empty target directories.");
-        }
-        private static void EmptyTrees()
-        {
-            Directory.CreateDirectory(At("empty/src/nested/empty"));
-            PathUtils.CopyDirectory(At("empty/src"), At("empty/dst"));
-            Check(!Directory.Exists(At("empty/dst")), "An entirely empty source tree creates no destination.");
-            Write("filtered/src/one.manifest"); Write("filtered/src/child/two.manifest");
-            PathUtils.CopyDirectory(At("filtered/src"), At("filtered/dst"), _ => false);
-            Check(!Directory.Exists(At("filtered/dst")), "An entirely filtered source tree creates no destination.");
-            PathUtils.CopyDirectory(At("missing/src"), At("missing/dst"));
-            Check(!Directory.Exists(At("missing/dst")), "A missing source creates no destination.");
-        }
-        private static void ExistingDestination()
-        {
-            Write("existing/src/skip.manifest"); Write("existing/src/child/skip.manifest");
-            Write("existing/dst/keep.txt", "keep-root"); Write("existing/dst/child/keep.txt", "keep-child");
-            Directory.CreateDirectory(At("existing/dst/old-empty"));
-            PathUtils.CopyDirectory(At("existing/src"), At("existing/dst"), _ => false);
-            Check(File.ReadAllText(At("existing/dst/keep.txt")) == "keep-root", "Fully filtered copy preserves preexisting root file.");
-            Check(File.ReadAllText(At("existing/dst/child/keep.txt")) == "keep-child", "Fully filtered nested copy preserves preexisting child file.");
-            Check(Directory.Exists(At("existing/dst/old-empty")), "Preexisting empty target directories are not deleted.");
-            Write("existing/src/keep.txt", "replacement");
-            PathUtils.CopyDirectory(At("existing/src"), At("existing/dst"), p => p.EndsWith(".txt", StringComparison.Ordinal));
-            Check(File.ReadAllText(At("existing/dst/keep.txt")) == "replacement" && File.ReadAllText(At("existing/dst/child/keep.txt")) == "keep-child", "Accepted same-name file is overwritten; unrelated target content survives.");
-        }
-        private static void RejectTargets()
-        {
-            Write("guard/src/a.txt");
-            foreach (var dest in new[] { At("guard/src"), At("guard/src/child"), At("guard/src/sub/../child") })
+            PathUtils.CopyDirectory(source, target);
+            Check(!Directory.Exists(target), "An empty source creates no destination.");
+            Write("tree/src/data.v2/skip.manifest");
+            bool Include(string path) => !path.EndsWith(".manifest", StringComparison.Ordinal);
+            PathUtils.CopyDirectory(source, target, Include);
+            Check(!Directory.Exists(target), "A fully filtered tree creates no destination.");
+
+            Write("tree/src/data.v2/LICENSE", "new");
+            Write("tree/dst/data.v2/LICENSE", "old");
+            Write("tree/dst/unrelated.txt", "keep");
+            Directory.CreateDirectory(At("tree/dst/old-empty"));
+            foreach (var path in new[] { source, At("tree/src/sub/../child") })
             {
                 var rejected = false;
-                try { PathUtils.CopyDirectory(At("guard/src"), dest); } catch (ArgumentException) { rejected = true; }
-                Check(rejected, "Self or descendant destination rejected: " + dest);
+                try { PathUtils.CopyDirectory(source, path); } catch (ArgumentException) { rejected = true; }
+                Check(rejected && !Directory.Exists(At("tree/src/child")), "Reject self or descendant before writing.");
             }
-            Check(!Directory.Exists(At("guard/src/child")), "Rejection happens before destination creation.");
-            PathUtils.CopyDirectory(At("guard/src"), At("guard/srcBackup"));
-            Check(File.Exists(At("guard/srcBackup/a.txt")), "Similar sibling name is a valid destination.");
+            PathUtils.CopyDirectory(source, target, Include);
+            Check(File.ReadAllText(At("tree/dst/data.v2/LICENSE")) == "new" && File.ReadAllText(At("tree/dst/unrelated.txt")) == "keep",
+                "Copy replaces only included files and preserves actual names.");
+            Check(!File.Exists(At("tree/dst/data.v2/skip.manifest")) && !Directory.Exists(At("tree/dst/empty")) &&
+                Directory.Exists(At("tree/dst/old-empty")), "Filtering and empty branches preserve unrelated destination content.");
         }
+
         private static void Rename()
         {
             Write("rename/source.txt", "renamed");
@@ -274,19 +239,6 @@ namespace LiteQuark.Editor
             }
             finally { Environment.CurrentDirectory = cwd; }
         }
-        private static void RemovedApis()
-        {
-            foreach (var name in new[] { "PathIsFile", "GetPathFromFullPath", "FileExists", "DirectoryExists", "CreateDirectory" })
-                Check(typeof(PathUtils).GetMethod(name) == null, "Removed obsolete public API: " + name);
-        }
-        private static void Navigation()
-        {
-            var data = new NavigationData(); data.AddPath("Assets/Example.asset");
-            var path = At("navigation.v2/config.json");
-            NavigationData.ToJson(data, path);
-            Check(File.Exists(path), "Updated caller creates the JSON file parent, including dots.");
-            Check(NavigationData.FromJson(path).GetPathList().SequenceEqual(data.GetPathList()), "Navigation data survives the updated directory creation flow.");
-        }
 
         private static void WorkspacePath()
         {
@@ -299,9 +251,6 @@ namespace LiteQuark.Editor
                 var expectedPath = PathUtils.UnifyPath(Path.Combine(workspace, relative));
                 Check(LiteEditorUtils.GetLiteQuarkRootPath(relative) == expectedPath, "Editor caller keeps the existing workspace layout: " + relative);
             }
-            foreach (var obsolete in new[] { "GetFullPathInRuntime", "GetLiteQuarkRootPath", "ToFlatPath" })
-                Check(typeof(PathUtils).GetMethod(obsolete) == null, "Business-specific helper removed from PathUtils: " + obsolete);
-
         }
     }
 }

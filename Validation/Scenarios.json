@@ -1,0 +1,83 @@
+{
+    "paths": [
+        "paths/host-path",
+        "paths/uri",
+        "paths/copy-tree",
+        "paths/rename"
+    ],
+    "manifest": [
+        "manifest/asset-keys",
+        "manifest/dependency-ids",
+        "manifest/bundle-filenames"
+    ],
+    "collector": [
+        "collector/bundle-graph",
+        "collector/cycles",
+        "collector/flat-collision",
+        "collector/settings",
+        "collector/play-snapshot",
+        "collector/viewer",
+        "collector/upm-build"
+    ],
+    "tasks": [
+        "tasks/admission",
+        "tasks/cancel",
+        "tasks/terminal",
+        "tasks/coroutine-child",
+        "tasks/download-result",
+        "tasks/instantiate",
+        "tasks/startup-rollback",
+        "tasks/ordered-shutdown",
+        "tasks/restart",
+        "tasks/shutdown-failure",
+        "tasks/demo-stop",
+        "tasks/pool-ownership"
+    ],
+    "loading": [
+        "loading/address",
+        "loading/scene-paths",
+        "loading/builtin",
+        "loading/remote",
+        "loading/backend-init",
+        "loading/filename-flags",
+        "loading/same-name-limit",
+        "loading/same-name-native"
+    ],
+    "lifecycle": [
+        "lifecycle/shared-retention",
+        "lifecycle/preload",
+        "lifecycle/retry",
+        "lifecycle/dependency-life",
+        "lifecycle/dependency-failure",
+        "lifecycle/queued-cancel",
+        "lifecycle/submitted-asset",
+        "lifecycle/late-bundle",
+        "lifecycle/undelivered-bundle",
+        "lifecycle/close-with-dependency",
+        "lifecycle/remote-cleanup",
+        "lifecycle/scene-instances",
+        "lifecycle/submitted-scene",
+        "lifecycle/last-scene",
+        "lifecycle/scene-retry",
+        "lifecycle/priority",
+        "lifecycle/quotas",
+        "lifecycle/prefab-handle"
+    ],
+    "addons": [
+        "addons/ui-open",
+        "addons/ui-close",
+        "addons/audio",
+        "addons/effect-pending",
+        "addons/effect-reuse",
+        "addons/network-queue",
+        "addons/network-retry",
+        "addons/network-interceptor",
+        "addons/network-files",
+        "addons/data-io",
+        "addons/data-switch",
+        "addons/data-persistence",
+        "addons/config-reload",
+        "addons/config-close",
+        "addons/restart-ui"
+    ]
+}

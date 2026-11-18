@@ -32,6 +32,8 @@ repository_root=$(cd "$validation_root/.." && pwd -P)
 project="$validation_root/Project"
 reports="$validation_root/Reports"
 sources="$validation_root/Sources"
+expected="$validation_root/Scenarios.json"
+[ -f "$expected" ] && [ -r "$expected" ] || die "Cannot read scenario manifest: $expected"
 lock="$validation_root/.validation.lock"
 asmdef=Assets/LiteQuark/Editor/LiteQuark.Editor.asmdef
 test_directory=Assets/LiteQuark/Editor/SessionValidation
@@ -43,7 +45,7 @@ installed_version=$("$unity_editor" -version) || die 'Cannot query Unity version
 case "$installed_version" in "$unity_version"|"$unity_version "*|"$unity_version"_*) ;; *) die "Unity must match ProjectVersion.txt: $unity_version" ;; esac
 [ "$(cd "$(git -C "$repository_root" rev-parse --show-toplevel)" && pwd -P)" = "$repository_root" ] || die 'Validation must be directly inside the repository root.'
 
-all_suites='paths manifest collector packages tasks lifecycle loading'
+all_suites='paths manifest collector addons tasks lifecycle loading'
 case "$suite_arg" in ''|,*|*,|*,,*) die 'Empty suite name.' ;; esac
 requested=$(printf '%s' "$suite_arg" | tr ',' ' ')
 for name in $requested; do
@@ -89,7 +91,7 @@ snapshot_tree() {
         printf '%s\t%s\n' "$digest" "$relative"
     done < <(find "$root" -type f -print0) | sort
 }
-snapshot_code() { snapshot_tree "$project/Assets" | awk -F '\t' '$2 ~ /\.(cs|asmdef|asmref|dll)(\.meta)?$/'; }
+snapshot_code() { snapshot_tree "$project/Assets" | awk -F '\t' '$2 ~ /\.(cs|asmdef|asmref|dll)(\.meta)?$/ || $2 ~ /^LiteQuark\/Editor\/SessionValidation(\/|\.meta$)/'; }
 copy_changed() {
     owned_path "$2" "$project"
     if ! cmp -s "$1" "$2"; then mkdir -p "$(dirname "$2")"; cp -p "$1" "$2"; fi
@@ -130,7 +132,7 @@ function run(a) {
     var mode = a[0], report = a[1], work = a[2];
     if (mode === 'asmdef') {
         var def = load(a[1]);
-        def.references = (def.references || []).concat(['UniTask', 'LitJson']).filter(function(v, i, all) { return all.indexOf(v) === i; });
+        def.references = (def.references || []).concat(['UniTask', 'LitJson', 'LiteQuark.Runtime.Addons']).filter(function(v, i, all) { return all.indexOf(v) === i; });
         save(a[2], def); return;
     }
     if (mode === 'packages') {
@@ -152,7 +154,7 @@ function run(a) {
             IndexSHA256: a[4], UnityVersion: a[5], HostPlatform: 'macOS', BuildTarget: 'OSXUniversal',
             SelectedSuites: a[6].trim().split(/\s+/), ProductionFiles: rows.length, CopiedFiles: Number(a[7]),
             RunnerHashes: hashes(work + '/runners.before'), ScriptSHA256: a[8],
-            AssemblyAdapter: 'Current LiteQuark.Editor.asmdef plus UniTask and LitJson references in isolated Project only.',
+            AssemblyAdapter: 'Current LiteQuark.Editor.asmdef plus UniTask, LitJson and LiteQuark.Runtime.Addons references in isolated Project only.',
             AssemblyAdapterSHA256: a[9]
         });
         var csv = function(v) { return '"' + v.replace(/"/g, '""') + '"'; };
@@ -160,35 +162,38 @@ function run(a) {
         return;
     }
     if (mode === 'suite') {
-        var name = a[2], expectedCases = Number(a[3]), version = a[4];
+        var name = a[2], expected = load(a[3])[name], expectedCases = expected.length, version = a[4];
         var s = { Suite: name, Passed: 0, Failed: 0, Cases: 0, RegressionCases: 0,
             KnownLimitations: 0, Diagnostics: 0, DiagnosticsPassed: 0, Assertions: 0,
             ExitCode: Number(a[5]), DurationSeconds: Number(a[6]), Success: false, Error: null,
             Failures: [], KnownLimitationDetails: [], DiagnosticDetails: [] };
         try {
             var result = load(report + '/' + name + '/results.json');
-            var cases = name === 'packages' ? [result] : result.cases;
+            var cases = result.cases;
             if (!Array.isArray(cases)) throw Error('Missing cases.');
+            var actual = cases.map(function(c) { return c.id; }).sort();
             s.Cases = cases.length;
             var known = cases.filter(function(c) { return c.status === 'known_limitation'; });
             var diagnostics = cases.filter(function(c) { return c.diagnostic; });
-            if (name === 'loading') {
-                if (diagnostics.length !== 1 || diagnostics[0].name !== '17 Native same-name Bundle collision diagnostic') throw Error('Missing or unexpected native diagnostic.');
-            } else if (diagnostics.length) throw Error('Unexpected diagnostic outside loading.');
-            known.forEach(function(c) {
-                if (name !== 'loading' || known.length !== 1 || c.passed || c.diagnostic ||
-                    c.name !== '08 Bundle same-name scenes in different folders' || c.limitationId !== 'UNITY-SAME-NAME-SCENE-BUNDLES' ||
-                    !diagnostics[0].passed || diagnostics[0].status !== 'diagnostic_passed') throw Error('Unconfirmed or unexpected known limitation.');
-            });
             s.KnownLimitations = known.length; s.Diagnostics = diagnostics.length;
             s.DiagnosticsPassed = diagnostics.filter(function(c) { return c.passed === true; }).length;
             s.RegressionCases = cases.length - known.length - diagnostics.length;
             s.Passed = cases.filter(function(c) { return c.passed === true && !c.diagnostic; }).length;
-            cases.forEach(function(c) { s.Assertions += Number(c.checks === undefined ? c.assertions || 0 : c.checks); });
-            s.Failures = cases.filter(function(c) { return !c.passed && c.status !== 'known_limitation'; }).map(function(c) { return { Name: c.name, Failure: c.failure }; });
+            cases.forEach(function(c) { s.Assertions += Number(c.checks); });
+            s.Failures = cases.filter(function(c) { return !c.passed && c.status !== 'known_limitation'; }).map(function(c) { return { Name: c.id, Failure: c.failure }; });
             s.Failed = s.Failures.length;
-            s.KnownLimitationDetails = known.map(function(c) { return { Id: c.limitationId, Name: c.name, Reason: c.failure, Evidence: c.evidence }; });
-            s.DiagnosticDetails = diagnostics.map(function(c) { return { Name: c.name, Confirmed: c.passed, Evidence: c.evidence, Failure: c.failure }; });
+            s.KnownLimitationDetails = known.map(function(c) { return { Id: c.limitationId, Name: c.id, Reason: c.failure, Evidence: c.evidence }; });
+            s.DiagnosticDetails = diagnostics.map(function(c) { return { Name: c.id, Confirmed: c.passed, Evidence: c.evidence, Failure: c.failure }; });
+            if (!expected.length || expected.some(function(id, i) { return expected.indexOf(id) !== i; }) ||
+                JSON.stringify(actual) !== JSON.stringify(expected.slice().sort())) throw Error('Missing, duplicate or unexpected scenario ID: ' + actual.join(', '));
+            if (name === 'loading') {
+                if (known.length !== 1 || diagnostics.length !== 1 || diagnostics[0].id !== 'loading/same-name-native') throw Error('Missing or unexpected native diagnostic.');
+            } else if (diagnostics.length) throw Error('Unexpected diagnostic outside loading.');
+            known.forEach(function(c) {
+                if (name !== 'loading' || known.length !== 1 || c.passed || c.diagnostic ||
+                    c.id !== 'loading/same-name-limit' || !c.failure || !(c.evidence || []).length || !(c.errors || []).length || c.limitationId !== 'UNITY-SAME-NAME-SCENE-BUNDLES' ||
+                    !diagnostics[0].passed || diagnostics[0].status !== 'diagnostic_passed') throw Error('Unconfirmed or unexpected known limitation.');
+            });
             var cleanup = cases.some(function(c) { return (c.evidence || []).some(function(e) { return e.indexOf('Harness-only cleanup') === 0; }); });
             s.Success = s.ExitCode === 0 && cases.length === expectedCases && s.Passed + known.length + s.DiagnosticsPassed === expectedCases &&
                 !s.Failed && !result.fatalError && !(result.unexpectedErrors || []).filter(Boolean).length && !cleanup && result.unityVersion === version;
@@ -315,12 +320,12 @@ while IFS=$'\t' read -r digest relative; do
         [ "$relative" = "$asmdef" ] || copy_changed "$repository_root/$relative" "$project/$relative"
     esac
 done < "$lock/repo.before"
-for file in "$sources"/*.cs "$sources"/*.cs.meta; do
-    [ -f "$file" ] || continue
-    relative="$test_directory/$(basename "$file")"
+while IFS=$'\t' read -r digest path; do
+    relative="$test_directory/$path"
     printf '%s\n' "$relative" >> "$lock/allowed"
-    copy_changed "$file" "$project/$relative"
-done
+    copy_changed "$sources/$path" "$project/$relative"
+    [ "$(hash_file "$project/$relative")" = "$digest" ] || die "Validation source copy mismatch: $path"
+done < "$lock/runners.before"
 printf '%s\n' "$test_directory.meta" >> "$lock/allowed"
 if [ ! -f "$project/$test_directory.meta" ]; then
     printf 'fileFormatVersion: 2\nguid: 97cb97e674a34dcfa25e3b744ec4d804\nfolderAsset: yes\n' > "$project/$test_directory.meta"
@@ -374,13 +379,13 @@ prepared=1
 json_action preparation "$reports" 1 "$unity_exit" "$((SECONDS - started))"
 for name in $selected; do
     case "$name" in
-        paths) runner=PathValidationRunner; expected=16 ;;
-        manifest) runner=ManifestValidationRunner; expected=13 ;;
-        collector) runner=CollectorValidationRunner; expected=18 ;;
-        packages) runner=PackageValidationRunner; expected=1 ;;
-        tasks) runner=TaskSystemValidationRunner; expected=37 ;;
-        lifecycle) runner=AssetLifecycleValidationRunner; expected=145 ;;
-        loading) runner=AssetLoadingValidationRunner; expected=28 ;;
+        paths) runner=PathValidationRunner ;;
+        manifest) runner=ManifestValidationRunner ;;
+        collector) runner=CollectorValidationRunner ;;
+        addons) runner=AddonsValidationRunner ;;
+        tasks) runner=TaskSystemValidationRunner ;;
+        lifecycle) runner=AssetLifecycleValidationRunner ;;
+        loading) runner=AssetLoadingValidationRunner ;;
     esac
     mkdir -p "$reports/$name"
     remove_generated "$reports/$name/results.json" "$reports/$name"

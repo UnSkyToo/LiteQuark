@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 param(
-    [ValidateSet('all', 'paths', 'manifest', 'collector', 'packages', 'tasks', 'lifecycle', 'loading')]
+    [ValidateSet('all', 'paths', 'manifest', 'collector', 'addons', 'tasks', 'lifecycle', 'loading')]
     [string[]]$Suite = @('all'),
     [string]$UnityEditor,
     [ValidateRange(60, 3600)][int]$TimeoutSeconds = 600,
@@ -24,14 +24,15 @@ if ((Get-Item -LiteralPath $UnityEditor).VersionInfo.ProductVersion -notmatch ('
 { throw "Unity editor must match ProjectVersion.txt: $unityVersion" }
 $null = Get-Command git -ErrorAction Stop
 $suites = [ordered]@{
-    paths = @{ Runner = 'PathValidationRunner'; Cases = 16 }
-    manifest = @{ Runner = 'ManifestValidationRunner'; Cases = 13 }
-    collector = @{ Runner = 'CollectorValidationRunner'; Cases = 18 }
-    packages = @{ Runner = 'PackageValidationRunner'; Cases = 1 }
-    tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 37 }
-    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 145 }
-    loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 28 }
+    paths = @{ Runner = 'PathValidationRunner' }
+    manifest = @{ Runner = 'ManifestValidationRunner' }
+    collector = @{ Runner = 'CollectorValidationRunner' }
+    addons = @{ Runner = 'AddonsValidationRunner' }
+    tasks = @{ Runner = 'TaskSystemValidationRunner' }
+    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner' }
+    loading = @{ Runner = 'AssetLoadingValidationRunner' }
 }
+$expectedIds = Get-Content -Raw -LiteralPath (Join-Path $validationRoot 'Scenarios.json') | ConvertFrom-Json -AsHashtable
 $selected = @($suites.Keys | Where-Object { $Suite -contains 'all' -or $Suite -contains $_ })
 
 function Assert-ChildPath([string]$Path, [string]$Parent)
@@ -82,7 +83,10 @@ function Get-IsolatedCodeHashes
 {
     $assetsRoot = Join-Path $projectRoot 'Assets'
     if (!(Test-Path -LiteralPath $assetsRoot -PathType Container)) { return }
-    Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Force | Where-Object { $_.Name -match '\.(cs|asmdef|asmref|dll)(\.meta)?$' } | ForEach-Object {
+    Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Force | Where-Object {
+        $_.Name -match '\.(cs|asmdef|asmref|dll)(\.meta)?$' -or
+            $_.FullName.StartsWith((Join-Path $projectRoot $testDirectory), [StringComparison]::OrdinalIgnoreCase)
+    } | ForEach-Object {
         [pscustomobject]@{
             Path = [IO.Path]::GetRelativePath($projectRoot, $_.FullName).Replace('\', '/')
             SHA256 = (Get-FileHash -LiteralPath $_.FullName).Hash
@@ -171,10 +175,9 @@ try
         $null = $allowedFiles.Add($relative)
         if ($relative -ne $editorAsmdef) { Copy-Changed (Join-Path $repositoryRoot $relative) (Join-Path $projectRoot $relative) }
     }
-    foreach ($file in (Get-ChildItem -LiteralPath $sourceRoot -File))
+    foreach ($file in (Get-ChildItem -LiteralPath $sourceRoot -Recurse -File))
     {
-        if ($file.Name -notmatch '\.cs(\.meta)?$') { continue }
-        $relative = "$testDirectory/$($file.Name)"
+        $relative = "$testDirectory/$([IO.Path]::GetRelativePath($sourceRoot, $file.FullName).Replace('\', '/'))"
         $null = $allowedFiles.Add($relative)
         Copy-Changed $file.FullName (Join-Path $projectRoot $relative)
     }
@@ -198,7 +201,7 @@ try
     }
     # Tests access internal editor APIs; derive the isolated adapter from today's asmdef.
     $asmdef = Get-Content (Join-Path $repositoryRoot $editorAsmdef) -Raw | ConvertFrom-Json
-    $asmdef.references = @(@($asmdef.references) + @('UniTask', 'LitJson') | Select-Object -Unique)
+    $asmdef.references = @(@($asmdef.references) + @('UniTask', 'LitJson', 'LiteQuark.Runtime.Addons') | Select-Object -Unique)
     $asmdefCopy = Assert-ChildPath (Join-Path $projectRoot $editorAsmdef) $projectRoot
     $asmdefJson = $asmdef | ConvertTo-Json -Depth 20
     if (!(Test-Path $asmdefCopy) -or [IO.File]::ReadAllText($asmdefCopy).Trim() -ne $asmdefJson.Trim())
@@ -207,8 +210,8 @@ try
     $snapshotChanges = @(Get-Changes $snapshotHashes $projectRoot)
     if ($snapshotChanges.Count) { throw "Snapshot mismatch: $($snapshotChanges -join ', ')" }
     $scriptHash = (Get-FileHash -LiteralPath $PSCommandPath).Hash
-    $runnerHashes = @(Get-ChildItem -LiteralPath $sourceRoot -File | ForEach-Object {
-        [pscustomobject]@{ Path = $_.Name; SHA256 = (Get-FileHash -LiteralPath $_.FullName).Hash }
+    $runnerHashes = @(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | ForEach-Object {
+        [pscustomobject]@{ Path = [IO.Path]::GetRelativePath($sourceRoot, $_.FullName).Replace('\', '/'); SHA256 = (Get-FileHash -LiteralPath $_.FullName).Hash }
     })
     foreach ($row in $runnerHashes)
     {
@@ -223,7 +226,7 @@ try
         HostPlatform = 'Windows'; BuildTarget = 'Win64'
         ProductionFiles = $initialHashes.Count; CopiedFiles = $copyPaths.Count; RunnerHashes = $runnerHashes
         ScriptSHA256 = $scriptHash
-        AssemblyAdapter = 'Current LiteQuark.Editor.asmdef plus UniTask and LitJson references in isolated Project only.'
+        AssemblyAdapter = 'Current LiteQuark.Editor.asmdef plus UniTask, LitJson and LiteQuark.Runtime.Addons references in isolated Project only.'
         AssemblyAdapterSHA256 = (Get-FileHash -LiteralPath $asmdefCopy).Hash
     }
     $state | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $reportRoot 'source-state.json') -Encoding utf8
@@ -259,7 +262,7 @@ try
         $logPath = Join-Path $suiteRoot 'unity.log'
         $started = [DateTime]::UtcNow
         $summary = [ordered]@{
-            Suite = $name; Passed = 0; Failed = 0; Cases = 0; RegressionCases = 0
+            Suite = $name; Passed = 0; Failed = 0; RegressionCases = 0
             KnownLimitations = 0; Diagnostics = 0; DiagnosticsPassed = 0
             Assertions = 0; ExitCode = $null; Success = $false; Error = $null
             Failures = @(); KnownLimitationDetails = @(); DiagnosticDetails = @()
@@ -276,41 +279,48 @@ try
             if (!(Test-Path -LiteralPath $resultPath) -or (Get-Item $resultPath).LastWriteTimeUtc -lt $started)
             { throw "No fresh result; Unity exit $($summary.ExitCode). See $logPath" }
             $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
-            $cases = if ($name -eq 'packages') { @($result) } else { @($result.cases) }
+            $cases = @($result.cases)
+            $expected = @($expectedIds[$name])
+            $actual = @($cases | ForEach-Object id)
             $summary.Cases = $cases.Count
             $known = @($cases | Where-Object { $_.status -eq 'known_limitation' })
             $diagnostics = @($cases | Where-Object diagnostic)
+            $summary.KnownLimitations = $known.Count
+            $summary.Diagnostics = $diagnostics.Count
+            $summary.DiagnosticsPassed = @($diagnostics | Where-Object passed).Count
+            $summary.RegressionCases = $cases.Count - $known.Count - $diagnostics.Count
+            $summary.Passed = @($cases | Where-Object { $_.passed -and !$_.diagnostic }).Count
+            $summary.Assertions = ($cases | Measure-Object checks -Sum).Sum
+            $summary.Failures = @($cases | Where-Object { !$_.passed -and $_.status -ne 'known_limitation' } | ForEach-Object { [pscustomobject]@{ Name = $_.id; Failure = $_.failure } })
+            $summary.Failed = $summary.Failures.Count
+            $summary.KnownLimitationDetails = @($known | ForEach-Object { [pscustomobject]@{ Id = $_.limitationId; Name = $_.id; Reason = $_.failure; Evidence = $_.evidence } })
+            $summary.DiagnosticDetails = @($diagnostics | ForEach-Object { [pscustomobject]@{ Name = $_.id; Confirmed = $_.passed; Evidence = $_.evidence; Failure = $_.failure } })
+            if (!$expected.Count -or ($expected | Group-Object -CaseSensitive | Where-Object Count -gt 1) -or
+                ($actual | Group-Object -CaseSensitive | Where-Object Count -gt 1) -or
+                (Compare-Object -CaseSensitive $expected $actual))
+            { throw "Missing, duplicate or unexpected scenario ID. Expected [$($expected -join ', ')] actual [$($actual -join ', ')]." }
             # Only this specific, independently confirmed Unity limitation is non-blocking.
             # Do not infer a limitation from a case name or an arbitrary failure message.
             if ($name -eq 'loading')
             {
-                if ($diagnostics.Count -ne 1 -or $diagnostics[0].name -ne '17 Native same-name Bundle collision diagnostic')
+                if ($known.Count -ne 1 -or $diagnostics.Count -ne 1 -or $diagnostics[0].id -cne 'loading/same-name-native')
                 { throw 'Missing or unexpected native diagnostic classification.' }
             }
             elseif ($diagnostics.Count) { throw 'Unexpected diagnostic classification outside loading.' }
             foreach ($item in $known)
             {
                 if ($name -ne 'loading' -or $known.Count -ne 1 -or $item.passed -or $item.diagnostic -or
-                    $item.name -ne '08 Bundle same-name scenes in different folders' -or
-                    $item.limitationId -ne 'UNITY-SAME-NAME-SCENE-BUNDLES' -or
+                    $item.id -cne 'loading/same-name-limit' -or
+                    [string]::IsNullOrWhiteSpace($item.failure) -or !$item.evidence.Count -or !($item.errors.Count -gt 0) -or
+                    $item.limitationId -cne 'UNITY-SAME-NAME-SCENE-BUNDLES' -or
                     !$diagnostics[0].passed -or $diagnostics[0].status -ne 'diagnostic_passed')
                 { throw 'Unconfirmed or unexpected known limitation; counted as a validation failure.' }
             }
-            $summary.KnownLimitations = $known.Count
-            $summary.Diagnostics = $diagnostics.Count
-            $summary.DiagnosticsPassed = @($diagnostics | Where-Object passed).Count
-            $summary.RegressionCases = $cases.Count - $known.Count - $diagnostics.Count
-            $summary.Passed = @($cases | Where-Object { $_.passed -and !$_.diagnostic }).Count
-            $summary.Assertions = ($cases | ForEach-Object { if ($null -ne $_.checks) { $_.checks } else { $_.assertions } } | Measure-Object -Sum).Sum
-            $summary.Failures = @($cases | Where-Object { !$_.passed -and $_.status -ne 'known_limitation' } | ForEach-Object { [pscustomobject]@{ Name = $_.name; Failure = $_.failure } })
-            $summary.Failed = $summary.Failures.Count
-            $summary.KnownLimitationDetails = @($known | ForEach-Object { [pscustomobject]@{ Id = $_.limitationId; Name = $_.name; Reason = $_.failure; Evidence = $_.evidence } })
-            $summary.DiagnosticDetails = @($diagnostics | ForEach-Object { [pscustomobject]@{ Name = $_.name; Confirmed = $_.passed; Evidence = $_.evidence; Failure = $_.failure } })
             $harnessCleanup = @($cases | Where-Object { @($_.evidence | Where-Object { $_ -like 'Harness-only cleanup*' }).Count -gt 0 }).Count
-            $summary.Success = $summary.ExitCode -eq 0 -and $summary.Cases -eq $entry.Cases -and
-                ($summary.Passed + $summary.KnownLimitations + $summary.DiagnosticsPassed) -eq $entry.Cases -and $summary.Failed -eq 0 -and
+            $summary.Success = $summary.ExitCode -eq 0 -and $summary.Cases -eq $expected.Count -and
+                ($summary.Passed + $summary.KnownLimitations + $summary.DiagnosticsPassed) -eq $expected.Count -and $summary.Failed -eq 0 -and
                 !$result.fatalError -and !@($result.unexpectedErrors | Where-Object { $_ }).Count -and !$harnessCleanup -and $result.unityVersion -eq $unityVersion
-            if (!$summary.Success) { $summary.Error = "Validation failed. Expected $($entry.Cases) cases; fatal error: $($result.fatalError); harness cleanup: $harnessCleanup" }
+            if (!$summary.Success) { $summary.Error = "Validation failed. Expected $($expected.Count) cases; fatal error: $($result.fatalError); harness cleanup: $harnessCleanup" }
         }
         catch { $summary.Error = $_.Exception.Message }
         finally { if ($process) { $process.Dispose(); $process = $null } }
