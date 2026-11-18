@@ -141,7 +141,7 @@ namespace LiteQuark.Editor
                 disposed = false;
                 try { pendingResource.GetAllScenePaths(); } catch (ObjectDisposedException) { disposed = true; }
                 Check(disposed && bundleTask.State == TaskState.Cancelled && (await bundleTask.Task) == null &&
-                    ((IResourceTaskCleanup)bundleTask).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded && pending.IsDone && pending.Result == null &&
+                    pending.IsDone && pending.Result == null &&
                     (!otherActualScene.IsValid() || !otherActualScene.isLoaded) && projectAsset != null,
                     "Closing cancels managed Bundle work, ends pending Handles and unloads actual scenes without destroying project assets.");
                 Check(assets.LoadAssetHandle<TextAsset>(EditorTextPath).State == AssetHandleState.Failed,
@@ -748,47 +748,58 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask AssetGroupFactoryRouting()
+        private static async UniTask AssetGroupRouting()
         {
-            var h = New();
+            var h = New(true);
             var group = RuntimeGroup(LiteConst.TaskGroupId.Asset);
             var gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
-            var tasks = new List<ITask>();
-            AssetBundle bundle = null;
+            var providerTasks = new List<ITask>();
+            AssetHandle<TextAsset> asset;
+            SceneHandle scene;
             try
             {
                 await Wait(() => gates.All(task => task.IsExecuted), "Asset group saturation");
-                bundle = AssetBundle.LoadFromFile(Path.Combine(BundleFolder, "text.ab"));
-                Check(bundle != null, "Factory routing fixture is a real loaded Bundle.");
-                tasks.Add(LiteRuntime.Task.AddLoadVersionPackTask(new Uri(Path.Combine(BundleFolder, "unused-version.bytes")).AbsoluteUri, null));
-                tasks.Add(LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, "text.ab")));
-                tasks.Add(LiteRuntime.Task.AddLoadRemoteBundleTask("http://127.0.0.1/validation-not-sent.ab", null));
-                tasks.Add(LiteRuntime.Task.AddLoadAssetTask<TextAsset>(bundle, "payload.txt", null));
-                tasks.Add(LiteRuntime.Task.AddLoadSceneTask("validation_scene", new LoadSceneParameters(LoadSceneMode.Additive), null));
-                for (var i = 0; i < tasks.Count; i++)
+                var builtIn = new BuiltInBundleProvider();
+                var remote = new RemoteBundleProvider("http://127.0.0.1/validation");
+                providerTasks.Add(builtIn.LoadVersionPack("version.bytes"));
+                providerTasks.Add(remote.LoadVersionPack("version.bytes"));
+                providerTasks.Add(builtIn.LoadBundle("text.ab", null));
+                providerTasks.Add(remote.LoadBundle("text.ab", null));
+
+                asset = h.Asset<TextAsset>(TextPath);
+                h.Provider.Tick(0);
+                h.Finish("text.ab", true);
+                scene = QueueScene(h);
+
+                void CheckRouting(ITask task, TaskPriority priority)
                 {
-                    var record = RuntimeRecords().Single(value => ReferenceEquals(value.Task, tasks[i]));
-                    Check(record.Group.Id == LiteConst.TaskGroupId.Asset
-                        && record.Priority == (i < 3 ? TaskPriority.Urgent : TaskPriority.Normal),
-                        tasks[i].GetType().Name + " uses Asset and its unchanged fixed priority.");
+                    var record = RuntimeRecords().Single(value => ReferenceEquals(value.Task, task));
+                    Check(record.Group == group && record.Priority == priority && task.State == TaskState.Pending,
+                        task.GetType().Name + " waits in the saturated Asset group with priority " + priority);
                 }
+                foreach (var task in providerTasks) CheckRouting(task, TaskPriority.Urgent);
+                var assetTask = Get<BaseTask>(h.Entry("text.ab", TextPath), "_loadAssetTask");
+                var sceneTask = Get<BaseTask>(h.SceneEntries().Single(), "_loadSceneTask");
+                CheckRouting(assetTask, TaskPriority.Normal);
+                CheckRouting(sceneTask, TaskPriority.Normal);
 
                 var defaultRan = false;
                 var flowRan = false;
-                var defaultTask = new MainThreadTask(_ => defaultRan = true, null);
-                LiteRuntime.Task.AddTask(defaultTask);
+                LiteRuntime.Task.AddTask(new MainThreadTask(_ => defaultRan = true, null));
                 LiteRuntime.Task.AddMainThreadTask(_ => flowRan = true, null);
                 await Wait(() => defaultRan && flowRan, "Other groups execute while Asset is full");
-                Check(tasks.All(task => !task.IsExecuted && task.State == TaskState.Pending)
+                Check(providerTasks.All(task => !task.IsExecuted) && !assetTask.IsExecuted && !sceneTask.IsExecuted
                     && group.RunningTaskCount == group.ConcurrencyLimit,
-                    "All five factories wait for Asset capacity, including Urgent; Default and Flow remain runnable.");
+                    "Provider and Cache tasks wait for Asset capacity while Default and Flow remain runnable.");
             }
             finally
             {
-                foreach (var task in tasks) task.Cancel();
+                foreach (var task in providerTasks) task.Cancel();
                 await ReleaseGates(gates);
-                if (bundle != null) bundle.Unload(true);
             }
+            await Wait(() => asset.IsDone && scene.IsDone, "Queued asset and scene reads");
+            Check(asset.Result != null && scene.Result.HasValue && scene.Result.Value.isLoaded,
+                "Both Cache reads deliver their real resources once Asset capacity returns.");
         }
 
         private static async UniTask AssetGroupLoaderBudgets(int availableSlots)

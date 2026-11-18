@@ -47,7 +47,7 @@ namespace LiteQuark.Runtime
             _runningTasks.Clear();
             try
             {
-                await UniTaskUtils.WhenAllCompleteAsync(_pendingCleanup);
+                await UniTask.WhenAll(_pendingCleanup);
             }
             finally
             {
@@ -71,20 +71,13 @@ namespace LiteQuark.Runtime
             {
                 task.Cancel();
             }
-            try
+            if (discardResult && task.State == TaskState.Succeeded)
             {
-                // 正常交付保留容器；关闭时释放尚未交付的成功结果。
-                if (discardResult && task.State == TaskState.Succeeded)
-                {
-                    task.GetBundle()?.Dispose();
-                }
+                task.GetBundle()?.Dispose();
             }
-            finally
+            if (task is IResourceTaskCleanup cleanup)
             {
-                if (task is IResourceTaskCleanup cleanup)
-                {
-                    await cleanup.WaitForCleanupAsync();
-                }
+                await cleanup.WaitForCleanupAsync();
             }
         }
 

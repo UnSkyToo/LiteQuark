@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
@@ -27,6 +28,27 @@ namespace LiteQuark.Runtime
             BundlePath = AssetPath.NormalizeBundlePath(bundlePath);
             AssetList = assetList;
             DependencyList = dependencyList ?? Array.Empty<string>();
+        }
+
+        internal BundleInfo WithEncodedDependencies(Dictionary<string, string> bundleIds)
+        {
+            if (DependencyList.Length == 0)
+            {
+                return this;
+            }
+
+            var copy = (BundleInfo)MemberwiseClone();
+            copy.DependencyList = new string[DependencyList.Length];
+            for (var i = 0; i < DependencyList.Length; i++)
+            {
+                var path = DependencyList[i];
+                if (!bundleIds.TryGetValue(path, out var id))
+                {
+                    throw new KeyNotFoundException($"Dependency not found: {path}, bundle: {BundlePath}");
+                }
+                copy.DependencyList[i] = id;
+            }
+            return copy;
         }
 
         public override string ToString()

@@ -1,26 +1,22 @@
 #if UNITY_EDITOR
 using System;
-using Cysharp.Threading.Tasks;
 using UnityEditor;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadSimulateAssetTask<T> : BaseTask, IResourceTaskCleanup where T : UnityEngine.Object
+    internal sealed class LoadSimulateAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
         public override string DebugName => $"SimulateAsset {_assetPath}";
 
         private readonly string _assetPath;
         private Action<ITask> _callback;
         private T _asset;
-        private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
         public LoadSimulateAssetTask(string assetPath, Action<ITask> callback)
         {
             _assetPath = assetPath;
             _callback = callback;
         }
-
-        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         protected override void OnExecute()
         {
@@ -37,16 +33,9 @@ namespace LiteQuark.Runtime
             _asset = null;
             var callback = _callback;
             _callback = null;
-            try
+            if (Complete(asset))
             {
-                if (Complete(asset))
-                {
-                    LiteUtils.SafeInvoke(callback, this);
-                }
-            }
-            finally
-            {
-                _cleanupCompletion.TrySetResult();
+                LiteUtils.SafeInvoke(callback, this);
             }
         }
 
@@ -60,7 +49,6 @@ namespace LiteQuark.Runtime
             var callback = _callback;
             _callback = null;
             LiteUtils.SafeInvoke(callback, this);
-            _cleanupCompletion.TrySetResult();
         }
 
         protected override void OnDispose()

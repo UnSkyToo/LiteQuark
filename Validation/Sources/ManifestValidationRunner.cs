@@ -29,7 +29,7 @@ namespace LiteQuark.Editor
                 Run("04 Assets and packages directory names survive verbatim", () => RoundTrip("data.ab", "data/assets.json", "data/assets_icon.png", "data/assetsbackup/icon.png", "data/assets/icon.png", "assets/demo/icon.png", "packages/demo/icon.png"));
                 Run("05 Internal complete-path contract rejects relative and UPM input", StrictPaths);
                 Run("06 Sparse dependency IDs round trip under all hash and flat modes", Dependencies);
-                Run("07 JSON fields unchanged and only dependencies mutate in place", JsonAndBinary);
+                Run("07 Repeated JSON and binary exports preserve live dependencies", JsonAndBinary);
                 Run("08 Unknown dependency paths and IDs fail", InvalidDependencies);
                 Run("09 Legacy relative manifests require regeneration", LegacyRelative);
                 Run("10 No format field means ambiguous legacy assets paths cannot be detected", LegacyAmbiguity);
@@ -115,9 +115,9 @@ namespace LiteQuark.Editor
                 var assets = source.BundleList.SelectMany(b => b.AssetList).ToArray();
                 var physical = source.BundleList.Select(source.GetBundleFileLoadPath).ToArray();
                 var bytes = source.ToBinaryData();
-                Check(source.BundleList[0].DependencyList.SequenceEqual(new[] { "42", "105" }) && source.BundleList[1].DependencyList.SequenceEqual(new[] { "105" }), "Sparse IDs are encoded as existing strings.");
+                Check(source.BundleList[0].DependencyList.SequenceEqual(new[] { "assets/shared.ab", "default.ab" }) && source.BundleList[1].DependencyList.Single() == "default.ab", "Binary export preserves all source dependency paths.");
                 var raw = LitJson.JsonMapper.ToObject<VersionPackInfo>(Decode(bytes));
-                Check(raw.BundleList[0].DependencyList.SequenceEqual(new[] { "42", "105" }), "Actual stored JSON contains ID strings.");
+                Check(raw.BundleList[0].DependencyList.SequenceEqual(new[] { "42", "105" }) && raw.BundleList[1].DependencyList.Single() == "105", "Stored JSON preserves sparse ID strings and their order.");
                 var restored = VersionPackInfo.FromBinaryData(bytes);
                 Check(restored.BundleList[0].DependencyList.SequenceEqual(new[] { "assets/shared.ab", "default.ab" }) && restored.BundleList[1].DependencyList.Single() == "default.ab", "Dependency paths restore exactly.");
                 Check(restored.BundleList.SelectMany(b => b.AssetList).SequenceEqual(assets), "Dependency encoding never alters resource paths.");
@@ -158,20 +158,32 @@ namespace LiteQuark.Editor
         private static void JsonAndBinary()
         {
             var source = DependencyPack(false, false);
+            source.Initialize();
             var assets = source.BundleList[0].AssetList;
             var deps = source.BundleList[0].DependencyList;
             var json = source.ToJsonData();
             Check(ReferenceEquals(assets, source.BundleList[0].AssetList) && assets.Single() == Key("ui/main/window.prefab"), "Asset array and content remain unchanged.");
-            Check(ReferenceEquals(deps, source.BundleList[0].DependencyList) && deps[0] == "42", "Dependency conversion remains in place.");
-            Check(json == Decode(DependencyPack(false, false).ToBinaryData()), "JSON and byte entry points encode the same data from fresh objects.");
+            Check(json == Decode(source.ToBinaryData()) && json == source.ToJsonData() && json == Decode(source.ToBinaryData()),
+                "Repeated exports of one manifest produce identical JSON payloads.");
+            Check(ReferenceEquals(deps, source.BundleList[0].DependencyList) && deps.SequenceEqual(new[] { "assets/shared.ab", "default.ab" }),
+                "The original dependency array retains its paths across exports.");
+            Check(ReferenceEquals(source.GetBundleInfoFromAssetPath(assets[0]), source.BundleList[0]) &&
+                ReferenceEquals(source.GetBundleInfoFromBundlePath(deps[0]), source.BundleList[1]),
+                "Initialized asset and dependency lookups still return the original bundles.");
             var root = LitJson.JsonMapper.ToObject(json);
             Check(root.Keys.Cast<string>().OrderBy(k => k).SequenceEqual(new[] { "IsValid", "Version", "Platform", "HashMode", "FlatMode", "BundleList" }.OrderBy(k => k)), "No format-version or other JSON field was introduced.");
         }
         private static void InvalidDependencies()
         {
             var rejected = false;
-            try { Pack(Bundle(1, "ui.ab", new[] { Key("ui/icon.png") }, "missing.ab")).ToBinaryData(); } catch (KeyNotFoundException) { rejected = true; }
-            Check(rejected, "Unknown dependency path fails during writing.");
+            var deps = new[] { "shared.ab", "missing.ab" };
+            var pack = Pack(Bundle(1, "ui.ab", new[] { Key("ui/icon.png") }, deps), Bundle(2, "shared.ab", Array.Empty<string>()));
+            try { pack.ToBinaryData(); } catch (KeyNotFoundException) { rejected = true; }
+            Check(rejected && deps.SequenceEqual(new[] { "shared.ab", "missing.ab" }),
+                "An unknown dependency fails export without converting an earlier valid path.");
+            deps[1] = "shared.ab";
+            Check(VersionPackInfo.FromBinaryData(pack.ToBinaryData()).BundleList[0].DependencyList.SequenceEqual(deps),
+                "The same manifest can be exported after correcting the missing dependency.");
             rejected = false;
             try { VersionPackInfo.FromBinaryData(Encode(LitJson.JsonMapper.ToJson(Pack(Bundle(1, "ui.ab", new[] { Key("ui/icon.png") }, "999"))))); } catch (KeyNotFoundException) { rejected = true; }
             Check(rejected, "Unknown dependency ID fails during reading.");

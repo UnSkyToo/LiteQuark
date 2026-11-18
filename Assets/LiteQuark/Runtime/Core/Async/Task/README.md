@@ -34,7 +34,7 @@ else if (task.State == TaskState.Cancelled)
 | `AddTask(Action<Action<bool>>)` | Default | 包装回调式操作，done(false) 表示失败 |
 | `AddInstantiateGoTask(...)`、`AddUnityWebGetRequestTask(...)` | Default | 异步实例化／下载 |
 
-上述便利入口使用 Normal 优先级。指定组或优先级时先构造 BaseTask 派生对象，再调用 `AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。通用入口只按传入组登记，不按类型自动分组。
+上述便利入口使用 Normal 优先级。指定组或优先级时先构造 BaseTask 派生对象，再调用 `AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。通用入口按传入组登记。Asset 模块的 Provider 以 Urgent 提交版本和 Bundle 任务，Cache 以 Normal 提交由 Bundle Resource 创建的 Asset 和 Scene 读取任务。
 
 ITask 是业务持有、观察、等待和取消任务的接口；BaseTask 是实现和提交可调度任务的基类。创建和提交时使用具体类型或 BaseTask，提交后仅需通用能力的字段、集合和回调参数使用 ITask。
 
@@ -62,7 +62,7 @@ ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或�
 
 取消结束逻辑任务，不保证 Unity 原生操作停止。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
 
-内置 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理取消／失败后的迟到 Bundle／Scene；Bundle 成功结果由持有任务的 Loader 管理，交付后由 Cache 管理。其他成功结果仍由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
+原生 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理取消／失败后的迟到 Bundle／Scene；Bundle 成功结果由持有任务的 Loader 管理，交付后由 Cache 管理。其他成功结果仍由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
 
 AssetSystem 关闭会等待它拥有的资源任务收尾，再卸载 Bundle；TaskSystem 本身只取消任务和回收包装器。其他资源拥有者也不能依据 IsDone 提前卸载在途操作依赖的资源。
 

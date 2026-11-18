@@ -75,47 +75,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void EncodeDependencies()
-        {
-            var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
-            foreach (var bundle in BundleList)
-            {
-                bundleIDMap.Add(bundle.BundlePath, bundle.BundleID.ToString());
-            }
-
-            foreach (var bundle in BundleList)
-            {
-                // var prefix = GetBundleAssetPrefix(bundle.BundlePath);
-                //
-                // for (var index = 0; index < bundle.AssetList.Length; index++)
-                // {
-                //     var assetPath = bundle.AssetList[index];
-                //
-                //     if (assetPath.StartsWith(prefix, StringComparison.Ordinal))
-                //     {
-                //         bundle.AssetList[index] = assetPath.Substring(prefix.Length);
-                //     }
-                //     else if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
-                //     {
-                //         throw new InvalidOperationException($"Asset path does not match bundle prefix: {assetPath}, bundle: {bundle.BundlePath}");
-                //     }
-                // }
-
-                for (var index = 0; index < bundle.DependencyList.Length; index++)
-                {
-                    var dependencyPath = bundle.DependencyList[index];
-                    if (bundleIDMap.TryGetValue(dependencyPath, out var dependencyId))
-                    {
-                        bundle.DependencyList[index] = dependencyId;
-                    }
-                    else
-                    {
-                        throw new KeyNotFoundException($"Dependency not found: {dependencyPath}, bundle: {bundle.BundlePath}");
-                    }
-                }
-            }
-        }
-
         private void DecodeDependencies()
         {
             var bundleIDMap = new Dictionary<string, string>(BundleList.Length);
@@ -126,18 +85,6 @@ namespace LiteQuark.Runtime
 
             foreach (var bundle in BundleList)
             {
-                // var prefix  = GetBundleAssetPrefix(bundle.BundlePath);
-                //
-                // for (var index = 0; index < bundle.AssetList.Length; index++)
-                // {
-                //     var assetPath = bundle.AssetList[index];
-                //
-                //     if (!assetPath.StartsWith(LiteConst.AssetRootName + "/", StringComparison.OrdinalIgnoreCase))
-                //     {
-                //         bundle.AssetList[index] = prefix + assetPath;
-                //     }
-                // }
-
                 for (var index = 0; index < bundle.DependencyList.Length; index++)
                 {
                     var dependencyId = bundle.DependencyList[index];
@@ -151,18 +98,6 @@ namespace LiteQuark.Runtime
                     }
                 }
             }
-        }
-
-        private static string GetBundleAssetPrefix(string bundlePath)
-        {
-            var defaultBundlePath = $"default{LiteConst.BundleFileExt}";
-
-            if (string.Equals(bundlePath, defaultBundlePath, StringComparison.OrdinalIgnoreCase))
-            {
-                return string.Empty;
-            }
-
-            return bundlePath.Substring(0, bundlePath.Length - LiteConst.BundleFileExt.Length) + "/";
         }
 
         public BundleInfo GetBundleInfoFromBundlePath(string bundlePath)
@@ -228,13 +163,19 @@ namespace LiteQuark.Runtime
                 throw new InvalidOperationException("VersionPackInfo is not valid");
             }
 
-            EncodeDependencies();
+            var bundleIds = new Dictionary<string, string>(BundleList.Length);
+            foreach (var bundle in BundleList)
+            {
+                bundleIds.Add(bundle.BundlePath, bundle.BundleID.ToString());
+            }
+
+            var export = (VersionPackInfo)MemberwiseClone();
+            export.BundleList = Array.ConvertAll(BundleList, bundle => bundle.WithEncodedDependencies(bundleIds));
             try
             {
-                var jsonText = LitJson.JsonMapper.ToJson(this);
-                return jsonText;
+                return LitJson.JsonMapper.ToJson(export);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 LLog.Exception(ex, "Failed to serialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
                 throw;
@@ -243,28 +184,8 @@ namespace LiteQuark.Runtime
 
         public byte[] ToBinaryData()
         {
-            if (!IsValid)
-            {
-                throw new InvalidOperationException("VersionPackInfo is not valid");
-            }
-
-            EncodeDependencies();
-            try
-            {
-                var jsonText = LitJson.JsonMapper.ToJson(this);
-                var jsonData = Encoding.UTF8.GetBytes(jsonText);
-                if (LiteConst.SecurityMode)
-                {
-                    return SecurityUtils.EncryptBytes(jsonData, LiteConst.SecurityKey);
-                }
-
-                return jsonData;
-            }
-            catch(Exception ex)
-            {
-                LLog.Exception(ex, "Failed to serialize VersionPackInfo, SecurityMode:{0}", LiteConst.SecurityMode);
-                throw;
-            }
+            var data = Encoding.UTF8.GetBytes(ToJsonData());
+            return LiteConst.SecurityMode ? SecurityUtils.EncryptBytes(data, LiteConst.SecurityKey) : data;
         }
 
         public static VersionPackInfo FromBinaryData(byte[] data)

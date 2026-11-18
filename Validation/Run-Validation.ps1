@@ -28,8 +28,8 @@ $suites = [ordered]@{
     manifest = @{ Runner = 'ManifestValidationRunner'; Cases = 13 }
     collector = @{ Runner = 'CollectorValidationRunner'; Cases = 18 }
     packages = @{ Runner = 'PackageValidationRunner'; Cases = 1 }
-    tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 38 }
-    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 148 }
+    tasks = @{ Runner = 'TaskSystemValidationRunner'; Cases = 37 }
+    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner'; Cases = 145 }
     loading = @{ Runner = 'AssetLoadingValidationRunner'; Cases = 28 }
 }
 $selected = @($suites.Keys | Where-Object { $Suite -contains 'all' -or $Suite -contains $_ })

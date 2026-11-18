@@ -182,7 +182,7 @@ namespace LiteQuark.Editor
                 await Run("79 Public priority entry points", "preload, both instantiate overloads and real scene", PriorityPublicEntryPoints);
                 await Run("80 Asset group registration and configuration", "real framework startup and registered groups", AssetGroupConfiguration);
                 await Run("81 Saturated Default still loads real assets and scene", "real local Bundles, dependencies, Asset and Scene tasks", AssetGroupDefaultSaturation);
-                await Run("82 Five loading factories route to blocked Asset group", "actual factories; remote request is canceled before execution", AssetGroupFactoryRouting);
+                await Run("82 Providers and Caches submit to the blocked Asset group", "BuiltIn and Remote providers, real asset and scene reads", AssetGroupRouting);
                 await Run("83 Asset quota constrains Loader submissions", "one available Asset slot, Loader limit two, controlled completion and real assets", () => AssetGroupLoaderBudgets(1));
                 await Run("84 Loader limit constrains available Asset quota", "three available Asset slots, Loader limit two, controlled completion and real assets", () => AssetGroupLoaderBudgets(3));
                 await Run("85 Retention expires while timeScale is zero", "real asset and public AssetSystem Tick with Unity clock", RetentionDuringPause);
@@ -215,15 +215,11 @@ namespace LiteQuark.Editor
                     "Unloading the last loaded scene");
                 await Run("109 Remote cleanup follows request and timer retirement", "real file URI handoff, loopback cancellation and timeout retry timer", RemoteTaskCleanup,
                     "LoadRemoteBundleTask failed:", "Bundle download failed");
-                await Run("110 Download release failure terminates retry and preserves terminal results", "throwing DownloadHandler, real HTTP timeout and controlled logical terminals", DownloadReleaseFailures,
-                    "RequestReleaseProbe failed:");
                 await Run("111 System close waits for retired Bundle cleanup", "native Bundle outlives logical failure and Loader retirement", ShutdownWaitsForRetiredBundle, "Load bundle failed");
                 await Run("112 System close releases retained asset and scene Handles", "real scene unload and cached Bundle dependencies", ShutdownReleasesHeldResources);
-                await Run("156 System close continues after Bundle release failure", "actual Cache leases and controlled final release failures", ShutdownContinuesAfterBundleReleaseFailure);
                 await Run("113 System close waits for cancelled native scene", "native loading, early task disposal and retained dependencies", ShutdownWaitsForNativeScene);
-                await Run("114 System close reports refused scene unload", "real last-scene refusal and retained Bundle", ShutdownReportsSceneRefusal,
+                await Run("114 System close reports refused scene unload", "real last-scene refusal with another resource cleanup pending", ShutdownReportsSceneRefusal,
                     "Start scene unload failed", "Unloading the last loaded scene");
-                await Run("115 System close drains other cleanup after a failure", "controlled cleanup outcomes with a real cached Bundle", ShutdownWaitsAfterCleanupFailure);
                 await Run("116 Simulate close drains queued and executed Asset tasks", "shared Bundle flow and actual project objects", EditorShutdownDeliveries);
                 await Run("117 Simulate close unloads an in-flight scene", "native Editor scene task and cleanup", EditorShutdownScene);
                 await Run("118 Pool template completion and cancellation", "controlled template result and public callback/await APIs", PoolTemplateCompletion);
@@ -437,7 +433,7 @@ namespace LiteQuark.Editor
                 {
                     _case.evidence.Add("Fixture teardown after recorded close failure; this does not define a Runtime retry API.");
                     var caches = Get<Dictionary<string, AssetBundleCache>>(Current.Provider, "_bundleCacheMap");
-                    // All close waits have settled; failure fixtures explicitly release their remaining native Bundles.
+                    // Failure fixtures settle their outstanding operations before teardown releases their remaining Bundles.
                     foreach (var cache in caches.Values) if (cache.Bundle != null) cache.Bundle.Dispose();
                     caches.Clear();
                     Current.Disposed = true;

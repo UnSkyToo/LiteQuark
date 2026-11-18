@@ -49,7 +49,7 @@ Runtime 统一管理已注册 System 和 Logic 的生命周期。初始化方法
 
 Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。如果重启期间收到应用退出通知，旧系统继续关闭，完成后停在 Idle。Idle、InitSystem、InitLogic、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
 
-等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。Asset 的在途加载和场景卸载等限制仍以[模块指南](Runtime/Asset/README.md)为准，当前不承诺任意加载状态下的安全即时重启。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
+等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。加载途中可以请求 Restart。Asset 收尾成功后才启动新一轮，卸载失败时重启终止，详见[资源关闭](Runtime/Asset/README.md#系统关闭)。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 
 Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步清理续体才执行。释放逻辑访问 Unity 对象前应使用 `obj != null` 检查其原生对象是否仍存在；`?.` 只检查托管引用。已经由 Unity 销毁的对象无需再次 Destroy。
 

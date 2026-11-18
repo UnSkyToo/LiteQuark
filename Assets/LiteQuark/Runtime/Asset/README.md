@@ -98,11 +98,11 @@ if (!preload.Result)
 
 ## 系统关闭
 
-AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Simulate 同样会等待已有加载和任务收尾，关闭中的迟到结果不再成功交付。
+AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Simulate 直接取消待交付的模拟资源，已启动的场景操作同样等待实际卸载。关闭中的迟到结果由原持有者清理。
 
 业务应先停止资源使用并释放 Handle；遗漏 Handle 不保留旧资源的可用性，实例仍由其拥有者销毁。Handle／Lease 的 Dispose 仍是同步归还，返回不代表原生卸载已经结束。系统关闭不主动执行全局 Resources.UnloadUnusedAssets 或 GC。
 
-关闭异常会在其余收尾结束后向上传播，不自动重试或恢复。内容收尾失败时不进入最终 Bundle 卸载；最终释放失败时仍尝试其余 Bundle，此时可能已释放部分资源，不能继续使用旧系统。原生操作不结束时关闭会继续等待，没有生产超时。
+加载途中可以请求热重启。只有 Shutdown 成功，新 Runtime 才启动并可重新加载同一资源或场景。内容收尾失败（例如 Unity 拒绝卸载唯一场景）会立即报告并跳过最终卸包。最终卸包遇错也会停止，此时可能已有部分包释放。Runtime 进入 ShutdownFailed，其他已发起的原生清理可能仍在进行。没有错误时，尚未结束的原生操作会继续阻挡关闭。
 
 ## 路径与模式
 
@@ -143,7 +143,7 @@ BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制�
 
 收集配置优先读取 `Assets/Editor/ResSetting.asset`，不存在时查找项目中的 ResCollectorSetting；仍不存在则使用默认分包规则。Simulate、构建收集和 Bundle Viewer 均不会自动创建配置。只有实际修改文件夹 Inspector 的 Individual Bundle 选项或通过 Create 菜单明确创建配置时才写入资产。默认 Collector 在首次收集时读取并复制分包规则，因此构建前和收集步骤前的回调修改配置仍会生效；清单缓存期间不重新读取，清理缓存后再次收集时刷新规则。显式传入规则的 Collector 在构造时复制规则，清理缓存后也继续使用该副本。
 
-Provider 返回已提交到 Asset 组的任务，不通过结果 callback 交付。版本任务成功结果为已初始化的 VersionPackInfo；三种 Bundle 任务的 Result、await 结果和 GetBundle 均观察同一个 IBundleResource。Loader 在 Tick 中统一处理成功、失败和取消，随后向 Cache 交付；任务成功不代表 Cache 已接收，关闭时 Loader 释放所有未交付成功容器并等待原生收尾。
+Provider 创建版本和 Bundle 任务，并通过 TaskSystem.AddTask 提交到 Asset 组后返回。版本任务成功结果为已初始化的 VersionPackInfo；三种 Bundle 任务的 Result、await 结果和 GetBundle 均观察同一个 IBundleResource。Loader 在 Tick 中统一处理成功、失败和取消，随后向 Cache 交付；任务成功不代表 Cache 已接收，关闭时 Loader 释放所有未交付成功容器并等待原生收尾。
 
 Cache 收到主包后即由 Bundle 字段持有；依赖未就绪时仍处于 Loading，不启动资源读取。正常加载等主包和依赖全部返回后才发布成功或失败，失败或关闭时由 Cache 释放已接收的主包。
 
@@ -179,7 +179,7 @@ Handle 释放后，资源是否立即回收取决于共享引用和 Bundle 缓�
 
 主 Bundle 实际卸载后才释放依赖引用，依赖引用归零后开始自己的保留计时。`UnloadUnusedAssets(maxDepth)` 最多执行指定轮数的缓存清理，不是依赖图层数；它还调用 Unity 未使用资源清理和 GC。释放最后引用后调用它可能立即回收资源，不要继续使用旧引用。
 
-版本清单 `BundleInfo.AssetList` 保存完整规范资源 key。调用 `ToJsonData()` / `ToBinaryData()` 会将 DependencyList 原地转换为 ID，输出后不要继续查询或重复输出该对象；再次输出使用重新收集或重新读取并恢复的对象。
+版本清单 `BundleInfo.AssetList` 保存完整规范资源 key。内存中的 `DependencyList` 保存 Bundle 路径，JSON 和二进制清单按相同顺序写入字符串 ID。可以对同一份清单重复或交替调用 `ToJsonData()` 和 `ToBinaryData()`，导出后继续查询原清单。
 
 **旧相对路径清单必须从源资源重新构建，与新读取器配套使用。** 读入旧清单再导出不能可靠迁移，解析成功也不能证明兼容。其他升级步骤见 [CHANGELOG](../../CHANGELOG.md)。
 

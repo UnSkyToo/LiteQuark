@@ -65,21 +65,18 @@ namespace LiteQuark.Runtime
             }
             foreach (var cache in _bundleCacheMap.Values)
             {
-                cleanups.Add(cache.ReleaseContentsAsync());
+                cache.BeginReleaseContents(cleanups);
             }
 
             // Runtime 先关闭上层业务和 ObjectPoolSystem；其 GameObjectHandle／池实例已调用 Destroy。
             // 跨帧让这些实例完成销毁，再卸载 Bundle；此处不替代原生加载与场景卸载的等待。
-            await UniTask.NextFrame();
+            cleanups.Add(UniTask.NextFrame());
+            await UniTask.WhenAll(cleanups);
 
-            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
-
-            cleanups.Clear();
             foreach (var cache in _bundleCacheMap.Values)
             {
-                cleanups.Add(cache.DisposeAsync());
+                cache.CompleteUnload();
             }
-            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
             _loadingSceneSet.Clear();

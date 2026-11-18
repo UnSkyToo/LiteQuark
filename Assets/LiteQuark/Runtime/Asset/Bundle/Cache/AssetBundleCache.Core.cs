@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetBundleCache : ITick, IDisposeAsync
+    internal sealed partial class AssetBundleCache : ITick
     {
         public AssetCacheStage Stage { get; private set; }
         // 主包交付后即持有；只有 Stage 为 Loaded 时，本包及依赖才全部就绪。
@@ -38,15 +38,13 @@ namespace LiteQuark.Runtime
             _retainTime = 0;
         }
 
-        internal async UniTask ReleaseContentsAsync()
+        internal void BeginReleaseContents(List<UniTask> cleanups)
         {
             if (Stage == AssetCacheStage.Unloaded)
             {
                 return;
             }
             Stage = AssetCacheStage.Unloading;
-
-            var cleanups = new List<UniTask>(_assetCacheMap.Count + _sceneCacheMap.Count);
 
             foreach (var asset in _assetCacheMap.Values)
             {
@@ -69,11 +67,6 @@ namespace LiteQuark.Runtime
                     LiteUtils.SafeInvoke(callback, result);
                 }
             }
-
-            await UniTaskUtils.WhenAllCompleteAsync(cleanups);
-
-            _assetCacheMap.Clear();
-            _sceneCacheMap.Clear();
         }
 
         internal bool CanUnload(bool ignoreRetainTime)
@@ -108,22 +101,7 @@ namespace LiteQuark.Runtime
             return true;
         }
 
-        public async UniTask DisposeAsync()
-        {
-            if (Stage == AssetCacheStage.Unloaded)
-            {
-                return;
-            }
-
-            if (_assetCacheMap.Count > 0 || _sceneCacheMap.Count > 0 || _bundleLoaderCallbackList.Count > 0)
-            {
-                await ReleaseContentsAsync();
-            }
-
-            CompleteUnload();
-        }
-
-        private void CompleteUnload()
+        internal void CompleteUnload()
         {
             Stage = AssetCacheStage.Unloading;
 

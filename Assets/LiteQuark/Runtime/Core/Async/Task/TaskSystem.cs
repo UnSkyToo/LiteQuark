@@ -341,41 +341,6 @@ namespace LiteQuark.Runtime
             return task;
         }
 
-        internal LoadVersionPackTask AddLoadVersionPackTask(string uri, Action<VersionPackInfo> callback)
-        {
-            var task = new LoadVersionPackTask(uri, callback);
-            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
-            return task;
-        }
-
-        internal LoadLocalBundleTask AddLoadLocalBundleTask(string bundleUri)
-        {
-            var task = new LoadLocalBundleTask(bundleUri);
-            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
-            return task;
-        }
-
-        internal LoadRemoteBundleTask AddLoadRemoteBundleTask(string bundleUri, string hash)
-        {
-            var task = new LoadRemoteBundleTask(bundleUri, hash);
-            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Urgent);
-            return task;
-        }
-
-        internal LoadAssetTask<T> AddLoadAssetTask<T>(UnityEngine.AssetBundle bundle, string assetName, Action<ITask> callback) where T : UnityEngine.Object
-        {
-            var task = new LoadAssetTask<T>(bundle, assetName, callback);
-            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);
-            return task;
-        }
-
-        internal LoadSceneTask AddLoadSceneTask(string scenePath, UnityEngine.SceneManagement.LoadSceneParameters parameters, Action<ITask> callback)
-        {
-            var task = new LoadSceneTask(scenePath, parameters, callback);
-            AddTask(task, groupId: LiteConst.TaskGroupId.Asset, priority: TaskPriority.Normal);
-            return task;
-        }
-
         public void PostMainThreadTask(SendOrPostCallback callback, object state)
         {
             _mainThreadSynchronizationContext?.Post(callback, state);

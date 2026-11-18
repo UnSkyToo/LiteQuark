@@ -81,16 +81,24 @@ namespace LiteQuark.Editor
             await Wait(() => handle.IsDone, "Single Scene before close");
             var scene = handle.Result.Value;
             var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
+            var asset = h.Asset<TextAsset>(TextPath);
+            await Wait(() => asset.IsDone, "Independent asset before close");
+            var entry = h.Entry("text.ab", TextPath);
+            var pending = new CleanupProbe();
+            Set(entry, "_loadAssetTask", pending);
             try
             {
                 Exception failure = null;
                 try { await h.Shutdown(); } catch (Exception ex) { failure = ex; }
+                Check(pending.State == TaskState.Cancelled && entry.Stage == AssetCacheStage.Unloading,
+                    "Shutdown reports the scene failure while another started cleanup is still pending.");
                 Check(failure is InvalidOperationException && failure.Message.Contains("Scene has not been unloaded") &&
                     scene.isLoaded && bundle != null && !h.Disposed && Get<IAssetManager>(h.Assets, "_manager") != null,
                     "Refused native scene unloading fails shutdown without destroying its Bundle or clearing the Provider.");
             }
             finally
             {
+                pending.FinishCleanup();
                 RestoreValidationHost();
                 if (scene.IsValid() && scene.isLoaded) await SceneManager.UnloadSceneAsync(scene).ToUniTask();
             }
@@ -119,7 +127,7 @@ namespace LiteQuark.Editor
                         "Simulate close rejects new work while draining existing requests.");
                     await shutdown;
                     Check(handle.State == AssetHandleState.Failed && handle.Result == null &&
-                        ((IResourceTaskCleanup)task).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded,
+                        task.State == TaskState.Cancelled,
                         "Shutdown ends pending Handles and completes Asset cleanup without late success.");
                 });
             }

@@ -37,7 +37,7 @@
 
 - 调整：本地、远端和模拟 Bundle Task 统一交付 IBundleResource；Provider 的清单和 Bundle 加载接口移除结果 callback，清单通过返回任务读取，Bundle 由 Loader.Tick 统一接收终态。依赖任务成功后到 Cache 收到结果之间可能多一次 Loader Tick；已交付缓存的命中行为不变。
 - 破坏：ILoadBundleTask 改为内部接口，GetBundle 返回 IBundleResource；任务结果观察不取得额外所有权。外部资源消费者继续使用 AssetSystem Handle API，不依赖内部 Bundle 任务。
-- 修复：Loader 关闭释放已成功但尚未交付的容器，释放失败时仍处理其他容器并等待原生收尾；已交付容器仍归 Cache，取消／失败的迟到原生结果仍归 Task。
+- 修复：Loader 关闭释放已成功但尚未交付的容器，已交付容器仍归 Cache，取消／失败的迟到原生结果仍归 Task。
 
 - 修复：后端创建移至 AssetSystem 后，非法模式和无效 Remote URI 继续通过初始化 UniTask 交付原始异常，不从 Initialize 调用同步抛出；任务组注册的同步异常语义不变。
 
@@ -50,7 +50,8 @@
 - 调整：默认 Simulate 在 Editor 中执行清单收集及共享 Bundle 管理链路，在非 Editor（含 Development Build）自动使用 BuiltIn，仍需构建并部署本地资源包；原 Editor 配置若在 Player 使用 Remote，应明确改为 Remote。不会自动改写保存的 Locater 值。
 - 调整：移除无 Cache 的资源 Lease 和预先加载场景的特殊入口。模拟资源必须收录于初始化清单，缓存命中可能同步完成；删除旧直读模式的随机延迟行为，修改收录／分包／依赖后需重新初始化。
 
-- 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。失败会等待其余收尾后报告，不自动恢复；最终释放失败时可能已释放部分资源。
+- 破坏：Asset 关闭遇错立即报告并停止重启。集成代码只有在 Shutdown 成功后才能复用同路径资源，失败时其他已启动的清理可能尚未结束，最终卸包也可能只完成了一部分。
+- 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。
 - 迁移：Provider 实现改为 IDisposeAsync，关闭调用方须等待终结完成；Handle／Lease 仍同步 Dispose。业务须停止使用旧资源，遗漏 Handle 不延长系统生命周期。
 - 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；场景实际卸载结束后才归还 Bundle 引用。
 - 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。
@@ -69,7 +70,7 @@
 - 破坏：ITask 不再继承 IEnumerator，BaseTask 移除迭代器实现。`yield return task` 改为 `yield return task.Task.ToCoroutine()`，异步方法使用 `await task.Task`；两者都只等待已提交任务。旧 yield 写法仍可能编译通过，需主动迁移，不能依赖编译检查发现遗漏。
 - 破坏：通用提交入口由 `AddTask(ITask, ...)` 改为 `AddTask(BaseTask, ...)`。提交任务的参数／工厂返回值使用 BaseTask 或具体派生类型；提交后用于观察、等待和取消的引用仍使用 ITask。独立实现 ITask 不提供调度资格。
 - 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
-- 调整：下载任务终结后停止重试并释放请求；释放失败会报告错误，准备重试时发生释放失败则终止重试，已有逻辑终态不变。
+- 调整：下载任务终结后停止重试并释放请求；回调完成后释放本轮请求，传输失败仍按配置重试。
 - 新增：内置资源加载任务提供独立的原生收尾等待，AssetSystem 关闭已接入；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。
 - 修复：await 续体中回收任务包装器不会丢失成功结果通知，也不会中断迟到场景清理。
 - 破坏：TaskState.InProgress / Completed 改名为 Running / Succeeded，更新枚举引用；失败和取消等待仍返回 null，调用者检查 State / Error。
@@ -81,6 +82,7 @@
 
 ### 路径与构建
 
+- 修复：JSON 和二进制版本清单导出只在输出中编码依赖 ID。同一清单可重复导出，成功和失败均保留内存中的依赖路径。
 - 破坏：版本清单保存完整规范资源路径。旧相对路径清单须从源资源重新构建并与新读取器配套；读入旧清单再导出不能可靠迁移，解析成功也不证明兼容。
 - 破坏：ConcatPath 按宿主 Path.Combine 处理后续根路径，不裁剪其前导分隔符；URI 组合改用 ConcatUri，传未编码路径片段。
 - 破坏：下列 PathUtils API 移除，调用方更新入口：

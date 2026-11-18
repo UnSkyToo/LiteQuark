@@ -526,7 +526,9 @@ namespace LiteQuark.Editor
             public ILoadBundleTask LoadBundle(string path, string hash)
             {
                 Calls++;
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(Bundles, path));
+                var task = new LoadLocalBundleTask(Path.Combine(Bundles, path));
+                LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+                return task;
             }
         }
         private static async UniTask<EnvironmentContext> New(bool editor = false)

@@ -28,13 +28,17 @@ namespace LiteQuark.Runtime
         public BaseTask LoadVersionPack(string versionFileName)
         {
             var versionPackUri = GetRuntimeFullPath(versionFileName);
-            return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, null);
+            var task = new LoadVersionPackTask(versionPackUri, null);
+            LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+            return task;
         }
 
         public ILoadBundleTask LoadBundle(string bundlePath, string hash)
         {
             var bundleUri = GetRuntimeFullPath(bundlePath);
-            return LiteRuntime.Task.AddLoadLocalBundleTask(bundleUri);
+            var task = new LoadLocalBundleTask(bundleUri);
+            LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+            return task;
         }
     }
 }

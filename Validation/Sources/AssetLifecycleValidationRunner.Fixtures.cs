@@ -1026,24 +1026,9 @@ namespace LiteQuark.Editor
             public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
             public ILoadBundleTask LoadBundle(string path, string hash)
             {
-                Task = LiteRuntime.Task.AddLoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null);
+                Task = new LoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null);
+                LiteRuntime.Task.AddTask(Task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
                 return Task;
-            }
-        }
-
-        private sealed class ThrowingDownloadHandler : DownloadHandlerScript
-        {
-            internal readonly Exception Error;
-            internal Action BeforeThrow;
-            internal int Throws;
-            internal ThrowingDownloadHandler(Exception error) { Error = error; }
-            public override void Dispose()
-            {
-                base.Dispose();
-                if (Throws != 0) return;
-                Throws++;
-                BeforeThrow?.Invoke();
-                throw Error;
             }
         }
 
@@ -1051,47 +1036,8 @@ namespace LiteQuark.Editor
         {
             private readonly UniTaskCompletionSource _cleanup = new();
             public UniTask WaitForCleanupAsync() => _cleanup.Task;
-            internal void FinishCleanup(Exception error = null)
-            {
-                if (error == null) _cleanup.TrySetResult();
-                else _cleanup.TrySetException(error);
-            }
+            internal void FinishCleanup() => _cleanup.TrySetResult();
             protected override void OnExecute() { }
-        }
-
-        private sealed class RequestReleaseProbe : UnityDownloadBaseTask, IResourceTaskCleanup
-        {
-            private readonly Exception _releaseError;
-            private readonly UniTaskCompletionSource _cleanup = new();
-            internal readonly List<UnityWebRequest> Requests = new();
-            internal ThrowingDownloadHandler Handler;
-            internal ITimer RetryTimerAtRelease;
-            internal int Failures;
-            internal int CleanupReports;
-            internal RequestReleaseProbe(string uri, Exception error, bool retry)
-                : base(uri, new RetryParam(retry ? 1 : 60, retry ? 1 : 0, 30f), false) { _releaseError = error; }
-            public UniTask WaitForCleanupAsync() => _cleanup.Task;
-            internal bool CompleteSuccessfully() => Complete(true);
-            protected override UnityWebRequest CreateRequest()
-            {
-                Handler = new ThrowingDownloadHandler(_releaseError);
-                Handler.BeforeThrow = () =>
-                {
-                    var id = (ulong)typeof(UnityDownloadBaseTask).GetField("_retryTimerID", Private).GetValue(this);
-                    RetryTimerAtRelease = LiteRuntime.Timer.FindTimer(id);
-                };
-                var request = new UnityWebRequest(Uri, UnityWebRequest.kHttpVerbGET, Handler, null);
-                Requests.Add(request);
-                return request;
-            }
-            protected override void OnSuccess(UnityWebRequest request) { Complete(true); }
-            protected override void OnFailed() { Failures++; }
-            protected override void OnResourcesReleased(Exception error)
-            {
-                CleanupReports++;
-                if (error == null) _cleanup.TrySetResult();
-                else _cleanup.TrySetException(error);
-            }
         }
 
         private sealed class BundleHttpServer : IDisposable
@@ -1204,7 +1150,9 @@ namespace LiteQuark.Editor
                     else task.Execute();
                     return task;
                 }
-                return LiteRuntime.Task.AddLoadLocalBundleTask(Path.Combine(BundleFolder, path));
+                var localTask = new LoadLocalBundleTask(Path.Combine(BundleFolder, path));
+                LiteRuntime.Task.AddTask(localTask, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+                return localTask;
             }
             internal void FinishOutstanding()
             {
@@ -1232,8 +1180,7 @@ namespace LiteQuark.Editor
         private sealed class ReleaseProbeResource : IBundleResource
         {
             internal int Disposals;
-            internal Exception Error;
-            public void Dispose() { Disposals++; if (Error != null) throw Error; }
+            public void Dispose() => Disposals++;
             public string[] GetAllScenePaths() => Array.Empty<string>();
             public long GetRuntimeMemorySize() => 0;
             public BaseTask CreateLoadAssetTask<T>(string path, Action<ITask> callback) where T : UnityEngine.Object => throw new NotSupportedException();

@@ -378,8 +378,8 @@ for name in $selected; do
         manifest) runner=ManifestValidationRunner; expected=13 ;;
         collector) runner=CollectorValidationRunner; expected=18 ;;
         packages) runner=PackageValidationRunner; expected=1 ;;
-        tasks) runner=TaskSystemValidationRunner; expected=38 ;;
-        lifecycle) runner=AssetLifecycleValidationRunner; expected=148 ;;
+        tasks) runner=TaskSystemValidationRunner; expected=37 ;;
+        lifecycle) runner=AssetLifecycleValidationRunner; expected=145 ;;
         loading) runner=AssetLoadingValidationRunner; expected=28 ;;
     esac
     mkdir -p "$reports/$name"

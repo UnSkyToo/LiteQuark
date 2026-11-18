@@ -52,7 +52,7 @@ Validation — 当前工作区的隔离 Unity 验证
 
 模块
   paths       路径组合、原生根目录、URI、StreamingAssets、文件操作与导航
-  manifest    完整路径清单、依赖 ID、Hash/Flat 命名、重复身份和旧格式边界
+  manifest    完整路径清单、依赖 ID、重复导出及失败后的依赖路径、Hash/Flat 命名、重复身份和旧格式边界
   collector   Bundle 归属、共享依赖、循环、路径映射、设置资产与 Inspector、BundleViewer 和 Flat 冲突
               配置只读查找与显式创建、默认规则、Collector 清理后的模拟快照隔离、不完整快照拒绝、程序集归属与版本任务交付
               PreProjectBuild／PreStepBuild 修改分包规则、默认规则延迟读取与清理后刷新、显式规则副本保持、版本任务 await 续体的数据可见性
@@ -65,8 +65,9 @@ Validation — 当前工作区的隔离 Unity 验证
 
   资源生命周期覆盖迟到结果清理、结果交接、引用与依赖保护、关闭等待及失败传播，
   包含真实 Bundle 和 Simulate 模式。具体用例见 Sources 与本轮报告。
-  Bundle 任务统一结果覆盖三种任务的 Result／await／GetBundle 身份、Loader Tick 交付成功／失败／取消、失败重试与关闭重入；关闭覆盖未交付的本地／远端／模拟容器，以及单项释放失败后继续处理其他容器。
+  Bundle 任务统一结果覆盖三种任务的 Result／await／GetBundle 身份、Loader Tick 交付成功／失败／取消、失败重试与关闭重入；关闭覆盖未交付的本地／远端／模拟容器。
   Cache 主包持有覆盖依赖未就绪时不启动读取、汇合成功保留同一容器、依赖失败回滚，以及关闭后迟到依赖回调不重复释放或恢复容器。
+  Asset 组满额时，BuiltIn／Remote Provider 的版本和 Bundle 请求以 Urgent 排队，Cache 的资源和场景读取以 Normal 排队并在名额释放后交付。
   Loader 覆盖逻辑 Bundle 的单接收方调度、重复提交拒绝和物理路径相同时的独立调度；共享请求合并及交付中关闭 Loader 的多等待者通知由 Cache 用例覆盖。
   Bundle Resource 覆盖真实读取任务的创建/提交分离、重复释放和释放后入口拒绝；
   原有原生 Bundle/Scene 存活断言仍观察原生对象，不以包装对象非空代替原生有效性。
@@ -135,5 +136,5 @@ Validation — 当前工作区的隔离 Unity 验证
   BundleViewer 验证树数据和定位函数，不验证窗口渲染。
   不覆盖真正 UPM 直接加载、旧格式自动迁移、已提交原生场景操作的强制取消
   或任意加载状态／全模块组合的即时重启；上述代表性 UI 重启链路不扩大这些保证。
-  最终 Bundle 释放通过真实 Cache／Lease 与受控容器故障验证：单项或多项释放失败时仍尝试所有包（含依赖包）、保留首个原始异常及堆栈、关闭后拒绝新请求，以及重复关闭不再次释放。该用例不规定依赖卸载顺序，也不模拟 Unity 原生卸载异常。
+  唯一场景被 Unity 拒绝卸载时，验证关闭在另一项已启动的清理仍待完成时报告失败，并保留场景包。
   真实 UPM 打包与框架公共加载边界是不同测试目标。

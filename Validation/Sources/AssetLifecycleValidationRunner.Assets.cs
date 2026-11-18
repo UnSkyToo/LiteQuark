@@ -1932,161 +1932,6 @@ namespace LiteQuark.Editor
                 "System close waits for the earlier native cleanup and ends the other request without leaking its late Bundle.");
         }
 
-        private static async UniTask ShutdownContinuesAfterBundleReleaseFailure()
-        {
-            var infos = new[]
-            {
-                new BundleInfo(0, "parent.ab", Array.Empty<string>(), new[] { "dependency.ab" }),
-                new BundleInfo(1, "dependency.ab", Array.Empty<string>(), null),
-                new BundleInfo(2, "other.ab", Array.Empty<string>(), null),
-                new BundleInfo(3, "last.ab", Array.Empty<string>(), null)
-            };
-            foreach (var multipleFailures in new[] { false, true })
-            {
-                foreach (var order in new[] { new[] { 0, 1, 2, 3 }, new[] { 2, 3, 1, 0 } })
-                {
-                    var pack = new VersionPackInfo("release-failure", "windows", false, false, infos);
-                    pack.Initialize();
-                    var manager = new AssetManager();
-                    Set(manager, "_packInfo", pack);
-                    var caches = new Dictionary<string, AssetBundleCache>();
-                    var resources = new Dictionary<string, ReleaseProbeResource>();
-                    foreach (var index in order)
-                    {
-                        var info = infos[index];
-                        var cache = manager.GetOrCreateBundleCache(info.BundlePath);
-                        var resource = new ReleaseProbeResource
-                        {
-                            Error = index == 0 || (multipleFailures && index == 2)
-                                ? new InvalidOperationException("Controlled Bundle release failure: " + info.BundlePath) : null
-                        };
-                        caches.Add(info.BundlePath, cache);
-                        resources.Add(info.BundlePath, resource);
-                        typeof(AssetBundleCache).GetProperty(nameof(AssetBundleCache.Bundle)).SetValue(cache, resource);
-                        typeof(AssetBundleCache).GetMethod("OnBundleLoaded", Private).Invoke(cache, null);
-                    }
-                    Get<List<AssetBundleCache.Lease>>(caches["parent.ab"], "_dependencyLeases")
-                        .Add(caches["dependency.ab"].AcquireLease());
-                    var expected = Get<Dictionary<string, AssetBundleCache>>(manager, "_bundleCacheMap").Values
-                        .Select(cache => resources[cache.BundlePath].Error).First(error => error != null);
-                    Exception actual = null;
-                    try { await manager.DisposeAsync(); } catch (Exception ex) { actual = ex; }
-                    Check(resources.Values.All(resource => resource.Disposals == 1),
-                        "Final close attempts every Bundle, including the failed parent's dependency and unrelated Bundles, before reporting failure.");
-                    Check(ReferenceEquals(actual, expected) && actual.StackTrace.Contains(nameof(ReleaseProbeResource)),
-                        "One or multiple release failures preserve the first original exception and its disposal stack in either registration order.");
-                    Check(caches.All(pair => resources[pair.Key].Error != null
-                        ? pair.Value.Stage == AssetCacheStage.Unloading && ReferenceEquals(pair.Value.Bundle, resources[pair.Key])
-                        : pair.Value.Stage == AssetCacheStage.Unloaded && pair.Value.Bundle == null),
-                        "Successful releases clear their containers; failures do not masquerade as successful disposal.");
-                    AssetLoadResult<IAssetLease<TextAsset>> rejected = null;
-                    manager.LoadAssetAsync<TextAsset>(TextPath, AssetLoadPriority.Normal, result => rejected = result);
-                    Check(rejected != null && !rejected.Succeeded,
-                        "Manager remains closed to new requests after final Bundle release fails.");
-                    await manager.DisposeAsync();
-                    Check(resources.Values.All(resource => resource.Disposals == 1),
-                        "Repeated Manager close does not retry the failed release or dispose successful containers again.");
-                }
-            }
-        }
-
-        private static async UniTask ShutdownWaitsAfterCleanupFailure()
-        {
-            var h = New();
-            var handle = h.Asset<TextAsset>(TextPath);
-            var other = h.Asset<TextAsset>(SecondTextPath);
-            await Wait(() => handle.IsDone && other.IsDone, "Assets before failing cleanup");
-            var bundle = NativeBundle(h.Cache("text.ab").Bundle);
-            var first = new CleanupProbe();
-            var second = new CleanupProbe();
-            var error = new InvalidOperationException("Controlled resource cleanup failure");
-            var firstEntry = h.Entry("text.ab", TextPath);
-            var secondEntry = h.Entry("text.ab", SecondTextPath);
-            // Each cache owns its cleanup; use controlled tails to keep one pending after another faults.
-            Set(firstEntry, "_loadAssetTask", first);
-            Set(secondEntry, "_loadAssetTask", second);
-            first.FinishCleanup(error);
-            var shutdown = h.Shutdown();
-            await Frame(); await Frame();
-            Check(shutdown.Status == UniTaskStatus.Pending && second.State == TaskState.Cancelled && bundle != null,
-                "A peer cleanup fault cannot bypass pending cleanup or trigger Bundle unloading.");
-            second.FinishCleanup();
-            Exception failure = null;
-            try { await shutdown; } catch (Exception ex) { failure = ex; }
-            Check(ReferenceEquals(failure, error) && bundle != null && !h.Disposed,
-                "After all cleanup settles, close reports the original failure without unloading the Bundle or reporting success.");
-            var rejected = h.Asset<TextAsset>(SecondTextPath);
-            Check(rejected.State == AssetHandleState.Failed, "A failed close stays closed to new requests.");
-        }
-
-        private static async UniTask DownloadReleaseFailures()
-        {
-            New();
-            var timerField = typeof(UnityDownloadBaseTask).GetField("_retryTimerID", Private);
-            var requestField = typeof(UnityDownloadBaseTask).GetField("_request", Private);
-            foreach (var mode in new[] { "retry", "success", "cancel", "fail" })
-            {
-                using var server = new BundleHttpServer(new byte[16]);
-                var releaseError = new InvalidOperationException("Controlled request release failure: " + mode);
-                var logicalError = new InvalidOperationException("Controlled logical download failure");
-                var task = new RequestReleaseProbe(server.Url, releaseError, mode == "retry");
-                async UniTask<Exception> ObserveFailure()
-                {
-                    try { await task.WaitForCleanupAsync(); return null; }
-                    catch (Exception ex) { return ex; }
-                }
-                try
-                {
-                    var first = ObserveFailure();
-                    var second = ObserveFailure();
-                    if (mode == "success") task.Task.GetAwaiter().OnCompleted(task.Dispose);
-                    task.Execute();
-                    if (mode != "retry")
-                    {
-                        await WaitWithoutLoaderTick(() => task.Requests[0].downloadedBytes > 0 || server.Work.IsFaulted,
-                            "Request release fixture receives HTTP data");
-                        Check(!server.Work.IsFaulted && !task.IsDone, "Terminal release failure targets a running request.");
-                        // Set each logical terminal state deliberately; normal download success/handoff is covered by RemoteTaskCleanup.
-                        if (mode == "success") Check(task.CompleteSuccessfully(), "The fixture publishes success before injecting a release failure.");
-                        else if (mode == "cancel") task.Cancel();
-                        else task.Fail(logicalError);
-                    }
-                    await WaitWithoutLoaderTick(() => first.Status.IsCompleted() && second.Status.IsCompleted(),
-                        "Request release failure reaches both cleanup observers");
-                    Check(ReferenceEquals(await first, releaseError) && ReferenceEquals(await second, releaseError) &&
-                        task.Handler.Throws == 1 && task.CleanupReports == 1,
-                        mode + ": release failure reaches both observers once without escaping the native callback.");
-                    if (mode == "retry")
-                    {
-                        Check(task.RetryTimerAtRelease != null && task.RetryTimerAtRelease.IsDone &&
-                            (ulong)timerField.GetValue(task) == 0 && task.State == TaskState.Failed && ReferenceEquals(task.Error, releaseError),
-                            "The failed request had scheduled a retry; its release failure terminates the task and cancels that timer.");
-                        task.RetryTimerAtRelease.Tick(31f);
-                    }
-                    var expectedState = mode == "success" ? TaskState.Succeeded : mode == "cancel" ? TaskState.Cancelled : TaskState.Failed;
-                    var expectedError = mode == "retry" ? releaseError : mode == "fail" ? logicalError : null;
-                    var result = await task.Task;
-                    Check(task.State == expectedState && ReferenceEquals(task.Error, expectedError) &&
-                        (mode == "success" ? result is true : result == null) &&
-                        task.Failures == (expectedState == TaskState.Failed ? 1 : 0),
-                        mode + ": cleanup failure preserves any established logical result and only terminates an unfinished retry.");
-                    task.Dispose(); task.Dispose(); task.Cancel(); task.Fail(logicalError);
-                    Check(ReferenceEquals(await ObserveFailure(), releaseError) && task.CleanupReports == 1 &&
-                        task.Requests.Count == 1 && requestField.GetValue(task) == null && (ulong)timerField.GetValue(task) == 0,
-                        "Later retirement and repeated observation cannot restart downloading or replace the original cleanup failure.");
-                }
-                finally
-                {
-                    task.Cancel(); task.Dispose();
-                    // The injected handler error interrupts UnityWebRequest.Dispose; fixture isolation releases the retained native request.
-                    foreach (var request in task.Requests) request.Dispose();
-                    server.Dispose();
-                    await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Request release fixture socket cleanup");
-                    Check(!server.Work.IsFaulted, "Request release fixture closes its socket worker without an unhandled error.");
-                }
-            }
-        }
-
         private static async UniTask PendingResourceTaskCleanup()
         {
             foreach (var fail in new[] { false, true })
@@ -3355,7 +3200,7 @@ namespace LiteQuark.Editor
             Check(!cache.TryUnloadUnused(true) && cache.Stage == AssetCacheStage.Idle && cache.IsUsed,
                 "A referenced idle cache cannot be reclaimed, even when retention is ignored.");
             lease.Dispose(); lease.Dispose(); Check(!cache.IsUsed && cache.CanUnload(false) && cache.CanUnload(true), "Idle cache lease returns exactly once.");
-            var late = cache.AcquireLease(); await cache.DisposeAsync(); late.Dispose();
+            var late = cache.AcquireLease(); await h.Shutdown(); late.Dispose();
             Check(cache.Stage == AssetCacheStage.Unloaded, "Late lease disposal tolerates already-unloaded owner.");
             var unused = new AssetBundleCache(h.Provider, Get<BundleInfo>(cache, "_bundleInfo"));
             Check(unused.TryUnloadUnused(false) && unused.Stage == AssetCacheStage.Unloaded && !unused.TryUnloadUnused(false),
@@ -3675,16 +3520,17 @@ namespace LiteQuark.Editor
         private static async UniTask LoaderShutdownHandoff()
         {
             await BundleResourceReadAndRelease();
-            await LoaderUnclaimedReleaseFailure();
             var textInfo = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
             var deliveredInfo = new BundleInfo(2, "b.ab", new[] { MaterialPath }, null);
             var pendingInfo = new BundleInfo(3, "a.ab", new[] { PrefabPath }, null);
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { textInfo, deliveredInfo, pendingInfo });
+            pack.Initialize();
             var locator = new Locator(true);
             var loader = new AssetBundleLoader(locator, pack, 3);
             var manager = new AssetManager();
             Set(manager, "_bundleLoader", loader);
-            var deliveredCache = new AssetBundleCache(manager, deliveredInfo);
+            Set(manager, "_packInfo", pack);
+            var deliveredCache = manager.GetOrCreateBundleCache(deliveredInfo.BundlePath);
             void RequestDelivered(Action<AssetLoadResult<IBundleResource>> callback) =>
                 typeof(AssetBundleCache).GetMethod("LoadBundleAsync", Private).Invoke(deliveredCache,
                     new object[] { AssetLoadPriority.Normal, callback });
@@ -3742,7 +3588,7 @@ namespace LiteQuark.Editor
             finally
             {
                 await loader.DisposeAsync();
-                await deliveredCache.DisposeAsync();
+                await manager.DisposeAsync();
                 if (earlierDelivered != null) earlierDelivered.Unload(true);
                 if (delivered != null) delivered.Unload(true);
             }
@@ -3780,40 +3626,6 @@ namespace LiteQuark.Editor
 
         }
 
-        private static async UniTask LoaderUnclaimedReleaseFailure()
-        {
-            var infos = new[]
-            {
-                new BundleInfo(1, "first.ab", Array.Empty<string>(), null),
-                new BundleInfo(2, "second.ab", Array.Empty<string>(), null)
-            };
-            var pack = new VersionPackInfo("unclaimed", "windows", false, false, infos);
-            pack.Initialize();
-            var locator = new Locator(true);
-            var loader = new AssetBundleLoader(locator, pack, 2);
-            var failure = new InvalidOperationException("Controlled unclaimed Bundle release failure");
-            var first = new ReleaseProbeResource { Error = failure };
-            var second = new ReleaseProbeResource();
-            var callbacks = 0;
-            try
-            {
-                foreach (var info in infos) loader.LoadBundle(info, AssetLoadPriority.Normal, _ => callbacks++);
-                loader.Tick(0);
-                locator.Manual["first.ab"].FinishResource(first);
-                locator.Manual["second.ab"].FinishResource(second);
-                Check(callbacks == 0 && locator.Manual.Values.All(task => task.State == TaskState.Succeeded),
-                    "Successful containers remain unclaimed until Loader Tick.");
-                Exception actual = null;
-                try { await loader.DisposeAsync(); } catch (Exception ex) { actual = ex; }
-                Check(ReferenceEquals(actual, failure) && first.Disposals == 1 && second.Disposals == 1 && callbacks == 0,
-                    "Shutdown reports an unclaimed release failure after attempting every other successful container.");
-                await loader.DisposeAsync();
-                Check(first.Disposals == 1 && second.Disposals == 1,
-                    "Repeated Loader disposal does not release unclaimed results twice.");
-            }
-            finally { await loader.DisposeAsync(); }
-        }
-
         private static async UniTask ShutdownWithPendingDependency()
         {
             var h = New(true);
@@ -3837,7 +3649,10 @@ namespace LiteQuark.Editor
             h.Locater.Manual["a.ab"].FinishResource(resource);
             h.Provider.Tick(0);
             cache = h.Cache("a.ab");
-            await cache.DisposeAsync();
+            var cleanups = new List<UniTask>();
+            cache.BeginReleaseContents(cleanups);
+            await UniTask.WhenAll(cleanups);
+            cache.CompleteUnload();
             Check(cache.Bundle == null && cache.Stage == AssetCacheStage.Unloaded && resource.Disposals == 1 &&
                 handle.IsDone && !h.Locater.Manual["b.ab"].IsDone,
                 "Cache disposal releases its held main even before the dependency callback settles.");

@@ -15,7 +15,9 @@ namespace LiteQuark.Runtime
         public BaseTask LoadVersionPack(string versionFileName)
         {
             var versionPackUri = GetVersionPackUri(versionFileName);
-            return LiteRuntime.Task.AddLoadVersionPackTask(versionPackUri, null);
+            var task = new LoadVersionPackTask(versionPackUri, null);
+            LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+            return task;
         }
 
         private string GetVersionPackUri(string versionFileName)
@@ -44,7 +46,9 @@ namespace LiteQuark.Runtime
         public ILoadBundleTask LoadBundle(string bundlePath, string hash)
         {
             var bundleUri = PathUtils.ConcatUri(_remoteUri, bundlePath);
-            return LiteRuntime.Task.AddLoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash);
+            var task = new LoadRemoteBundleTask(bundleUri, DisableUnityWebCache ? null : hash);
+            LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
+            return task;
         }
     }
 }
