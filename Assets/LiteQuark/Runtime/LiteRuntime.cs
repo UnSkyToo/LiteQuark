@@ -23,11 +23,13 @@ namespace LiteQuark.Runtime
 
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
+        public bool CanLateTick => _state == RuntimeState.Running && !IsPause;
 
         public LiteLauncher Launcher { get; private set; }
 
         private LiteSetting _setting = null;
         private IGameEntry _gameEntry;
+        private int _lateTickFrame = -1;
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
         private bool _quitRequested;
@@ -51,6 +53,7 @@ namespace LiteQuark.Runtime
             IsPause = false;
             IsFocus = true;
             Launcher = launcher;
+            _lateTickFrame = -1;
             _setting = setting;
             IsDebugMode = Debug.isDebugBuild && _setting.Common.DebugMode;
             _enterBackgroundTime = 0.0f;
@@ -238,6 +241,7 @@ namespace LiteQuark.Runtime
 
         public void Tick(float deltaTime)
         {
+            _lateTickFrame = -1;
             if (_state is RuntimeState.Idle or RuntimeState.Error or RuntimeState.ShutdownFailed)
             {
                 return;
@@ -281,6 +285,30 @@ namespace LiteQuark.Runtime
             {
                 tick.Tick(tickDeltaTime);
             }
+            if (CanLateTick)
+            {
+                _lateTickFrame = Time.frameCount;
+            }
+        }
+
+        public void LateTick()
+        {
+            if (_lateTickFrame != Time.frameCount)
+            {
+                return;
+            }
+            _lateTickFrame = -1;
+            if (!CanLateTick)
+            {
+                return;
+            }
+
+            var deltaTime = LiteTime.DeltaTime;
+            if (_gameEntry is ILateTick entry)
+            {
+                entry.LateTick(deltaTime);
+            }
+            SystemCenter.Instance.LateTick(deltaTime);
         }
 
         internal static async UniTask FinishAtFrameBoundary(UniTask task)

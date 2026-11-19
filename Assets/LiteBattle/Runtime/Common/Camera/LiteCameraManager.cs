@@ -24,7 +24,7 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public void Tick(float deltaTime)
+        public void LateTick(float deltaTime)
         {
             if (Unit_ == null)
             {

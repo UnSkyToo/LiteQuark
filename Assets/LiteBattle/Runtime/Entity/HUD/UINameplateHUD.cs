@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace LiteBattle.Runtime
 {
-    public class UINameplateHUD : BaseUI
+    public class UINameplateHUD : BaseUI, ILateTick
     {
         private LiteEntity Entity_;
 
@@ -20,18 +20,16 @@ namespace LiteBattle.Runtime
         {
             base.OnUpdate(deltaTime);
 
-            UpdateHUD();
-        }
-
-        private void UpdateHUD()
-        {
-            var worldPos = Entity_.GetModule<LiteEntityBehaveModule>().GetInternalGo().transform.position + Vector3.up * 2f;
-            RT.anchoredPosition = UIUtils.WorldPointToCanvasPoint(worldPos, LiteCameraManager.Instance.MainCamera, RT.parent, LiteRuntime.Get<UISystem>().UICamera);
-
             var curHp = Entity_.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.CurHp);
             var maxHp = Math.Max(1, Entity_.GetModule<LiteEntityDataModule>().FinalValue(LiteEntityDataType.MaxHp));
             var curHpPercent = curHp / maxHp;
             GetComponent<Slider>("HpBar").value = Mathf.Clamp01((float)curHpPercent);
+        }
+
+        public void LateTick(float deltaTime)
+        {
+            var worldPos = Entity_.GetModule<LiteEntityBehaveModule>().GetInternalGo().transform.position + Vector3.up * 2f;
+            RT.anchoredPosition = UIUtils.WorldPointToCanvasPoint(worldPos, LiteCameraManager.Instance.MainCamera, RT.parent, System.UICamera);
         }
     }
 }

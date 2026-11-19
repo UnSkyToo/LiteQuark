@@ -4,6 +4,8 @@
 
 ### 核心接口
 
+- 新增：游戏入口和系统可独立实现 `ILateTick`。Runtime 在 LateUpdate 先调用入口，再按注册顺序调用系统，复用本帧 Tick 的 deltaTime。
+
 - 破坏：移除 `ILogic`、`LogicList` 和 `LogicCenter`。将业务启动和释放集中到一个 `IGameEntry`，需要逐帧更新时显式实现 `ITick`。在 Launcher 的 Debug / Release 页签重新选择 **Game Entry**，留空只启动系统。
 - 日志控制台由 LogSystem 创建和销毁，移除 `LogRuntimeLogic` 配置。在各配置页核对 `Log.ShowLogViewer`，新配置默认关闭，已有场景的已保存开关生效。
 

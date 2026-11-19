@@ -62,7 +62,6 @@ namespace LiteBattle.Runtime
             PreTick(deltaTime);
             LiteInputManager.Instance.Tick(deltaTime);
             LiteEntityManager.Instance.Tick(deltaTime);
-            LiteCameraManager.Instance.Tick(deltaTime);
             PostTick(deltaTime);
 
             // if (Input.GetKeyDown(KeyCode.Z))
@@ -76,6 +75,11 @@ namespace LiteBattle.Runtime
             //     var targetPos = entity.Position + dir * 5f;
             //     entity.GetModule<LiteEntityMovementModule>().MoveToPos(targetPos);
             // }
+        }
+
+        public void LateTick(float deltaTime)
+        {
+            LiteCameraManager.Instance.LateTick(deltaTime);
         }
 
         private void PreTick(float deltaTime)

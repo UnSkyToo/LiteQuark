@@ -10,7 +10,7 @@ LiteQuark 将系统服务（`ISystem`）与可选的游戏入口（`IGameEntry`�
 
 1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
 2. 分别配置 Launcher 的 Debug / Release 页签。在 `SystemList` 中添加扩展系统，在 **Game Entry** 中选择一个业务入口，选 **None** 可只启动系统。
-3. 入口使用有公共无参构造函数的普通 C# 类。系统就绪后 Runtime 创建并等待入口初始化，关闭时先等待入口释放。需要逐帧更新的入口额外实现 `ITick`。
+3. 入口使用有公共无参构造函数的普通 C# 类。系统就绪后 Runtime 创建并等待入口初始化，关闭时先等待入口释放。按需实现 `ITick`、`ILateTick` 或两者。
 
 ```csharp
 using Cysharp.Threading.Tasks;
@@ -58,12 +58,15 @@ Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步�
 
 | 扩展点 | 约定 |
 | --- | --- |
-| `ISystem` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()`；逐帧更新时同时实现 `ITick` |
-| `IGameEntry` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()`。实现 `ITick` 可在 Running 时于系统更新后接收 `Tick(float)` |
+| `ISystem`、`IGameEntry` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()` |
+| `ITick` | Unity Update 中调用 `Tick(float deltaTime)`。先按注册顺序更新系统，再更新 Running 状态的游戏入口 |
+| `ILateTick` | Unity LateUpdate 中调用 `LateTick(float deltaTime)`。先更新游戏入口，再按注册顺序更新系统，可独立于 `ITick` 实现 |
 | `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |
 | 配置类 | 实现 `ISystemSetting`，使用可序列化类型和无参构造函数 |
 
 扩展系统加入 `LiteSetting.SystemList`，对应配置放入 `SystemSettings`。缺少配置时框架创建默认实例并记录警告。更改启动配置应在初始化前完成；修改列表不会动态注册系统。
+
+晚更新复用本帧普通更新的 deltaTime，适合在游戏入口完成相机跟随后，由系统投影世界坐标。`LiteRuntime.Instance.CanLateTick` 表示 Runtime 处于 Running 且未暂停，分发子对象时可用它判断是否继续。暂停、关闭或错误会停止后续晚更新。自定义驱动先调用 `Tick(deltaTime)`，同一帧再调用一次 `LateTick()`。跳过普通更新的帧也跳过晚更新。
 
 ## 服务与模块
 

@@ -28,6 +28,7 @@
         "tasks/instantiate",
         "tasks/startup-rollback",
         "tasks/ordered-shutdown",
+        "tasks/late-tick",
         "tasks/restart",
         "tasks/shutdown-failure",
         "tasks/demo-stop",

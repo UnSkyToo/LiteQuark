@@ -191,6 +191,7 @@ namespace LiteQuark.Editor
                     await RuntimeShutdownDuringInitialization(system);
                 }, $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed", "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("tasks/ordered-shutdown", RuntimeShutdownOrder, "FrameworkError: Unknown");
+                await RunAsync("tasks/late-tick", RuntimeLateTick);
                 await RunAsync("tasks/restart", async system =>
                 {
                     await RuntimeRestartStates(system);
@@ -227,11 +228,38 @@ namespace LiteQuark.Editor
                 "Both battle scene profiles select the same game entry.");
 
             var camera = Camera.main;
-            var displaced = camera.transform.position + Vector3.right * 20f;
-            camera.transform.position = displaced;
+            var ui = LiteRuntime.Get<UISystem>();
+            var layer = (RectTransform)ui.CanvasRoot.Find("Canvas_Scene");
+            await UniTask.WaitUntil(() => layer.childCount == 2).Timeout(TimeSpan.FromSeconds(20));
             await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
-            Check(Vector3.Distance(displaced, camera.transform.position) > 10f,
-                "The battle entry receives a real frame update and its camera follows the player.");
+            var monster = GameObject.Find("FemaleCharacter(Clone)").transform;
+            Vector2 ProjectMonster()
+            {
+                var pixel = camera.WorldToScreenPoint(monster.position + Vector3.up * 2f);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(layer, pixel, ui.UICamera, out var point);
+                return point;
+            }
+            var before = ProjectMonster();
+            var plate = layer.Cast<RectTransform>().Single(rt => Vector2.Distance(rt.anchoredPosition, before) < 0.5f);
+
+            // The isolated Editor assembly reaches the battle example in Assembly-CSharp through its public API.
+            var managerType = Type.GetType("LiteBattle.Runtime.LiteEntityManager, Assembly-CSharp", true);
+            var manager = managerType.BaseType.GetProperty("Instance").GetValue(null);
+            var units = (IList)managerType.GetMethod("GetEntityList").Invoke(manager, null);
+            var player = units.Cast<object>().Single(unit => (string)unit.GetType().GetProperty("Tag").GetValue(unit) == "Player");
+            var position = player.GetType().GetProperty("Position");
+            var shift = Vector3.right * 4f;
+            var cameraBefore = camera.transform.position;
+            position.SetValue(player, (Vector3)position.GetValue(player) + shift);
+
+            await UniTask.NextFrame(PlayerLoopTiming.PreLateUpdate);
+            var frame = Time.frameCount;
+            Check(camera.transform.position == cameraBefore, "Ordinary Update leaves battle camera follow for LateUpdate.");
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            var expected = ProjectMonster();
+            Check(Time.frameCount == frame && camera.transform.position == cameraBefore + shift &&
+                Vector2.Distance(before, expected) > 1f && Vector2.Distance(plate.anchoredPosition, expected) < 0.5f,
+                "The same frame follows the moving player and projects the stationary monster's plate using the final camera pose.");
         }
 
         private static UniTask Run(string name, Action<TaskSystem> test, params string[] expectedErrors)

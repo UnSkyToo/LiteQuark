@@ -11,14 +11,16 @@ namespace LiteQuark.Editor
     {
         private sealed class CloseEvent : IEventData { }
 
-        public sealed class ProbeUI : BaseUI
+        public sealed class ProbeUI : BaseUI, ILateTick
         {
             internal static Action<ProbeUI> Opening;
             internal Action Updating;
+            internal Action LateUpdating;
             internal Action Closing;
             internal void Listen(Action callback) => RegisterEvent<CloseEvent>(_ => callback());
             protected override void OnOpen(params object[] values) => Opening?.Invoke(this);
             protected override void OnUpdate(float deltaTime) => Updating?.Invoke();
+            public void LateTick(float deltaTime) => LateUpdating?.Invoke();
             protected override void OnClose() => Closing?.Invoke();
         }
 
@@ -84,6 +86,11 @@ namespace LiteQuark.Editor
                 await Wait(() => opening.Status.IsCompleted(), "Second UI");
                 var second = await opening;
                 int updates = 0, closes = 0, events = 0;
+                var lateUpdates = 0;
+                second.LateUpdating = () => lateUpdates++;
+                ui.LateTick(0);
+                Check(lateUpdates == 1 && ui.FindUI<ProbeUI>() == null,
+                    "An opened window can project before its first Update without flushing the open queue.");
                 second.Listen(() => events++);
                 LiteRuntime.Event.Send(new CloseEvent());
                 Check(events == 1, "Second UI owns a live event listener.");
@@ -92,6 +99,9 @@ namespace LiteQuark.Editor
                 second.Closing = () => { closes++; ui.CloseUI(second); };
                 ui.Tick(0);
                 Check(updates == 0 && closes == 1 && second.Go != null, "Closed sibling skips the current update but retains its instance until the next tick.");
+                ui.LateTick(0);
+                Check(lateUpdates == 1 && second.Go != null,
+                    "A window closed during Update skips LateTick and its close queue still waits for Update.");
                 ui.Tick(0);
                 LiteRuntime.Event.Send(new CloseEvent());
                 Check(second.Go == null && closes == 1 && events == 1, "Close queue releases the instance and its tagged listener exactly once.");

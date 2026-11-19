@@ -36,8 +36,9 @@ Validation — LiteQuark 隔离验证
              注册和快照。用真实 UPM 纹理核对材质的隐式依赖与显式拆包。
   tasks      Core/TaskSystemValidationRunner.cs、Core/RuntimeLifecycle.cs、Core/PoolValidation.cs
              准入与取消、终态和协程、下载快照与原生实例化、池的模板所有权；
-             可选游戏入口、按需 Tick、启动回滚、关闭顺序、重启、部分释放失败。通过 Editor 退出
-             无入口且启用日志控制台的 Demo，另以真实战斗场景验证入口驱动相机跟随。ShutdownFailed 场景最后执行，保留终态至进程退出。
+             可选游戏入口、Tick 与 LateTick 的顺序和时间、暂停、启动回滚、关闭顺序、重启、部分释放失败。
+             通过 Editor 退出无入口且启用日志控制台的 Demo。真实战斗场景中移动玩家，并在同帧末验证相机与怪物血条投影。
+             ShutdownFailed 场景最后执行，保留终态至进程退出。
   loading    Asset/AssetLoadingValidationRunner.cs
              公开寻址、后端选择、旧设置和初始化错误、BuiltIn 优先级、Remote URI
              与真实回环下载、构建文件名标志，以及 Unity 场景包限制。

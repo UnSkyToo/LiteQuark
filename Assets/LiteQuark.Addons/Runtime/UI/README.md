@@ -50,6 +50,8 @@ uiSystem.CloseUI(menu);
 
 `UIConfig` 通过构造函数设置。`OpenUI` 成功返回 UI，普通加载、绑定或 `OnOpen` 错误返回 null；请求因调用方取消或系统关闭而中断时抛 `OperationCanceledException`。`CloseUI` 仅关闭 Opened 状态的界面，重复关闭无效；关闭逻辑立即执行，实例在后续系统 Tick 中释放。只有 Opened 状态的 UI 执行 Update。
 
+世界坐标跟随类界面可实现 `ILateTick.LateTick(float deltaTime)`。游戏入口完成晚更新后，UISystem 将同一帧的 deltaTime 传给已打开且实现该接口的窗口。本轮晚更新开始前已完成打开的窗口即可参与，开始关闭的窗口立即停止接收。普通 `OnUpdate` 和打开、关闭队列仍在原有的 Update 阶段处理。
+
 调用方可能先于 UISystem 释放时，使用 `OpenUI<T>(config, ct, paramList)`，并在自身释放时取消对应的 `CancellationTokenSource`。取消仅影响该调用方尚未完成的打开请求，不会自动关闭已成功返回的 UI；已打开的 UI 仍需调用 `CloseUI`。
 
 ## 层级与查找

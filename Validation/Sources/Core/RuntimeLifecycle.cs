@@ -28,6 +28,7 @@ namespace LiteQuark.Editor
             internal bool InTimerCallback;
             internal bool DisposalStartedInTimerCallback;
             internal int TicksAfterDispose;
+            internal Action<string, float> OnLateTick;
         }
 
         private static ShutdownFixture _shutdownFixture;
@@ -67,6 +68,8 @@ namespace LiteQuark.Editor
                 if (_disposed) _fixture.TicksAfterDispose++;
             }
 
+            public void LateTick(float deltaTime) => _fixture.OnLateTick?.Invoke(_name, deltaTime);
+
             public async UniTask DisposeAsync()
             {
                 Disposals++;
@@ -80,12 +83,12 @@ namespace LiteQuark.Editor
             }
         }
 
-        private sealed class ShutdownSystemOne : ShutdownProbe, ISystem, ITick
+        private sealed class ShutdownSystemOne : ShutdownProbe, ISystem, ITick, ILateTick
         {
             public ShutdownSystemOne() : base("system 1") { }
         }
 
-        private sealed class ShutdownSystemTwo : ShutdownProbe, ISystem, ITick
+        private sealed class ShutdownSystemTwo : ShutdownProbe, ISystem, ITick, ILateTick
         {
             public ShutdownSystemTwo() : base("system 2") { }
         }
@@ -95,19 +98,24 @@ namespace LiteQuark.Editor
             public ShutdownEntry() : base("entry") { }
         }
 
-        private sealed class EntryWithoutTick : ShutdownProbe, IGameEntry
+        private sealed class EntryWithoutTick : ShutdownProbe, IGameEntry, ILateTick
         {
             public EntryWithoutTick() : base("entry") { }
         }
 
-        private static async UniTask BeginShutdownFixture(ShutdownFixture fixture)
+        private sealed class SystemWithoutTick : ShutdownProbe, ISystem, ILateTick
+        {
+            public SystemWithoutTick() : base("system 1") { }
+        }
+
+        private static async UniTask BeginShutdownFixture(ShutdownFixture fixture, Type firstSystemType = null)
         {
             var runtime = LiteRuntime.Instance;
             if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
 
             _shutdownFixture = fixture;
             var setting = new LiteSetting();
-            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemOne).AssemblyQualifiedName });
+            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = (firstSystemType ?? typeof(ShutdownSystemOne)).AssemblyQualifiedName });
             setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemTwo).AssemblyQualifiedName });
             setting.GameEntry = fixture.EntryType.AssemblyQualifiedName;
             runtime.Startup(runtime.Launcher, setting);
@@ -156,6 +164,62 @@ namespace LiteQuark.Editor
             {
                 _shutdownFixture = null;
             }
+        }
+
+        private static async UniTask RuntimeLateTick(TaskSystem system)
+        {
+            var runtime = LiteRuntime.Instance;
+            var calls = new List<(string, float)>();
+            var fixture = new ShutdownFixture
+            {
+                EntryType = typeof(EntryWithoutTick),
+                GatedInitialization = "entry",
+                InitializationGate = new UniTaskCompletionSource<bool>(),
+                OnLateTick = (name, dt) => calls.Add((name, dt))
+            };
+            UniTask? shutdown = null;
+            try
+            {
+                await BeginShutdownFixture(fixture, typeof(SystemWithoutTick));
+                await WaitForRuntimeCondition(() => fixture.Initialized.Contains("entry"), "Pending late-tick entry");
+                runtime.Tick(1f);
+                runtime.LateTick();
+                Check(calls.Count == 0, "Published systems receive no late updates while the entry is initializing.");
+                fixture.InitializationGate.TrySetResult(true);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Late-tick startup");
+
+                LiteRuntime.Setting.Common.TimeScale = 0.5f;
+                runtime.Tick(0.25f);
+                LiteRuntime.Setting.Common.TimeScale = 1f;
+                runtime.LateTick();
+                runtime.LateTick();
+                Check(calls.SequenceEqual(new[] { ("entry", 0.125f), ("system 1", 0.125f), ("system 2", 0.125f) }) &&
+                    fixture.Instances["entry"].Ticks == 0 && fixture.Instances["system 1"].Ticks == 0,
+                    "Late-only entry and system callbacks run once in entry-first, registration order using the Update delta.");
+
+                calls.Clear();
+                runtime.Tick(0f);
+                runtime.IsPause = true;
+                runtime.LateTick();
+                runtime.Tick(1f);
+                runtime.IsPause = false;
+                runtime.LateTick();
+                Check(calls.Count == 0, "Pausing between phases or resuming after a skipped Update dispatches no late updates.");
+
+                fixture.OnLateTick = (name, dt) =>
+                {
+                    calls.Add((name, dt));
+                    if (name == "system 1") shutdown = runtime.Shutdown();
+                };
+                runtime.Tick(0.25f);
+                runtime.LateTick();
+                runtime.Tick(0.25f);
+                runtime.LateTick();
+                Check(runtime.State == LiteRuntime.RuntimeState.ShuttingDown &&
+                    calls.SequenceEqual(new[] { ("entry", 0.25f), ("system 1", 0.25f) }),
+                    "Shutdown inside a late system stops the current traversal and subsequent late updates.");
+            }
+            finally { await FinishShutdownFixture(fixture, shutdown); }
         }
 
         private static async UniTask RuntimeShutdownOrder(TaskSystem system)

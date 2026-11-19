@@ -12,7 +12,8 @@ namespace LiteQuark.Runtime
         [SerializeField] private bool _simulateReleaseBuild;
 
         private const int MaxConsecutiveErrors = 30;
-        private int _consecutiveErrors = 0;
+        private int _consecutiveUpdateErrors;
+        private int _consecutiveLateUpdateErrors;
         private LiteSetting _setting;
 
         private void Awake()
@@ -43,29 +44,9 @@ namespace LiteQuark.Runtime
 
         private void Update()
         {
-            try
+            if (!RunFramePhase(static () => LiteRuntime.Instance.Tick(Time.deltaTime), ref _consecutiveUpdateErrors))
             {
-                LiteRuntime.Instance.Tick(Time.deltaTime);
-                _consecutiveErrors = 0;
-            }
-            catch (Exception ex)
-            {
-                _consecutiveErrors++;
-                if (_consecutiveErrors >= MaxConsecutiveErrors)
-                {
-                    LLog.Error("Too many consecutive errors, entering error state.");
-                    LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
-                    return;
-                }
-
-                if (_setting.Common.ThrowException)
-                {
-                    throw;
-                }
-                else
-                {
-                    LLog.Exception(ex);
-                }
+                return;
             }
 
 #if UNITY_EDITOR
@@ -86,6 +67,35 @@ namespace LiteQuark.Runtime
                 OnApplicationPause(!LiteRuntime.Instance.IsPause);
             }
 #endif
+        }
+
+        private void LateUpdate()
+        {
+            RunFramePhase(static () => LiteRuntime.Instance.LateTick(), ref _consecutiveLateUpdateErrors);
+        }
+
+        private bool RunFramePhase(Action update, ref int consecutiveErrors)
+        {
+            try
+            {
+                update();
+                consecutiveErrors = 0;
+            }
+            catch (Exception ex)
+            {
+                if (++consecutiveErrors >= MaxConsecutiveErrors)
+                {
+                    LLog.Error("Too many consecutive errors, entering error state.");
+                    LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
+                    return false;
+                }
+                if (_setting.Common.ThrowException)
+                {
+                    throw;
+                }
+                LLog.Exception(ex);
+            }
+            return true;
         }
 
         private void OnApplicationQuit()

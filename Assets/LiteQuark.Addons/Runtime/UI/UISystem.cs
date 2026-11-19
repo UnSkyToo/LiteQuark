@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class UISystem : ISystem, ISystemSettingProvider<UISystemSetting>, ITick
+    public sealed class UISystem : ISystem, ISystemSettingProvider<UISystemSetting>, ITick, ILateTick
     {
         public UISystemSetting Setting { get; set; }
 
@@ -84,6 +84,27 @@ namespace LiteQuark.Runtime
                 if (ui.State == UIState.Opened)
                 {
                     ui.Update(deltaTime);
+                }
+            }
+        }
+
+        public void LateTick(float deltaTime)
+        {
+            // OpenUI can finish after Update. Include those windows without advancing either queue.
+            var pendingCount = _openList.Count;
+            LateTickOpened(_uiList, _uiList.Count, deltaTime);
+            LateTickOpened(_openList, pendingCount, deltaTime);
+        }
+
+        private static void LateTickOpened(List<BaseUI> windows, int count, float deltaTime)
+        {
+            var runtime = LiteRuntime.Instance;
+            for (var i = 0; i < count && i < windows.Count && runtime.CanLateTick; i++)
+            {
+                var ui = windows[i];
+                if (ui.State == UIState.Opened && ui is ILateTick lateTick)
+                {
+                    lateTick.LateTick(deltaTime);
                 }
             }
         }

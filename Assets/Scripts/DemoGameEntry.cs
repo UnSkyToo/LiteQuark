@@ -5,7 +5,7 @@ using LiteQuark.Runtime;
 namespace LiteQuark.Demo
 {
     [UnityEngine.Scripting.Preserve]
-    public sealed class DemoGameEntry : IGameEntry, ITick
+    public sealed class DemoGameEntry : IGameEntry, ITick, ILateTick
     {
         public UniTask<bool> Initialize()
         {
@@ -23,6 +23,11 @@ namespace LiteQuark.Demo
         public void Tick(float deltaTime)
         {
             LiteNexusEngine.Instance.Tick(deltaTime);
+        }
+
+        public void LateTick(float deltaTime)
+        {
+            LiteNexusEngine.Instance.LateTick(deltaTime);
         }
     }
 }

@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, IDisposeAsync
+    internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, ILateTick, IDisposeAsync
     {
         private readonly List<ISystem> _systemList = new();
         private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new();
@@ -28,6 +28,18 @@ namespace LiteQuark.Runtime
                 if (_systemList[i] is ITick tickSys)
                 {
                     tickSys.Tick(deltaTime);
+                }
+            }
+        }
+
+        public void LateTick(float deltaTime)
+        {
+            var runtime = LiteRuntime.Instance;
+            for (var i = 0; i < _systemList.Count && runtime.CanLateTick; i++)
+            {
+                if (_systemList[i] is ILateTick system)
+                {
+                    system.LateTick(deltaTime);
                 }
             }
         }
