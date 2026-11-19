@@ -46,7 +46,7 @@ ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 
 
 ## 注册与加载
 
-示例使用 `LiteQuark.Runtime` 命名空间，在 `ILogic.Initialize()` 等系统初始化完成后的异步方法中调用。以下示例使用上面的表和默认 `GamePlay` 命名空间：
+示例使用 `LiteQuark.Runtime` 命名空间，在 `IGameEntry.Initialize()` 等系统初始化完成后的异步方法中调用。以下示例使用上面的表和默认 `GamePlay` 命名空间：
 
 ```csharp
 var config = LiteRuntime.Get<ConfigSystem>();

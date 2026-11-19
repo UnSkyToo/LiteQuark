@@ -4,6 +4,9 @@
 
 ### 核心接口
 
+- 破坏：移除 `ILogic`、`LogicList` 和 `LogicCenter`。将业务启动和释放集中到一个 `IGameEntry`，需要逐帧更新时显式实现 `ITick`。在 Launcher 的 Debug / Release 页签重新选择 **Game Entry**，留空只启动系统。
+- 日志控制台由 LogSystem 创建和销毁，移除 `LogRuntimeLogic` 配置。在各配置页核对 `Log.ShowLogViewer`，新配置默认关闭，已有场景的已保存开关生效。
+
 - 修复：Editor 停止 Play Mode 后的异步清理使用 Unity 对象判空，日志逻辑跳过已销毁的日志窗口，TaskSystem 跳过已销毁的协程宿主，避免编辑模式 Destroy 错误和 MissingReferenceException。
 - 破坏：Restart 仅在 Running 接受请求并在下一帧执行，多次请求合并；ShuttingDown 期间忽略请求，其他状态抛出 InvalidOperationException。启动错误回调中的直接 Restart 需改为等待清理回到 Idle 后再 Startup；已排队请求遇到错误或关闭会被放弃。
 - 修复：Error 与 ShutdownFailed 停止 Runtime 对 System 和 Logic 的 Tick；释放续体在系统 Tick 内失败时，该调用返回后也停止同轮剩余系统的更新。关闭失败后拒绝重试和启动。

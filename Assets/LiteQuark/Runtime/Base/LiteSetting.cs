@@ -9,8 +9,8 @@ namespace LiteQuark.Runtime
     [Serializable]
     public sealed class LiteSetting
     {
-        [Header("逻辑列表")]
-        [SerializeField] public List<LiteTypeEntryData<ILogic>> LogicList;
+        [Tooltip("可选的 IGameEntry 类型。留空时只启动系统。")]
+        [SerializeField] public string GameEntry;
         [Header("额外模块")]
         [SerializeField] public List<LiteTypeEntryData<ISystem>> SystemList;
         [Header("基础设置")]
@@ -29,7 +29,6 @@ namespace LiteQuark.Runtime
 
         public LiteSetting()
         {
-            LogicList = new List<LiteTypeEntryData<ILogic>>();
             SystemList = new List<LiteTypeEntryData<ISystem>>();
 
             Common = new CommonSetting();
@@ -128,12 +127,12 @@ namespace LiteQuark.Runtime
         public class LogSetting
         {
             [SerializeField] public bool SimpleLog = true;
-            [ConditionalShow(nameof(SimpleLog), false), SerializeField] public bool ReceiveLog = true;
+            [SerializeField] public bool ReceiveLog = true;
             [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogInfo = true;
             [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogWarn = true;
             [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogError = true;
             [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogFatal = true;
-            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = true;
+            [ConditionalShow(nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = false;
 
             public LogSetting()
             {

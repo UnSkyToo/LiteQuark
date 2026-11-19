@@ -10,7 +10,7 @@ namespace LiteQuark.Editor
     //     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     //     {
     //         EditorGUI.BeginProperty(position, label, property);
-    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("LogicList"));
+    //         EditorGUILayout.PropertyField(property.FindPropertyRelative("GameEntry"));
     //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Common"));
     //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Asset"));
     //         EditorGUILayout.PropertyField(property.FindPropertyRelative("Log"));

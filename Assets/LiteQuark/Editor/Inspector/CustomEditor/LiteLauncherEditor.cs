@@ -15,7 +15,7 @@ namespace LiteQuark.Editor
 
         private struct ProfileProperties
         {
-            public SerializedProperty LogicList;
+            public SerializedProperty GameEntry;
             public SerializedProperty SystemList;
             public SerializedProperty Common;
             public SerializedProperty Task;
@@ -26,6 +26,8 @@ namespace LiteQuark.Editor
         }
 
         private ProfileProperties[] _profiles;
+        private string[] _gameEntryNames;
+        private GUIContent[] _gameEntryLabels;
         private SerializedProperty _simulateReleaseBuildProperty;
         private int _selectedTab;
         private readonly Dictionary<string, bool> _foldoutStates = new();
@@ -33,6 +35,14 @@ namespace LiteQuark.Editor
 
         private void OnEnable()
         {
+            var entryTypes = TypeCache.GetTypesDerivedFrom<IGameEntry>()
+                .Where(type => type.IsClass && !type.IsAbstract && !type.ContainsGenericParameters &&
+                    !typeof(UnityEngine.Object).IsAssignableFrom(type) && type.GetConstructor(Type.EmptyTypes) != null &&
+                    !type.IsDefined(typeof(LiteHideTypeAttribute), true))
+                .OrderBy(type => type.FullName, StringComparer.Ordinal)
+                .ToArray();
+            _gameEntryNames = entryTypes.Select(type => type.AssemblyQualifiedName).Prepend(string.Empty).ToArray();
+            _gameEntryLabels = entryTypes.Select(type => new GUIContent(type.FullName)).Prepend(new GUIContent("None")).ToArray();
             _simulateReleaseBuildProperty = serializedObject.FindProperty("_simulateReleaseBuild");
             _profiles = new ProfileProperties[2];
             for (var i = 0; i < 2; i++)
@@ -40,7 +50,7 @@ namespace LiteQuark.Editor
                 var root = serializedObject.FindProperty(SettingPropertyNames[i]);
                 _profiles[i] = new ProfileProperties
                 {
-                    LogicList = root.FindPropertyRelative("LogicList"),
+                    GameEntry = root.FindPropertyRelative(nameof(LiteSetting.GameEntry)),
                     SystemList = root.FindPropertyRelative("SystemList"),
                     Common = root.FindPropertyRelative("Common"),
                     Task = root.FindPropertyRelative("Task"),
@@ -93,7 +103,7 @@ namespace LiteQuark.Editor
 
             var props = _profiles[_selectedTab];
 
-            EditorGUILayout.PropertyField(props.LogicList);
+            DrawGameEntry(props.GameEntry);
             EditorGUILayout.PropertyField(props.SystemList);
 
             EditorGUILayout.Space(5);
@@ -109,6 +119,25 @@ namespace LiteQuark.Editor
             DrawSettingValidation();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawGameEntry(SerializedProperty property)
+        {
+            var typeName = property.stringValue;
+            var selected = string.IsNullOrWhiteSpace(typeName) ? 0 : Array.IndexOf(_gameEntryNames, typeName);
+            if (selected < 0)
+            {
+                EditorGUILayout.HelpBox($"Unavailable game entry: {typeName}", MessageType.Warning);
+            }
+
+            var rect = EditorGUILayout.GetControlRect();
+            using var scope = new EditorGUI.PropertyScope(rect, new GUIContent(property.displayName, property.tooltip), property);
+            EditorGUI.BeginChangeCheck();
+            selected = EditorGUI.Popup(rect, scope.content, selected, _gameEntryLabels);
+            if (EditorGUI.EndChangeCheck())
+            {
+                property.stringValue = _gameEntryNames[selected];
+            }
         }
 
         private void DrawAddonSystemSettings(SerializedProperty systemSettingsProperty)

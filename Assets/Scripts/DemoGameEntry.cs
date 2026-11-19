@@ -4,16 +4,12 @@ using LiteQuark.Runtime;
 
 namespace LiteQuark.Demo
 {
-    public class DemoLogic : ILogic
+    [UnityEngine.Scripting.Preserve]
+    public sealed class DemoGameEntry : IGameEntry, ITick
     {
-        public DemoLogic()
-        {
-        }
-
         public UniTask<bool> Initialize()
         {
             return LiteNexusEngine.Instance.Startup();
-            return UniTask.FromResult(true);
         }
 
         public UniTask DisposeAsync()

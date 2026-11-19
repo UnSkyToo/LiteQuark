@@ -8,8 +8,8 @@ Use the editor version in [ProjectVersion.txt](ProjectSettings/ProjectVersion.tx
 
 1. Clone the repository outside another project's `Assets` directory and open it with the matching editor.
 2. Open [Demo.unity](Assets/Scenes/Demo.unity), the only enabled scene in Build Settings.
-3. Inspect the `Launcher` object's Debug/Release settings. The checked-in scene enables `LogRuntimeLogic` and the optional `UISystem`; it does **not** register the battle `DemoLogic`.
-4. Follow the [framework guide](Assets/LiteQuark/README.md) to register your own `ILogic` and systems. Put loadable assets under `Assets/StandaloneAssets`.
+3. Inspect the `Launcher` object's Debug/Release settings. The checked-in scene enables the log viewer and the optional `UISystem`, with **Game Entry** set to **None**.
+4. Follow the [framework guide](Assets/LiteQuark/README.md) to select an optional `IGameEntry` and register systems. Put loadable assets under `Assets/StandaloneAssets`.
 
 To integrate into an existing project, copy `Assets/LiteQuark` and optionally `Assets/LiteQuark.Addons`, including their `.meta` files, or use the published package branches in Package Manager:
 
@@ -35,7 +35,7 @@ Core bundles UniTask, LitJson and IngameDebugConsole. Unity package dependencies
 
 For optional systems, start with the [Addons guide](Assets/LiteQuark.Addons/README.md). The [Config guide](Assets/LiteQuark.Addons/Runtime/Config/README.md) covers Excel input, JSON/C# export and runtime registration.
 
-The battle entry is [DemoLogic.cs](Assets/Scripts/DemoLogic.cs), which starts `LiteNexusEngine`; the authoring window is `Lite > Nexus Engine > Editor Window`. Battle scene/configuration setup is separate from the default launcher scene. Await engine startup before accessing `LiteNexusConfig.Instance`: the data manager loads configuration asynchronously and releases its Handles on initialization failure or shutdown. Editor tools access configuration through AssetDatabase.
+The battle entry is [DemoGameEntry.cs](Assets/Scripts/DemoGameEntry.cs), which starts `LiteNexusEngine`; the authoring window is `Lite > Nexus Engine > Editor Window`. The [battle scene](Assets/LiteBattle/Resources/Scenes/LiteNexusEditorScene.unity) selects this entry in both launcher profiles. Await engine startup before accessing `LiteNexusConfig.Instance`: the data manager loads configuration asynchronously and releases its Handles on initialization failure or shutdown. Editor tools access configuration through AssetDatabase.
 
 ## Validation and builds
 

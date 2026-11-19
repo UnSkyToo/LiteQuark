@@ -8,6 +8,7 @@ using LiteQuark.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Editor
 {
@@ -83,9 +84,14 @@ namespace LiteQuark.Editor
                     await UniTask.NextFrame();
                 }
                 result.checks++;
-                if (GameObject.Find("IngameDebugConsole(Clone)") == null)
-                    throw new Exception("Demo must create the real LogRuntimeLogic viewer before stopping.");
-                result.evidence.Add("The repository Demo scene reaches Running with its real log viewer.");
+                if (!string.IsNullOrEmpty(LiteRuntime.Setting.GameEntry))
+                    throw new Exception("The default Demo must run without a game entry.");
+                var viewer = GameObject.Find("IngameDebugConsole(Clone)");
+                var canvas = LiteRuntime.Get<UISystem>().CanvasRoot;
+                if (viewer == null || viewer.GetComponent<UnityEngine.UI.CanvasScaler>().referenceResolution !=
+                    canvas.GetComponent<UnityEngine.UI.CanvasScaler>().referenceResolution)
+                    throw new Exception("Demo must create its log viewer with the initialized UI canvas resolution.");
+                result.evidence.Add("The default Demo reaches Running without a game entry and its log viewer matches the UI canvas.");
                 var task = LiteRuntime.Task.AddTask(WaitUntilEditorStop());
                 while (!task.IsExecuted)
                 {
@@ -152,6 +158,13 @@ namespace LiteQuark.Editor
             Application.logMessageReceived += CaptureError;
             try
             {
+                const string battleScene = "Assets/LiteBattle/Resources/Scenes/LiteNexusEditorScene.unity";
+                await EditorSceneManager.LoadSceneAsyncInPlayMode(battleScene, new LoadSceneParameters(LoadSceneMode.Additive)).ToUniTask();
+                await RunAsync("tasks/battle-entry", BattleGameEntry);
+                await LiteRuntime.Instance.Shutdown();
+                UnityEngine.Object.Destroy(LiteRuntime.Instance.Launcher.gameObject);
+                await SceneManager.UnloadSceneAsync(SceneManager.GetSceneByPath(battleScene)).ToUniTask();
+
                 var launcher = new GameObject("TaskSystemValidationLauncher").AddComponent<LiteLauncher>();
                 var deadline = Time.realtimeSinceStartup + 20f;
                 while (LiteRuntime.Instance.State != LiteRuntime.RuntimeState.Running)
@@ -202,6 +215,23 @@ namespace LiteQuark.Editor
                 Results.Save("tasks");
                 EditorApplication.Exit(Results.fatalError == null && Results.unexpectedErrors.Count == 0 && Results.cases.All(c => c.passed) ? 0 : 2);
             }
+        }
+
+        private static async UniTask BattleGameEntry(TaskSystem system)
+        {
+            await UniTask.WaitUntil(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Running)
+                .Timeout(TimeSpan.FromSeconds(20));
+            var launcher = LiteRuntime.Instance.Launcher;
+            Check(!string.IsNullOrEmpty(launcher.DebugSetting.GameEntry) &&
+                launcher.DebugSetting.GameEntry == launcher.ReleaseSetting.GameEntry,
+                "Both battle scene profiles select the same game entry.");
+
+            var camera = Camera.main;
+            var displaced = camera.transform.position + Vector3.right * 20f;
+            camera.transform.position = displaced;
+            await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
+            Check(Vector3.Distance(displaced, camera.transform.position) > 10f,
+                "The battle entry receives a real frame update and its camera follows the player.");
         }
 
         private static UniTask Run(string name, Action<TaskSystem> test, params string[] expectedErrors)

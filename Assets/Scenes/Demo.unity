@@ -196,10 +196,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DebugSetting:
-    LogicList:
-    - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.LogRuntimeLogic, LiteQuark.Runtime,
-        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    GameEntry:
     SystemList:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
@@ -240,10 +237,7 @@ MonoBehaviour:
     SystemSettings:
     - rid: 4730454262242344960
   ReleaseSetting:
-    LogicList:
-    - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.LogRuntimeLogic, LiteQuark.Runtime,
-        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    GameEntry:
     SystemList:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,

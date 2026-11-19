@@ -10,7 +10,7 @@ namespace LiteQuark.Runtime
         {
             Idle,
             InitSystem,
-            InitLogic,
+            InitGameEntry,
             Running,
             ShuttingDown,
             ShutdownFailed,
@@ -27,6 +27,7 @@ namespace LiteQuark.Runtime
         public LiteLauncher Launcher { get; private set; }
 
         private LiteSetting _setting = null;
+        private IGameEntry _gameEntry;
         private float _enterBackgroundTime = 0.0f;
         private bool _restartWhenNextFrame = false;
         private bool _quitRequested;
@@ -79,14 +80,58 @@ namespace LiteQuark.Runtime
             }
             LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
 
-            _state = RuntimeState.InitLogic;
-            watch.Restart();
-            if (!await LogicCenter.Instance.InitializeLogic(ct) || ct.IsCancellationRequested)
+            IGameEntry entry = null;
+            try
+            {
+                Log.OpenViewer();
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(_setting.GameEntry))
+                {
+                    return true;
+                }
+
+                _state = RuntimeState.InitGameEntry;
+                var type = System.Type.GetType(_setting.GameEntry, throwOnError: true);
+                if (!typeof(IGameEntry).IsAssignableFrom(type))
+                {
+                    throw new System.InvalidOperationException($"Game entry {type} must implement {nameof(IGameEntry)}.");
+                }
+
+                entry = (IGameEntry)System.Activator.CreateInstance(type);
+                var initialized = await entry.Initialize();
+                if (ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+                if (!initialized)
+                {
+                    LLog.Error("Initialize game entry {0} failed", type.FullName);
+                    return false;
+                }
+
+                _gameEntry = entry;
+                entry = null;
+                return true;
+            }
+            catch (System.OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 return false;
             }
-            LLog.Info("Runtime: InitLogic duration {0}s", watch.Elapsed.TotalSeconds);
-            return true;
+            catch (System.Exception ex)
+            {
+                LLog.Exception(ex);
+                return false;
+            }
+            finally
+            {
+                if (entry != null)
+                {
+                    await entry.DisposeAsync();
+                }
+            }
         }
 
         private async UniTask CompleteStartupAsync(CancellationToken ct)
@@ -161,7 +206,11 @@ namespace LiteQuark.Runtime
                 }
                 await FinishAtFrameBoundary(_initialization.AsUniTask());
 
-                await LogicCenter.Instance.DisposeAsync();
+                if (_gameEntry != null)
+                {
+                    await FinishAtFrameBoundary(_gameEntry.DisposeAsync());
+                    _gameEntry = null;
+                }
                 await SystemCenter.Instance.DisposeAsync();
 
                 _startupCts?.Dispose();
@@ -228,9 +277,9 @@ namespace LiteQuark.Runtime
             LiteTime.DeltaTime = tickDeltaTime;
 
             SystemCenter.Instance.Tick(tickDeltaTime);
-            if (_state == RuntimeState.Running)
+            if (_state == RuntimeState.Running && _gameEntry is ITick tick)
             {
-                LogicCenter.Instance.Tick(tickDeltaTime);
+                tick.Tick(tickDeltaTime);
             }
         }
 

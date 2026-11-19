@@ -1,6 +1,6 @@
 # LiteQuark Framework
 
-LiteQuark 将系统服务（`ISystem`）与业务逻辑（`ILogic`）分开管理，通过 `LiteRuntime` 访问已初始化的服务。本文描述当前源码；发布历史见 [CHANGELOG](CHANGELOG.md)。
+LiteQuark 将系统服务（`ISystem`）与可选的游戏入口（`IGameEntry`）分开管理，通过 `LiteRuntime` 访问已初始化的服务。本文描述当前源码；发布历史见 [CHANGELOG](CHANGELOG.md)。
 
 ## 安装
 
@@ -9,23 +9,20 @@ LiteQuark 将系统服务（`ISystem`）与业务逻辑（`ILogic`）分开管�
 ## 接入与启动
 
 1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
-2. 在 Launcher 的 `LogicList` 中添加业务类，在 `SystemList` 中添加需要的扩展系统。分别配置 DebugSetting 和 ReleaseSetting。
-3. 业务类实现 `Initialize()`、`Tick()`、`DisposeAsync()`；系统初始化完成后才开始初始化业务。
+2. 分别配置 Launcher 的 Debug / Release 页签。在 `SystemList` 中添加扩展系统，在 **Game Entry** 中选择一个业务入口，选 **None** 可只启动系统。
+3. 入口使用有公共无参构造函数的普通 C# 类。系统就绪后 Runtime 创建并等待入口初始化，关闭时先等待入口释放。需要逐帧更新的入口额外实现 `ITick`。
 
 ```csharp
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 
-public sealed class GameLogic : ILogic
+[UnityEngine.Scripting.Preserve]
+public sealed class GameEntry : IGameEntry
 {
     public UniTask<bool> Initialize()
     {
-        LLog.Info("Game logic initialized");
+        LLog.Info("Game entry initialized");
         return UniTask.FromResult(true);
-    }
-
-    public void Tick(float deltaTime)
-    {
     }
 
     public UniTask DisposeAsync()
@@ -39,15 +36,15 @@ public sealed class GameLogic : ILogic
 
 ## 生命周期与注册
 
-正常启动为 `Idle → InitSystem → InitLogic → Running`，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `ILogic.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
+已配置入口时启动顺序为 `Idle → InitSystem → InitGameEntry → Running`，入口留空时从 InitSystem 直接进入 Running，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `IGameEntry.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
 
-Runtime 统一管理已注册 System 和 Logic 的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。当前实例释放成功后，Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间请求关闭，会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
+Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。当前实例释放成功后，Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间请求关闭，会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
 
-`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待 Logic，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，释放已发布或未发布实例抛异常时进入 ShutdownFailed，停止更新并拒绝再次关闭或启动。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止正常 Logic 更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
+`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待游戏入口释放，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，释放已发布或未发布实例抛异常时进入 ShutdownFailed，停止更新并拒绝再次关闭或启动。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止入口更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
 
-业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。System 和 Logic 的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
+业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。系统和游戏入口的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
 
-Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。如果重启期间收到应用退出通知，旧系统继续关闭，完成后停在 Idle。Idle、InitSystem、InitLogic、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
+Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。如果重启期间收到应用退出通知，旧系统继续关闭，完成后停在 Idle。Idle、InitSystem、InitGameEntry、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
 
 等待 DisposeAsync 只保证完成各模块当前实现的清理步骤，不代表所有原生资源都已卸载。加载途中可以请求 Restart。Asset 收尾成功后才启动新一轮，卸载失败时重启终止，详见[资源关闭](Runtime/Asset/README.md#系统关闭)。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 
@@ -57,12 +54,12 @@ Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步�
 
 `Log → Event → Timer → Task → Asset → ObjectPool → Action`
 
-扩展系统按配置列表顺序接在内置系统之后；业务按 `LogicList` 顺序初始化。系统关闭时按相反顺序释放；Logic 先释放未成功发布的对象，再按配置顺序释放已初始化对象。
+扩展系统按配置列表顺序接在内置系统之后。每轮启动按 `LiteSetting.GameEntry` 保存的程序集限定类型名创建新的入口实例。仅通过 Inspector 引用的入口应在具体类上使用 `[Preserve]` 或由项目的 `link.xml` 保留其无参构造。
 
 | 扩展点 | 约定 |
 | --- | --- |
 | `ISystem` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()`；逐帧更新时同时实现 `ITick` |
-| `ILogic` | `UniTask<bool> Initialize()`、`Tick(float)`、`UniTask DisposeAsync()` |
+| `IGameEntry` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()`。实现 `ITick` 可在 Running 时于系统更新后接收 `Tick(float)` |
 | `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |
 | 配置类 | 实现 `ISystemSetting`，使用可序列化类型和无参构造函数 |
 
@@ -86,7 +83,7 @@ var tasks = LiteRuntime.Get<TaskSystem>();
 | [Timer](Runtime/Core/Async/Timer/README.md) | 时间回调、重复执行、暂停与取消 |
 | [Action](Runtime/Core/Async/Action/README.md) | Transform 补间、序列/并行、条件等待 |
 | [ObjectPool](Runtime/Core/ObjectPool/README.md) | GameObject、集合复用及预生成 |
-| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置 |
+| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置。调试模式下启用 `ReceiveLog` 和 `ShowLogViewer` 可在系统就绪后显示控制台，入口可留空 |
 
 UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons` 包，不会自动注册。安装并注册后使用 `LiteRuntime.Get<UISystem>()` 等泛型入口；网络入口为 `LiteRuntime.Get<NetworkSystem>().Http`。
 

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace LiteQuark.Runtime
 {
@@ -10,6 +13,7 @@ namespace LiteQuark.Runtime
         private ILoggerRepository _repository = null;
         private Dictionary<string, ILog> _logCache = null;
         private ILog _commonLogger = null;
+        private GameObject _viewer;
 
         public LogSystem()
         {
@@ -42,8 +46,35 @@ namespace LiteQuark.Runtime
             return UniTask.FromResult(true);
         }
 
+        internal void OpenViewer()
+        {
+            var setting = LiteRuntime.Setting.Log;
+            if (!LiteRuntime.IsDebugMode || !setting.ReceiveLog || !setting.ShowLogViewer)
+            {
+                return;
+            }
+
+            var canvasScaler = Object.FindFirstObjectByType<CanvasScaler>();
+            _viewer = Object.Instantiate(Resources.Load<GameObject>("IngameDebugConsole"));
+            if (canvasScaler != null)
+            {
+                var scaler = _viewer.GetOrAddComponent<CanvasScaler>();
+                scaler.uiScaleMode = canvasScaler.uiScaleMode;
+                scaler.screenMatchMode = canvasScaler.screenMatchMode;
+                scaler.referenceResolution = canvasScaler.referenceResolution;
+                scaler.referencePixelsPerUnit = canvasScaler.referencePixelsPerUnit;
+                scaler.matchWidthOrHeight = canvasScaler.matchWidthOrHeight;
+            }
+        }
+
         public UniTask DisposeAsync()
         {
+            if (_viewer != null)
+            {
+                Object.Destroy(_viewer);
+            }
+            _viewer = null;
+
             _repository?.Dispose();
             _repository = null;
 

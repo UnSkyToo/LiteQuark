@@ -31,6 +31,7 @@
         "tasks/restart",
         "tasks/shutdown-failure",
         "tasks/demo-stop",
+        "tasks/battle-entry",
         "tasks/pool-ownership"
     ],
     "loading": [
