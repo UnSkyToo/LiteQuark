@@ -6,6 +6,10 @@
 - `Assets/LiteQuark`: core runtime, editor tools, bundled third-party libraries. `Assets/LiteQuark.Addons`: optional systems. `Assets/LiteBattle`: battle runtime and authoring tools. `Assets/Scripts`: examples.
 - For setup, builds and publishing, use [README.md](README.md). Before using a module in business code, read its README for capabilities, APIs and lifecycle contracts; inspect implementation as needed. Start with the [core guide](Assets/LiteQuark/README.md) or [Addons guide](Assets/LiteQuark.Addons/README.md). Before modifying a module, also read its applicable AGENTS.md.
 
+## Architecture reviews
+
+- First ask what actual callers would lose without each abstraction, lifecycle mechanism, or defensive branch. Use observable consequences to recommend keeping, narrowing, merging, or removing it. Assess migration costs separately from the target design.
+
 ## Change constraints
 
 - Follow nearby C# style: four spaces, braces on separate lines, PascalCase types/methods/properties, camelCase locals, and the existing private-field convention. Preserve module namespaces.
