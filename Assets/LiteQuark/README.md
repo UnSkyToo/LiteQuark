@@ -64,11 +64,9 @@ Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求
 
 Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步清理续体才执行。释放逻辑访问 Unity 对象前应使用 `obj != null` 检查其原生对象是否仍存在；`?.` 只检查托管引用。已经由 Unity 销毁的对象无需再次 Destroy。
 
-内置系统按 [LiteConst.InternalSystem](Runtime/Base/LiteConst.cs) 的优先级从大到小初始化：
+每次启动或重启，[SystemCenter](Runtime/Internal/SystemCenter.cs) 按固定顺序逐个创建并初始化内置系统：`Log → Event → Timer → Task → Asset → ObjectPool → Action`。
 
-`Log → Event → Timer → Task → Asset → ObjectPool → Action`
-
-扩展系统按配置列表顺序接在内置系统之后。每轮启动按 `LiteSetting.GameEntry` 保存的程序集限定类型名创建新的入口实例。仅通过 Inspector 引用的入口应在具体类上使用 `[Preserve]` 或由项目的 `link.xml` 保留其无参构造。
+所有内置系统就绪后，扩展系统按 Launcher 的 **System List** 从上到下初始化。禁用项会跳过，同一类型只初始化一次。每轮启动按 `LiteSetting.GameEntry` 保存的程序集限定类型名创建新的入口实例。仅通过 Inspector 引用的入口应在具体类上使用 `[Preserve]` 或由项目的 `link.xml` 保留其无参构造。
 
 | 扩展点 | 约定 |
 | --- | --- |

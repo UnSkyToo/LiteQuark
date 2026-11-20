@@ -47,43 +47,59 @@ namespace LiteQuark.Runtime
         internal async UniTask<bool> InitializeSystem(CancellationToken ct = default)
         {
             ISystem unpublished = null;
+            async UniTask<bool> InitializeAndPublish(ISystem system, string registeredName = null, ISystemSetting setting = null)
+            {
+                unpublished = system;
+                if (ct.IsCancellationRequested) return false;
+                var type = system.GetType();
+                var name = registeredName ?? type.AssemblyQualifiedName;
+                LLog.Info("Initialize {0}", name);
+                if (registeredName != null)
+                {
+                    TryInjectSetting(system, setting);
+                }
+                var initialized = await system.Initialize();
+                if (ct.IsCancellationRequested) return false;
+                if (!initialized)
+                {
+                    LLog.Error("Initialize {0} failed", name);
+                    return false;
+                }
+
+                _systemTypeMap.Add(type, system);
+                _systemList.Add(system);
+                unpublished = null;
+                return true;
+            }
+
             try
             {
-                foreach (var (assemblyQualifiedName, settings) in GetAllSystems())
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        return false;
-                    }
+                if (ct.IsCancellationRequested) return false;
+                // Fix the registrations for this startup before any system can yield or edit the list.
+                var extensions = LiteRuntime.Setting.SystemList
+                    .Where(entry => entry != null && !entry.Disabled && !string.IsNullOrWhiteSpace(entry.AssemblyQualifiedName))
+                    .Select(entry => (entry.AssemblyQualifiedName, entry.Setting)).ToArray();
 
+                foreach (var system in CreateBuiltInSystems())
+                {
+                    if (!await InitializeAndPublish(system)) return false;
+                }
+
+                foreach (var (assemblyQualifiedName, setting) in extensions)
+                {
                     var systemType = System.Type.GetType(assemblyQualifiedName);
                     if (systemType == null)
                     {
                         throw new System.Exception($"cannot find system class type : {assemblyQualifiedName}");
                     }
 
-                    unpublished = System.Activator.CreateInstance(systemType) as ISystem;
-                    if (unpublished == null)
+                    if (_systemTypeMap.ContainsKey(systemType)) continue;
+                    if (System.Activator.CreateInstance(systemType) is not ISystem system)
                     {
                         throw new System.Exception($"incorrect {typeof(ISystem)} type : {assemblyQualifiedName}");
                     }
 
-                    LLog.Info("Initialize {0}", assemblyQualifiedName);
-                    TryInjectSetting(unpublished, settings);
-                    var initialized = await unpublished.Initialize();
-                    if (ct.IsCancellationRequested)
-                    {
-                        return false;
-                    }
-                    if (!initialized)
-                    {
-                        LLog.Error("Initialize {0} failed", assemblyQualifiedName);
-                        return false;
-                    }
-
-                    _systemTypeMap.Add(systemType, unpublished);
-                    _systemList.Add(unpublished);
-                    unpublished = null;
+                    if (!await InitializeAndPublish(system, assemblyQualifiedName, setting)) return false;
                 }
 
                 return !ct.IsCancellationRequested;
@@ -133,27 +149,15 @@ namespace LiteQuark.Runtime
             return default;
         }
 
-        private static List<(string, ISystemSetting)> GetAllSystems()
+        private static IEnumerable<ISystem> CreateBuiltInSystems()
         {
-            var seen = new HashSet<string>(LiteConst.InternalSystem.Keys);
-            var systems = new List<(string, ISystemSetting)>();
-            foreach (var builtin in LiteConst.InternalSystem.OrderByDescending(static pair => pair.Value))
-            {
-                systems.Add((builtin.Key, null));
-            }
-
-            foreach (var systemEntry in LiteRuntime.Setting.SystemList)
-            {
-                if (systemEntry == null || systemEntry.Disabled || string.IsNullOrWhiteSpace(systemEntry.AssemblyQualifiedName))
-                {
-                    continue;
-                }
-                if (seen.Add(systemEntry.AssemblyQualifiedName))
-                {
-                    systems.Add((systemEntry.AssemblyQualifiedName, systemEntry.Setting));
-                }
-            }
-            return systems;
+            yield return new LogSystem();
+            yield return new EventSystem();
+            yield return new TimerSystem();
+            yield return new TaskSystem();
+            yield return new AssetSystem();
+            yield return new ObjectPoolSystem();
+            yield return new ActionSystem();
         }
 
         private static void TryInjectSetting(ISystem system, ISystemSetting setting)

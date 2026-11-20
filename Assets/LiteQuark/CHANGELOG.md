@@ -12,6 +12,7 @@
 
 ### 核心接口
 
+- 移除 `LiteConst.InternalSystem`。原先通过该字典添加的自定义系统请移入 Launcher 的 **System List**，按依赖先后排列。内置系统顺序由框架固定；原先依赖插入两个内置系统之间的初始化逻辑需调整到内置系统全部就绪后执行。
 - 破坏：Launcher 使用一份场景配置和显式 Development 覆盖。外部旧场景和 Prefab 需要按上节手工迁移。
 - 扩展系统和多态参数合并为一个 `LiteSystemEntry`；把旧 Addon 参数移入对应注册项。以前用 `SystemSettings` 或按设置类型匹配的代码应改为给注册项的 `Setting` 赋值。程序化初始化可继续使用有效的 `LiteSetting`；通过 `LiteRuntime.Setting.Environment` 查询环境。
 - 新增：游戏入口和系统可独立实现 `ILateTick`。Runtime 在 LateUpdate 先调用入口，再按注册顺序调用系统，复用本帧 Tick 的 deltaTime。

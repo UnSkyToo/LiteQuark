@@ -195,12 +195,19 @@ namespace LiteQuark.Editor
             var originalSettings = launcher.Settings;
             var originalPreview = launcher.EditorPreview;
             var authored = new LiteLauncherSettings();
-            var startupInfoCount = 0;
-            void CountStartupInfo(string message, string stack, LogType type)
+            var startupOrder = new List<string>();
+            void RecordStartup(string message, string stack, LogType type)
             {
-                if (type == LogType.Log && message == "Initialize " + typeof(LogSystem).AssemblyQualifiedName) startupInfoCount++;
+                const string prefix = "Initialize ";
+                if (type == LogType.Log && message.StartsWith(prefix, StringComparison.Ordinal))
+                    startupOrder.Add(message.Substring(prefix.Length));
             }
-            Application.logMessageReceived += CountStartupInfo;
+            static ISystem[] RegisteredSystems() => new ISystem[]
+            {
+                LiteRuntime.Log, LiteRuntime.Event, LiteRuntime.Timer, LiteRuntime.Task, LiteRuntime.Asset,
+                LiteRuntime.ObjectPool, LiteRuntime.Action, LiteRuntime.Get<EndpointProbe>(), LiteRuntime.Get<OtherEndpointProbe>()
+            };
+            Application.logMessageReceived += RecordStartup;
             try
             {
                 if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
@@ -221,6 +228,8 @@ namespace LiteQuark.Editor
                     AssemblyQualifiedName = typeof(OtherEndpointProbe).AssemblyQualifiedName,
                     Setting = new TimeoutSetting { Timeout = new BuildValue<int>(60) }
                 });
+                authored.SystemList.Add(new LiteSystemEntry { AssemblyQualifiedName = typeof(TaskSystem).AssemblyQualifiedName });
+                authored.SystemList.Add(new LiteSystemEntry { AssemblyQualifiedName = typeof(EndpointProbe).AssemblyQualifiedName });
                 using (var inspector = new SerializedObject(launcher))
                 {
                     var timeout = inspector.FindProperty("Settings.SystemList").GetArrayElementAtIndex(1)
@@ -234,11 +243,15 @@ namespace LiteQuark.Editor
                     "Release preview takes the release value even with a Development override.");
                 launcher.EditorPreview = LiteBuildProfile.Development;
                 runtime.Startup(launcher);
-                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Development settings startup");
                 var development = LiteRuntime.Setting;
+                // Asset initialization is pending. The active startup already captured this registration.
+                development.SystemList.RemoveAt(2);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Development settings startup");
+                var firstSystems = RegisteredSystems();
+                Check(firstSystems.All(s => s != null) && startupOrder.SequenceEqual(firstSystems.Select(s => s.GetType().AssemblyQualifiedName)),
+                    "Startup creates all seven built-ins in order, then the enabled extensions from the original list, skipping duplicate types.");
                 Check(development.Environment == LiteBuildProfile.Development && development.Task.ConcurrencyLimit == 9 &&
-                    development.Asset.BundleRemoteUri == "https://dev.example/" && LiteRuntime.Log.GetLogger("Profile").IsInfoEnabled &&
-                    startupInfoCount == 1,
+                    development.Asset.BundleRemoteUri == "https://dev.example/" && LiteRuntime.Log.GetLogger("Profile").IsInfoEnabled,
                     "Development startup combines shared parameters, its CDN and its log policy.");
                 development.Task.ConcurrencyLimit = 1;
                 Check(LiteRuntime.Get<UISystem>() == null && LiteRuntime.Get<EndpointProbe>().Timeout == 0 &&
@@ -249,6 +262,7 @@ namespace LiteQuark.Editor
                 development.Asset.BundleRemoteUri = "https://runtime.example/";
 
                 launcher.EditorPreview = LiteBuildProfile.Release;
+                startupOrder.Clear();
                 runtime.Restart();
                 runtime.Tick(0f);
                 await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running &&
@@ -257,8 +271,10 @@ namespace LiteQuark.Editor
                 var log = LiteRuntime.Log.GetLogger("Profile");
                 Check(current.Environment == LiteBuildProfile.Release && !LiteRuntime.IsDebugMode && !log.IsInfoEnabled &&
                     log.IsWarnEnabled && !log.IsErrorEnabled && !log.IsFatalEnabled && current.Asset.BundleRemoteUri == "https://release.example/" &&
-                    startupInfoCount == 1,
+                    startupOrder.Count == 0,
                     "Release restart applies its CDN and log levels, filtering even the first startup log before LogSystem is published.");
+                Check(RegisteredSystems().All(s => s != null && !firstSystems.Contains(s)),
+                    "Restart publishes fresh instances of every built-in and enabled extension.");
                 Check(LiteRuntime.Get<EndpointProbe>().Timeout == 15 && LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
                     "Restart resolves each registration against Release.");
                 Check(current.Task.ConcurrencyLimit == 9 && ((UISystemSetting)current.SystemList[0].Setting).ResolutionWidth == 1600 &&
@@ -268,7 +284,7 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                Application.logMessageReceived -= CountStartupInfo;
+                Application.logMessageReceived -= RecordStartup;
                 if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
                 launcher.Settings = originalSettings;
                 launcher.EditorPreview = originalPreview;
