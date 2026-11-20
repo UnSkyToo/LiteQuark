@@ -9,84 +9,37 @@ namespace LiteQuark.Editor
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            var condHAtt = attribute as ConditionalShowAttribute;
-            var enabled = GetConditionalShowAttributeResult(condHAtt, property);
-
-            var wasEnabled = GUI.enabled;
-            GUI.enabled = enabled;
-            if (enabled)
+            if (IsVisible(property, (ConditionalShowAttribute)attribute))
             {
                 EditorGUI.PropertyField(position, property, label, true);
             }
-
-            GUI.enabled = wasEnabled;
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            var condAttr = attribute as ConditionalShowAttribute;
-            var enabled = GetConditionalShowAttributeResult(condAttr, property);
-
-            if (enabled)
-            {
-                return EditorGUI.GetPropertyHeight(property, label);
-            }
-            else
-            {
-                //The property is not being drawn
-                //We want to undo the spacing added before and after the property
-                return -EditorGUIUtility.standardVerticalSpacing;
-            }
+            return IsVisible(property, (ConditionalShowAttribute)attribute)
+                ? EditorGUI.GetPropertyHeight(property, label)
+                : -EditorGUIUtility.standardVerticalSpacing;
         }
 
-        private bool GetConditionalShowAttributeResult(ConditionalShowAttribute condHAtt, SerializedProperty property)
+        internal static bool IsVisible(SerializedProperty property, ConditionalShowAttribute condition)
         {
-            var enabled = true;
-
-            //Handle the unlimited property array
-            var sourceFieldArray = condHAtt.SourceFields;
-            var valueArray = condHAtt.Values;
-            var inverseArray = condHAtt.Inverses;
-            for (var index = 0; index < sourceFieldArray.Length; ++index)
+            var path = property.propertyPath;
+            var parent = path.Substring(0, path.LastIndexOf('.') + 1);
+            for (var i = 0; i < condition.SourceFields.Length; i++)
             {
-                SerializedProperty sourcePropertyValueFromArray = null;
-                if (!property.isArray || property.propertyType == SerializedPropertyType.String)
-                {
-                    var propertyPath = property.propertyPath; //returns the property path of the property we want to apply the attribute to
-                    var conditionPath = propertyPath.Replace(property.name, sourceFieldArray[index]); //changes the path to the conditionalsource property path
-                    sourcePropertyValueFromArray = property.serializedObject.FindProperty(conditionPath);
+                var name = condition.SourceFields[i];
+                var source = property.serializedObject.FindProperty(parent + name) ?? property.serializedObject.FindProperty(name);
+                if (source == null) continue;
 
-                    //if the find failed->fall back to the old system
-                    if (sourcePropertyValueFromArray == null)
-                    {
-                        //original implementation (doens't work with nested serializedObjects)
-                        sourcePropertyValueFromArray = property.serializedObject.FindProperty(sourceFieldArray[index]);
-                    }
-                }
-                else
-                {
-                    // original implementation(doens't work with nested serializedObjects)
-                    sourcePropertyValueFromArray = property.serializedObject.FindProperty(sourceFieldArray[index]);
-                }
-
-                //Combine the results
-                if (sourcePropertyValueFromArray != null)
-                {
-                    var propertyEnabled = CheckPropertyType(sourcePropertyValueFromArray, valueArray.Length >= (index + 1) ? valueArray[index] : null);
-                    if (inverseArray.Length >= (index + 1) && inverseArray[index]) propertyEnabled = !propertyEnabled;
-
-                    enabled = enabled && propertyEnabled;
-                }
-                else
-                {
-                    //Debug.LogWarning("Attempting to use a ConditionalHideAttribute but no matching SourcePropertyValue found in object: " + condHAtt.ConditionalSourceField);
-                }
+                var matches = CheckPropertyType(source, i < condition.Values.Length ? condition.Values[i] : null);
+                var inverse = i < condition.Inverses.Length && condition.Inverses[i];
+                if (matches == inverse) return false;
             }
-
-            return enabled;
+            return true;
         }
 
-        private bool CheckPropertyType(SerializedProperty sourcePropertyValue, object value)
+        private static bool CheckPropertyType(SerializedProperty sourcePropertyValue, object value)
         {
             switch (sourcePropertyValue.propertyType)
             {

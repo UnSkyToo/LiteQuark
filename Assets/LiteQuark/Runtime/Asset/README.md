@@ -127,11 +127,11 @@ ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作�
 
 AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选择 IBundleProvider，再将后端传给 AssetManager。后端创建失败（例如非法模式或无效 Remote URI）通过返回的 UniTask 报错，await 时抛出原始异常；任务组重复注册等错误仍在调用时同步抛出。Manager 统一管理清单、缓存和加载协调；SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider 负责获取清单和 Bundle。IBundleResource、Cache／Lease 与 TaskSystem 的读取、所有权和调度职责保持独立。
 
-在 Launcher 的 Asset 设置中配置：
+在场景 Launcher 的 **Asset** 模块设置资源参数。资源模式和 CDN 各有 Release 默认值和可选的 Development 覆盖。并发、重试和缓存只配置一次，运行时统一从 `LiteRuntime.Setting.Asset` 读取。
 
 | 配置 | 含义 |
 | --- | --- |
-| `BundleMode` | 默认 Simulate：编辑器中使用项目资源验证 Bundle 管理流程；BuiltIn 使用本地文件；Remote 使用远端资源包。非 Editor 下 Simulate 自动按 BuiltIn 加载 |
+| `BundleMode` | 示例的 Development 使用 Simulate，Release 使用 BuiltIn。Simulate 在编辑器中使用项目资源验证 Bundle 管理流程；BuiltIn 使用本地文件；Remote 使用远端资源包。非 Editor 下 Simulate 自动按 BuiltIn 加载 |
 | `BundleRemoteUri` | 绝对基础 URI，按目录追加小写平台名和版本号前两段（如 0.4）；传未编码路径名称，已有查询和 fragment 保留，勿配置框架保留参数 t |
 | `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |

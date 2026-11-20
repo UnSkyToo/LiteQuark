@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             ISystem unpublished = null;
             try
             {
-                foreach (var assemblyQualifiedName in GetAllSystemList())
+                foreach (var (assemblyQualifiedName, settings) in GetAllSystems())
                 {
                     if (ct.IsCancellationRequested)
                     {
@@ -69,7 +69,7 @@ namespace LiteQuark.Runtime
                     }
 
                     LLog.Info("Initialize {0}", assemblyQualifiedName);
-                    TryInjectSetting(unpublished);
+                    TryInjectSetting(unpublished, settings);
                     var initialized = await unpublished.Initialize();
                     if (ct.IsCancellationRequested)
                     {
@@ -133,44 +133,48 @@ namespace LiteQuark.Runtime
             return default;
         }
 
-        private List<string> GetAllSystemList()
+        private static List<(string, ISystemSetting)> GetAllSystems()
         {
-            var systemList = new List<string>(LiteConst.InternalSystem.Keys);
-            systemList.Sort(static (x, y) => LiteConst.InternalSystem[y].CompareTo(LiteConst.InternalSystem[x]));
+            var seen = new HashSet<string>(LiteConst.InternalSystem.Keys);
+            var systems = new List<(string, ISystemSetting)>();
+            foreach (var builtin in LiteConst.InternalSystem.OrderByDescending(static pair => pair.Value))
+            {
+                systems.Add((builtin.Key, null));
+            }
 
             foreach (var systemEntry in LiteRuntime.Setting.SystemList)
             {
-                if (systemEntry.Disabled)
+                if (systemEntry == null || systemEntry.Disabled || string.IsNullOrWhiteSpace(systemEntry.AssemblyQualifiedName))
                 {
                     continue;
                 }
-
-                var assemblyQualifiedName = systemEntry.AssemblyQualifiedName;
-                if (string.IsNullOrWhiteSpace(assemblyQualifiedName) || systemList.Contains(assemblyQualifiedName))
+                if (seen.Add(systemEntry.AssemblyQualifiedName))
                 {
-                    continue;
+                    systems.Add((systemEntry.AssemblyQualifiedName, systemEntry.Setting));
                 }
-
-                systemList.Add(assemblyQualifiedName);
             }
-
-            return systemList;
+            return systems;
         }
 
-        private void TryInjectSetting(ISystem system)
+        private static void TryInjectSetting(ISystem system, ISystemSetting setting)
         {
             var systemType = system.GetType();
-
-            var settingInterface = systemType.GetInterfaces()
-                .FirstOrDefault(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
-
+            var settingInterface = LiteSystemEntry.GetProviderInterface(systemType);
             if (settingInterface == null)
             {
                 return;
             }
 
             var settingType = settingInterface.GetGenericArguments()[0];
-            var setting = LiteRuntime.Setting.GetSetting(settingType);
+            if (setting == null)
+            {
+                LLog.Warning("Setting not found for {0}, using default", systemType.Name);
+                setting = (ISystemSetting)System.Activator.CreateInstance(settingType);
+            }
+            else if (!settingType.IsInstanceOfType(setting))
+            {
+                throw new System.InvalidOperationException($"{systemType.Name} requires {settingType.Name}, got {setting.GetType().Name}.");
+            }
             var property = settingInterface.GetProperty("Setting");
             property?.SetValue(system, setting);
         }

@@ -1,43 +1,54 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace LiteQuark.Runtime
 {
-    [Serializable]
+    public enum LiteBuildProfile
+    {
+        Development,
+        Release,
+    }
+
     public sealed class LiteSetting
     {
-        [Tooltip("可选的 IGameEntry 类型。留空时只启动系统。")]
-        [SerializeField] public string GameEntry;
-        [Header("额外模块")]
-        [SerializeField] public List<LiteTypeEntryData<ISystem>> SystemList;
-        [Header("基础设置")]
-        [SerializeField] public CommonSetting Common;
-        [Header("任务设置")]
-        [SerializeField] public TaskSetting Task;
-        [Header("资源设置")]
-        [SerializeField] public AssetSetting Asset;
-        [Header("Action设置")]
-        [SerializeField] public ActionSetting Action;
-        [Header("日志设置")]
-        [SerializeField] public LogSetting Log;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        internal const LiteBuildProfile DefaultEnvironment = LiteBuildProfile.Development;
+#else
+        internal const LiteBuildProfile DefaultEnvironment = LiteBuildProfile.Release;
+#endif
 
-        [SerializeReference]
-        public List<ISystemSetting> SystemSettings;
+        public string GameEntry;
+        public List<LiteSystemEntry> SystemList { get; }
+        public LiteBuildProfile Environment { get; }
+        public CommonSetting Common { get; }
+        public TaskSetting Task { get; }
+        public AssetSetting Asset { get; }
+        public ActionSetting Action { get; }
+        public LogSetting Log { get; }
 
-        public LiteSetting()
+        public LiteSetting() : this(DefaultEnvironment)
         {
-            SystemList = new List<LiteTypeEntryData<ISystem>>();
+        }
 
-            Common = new CommonSetting();
-            Task = new TaskSetting();
-            Asset = new AssetSetting();
-            Action = new ActionSetting();
-            Log = new LogSetting();
+        public LiteSetting(LiteBuildProfile environment) : this(environment, new LiteLauncherSettings())
+        {
+        }
 
-            SystemSettings = new List<ISystemSetting>();
+        internal LiteSetting(LiteBuildProfile environment, LiteLauncherSettings copy)
+        {
+            Environment = environment;
+            GameEntry = copy.GameEntry;
+            SystemList = copy.SystemList;
+            Common = copy.Common;
+            Task = copy.Task;
+            Asset = copy.Asset;
+            Action = copy.Action;
+            Log = copy.Log;
+
+            Common.ApplyBuild(environment);
+            Asset.ApplyBuild(environment);
+            Log.ApplyBuild(environment);
         }
 
         [Serializable]
@@ -52,10 +63,11 @@ namespace LiteQuark.Runtime
             [Tooltip("开启后台重启后，设定重启时间，单位（秒)")] [ConditionalShow(nameof(AutoRestartInBackground), true), SerializeField]
             public float BackgroundLimitTime = 90.0f;
 
-            [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")] [SerializeField]
-            public bool ThrowException = false;
+            [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")]
+            [InspectorName("Throw Exception")] public BuildValue<bool> ThrowExceptionByBuild;
+            public bool ThrowException { get => ThrowExceptionByBuild.Release; set => ThrowExceptionByBuild.Release = value; }
+            internal void ApplyBuild(LiteBuildProfile profile) => ThrowExceptionByBuild.Apply(profile);
 
-            [SerializeField] public bool DebugMode = true;
             [SerializeField, Range(0f, 10f)] public float TimeScale = 1.0f;
 
             public CommonSetting()
@@ -77,12 +89,18 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class AssetSetting
         {
-            [Tooltip("Bundle加载模式：模拟、包内或远端。非Editor环境下模拟模式使用包内资源。")] [SerializeField]
-            [FormerlySerializedAs("BundleLocater")]
-            public BundleLoadMode BundleMode = BundleLoadMode.Simulate;
+            [InspectorName("Bundle Mode")] public BuildValue<BundleLoadMode> BundleModeByBuild = new(BundleLoadMode.BuiltIn, BundleLoadMode.Simulate);
+            [Tooltip("Remote 模式的 CDN 根地址，框架会追加平台和主版本目录。")]
+            [InspectorName("Bundle Remote URI")] public BuildValue<string> BundleRemoteUriByBuild = new(string.Empty);
 
-            [Tooltip("远程资源根目录，根据主版本和平台动态分目录\n例如:https://localhost:8000/webgl/1.0/version_1.0.txt")] [ConditionalShow(nameof(BundleMode), (int)BundleLoadMode.Remote), SerializeField]
-            public string BundleRemoteUri = "https://localhost:8000/";
+            public BundleLoadMode BundleMode { get => BundleModeByBuild.Release; set => BundleModeByBuild.Release = value; }
+            public string BundleRemoteUri { get => BundleRemoteUriByBuild.Release; set => BundleRemoteUriByBuild.Release = value; }
+
+            internal void ApplyBuild(LiteBuildProfile profile)
+            {
+                BundleModeByBuild.Apply(profile);
+                BundleRemoteUriByBuild.Apply(profile);
+            }
 
             [Tooltip("BundleLoader 同时提交的 Bundle 加载任务数量限制")]
             [Range(1, 30), SerializeField]
@@ -92,10 +110,10 @@ namespace LiteQuark.Runtime
             [Range(1, 50), SerializeField]
             public int TaskConcurrencyLimit = 20;
 
-            [Tooltip("远程资源下载重试设置")] [ConditionalShow(nameof(BundleMode), (int)BundleLoadMode.Remote), SerializeField]
+            [Tooltip("远程资源下载重试设置")] [SerializeField]
             public RetryParam BundleDownloadRetry;
 
-            [Tooltip("是否屏蔽Unity Web Cache机制")] [ConditionalShow(nameof(BundleMode), (int)BundleLoadMode.Remote), SerializeField]
+            [Tooltip("是否屏蔽Unity Web Cache机制")] [SerializeField]
             public bool DisableUnityWebCache = false;
 
             [Tooltip("是否开启Bundle保留缓存，引用归零后延迟卸载")] [SerializeField]
@@ -104,7 +122,7 @@ namespace LiteQuark.Runtime
             [Tooltip("开启缓存后，Bundle引用归零后的保留时间，单位（秒）")] [ConditionalShow(nameof(EnableRetain), true)] [SerializeField]
             public float BundleRetainTime = 300f; // 5 min
 
-            [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [ConditionalShow(nameof(BundleMode), (int)BundleLoadMode.BuiltIn), SerializeField]
+            [Tooltip("Editor下强制使用StreamingAssets资源，防止开发期间错误读取到PersistentData目录的缓存资源")] [SerializeField]
             public bool EditorForceStreamingAssets = true;
 
             public AssetSetting()
@@ -127,32 +145,21 @@ namespace LiteQuark.Runtime
         public class LogSetting
         {
             [SerializeField] public bool SimpleLog = true;
-            [SerializeField] public bool ReceiveLog = true;
-            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogInfo = true;
-            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogWarn = true;
-            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogError = true;
-            [ConditionalShow(nameof(SimpleLog), false, nameof(ReceiveLog), true), SerializeField] public bool LogFatal = true;
-            [ConditionalShow(nameof(ReceiveLog), true), SerializeField] public bool ShowLogViewer = false;
+            [InspectorName("Levels")] public BuildValue<LogLevel> LevelsByBuild = new(LogLevel.Error | LogLevel.Fatal, LogLevel.All);
+            [InspectorName("Show Log Viewer")] public BuildValue<bool> ShowLogViewerByBuild;
+
+            public LogLevel Levels { get => LevelsByBuild.Release; set => LevelsByBuild.Release = value; }
+            public bool ShowLogViewer { get => ShowLogViewerByBuild.Release; set => ShowLogViewerByBuild.Release = value; }
+
+            internal void ApplyBuild(LiteBuildProfile profile)
+            {
+                LevelsByBuild.Apply(profile);
+                ShowLogViewerByBuild.Apply(profile);
+            }
 
             public LogSetting()
             {
             }
-        }
-
-        public ISystemSetting GetSetting(Type settingType)
-        {
-            var setting = SystemSettings?.FirstOrDefault(s => s != null && s.GetType() == settingType);
-            if (setting == null)
-            {
-                LLog.Warning("Setting not found for {0}, using default", settingType.Name);
-                setting = Activator.CreateInstance(settingType) as ISystemSetting;
-            }
-            return setting;
-        }
-
-        public T GetSetting<T>() where T : class, ISystemSetting, new()
-        {
-            return GetSetting(typeof(T)) as T;
         }
     }
 }

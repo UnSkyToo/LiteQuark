@@ -115,8 +115,8 @@ namespace LiteQuark.Editor
 
             _shutdownFixture = fixture;
             var setting = new LiteSetting();
-            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = (firstSystemType ?? typeof(ShutdownSystemOne)).AssemblyQualifiedName });
-            setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(ShutdownSystemTwo).AssemblyQualifiedName });
+            setting.SystemList.Add(new LiteSystemEntry { AssemblyQualifiedName = (firstSystemType ?? typeof(ShutdownSystemOne)).AssemblyQualifiedName });
+            setting.SystemList.Add(new LiteSystemEntry { AssemblyQualifiedName = typeof(ShutdownSystemTwo).AssemblyQualifiedName });
             setting.GameEntry = fixture.EntryType.AssemblyQualifiedName;
             runtime.Startup(runtime.Launcher, setting);
         }
@@ -163,6 +163,115 @@ namespace LiteQuark.Editor
             finally
             {
                 _shutdownFixture = null;
+            }
+        }
+
+        [Serializable]
+        private sealed class TimeoutSetting : ISystemSetting
+        {
+            public BuildValue<int> Timeout;
+        }
+
+        private class EndpointProbe : ISystem, ISystemSettingProvider<TimeoutSetting>
+        {
+            public TimeoutSetting Setting { get; set; }
+            public int Timeout { get; private set; }
+
+            public UniTask<bool> Initialize()
+            {
+                Timeout = Setting.Timeout.Resolve(LiteRuntime.Setting.Environment);
+                return UniTask.FromResult(true);
+            }
+
+            public UniTask DisposeAsync() => UniTask.CompletedTask;
+        }
+
+        private sealed class OtherEndpointProbe : EndpointProbe { }
+
+        private static async UniTask RuntimeSettingsProfiles(TaskSystem system)
+        {
+            var runtime = LiteRuntime.Instance;
+            var launcher = runtime.Launcher;
+            var originalSettings = launcher.Settings;
+            var originalPreview = launcher.EditorPreview;
+            var authored = new LiteLauncherSettings();
+            var startupInfoCount = 0;
+            void CountStartupInfo(string message, string stack, LogType type)
+            {
+                if (type == LogType.Log && message == "Initialize " + typeof(LogSystem).AssemblyQualifiedName) startupInfoCount++;
+            }
+            Application.logMessageReceived += CountStartupInfo;
+            try
+            {
+                if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
+                launcher.Settings = authored;
+                authored.Task.ConcurrencyLimit = 9;
+                authored.Asset.BundleModeByBuild = new BuildValue<BundleLoadMode>(BundleLoadMode.Simulate);
+                authored.Asset.BundleRemoteUriByBuild = new BuildValue<string>("https://release.example/", "https://dev.example/");
+                authored.Log.LevelsByBuild = new BuildValue<LogLevel>(LogLevel.Warn, LogLevel.All);
+                var ui = new UISystemSetting { ResolutionWidth = 1600 };
+                authored.SystemList.Add(new LiteSystemEntry { Disabled = true, AssemblyQualifiedName = typeof(UISystem).AssemblyQualifiedName, Setting = ui });
+                authored.SystemList.Add(new LiteSystemEntry
+                {
+                    AssemblyQualifiedName = typeof(EndpointProbe).AssemblyQualifiedName,
+                    Setting = new TimeoutSetting { Timeout = new BuildValue<int>(15, 0) }
+                });
+                authored.SystemList.Add(new LiteSystemEntry
+                {
+                    AssemblyQualifiedName = typeof(OtherEndpointProbe).AssemblyQualifiedName,
+                    Setting = new TimeoutSetting { Timeout = new BuildValue<int>(60) }
+                });
+                using (var inspector = new SerializedObject(launcher))
+                {
+                    var timeout = inspector.FindProperty("Settings.SystemList").GetArrayElementAtIndex(1)
+                        .FindPropertyRelative(nameof(LiteSystemEntry.Setting)).FindPropertyRelative(nameof(TimeoutSetting.Timeout));
+                    Check(BuildValueDrawer.ValueFor(timeout, LiteBuildProfile.Development, out var editable).intValue == 0 && editable,
+                        "An enabled Addon override exposes its own Development value in the Inspector.");
+                }
+                launcher.EditorPreview = LiteBuildProfile.Release;
+                var release = launcher.CreateRuntimeSetting();
+                Check(release.Asset.BundleRemoteUri == "https://release.example/" && release.Log.Levels == LogLevel.Warn,
+                    "Release preview takes the release value even with a Development override.");
+                launcher.EditorPreview = LiteBuildProfile.Development;
+                runtime.Startup(launcher);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Development settings startup");
+                var development = LiteRuntime.Setting;
+                Check(development.Environment == LiteBuildProfile.Development && development.Task.ConcurrencyLimit == 9 &&
+                    development.Asset.BundleRemoteUri == "https://dev.example/" && LiteRuntime.Log.GetLogger("Profile").IsInfoEnabled &&
+                    startupInfoCount == 1,
+                    "Development startup combines shared parameters, its CDN and its log policy.");
+                development.Task.ConcurrencyLimit = 1;
+                Check(LiteRuntime.Get<UISystem>() == null && LiteRuntime.Get<EndpointProbe>().Timeout == 0 &&
+                    LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
+                    "Systems using the same settings type receive their own row. An explicit zero overrides; an unchecked field inherits.");
+                ((UISystemSetting)development.SystemList[0].Setting).ResolutionWidth = 640;
+                development.Asset.BundleDownloadRetry.MaxRetries = 0;
+                development.Asset.BundleRemoteUri = "https://runtime.example/";
+
+                launcher.EditorPreview = LiteBuildProfile.Release;
+                runtime.Restart();
+                runtime.Tick(0f);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running &&
+                    LiteRuntime.Setting != development, "Fresh Release snapshot after restart");
+                var current = LiteRuntime.Setting;
+                var log = LiteRuntime.Log.GetLogger("Profile");
+                Check(current.Environment == LiteBuildProfile.Release && !LiteRuntime.IsDebugMode && !log.IsInfoEnabled &&
+                    log.IsWarnEnabled && !log.IsErrorEnabled && !log.IsFatalEnabled && current.Asset.BundleRemoteUri == "https://release.example/" &&
+                    startupInfoCount == 1,
+                    "Release restart applies its CDN and log levels, filtering even the first startup log before LogSystem is published.");
+                Check(LiteRuntime.Get<EndpointProbe>().Timeout == 15 && LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
+                    "Restart resolves each registration against Release.");
+                Check(current.Task.ConcurrencyLimit == 9 && ((UISystemSetting)current.SystemList[0].Setting).ResolutionWidth == 1600 &&
+                    current.Asset.BundleDownloadRetry.MaxRetries > 0 && authored.Asset.BundleRemoteUriByBuild.Development == "https://dev.example/" &&
+                    ui.ResolutionWidth == 1600,
+                    "Runtime changes to profile, shared, nested retry and managed-reference Addon data do not write back to scene settings or leak across restart.");
+            }
+            finally
+            {
+                Application.logMessageReceived -= CountStartupInfo;
+                if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
+                launcher.Settings = originalSettings;
+                launcher.EditorPreview = originalPreview;
             }
         }
 

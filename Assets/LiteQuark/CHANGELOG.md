@@ -2,12 +2,22 @@
 
 ## **[Unreleased]**
 
+### 从 Launcher 的 DebugSetting / ReleaseSetting 手工迁移
+
+1. **在仍使用旧框架的工程中先备份，再升级。** 提交或复制含 Launcher 的启动场景、Prefab 及其 `.meta`。使用 Prefab 实例的场景也要保留其覆盖值。分别记录 `ReleaseSetting` 和 `DebugSetting` 的 GameEntry、SystemList 顺序与 Disabled 标记、各模块数值、SystemSettings 及其中的场景对象引用（尤其是 UI 相机）。新版读取不到旧字段，直接重新保存会丢掉旧配置。如果已经升级，从版本控制或备份中用旧版查看原值。
+2. 升级后在 Launcher 选 **Release**，用旧 `ReleaseSetting` 的 Common、Task、Asset、Action、Log 填正式默认值。把旧 `Asset.BundleMode`（曾名 `BundleLocater`）和 `BundleRemoteUri` 填入 Asset。日志按**旧构建实际生效的级别**迁移。旧正式包使用 Error/Fatal，控制台关闭。旧 Development 在 `Common.DebugMode` 和 `Log.ReceiveLog` 都生效时使用配置的日志级别和控制台开关，否则也使用 Error/Fatal 并关闭控制台。把这两套结果分别填入 Release 和所需的 Development 覆盖。新版由环境和显式日志策略决定这些行为。
+3. 同在 Release 页恢复 **Game Entry**，用 **System List** 的 **+** 依原顺序添加系统并恢复启用状态。将旧 `SystemSettings` 中每种配置的值填入对应注册项，重新拖入原来的 `UISystemSetting.UICamera`。两个旧页签若使用不同入口、系统列表或普通字段，项目需明确选定这一份共用值。
+4. 切到 **Development**，对照旧 `DebugSetting`。需要差异时，给资源模式、CDN、日志级别、控制台或 `ThrowException` 勾选 **Override** 并填开发值，其余使用 Release。旧 `_simulateReleaseBuild` 的编辑器预览用途改为 Launcher 的 **Environment**。Development Player 和普通 Player 分别按自身构建类型取值。
+5. 核对后保存并重新打开场景／Prefab，分别检查两种环境下的入口、系统顺序、UI 相机、资源来源和日志策略，再运行实际启动流程。此前使用过实验版 `LiteSettingsAsset` / Prefab Variant 的项目，可按相同步骤从各环境生效值转填，验证后再移除旧资产。
+
 ### 核心接口
 
+- 破坏：Launcher 使用一份场景配置和显式 Development 覆盖。外部旧场景和 Prefab 需要按上节手工迁移。
+- 扩展系统和多态参数合并为一个 `LiteSystemEntry`；把旧 Addon 参数移入对应注册项。以前用 `SystemSettings` 或按设置类型匹配的代码应改为给注册项的 `Setting` 赋值。程序化初始化可继续使用有效的 `LiteSetting`；通过 `LiteRuntime.Setting.Environment` 查询环境。
 - 新增：游戏入口和系统可独立实现 `ILateTick`。Runtime 在 LateUpdate 先调用入口，再按注册顺序调用系统，复用本帧 Tick 的 deltaTime。
 
-- 破坏：移除 `ILogic`、`LogicList` 和 `LogicCenter`。将业务启动和释放集中到一个 `IGameEntry`，需要逐帧更新时显式实现 `ITick`。在 Launcher 的 Debug / Release 页签重新选择 **Game Entry**，留空只启动系统。
-- 日志控制台由 LogSystem 创建和销毁，移除 `LogRuntimeLogic` 配置。在各配置页核对 `Log.ShowLogViewer`，新配置默认关闭，已有场景的已保存开关生效。
+- 破坏：移除 `ILogic`、`LogicList` 和 `LogicCenter`。将业务启动和释放集中到一个 `IGameEntry`，需要逐帧更新时显式实现 `ITick`。在 Launcher 上重新选择 **Game Entry**，留空只启动系统。
+- 日志控制台由 LogSystem 创建和销毁，移除 `LogRuntimeLogic` 配置。迁移后核对两个环境的 `Log.ShowLogViewer`，新配置默认关闭。
 
 - 修复：Editor 停止 Play Mode 后的异步清理使用 Unity 对象判空，日志逻辑跳过已销毁的日志窗口，TaskSystem 跳过已销毁的协程宿主，避免编辑模式 Destroy 错误和 MissingReferenceException。
 - 破坏：Restart 仅在 Running 接受请求并在下一帧执行，多次请求合并；ShuttingDown 期间忽略请求，其他状态抛出 InvalidOperationException。启动错误回调中的直接 Restart 需改为等待清理回到 Idle 后再 Startup；已排队请求遇到错误或关闭会被放弃。
@@ -46,7 +56,7 @@
 
 - 修复：后端创建移至 AssetSystem 后，非法模式和无效 Remote URI 继续通过初始化 UniTask 交付原始异常，不从 Initialize 调用同步抛出；任务组注册的同步异常语义不变。
 
-- 破坏：配置字段 BundleLocater 改名为 BundleMode，类型 BundleLocaterMode 改为 BundleLoadMode；代码调用方更新名称，枚举数值仍为 Simulate=0、BuiltIn=1、Remote=2。字段保留 FormerlySerializedAs("BundleLocater")，Unity 序列化的旧场景、Prefab 和配置资产可按原值读取；JSON 和其他自定义配置解析器需自行更新字段名。仓库场景只更新字段名，不调整模式。
+- 破坏：配置字段 BundleLocater 改名为 BundleMode，类型 BundleLocaterMode 改为 BundleLoadMode；代码调用方更新名称，枚举数值仍为 Simulate=0、BuiltIn=1、Remote=2。旧双配置布局曾通过 FormerlySerializedAs("BundleLocater") 读取原值；迁入本版 Launcher 时需按上节手工转填。JSON 和其他自定义解析器也需更新字段名。
 - 调整：AssetBundleProvider／IAssetProvider 改名为 AssetManager／IAssetManager；IBundleLocater 及实现改为 IBundleProvider、SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider。相关源码与 Provider 文件夹沿用原 meta GUID。
 - 调整：后端选择和非 Editor 的 Simulate→BuiltIn 回退集中在 AssetSystem.Initialize；Manager 初始化接收已选好的 IBundleProvider，不再自行判断模式或平台。缓存、依赖、Lease、Retention 与任务调度行为不变。
 

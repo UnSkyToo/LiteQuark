@@ -151,10 +151,13 @@ namespace LiteQuark.Editor
                 setting.Asset.BundleRemoteUri = new Uri(fixture.Scratch + Path.DirectorySeparatorChar).AbsoluteUri;
                 setting.Asset.DisableUnityWebCache = true;
                 setting.Asset.TaskConcurrencyLimit = 1;
-                setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(RestartSystemProbe).AssemblyQualifiedName });
-                setting.SystemList.Add(new LiteTypeEntryData<ISystem> { AssemblyQualifiedName = typeof(UISystem).AssemblyQualifiedName });
+                setting.SystemList.Add(new LiteSystemEntry { AssemblyQualifiedName = typeof(RestartSystemProbe).AssemblyQualifiedName });
+                setting.SystemList.Add(new LiteSystemEntry
+                {
+                    AssemblyQualifiedName = typeof(UISystem).AssemblyQualifiedName,
+                    Setting = new UISystemSetting { UICamera = fixture.Camera.GetComponent<Camera>() }
+                });
                 setting.GameEntry = typeof(RestartEntryProbe).AssemblyQualifiedName;
-                setting.SystemSettings.Add(new UISystemSetting { UICamera = fixture.Camera.GetComponent<Camera>() });
 
                 await runtime.Shutdown();
                 _restartFixture = fixture;

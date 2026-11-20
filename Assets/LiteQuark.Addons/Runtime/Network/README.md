@@ -1,6 +1,6 @@
 # NetworkSystem HTTP
 
-NetworkSystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并在 `SystemSettings` 中配置 `NetworkSystemSetting`。通过 `LiteRuntime.Get<NetworkSystem>().Http` 获取客户端。
+NetworkSystem 属于 LiteQuark.Addons。将它加入 Launcher 的 **System List**，并在该注册项内配置 `NetworkSystemSetting`。通过 `LiteRuntime.Get<NetworkSystem>().Http` 获取客户端。
 
 ## 请求示例
 

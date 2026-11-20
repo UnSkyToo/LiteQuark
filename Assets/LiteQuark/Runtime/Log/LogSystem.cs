@@ -27,21 +27,8 @@ namespace LiteQuark.Runtime
 
             UnityEngine.Debug.unityLogger.logEnabled = true;
             var setting = LiteRuntime.Setting.Log;
-            var logEnable = setting.ReceiveLog && LiteRuntime.IsDebugMode;
-            if (logEnable)
-            {
-                _repository.EnableLevel(LogLevel.Info, setting.LogInfo);
-                _repository.EnableLevel(LogLevel.Warn, setting.LogWarn);
-                _repository.EnableLevel(LogLevel.Error, setting.LogError);
-                _repository.EnableLevel(LogLevel.Fatal, setting.LogFatal);
-            }
-            else
-            {
-                _repository.EnableLevel(LogLevel.Info, false);
-                _repository.EnableLevel(LogLevel.Warn, false);
-                _repository.EnableLevel(LogLevel.Error, true);
-                _repository.EnableLevel(LogLevel.Fatal, true);
-            }
+            _repository.EnableLevel(LogLevel.All, false);
+            _repository.EnableLevel(setting.Levels, true);
 
             return UniTask.FromResult(true);
         }
@@ -49,7 +36,7 @@ namespace LiteQuark.Runtime
         internal void OpenViewer()
         {
             var setting = LiteRuntime.Setting.Log;
-            if (!LiteRuntime.IsDebugMode || !setting.ReceiveLog || !setting.ShowLogViewer)
+            if (!setting.ShowLogViewer)
             {
                 return;
             }

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using LiteQuark.Runtime;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace LiteQuark.Editor
@@ -10,115 +12,310 @@ namespace LiteQuark.Editor
     [CustomEditor(typeof(LiteLauncher))]
     public sealed class LiteLauncherEditor : UnityEditor.Editor
     {
-        private static readonly string[] TabLabels = { "Debug", "Release" };
-        private static readonly string[] SettingPropertyNames = { "DebugSetting", "ReleaseSetting" };
-
-        private struct ProfileProperties
-        {
-            public SerializedProperty GameEntry;
-            public SerializedProperty SystemList;
-            public SerializedProperty Common;
-            public SerializedProperty Task;
-            public SerializedProperty Asset;
-            public SerializedProperty Action;
-            public SerializedProperty Log;
-            public SerializedProperty SystemSettings;
-        }
-
-        private ProfileProperties[] _profiles;
+        private static readonly string[] ProfileTabs = { "Release", "Development" };
+        private Type[] _systemTypes;
         private string[] _gameEntryNames;
         private GUIContent[] _gameEntryLabels;
-        private SerializedProperty _simulateReleaseBuildProperty;
-        private int _selectedTab;
-        private readonly Dictionary<string, bool> _foldoutStates = new();
-        private readonly string[] _lastSystemListSnapshots = { string.Empty, string.Empty };
+        private ReorderableList _systems;
 
-        private void OnEnable()
+        public override bool RequiresConstantRepaint() => Application.isPlaying;
+
+        private static Type[] SelectableTypes<T>()
         {
-            var entryTypes = TypeCache.GetTypesDerivedFrom<IGameEntry>()
+            return TypeCache.GetTypesDerivedFrom<T>()
                 .Where(type => type.IsClass && !type.IsAbstract && !type.ContainsGenericParameters &&
                     !typeof(UnityEngine.Object).IsAssignableFrom(type) && type.GetConstructor(Type.EmptyTypes) != null &&
                     !type.IsDefined(typeof(LiteHideTypeAttribute), true))
-                .OrderBy(type => type.FullName, StringComparer.Ordinal)
-                .ToArray();
-            _gameEntryNames = entryTypes.Select(type => type.AssemblyQualifiedName).Prepend(string.Empty).ToArray();
-            _gameEntryLabels = entryTypes.Select(type => new GUIContent(type.FullName)).Prepend(new GUIContent("None")).ToArray();
-            _simulateReleaseBuildProperty = serializedObject.FindProperty("_simulateReleaseBuild");
-            _profiles = new ProfileProperties[2];
-            for (var i = 0; i < 2; i++)
-            {
-                var root = serializedObject.FindProperty(SettingPropertyNames[i]);
-                _profiles[i] = new ProfileProperties
-                {
-                    GameEntry = root.FindPropertyRelative(nameof(LiteSetting.GameEntry)),
-                    SystemList = root.FindPropertyRelative("SystemList"),
-                    Common = root.FindPropertyRelative("Common"),
-                    Task = root.FindPropertyRelative("Task"),
-                    Asset = root.FindPropertyRelative("Asset"),
-                    Action = root.FindPropertyRelative("Action"),
-                    Log = root.FindPropertyRelative("Log"),
-                    SystemSettings = root.FindPropertyRelative("SystemSettings"),
-                };
-                _lastSystemListSnapshots[i] = GetSystemListSnapshot(i);
-            }
-
-            EditorApplication.update += Repaint;
+                .OrderBy(type => type.FullName, StringComparer.Ordinal).ToArray();
         }
 
-        private void OnDisable()
+        private void OnEnable()
         {
-            EditorApplication.update -= Repaint;
+            var entries = SelectableTypes<IGameEntry>();
+            _gameEntryNames = entries.Select(type => type.AssemblyQualifiedName).Prepend(string.Empty).ToArray();
+            _gameEntryLabels = entries.Select(type => new GUIContent(type.FullName)).Prepend(new GUIContent("None")).ToArray();
+            _systemTypes = SelectableTypes<ISystem>();
+            var list = serializedObject.FindProperty("Settings.SystemList");
+            _systems = new ReorderableList(serializedObject, list, true, true, true, true);
+            _systems.drawHeaderCallback = rect => EditorGUI.LabelField(rect, "System List");
+            _systems.elementHeightCallback = index => EntryHeight(list.GetArrayElementAtIndex(index));
+            _systems.drawElementCallback = (rect, index, active, focused) => DrawEntry(rect, list.GetArrayElementAtIndex(index));
+            _systems.onAddDropdownCallback = (rect, _) => ShowSystemMenu(rect);
         }
 
         public override void OnInspectorGUI()
         {
+            using var labelWidth = new LabelWidthScope(Mathf.Min(245f, EditorGUIUtility.currentViewWidth * 0.44f));
             serializedObject.Update();
-
-            if (Application.isPlaying)
+            var settings = serializedObject.FindProperty(nameof(LiteLauncher.Settings));
+            var profile = DrawEnvironment();
+            var development = profile == LiteBuildProfile.Development;
+            using (new EditorGUI.DisabledScope(development))
             {
-                DrawRuntimeStatus();
+                DrawGameEntry(settings.FindPropertyRelative(nameof(LiteLauncherSettings.GameEntry)));
             }
+            EditorGUILayout.Space();
 
-            EditorGUILayout.PropertyField(_simulateReleaseBuildProperty, new GUIContent("Simulate Release Build"));
-            EditorGUILayout.Space(5);
-
-            var isSimulateRelease = _simulateReleaseBuildProperty.boolValue;
-            if (isSimulateRelease)
+            DrawModule(settings.FindPropertyRelative(nameof(LiteLauncherSettings.Common)), development);
+            DrawModule(settings.FindPropertyRelative(nameof(LiteLauncherSettings.Task)), development);
+            DrawModule(settings.FindPropertyRelative(nameof(LiteLauncherSettings.Asset)), development);
+            DrawModule(settings.FindPropertyRelative(nameof(LiteLauncherSettings.Action)), development);
+            DrawModule(settings.FindPropertyRelative(nameof(LiteLauncherSettings.Log)), development);
+            EditorGUILayout.Space();
+            if (development)
             {
-                _selectedTab = 1;
+                DrawDevelopmentSystems(settings.FindPropertyRelative(nameof(LiteLauncherSettings.SystemList)));
             }
-
-            using (new EditorGUI.DisabledScope(isSimulateRelease))
+            else
             {
-                _selectedTab = GUILayout.Toolbar(_selectedTab, TabLabels);
+                _systems.DoLayoutList();
             }
-            EditorGUILayout.Space(5);
-
-            var currentSnapshot = GetSystemListSnapshot(_selectedTab);
-            if (currentSnapshot != _lastSystemListSnapshots[_selectedTab])
-            {
-                SyncSystemSettings(_selectedTab);
-                _lastSystemListSnapshots[_selectedTab] = currentSnapshot;
-            }
-
-            var props = _profiles[_selectedTab];
-
-            DrawGameEntry(props.GameEntry);
-            EditorGUILayout.PropertyField(props.SystemList);
-
-            EditorGUILayout.Space(5);
-
-            EditorGUILayout.PropertyField(props.Common);
-            EditorGUILayout.PropertyField(props.Task);
-            EditorGUILayout.PropertyField(props.Asset);
-            EditorGUILayout.PropertyField(props.Action);
-            EditorGUILayout.PropertyField(props.Log);
-
-            DrawAddonSystemSettings(props.SystemSettings);
-
-            DrawSettingValidation();
-
             serializedObject.ApplyModifiedProperties();
+
+            if (NeedsCdnWarning(((LiteLauncher)target).Settings.Asset, profile))
+            {
+                EditorGUILayout.HelpBox($"{profile} uses Remote resources. Enter a valid absolute CDN URI under Asset.", MessageType.Warning);
+            }
+            if (Application.isPlaying && LiteRuntime.Instance.Launcher == target)
+            {
+                var runtime = LiteRuntime.Instance;
+                var active = LiteRuntime.Setting;
+                var error = runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed;
+                EditorGUILayout.HelpBox($"{runtime.State}{(runtime.IsPause ? " (Paused)" : "")} · {active?.Environment}\nResources: {active?.Asset.BundleMode}   Log: {active?.Log.Levels}", error ? MessageType.Error : MessageType.Info);
+            }
+        }
+
+        internal static bool NeedsCdnWarning(LiteSetting.AssetSetting asset, LiteBuildProfile profile)
+        {
+            if (asset.BundleModeByBuild.Resolve(profile) != BundleLoadMode.Remote) return false;
+            var address = asset.BundleRemoteUriByBuild.Resolve(profile);
+            return !Uri.TryCreate(address, UriKind.Absolute, out var uri) || !uri.IsWellFormedOriginalString();
+        }
+
+        private LiteBuildProfile DrawEnvironment()
+        {
+            var profile = serializedObject.FindProperty(nameof(LiteLauncher.EditorPreview));
+            var rect = EditorGUILayout.GetControlRect();
+            using var scope = new EditorGUI.PropertyScope(rect, new GUIContent("Environment", "Edit this environment and use it on the next Editor startup or restart."), profile);
+            rect = EditorGUI.PrefixLabel(rect, scope.content);
+            var current = (LiteBuildProfile)profile.enumValueIndex;
+            var selected = GUI.Toolbar(rect, current == LiteBuildProfile.Release ? 0 : 1, ProfileTabs);
+            var next = selected == 0 ? LiteBuildProfile.Release : LiteBuildProfile.Development;
+            if (next != current)
+            {
+                GUI.FocusControl(null);
+                EditorGUIUtility.editingTextField = false;
+                profile.enumValueIndex = (int)next;
+                serializedObject.ApplyModifiedProperties();
+                Repaint();
+                GUIUtility.ExitGUI();
+            }
+            return current;
+        }
+
+        private static void DrawModule(SerializedProperty module, bool development)
+        {
+            if (!development)
+            {
+                EditorGUILayout.PropertyField(module, true);
+                return;
+            }
+            module.isExpanded = EditorGUILayout.Foldout(module.isExpanded, module.displayName, true);
+            if (module.isExpanded)
+            {
+                using var indent = new EditorGUI.IndentLevelScope();
+                DevelopmentSettingsFields.Visit(module, typeof(LiteLauncherSettings).GetField(module.name).FieldType, DrawDevelopmentField);
+            }
+        }
+
+        private static bool DrawDevelopmentField(SerializedProperty property, FieldInfo field, DevelopmentSettingsFields.Access access, int depth)
+        {
+            using var indent = new EditorGUI.IndentLevelScope(depth);
+            if (access == DevelopmentSettingsFields.Access.Override)
+            {
+                BuildValueDrawer.DrawDevelopmentLayout(property, field);
+                return false;
+            }
+            if (access == DevelopmentSettingsFields.Access.Foldout)
+            {
+                property.isExpanded = EditorGUILayout.Foldout(property.isExpanded, new GUIContent(property.displayName, property.tooltip), true);
+                return property.isExpanded;
+            }
+            using (new EditorGUI.DisabledScope(true))
+            {
+                return EditorGUILayout.PropertyField(property, false);
+            }
+        }
+
+        private static void DrawDevelopmentSystems(SerializedProperty list)
+        {
+            using var box = new EditorGUILayout.VerticalScope(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("System List", EditorStyles.boldLabel);
+            for (var i = 0; i < list.arraySize; i++)
+            {
+                var entry = list.GetArrayElementAtIndex(i);
+                var disabled = entry.FindPropertyRelative(nameof(LiteSystemEntry.Disabled));
+                var setting = entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting));
+                var expanded = DrawEntryHeader(EditorGUILayout.GetControlRect(), entry, true);
+                if (NeedsSettingsRepair(entry, out var required))
+                {
+                    EditorGUILayout.HelpBox(RepairMessage(setting, required) + " Repair in Release.", MessageType.Warning);
+                    continue;
+                }
+                if (!expanded) continue;
+                using (new EditorGUI.IndentLevelScope())
+                using (new EditorGUI.DisabledScope(disabled.boolValue))
+                {
+                    DevelopmentSettingsFields.Visit(setting, null, DrawDevelopmentField);
+                }
+            }
+        }
+
+        private static bool DrawEntryHeader(Rect rect, SerializedProperty entry, bool readOnly)
+        {
+            var disabled = entry.FindPropertyRelative(nameof(LiteSystemEntry.Disabled));
+            using (new EditorGUI.DisabledScope(readOnly))
+            {
+                EditorGUI.BeginChangeCheck();
+                var enabled = EditorGUI.Toggle(new Rect(rect.x, rect.y, 18f, rect.height), !disabled.boolValue);
+                if (EditorGUI.EndChangeCheck()) disabled.boolValue = !enabled;
+            }
+            rect.xMin += 32f;
+            var name = entry.FindPropertyRelative(nameof(LiteSystemEntry.AssemblyQualifiedName)).stringValue;
+            var qualifiedName = name.Split(',')[0];
+            var label = new GUIContent(qualifiedName.Substring(qualifiedName.LastIndexOf('.') + 1), name);
+            if (entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting)).managedReferenceValue == null)
+            {
+                EditorGUI.LabelField(rect, label);
+                return false;
+            }
+            entry.isExpanded = EditorGUI.Foldout(rect, entry.isExpanded, label, true);
+            return entry.isExpanded;
+        }
+
+        private void ShowSystemMenu(Rect rect)
+        {
+            var list = serializedObject.FindProperty("Settings.SystemList");
+            var registered = new HashSet<string>();
+            for (var i = 0; i < list.arraySize; i++)
+            {
+                registered.Add(list.GetArrayElementAtIndex(i).FindPropertyRelative(nameof(LiteSystemEntry.AssemblyQualifiedName)).stringValue);
+            }
+            var menu = new GenericMenu();
+            foreach (var type in _systemTypes)
+            {
+                var label = new GUIContent(type.FullName);
+                if (registered.Contains(type.AssemblyQualifiedName))
+                {
+                    menu.AddDisabledItem(label, true);
+                }
+                else
+                {
+                    menu.AddItem(label, false, () =>
+                    {
+                        serializedObject.Update();
+                        if (((LiteLauncher)target).EditorPreview != LiteBuildProfile.Release) return;
+                        var registrations = serializedObject.FindProperty("Settings.SystemList");
+                        AddSystem(registrations, type);
+                        _systems.index = registrations.arraySize - 1;
+                        serializedObject.ApplyModifiedProperties();
+                        Repaint();
+                    });
+                }
+            }
+            if (_systemTypes.Length == 0) menu.AddDisabledItem(new GUIContent("No extension systems available"));
+            menu.DropDown(rect);
+        }
+
+        internal static void AddSystem(SerializedProperty list, Type type)
+        {
+            var index = list.arraySize++;
+            var entry = list.GetArrayElementAtIndex(index);
+            entry.FindPropertyRelative(nameof(LiteSystemEntry.Disabled)).boolValue = false;
+            entry.FindPropertyRelative(nameof(LiteSystemEntry.AssemblyQualifiedName)).stringValue = type.AssemblyQualifiedName;
+            SetEntrySettings(entry, RequiredSettings(type));
+        }
+
+        private static Type RequiredSettings(Type systemType) =>
+            LiteSystemEntry.GetProviderInterface(systemType)?.GetGenericArguments()[0];
+
+        internal static bool NeedsSettingsRepair(SerializedProperty entry, out Type required)
+        {
+            required = null;
+            var name = entry.FindPropertyRelative(nameof(LiteSystemEntry.AssemblyQualifiedName)).stringValue;
+            var type = string.IsNullOrWhiteSpace(name) ? null : Type.GetType(name, false);
+            if (type == null) return false;
+            required = RequiredSettings(type);
+            var current = entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting)).managedReferenceValue;
+            return required == null ? current != null : !required.IsInstanceOfType(current);
+        }
+
+        internal static void SetEntrySettings(SerializedProperty entry, Type required)
+        {
+            entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting)).managedReferenceValue =
+                required == null ? null : Activator.CreateInstance(required);
+            entry.isExpanded = required != null;
+        }
+
+        private static string RepairMessage(SerializedProperty setting, Type required)
+        {
+            var stored = setting.managedReferenceValue?.GetType().Name;
+            if (required == null) return $"This system no longer uses {stored}.";
+            return stored == null ? $"Missing {required.Name}." : $"Expected {required.Name}. Stored {stored}.";
+        }
+
+        private static float EntryHeight(SerializedProperty entry)
+        {
+            var height = EditorGUIUtility.singleLineHeight + 4f;
+            var setting = entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting));
+            if (NeedsSettingsRepair(entry, out _))
+            {
+                height += RepairHeight + EditorGUIUtility.standardVerticalSpacing;
+            }
+            if (setting.managedReferenceValue != null && entry.isExpanded)
+            {
+                DevelopmentSettingsFields.ForEachChild(setting, field => height += EditorGUI.GetPropertyHeight(field, true) + EditorGUIUtility.standardVerticalSpacing);
+            }
+            return height;
+        }
+
+        private static float RepairHeight => EditorGUIUtility.singleLineHeight * 2f;
+
+        private static void DrawEntry(Rect rect, SerializedProperty entry)
+        {
+            rect.y += 2f;
+            rect.height = EditorGUIUtility.singleLineHeight;
+            var disabled = entry.FindPropertyRelative(nameof(LiteSystemEntry.Disabled));
+            var setting = entry.FindPropertyRelative(nameof(LiteSystemEntry.Setting));
+            var expanded = DrawEntryHeader(rect, entry, false);
+            rect.xMin += 32f;
+            rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
+            var repair = NeedsSettingsRepair(entry, out var required);
+            if (repair)
+            {
+                var button = new Rect(rect.xMax - 100f, rect.y, 100f, rect.height);
+                var warning = new Rect(rect.x, rect.y, button.x - rect.x - 4f, RepairHeight);
+                EditorGUI.HelpBox(warning, RepairMessage(setting, required), MessageType.Warning);
+                var action = required == null ? "Clear Settings" : setting.managedReferenceValue == null ? "Create Settings" : "Replace Settings";
+                if (GUI.Button(button, action))
+                {
+                    SetEntrySettings(entry, required);
+                    entry.serializedObject.ApplyModifiedProperties();
+                    GUIUtility.ExitGUI();
+                }
+                rect.y += RepairHeight + EditorGUIUtility.standardVerticalSpacing;
+            }
+            if (!expanded) return;
+            using (new EditorGUI.DisabledScope(disabled.boolValue || repair))
+            {
+                using var indent = new EditorGUI.IndentLevelScope();
+                DevelopmentSettingsFields.ForEachChild(setting, field =>
+                {
+                    rect.height = EditorGUI.GetPropertyHeight(field, true);
+                    EditorGUI.PropertyField(rect, field, true);
+                    rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
+                });
+            }
         }
 
         private void DrawGameEntry(SerializedProperty property)
@@ -138,177 +335,6 @@ namespace LiteQuark.Editor
             {
                 property.stringValue = _gameEntryNames[selected];
             }
-        }
-
-        private void DrawAddonSystemSettings(SerializedProperty systemSettingsProperty)
-        {
-            if (systemSettingsProperty == null || systemSettingsProperty.arraySize == 0)
-            {
-                return;
-            }
-
-            EditorGUILayout.Space(10);
-
-            for (var i = 0; i < systemSettingsProperty.arraySize; i++)
-            {
-                var settingProperty = systemSettingsProperty.GetArrayElementAtIndex(i);
-
-                if (settingProperty.managedReferenceValue == null)
-                    continue;
-
-                var settingType = settingProperty.managedReferenceValue.GetType();
-                var displayName = TypeUtils.GetTypeDisplayName(settingType);
-                var foldoutKey = $"{_selectedTab}_{settingType.FullName ?? settingType.Name}";
-
-                if (!_foldoutStates.TryGetValue(foldoutKey, out var foldout))
-                {
-                    _foldoutStates[foldoutKey] = true;
-                }
-
-                EditorGUILayout.Space(2);
-                _foldoutStates[foldoutKey] = EditorGUILayout.BeginFoldoutHeaderGroup(foldout, displayName);
-
-                if (_foldoutStates[foldoutKey])
-                {
-                    EditorGUI.indentLevel++;
-
-                    DrawSettingFields(settingProperty);
-
-                    EditorGUI.indentLevel--;
-                }
-
-                EditorGUILayout.EndFoldoutHeaderGroup();
-            }
-        }
-
-        private void DrawSettingFields(SerializedProperty settingProperty)
-        {
-            var iterator = settingProperty.Copy();
-            var endProperty = settingProperty.GetEndProperty();
-
-            if (iterator.NextVisible(true))
-            {
-                do
-                {
-                    if (SerializedProperty.EqualContents(iterator, endProperty))
-                    {
-                        break;
-                    }
-
-                    EditorGUILayout.PropertyField(iterator, true);
-                }
-                while (iterator.NextVisible(false));
-            }
-        }
-
-        private void DrawRuntimeStatus()
-        {
-            var runtime = LiteRuntime.Instance;
-            var state = runtime.State;
-            var profile = _simulateReleaseBuildProperty.boolValue ? "Release" : "Debug";
-            var status = $"State: {state} | Profile: {profile} | DebugMode: {(LiteRuntime.IsDebugMode ? "ON" : "OFF")}";
-
-            if (runtime.IsPause)
-            {
-                status += " | Paused";
-            }
-
-            var messageType = state switch
-            {
-                LiteRuntime.RuntimeState.Running => MessageType.Info,
-                LiteRuntime.RuntimeState.Error => MessageType.Error,
-                _ => MessageType.Warning,
-            };
-
-            EditorGUILayout.HelpBox(status, messageType);
-            EditorGUILayout.Space(5);
-        }
-
-        private void DrawSettingValidation()
-        {
-            var launcher = target as LiteLauncher;
-            var setting = _selectedTab == 0 ? launcher?.DebugSetting : launcher?.ReleaseSetting;
-            if (setting == null)
-                return;
-
-            var asset = setting.Asset;
-
-            if (asset.BundleMode == BundleLoadMode.Remote &&
-                string.IsNullOrWhiteSpace(asset.BundleRemoteUri))
-            {
-                EditorGUILayout.HelpBox("BundleRemoteUri is empty while using Remote mode.", MessageType.Warning);
-            }
-
-            if (asset.EnableRetain)
-            {
-                if (asset.BundleRetainTime <= 0)
-                {
-                    EditorGUILayout.HelpBox("BundleRetainTime should be greater than 0 when Retain is enabled.", MessageType.Warning);
-                }
-            }
-        }
-
-        private void SyncSystemSettings(int tabIndex)
-        {
-            var launcher = target as LiteLauncher;
-            var setting = tabIndex == 0 ? launcher?.DebugSetting : launcher?.ReleaseSetting;
-            if (setting == null)
-                return;
-
-            var newSettingList = new List<ISystemSetting>();
-
-            foreach (var entry in setting.SystemList)
-            {
-                if (entry.Disabled || string.IsNullOrWhiteSpace(entry.AssemblyQualifiedName))
-                {
-                    continue;
-                }
-
-                var systemType = Type.GetType(entry.AssemblyQualifiedName);
-                var settingType = GetSettingTypeFromSystem(systemType);
-                if (settingType == null)
-                {
-                    continue;
-                }
-
-                var existingSetting = setting.SystemSettings?.FirstOrDefault(s => s != null && s.GetType() == settingType);
-
-                if (existingSetting != null)
-                {
-                    newSettingList.Add(existingSetting);
-                }
-                else
-                {
-                    var newSetting = Activator.CreateInstance(settingType) as ISystemSetting;
-                    newSettingList.Add(newSetting);
-                }
-            }
-
-            setting.SystemSettings = newSettingList;
-
-            EditorUtility.SetDirty(target);
-        }
-
-        private static Type GetSettingTypeFromSystem(Type systemType)
-        {
-            var settingInterface = systemType?.GetInterfaces()
-                .FirstOrDefault(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISystemSettingProvider<>));
-
-            return settingInterface?.GetGenericArguments()[0];
-        }
-
-        private string GetSystemListSnapshot(int tabIndex)
-        {
-            var launcher = target as LiteLauncher;
-            var setting = tabIndex == 0 ? launcher?.DebugSetting : launcher?.ReleaseSetting;
-            if (setting?.SystemList == null)
-                return string.Empty;
-
-            var entries = setting.SystemList
-                .Where(static e => !e.Disabled && !string.IsNullOrWhiteSpace(e.AssemblyQualifiedName))
-                .Select(static e => e.AssemblyQualifiedName);
-
-            return string.Join("|", entries);
         }
     }
 }

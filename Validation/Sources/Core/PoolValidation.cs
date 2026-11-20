@@ -46,7 +46,7 @@ namespace LiteQuark.Editor
                 {
                     var instance = await replacement.Alloc(borrower.transform);
                     await pools.DisposeAsync();
-                    await UniTask.NextFrame();
+                    await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
                     Check(instance != null && go == null && instance.transform.parent == borrower.transform,
                         "Shutdown destroys idle objects while an externally parented instance stays with its borrower.");
                 }

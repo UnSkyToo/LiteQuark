@@ -17,6 +17,7 @@ namespace LiteQuark.Editor
     {
         private const string PendingKey = "LiteQuark.TaskSystemValidation.Pending";
         private const string ReportKey = "LiteQuark.TaskSystemValidation.Report";
+        private const string LauncherSettingsResultKey = "LiteQuark.TaskSystemValidation.LauncherSettings";
         private const string EditorStopStageKey = "LiteQuark.TaskSystemValidation.EditorStopStage";
         private const string EditorStopResultKey = "LiteQuark.TaskSystemValidation.EditorStopResult";
         private const string EditorStopErrorsKey = "LiteQuark.TaskSystemValidation.EditorStopErrors";
@@ -30,6 +31,7 @@ namespace LiteQuark.Editor
         public static void Begin()
         {
             BundleValidation.BuildFixtures("tasks");
+            SessionState.SetString(LauncherSettingsResultKey, JsonUtility.ToJson(LauncherSettingsValidation.RunInEditMode()));
             SessionState.SetString(ReportKey, Path.Combine(ValidationEnvironment.Reports("tasks"), "results.json"));
             SessionState.SetInt(EditorStopStageKey, 1);
             SessionState.SetString(EditorStopResultKey, string.Empty);
@@ -84,6 +86,11 @@ namespace LiteQuark.Editor
                     await UniTask.NextFrame();
                 }
                 result.checks++;
+                var launcher = LiteRuntime.Instance.Launcher;
+                var sceneUI = (UISystemSetting)launcher.Settings.SystemList.Single().Setting;
+                if (sceneUI.UICamera == null || LiteRuntime.Get<UISystem>().UICamera != sceneUI.UICamera ||
+                    sceneUI.ResolutionWidth != 1080 || sceneUI.ResolutionHeight != 1920 || !DemoProfilesMatch(launcher))
+                    throw new Exception("Demo must use its scene UI registration and saved Release/Development settings.");
                 if (!string.IsNullOrEmpty(LiteRuntime.Setting.GameEntry))
                     throw new Exception("The default Demo must run without a game entry.");
                 var viewer = GameObject.Find("IngameDebugConsole(Clone)");
@@ -191,6 +198,7 @@ namespace LiteQuark.Editor
                     await RuntimeShutdownDuringInitialization(system);
                 }, $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed", "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("tasks/ordered-shutdown", RuntimeShutdownOrder, "FrameworkError: Unknown");
+                await RunAsync("tasks/settings-profiles", RuntimeSettingsProfiles);
                 await RunAsync("tasks/late-tick", RuntimeLateTick);
                 await RunAsync("tasks/restart", async system =>
                 {
@@ -213,6 +221,7 @@ namespace LiteQuark.Editor
                 Application.logMessageReceived -= CaptureError;
                 var editorStop = JsonUtility.FromJson<ValidationCase>(SessionState.GetString(EditorStopResultKey, string.Empty));
                 Results.cases.Add(editorStop);
+                Results.cases.Add(JsonUtility.FromJson<ValidationCase>(SessionState.GetString(LauncherSettingsResultKey, string.Empty)));
                 Results.Save("tasks");
                 EditorApplication.Exit(Results.fatalError == null && Results.unexpectedErrors.Count == 0 && Results.cases.All(c => c.passed) ? 0 : 2);
             }
@@ -223,9 +232,12 @@ namespace LiteQuark.Editor
             await UniTask.WaitUntil(() => LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Running)
                 .Timeout(TimeSpan.FromSeconds(20));
             var launcher = LiteRuntime.Instance.Launcher;
-            Check(!string.IsNullOrEmpty(launcher.DebugSetting.GameEntry) &&
-                launcher.DebugSetting.GameEntry == launcher.ReleaseSetting.GameEntry,
-                "Both battle scene profiles select the same game entry.");
+            var sceneUI = launcher.Settings.SystemList.Select(entry => entry.Setting).OfType<UISystemSetting>().Single();
+            Check(!string.IsNullOrEmpty(launcher.Settings.GameEntry) && LiteRuntime.Setting.GameEntry == launcher.Settings.GameEntry &&
+                sceneUI.UICamera != null && LiteRuntime.Get<UISystem>().UICamera == sceneUI.UICamera && sceneUI.UICamera != Camera.main,
+                "Battle uses its scene entry and the dedicated camera stored on its UI registration.");
+            Check(DemoProfilesMatch(launcher) && sceneUI.ResolutionWidth == 1080 && sceneUI.ResolutionHeight == 1920,
+                "Battle keeps the Release defaults and applies its Development resource, CDN and log overrides.");
 
             var camera = Camera.main;
             var ui = LiteRuntime.Get<UISystem>();
@@ -260,6 +272,16 @@ namespace LiteQuark.Editor
             Check(Time.frameCount == frame && camera.transform.position == cameraBefore + shift &&
                 Vector2.Distance(before, expected) > 1f && Vector2.Distance(plate.anchoredPosition, expected) < 0.5f,
                 "The same frame follows the moving player and projects the stationary monster's plate using the final camera pose.");
+        }
+
+        private static bool DemoProfilesMatch(LiteLauncher launcher)
+        {
+            var release = launcher.Settings.CreateRuntimeSetting(LiteBuildProfile.Release);
+            var active = LiteRuntime.Setting;
+            return release.Asset.BundleMode == BundleLoadMode.BuiltIn && release.Asset.BundleRemoteUri == string.Empty &&
+                release.Log.Levels == (LogLevel.Error | LogLevel.Fatal) && !release.Log.ShowLogViewer &&
+                active.Environment == LiteBuildProfile.Development && active.Asset.BundleMode == BundleLoadMode.Simulate &&
+                active.Asset.BundleRemoteUri == "https://localhost:8000/" && active.Log.Levels == LogLevel.All && active.Log.ShowLogViewer;
         }
 
         private static UniTask Run(string name, Action<TaskSystem> test, params string[] expectedErrors)

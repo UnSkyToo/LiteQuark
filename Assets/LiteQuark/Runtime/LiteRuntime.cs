@@ -19,7 +19,7 @@ namespace LiteQuark.Runtime
 
         public static event System.Action<FrameworkErrorCode, string> OnFrameworkError;
 
-        public static bool IsDebugMode { get; private set; } = false;
+        public static bool IsDebugMode => Setting?.Environment == LiteBuildProfile.Development;
 
         public bool IsPause { get; set; }
         public bool IsFocus { get; private set; }
@@ -28,6 +28,7 @@ namespace LiteQuark.Runtime
         public LiteLauncher Launcher { get; private set; }
 
         private LiteSetting _setting = null;
+        private bool _useLauncherSettings;
         private IGameEntry _gameEntry;
         private int _lateTickFrame = -1;
         private float _enterBackgroundTime = 0.0f;
@@ -43,7 +44,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public void Startup(LiteLauncher launcher, LiteSetting setting)
+        public void Startup(LiteLauncher launcher, LiteSetting setting = null)
         {
             if (_state != RuntimeState.Idle)
             {
@@ -54,8 +55,8 @@ namespace LiteQuark.Runtime
             IsFocus = true;
             Launcher = launcher;
             _lateTickFrame = -1;
-            _setting = setting;
-            IsDebugMode = Debug.isDebugBuild && _setting.Common.DebugMode;
+            _useLauncherSettings = setting == null;
+            _setting = setting ?? launcher.CreateRuntimeSetting();
             _enterBackgroundTime = 0.0f;
             _restartWhenNextFrame = false;
             _quitRequested = false;
@@ -343,7 +344,7 @@ namespace LiteQuark.Runtime
             await Shutdown(true);
             if (!_quitRequested)
             {
-                Startup(Launcher, _setting);
+                Startup(Launcher, _useLauncherSettings ? null : _setting);
             }
         }
 

@@ -1,6 +1,6 @@
 # ConfigSystem 配置表
 
-ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 JSON 和 C#，运行时通过 `LiteRuntime.Get<ConfigSystem>()` 注册、加载和查询配置表。先将 ConfigSystem 加入 Launcher 的 `SystemList`，并配置 `ConfigSystemSetting`。
+ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 JSON 和 C#，运行时通过 `LiteRuntime.Get<ConfigSystem>()` 注册、加载和查询配置表。先将 ConfigSystem 加入 Launcher 的 **System List**，并在该注册项内配置 `ConfigSystemSetting`。
 
 ## 制作与导出
 

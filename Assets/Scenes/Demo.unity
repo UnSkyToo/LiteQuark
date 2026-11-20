@@ -195,25 +195,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 720617ee455f4ab1a59ef3674019ad90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DebugSetting:
+  Settings:
     GameEntry:
-    SystemList:
-    - Disabled: 0
-      AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
-        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     Common:
       TargetFrameRate: 60
       MultiTouch: 0
       AutoRestartInBackground: 0
       BackgroundLimitTime: 90
-      ThrowException: 0
-      DebugMode: 1
+      ThrowExceptionByBuild:
+        Release: 0
+        OverrideInDevelopment: 0
+        Development: 0
       TimeScale: 1
     Task:
       ConcurrencyLimit: 20
     Asset:
-      BundleMode: 0
-      BundleRemoteUri: https://localhost:8000/
+      BundleModeByBuild:
+        Release: 1
+        OverrideInDevelopment: 1
+        Development: 0
+      BundleRemoteUriByBuild:
+        Release:
+        OverrideInDevelopment: 1
+        Development: https://localhost:8000/
       ConcurrencyLimit: 5
       TaskConcurrencyLimit: 20
       BundleDownloadRetry:
@@ -228,69 +232,25 @@ MonoBehaviour:
       SafetyMode: 0
     Log:
       SimpleLog: 1
-      ReceiveLog: 1
-      LogInfo: 1
-      LogWarn: 1
-      LogError: 1
-      LogFatal: 1
-      ShowLogViewer: 1
-    SystemSettings:
-    - rid: 4730454262242344960
-  ReleaseSetting:
-    GameEntry:
+      LevelsByBuild:
+        Release: 12
+        OverrideInDevelopment: 1
+        Development: 255
+      ShowLogViewerByBuild:
+        Release: 0
+        OverrideInDevelopment: 1
+        Development: 1
     SystemList:
     - Disabled: 0
       AssemblyQualifiedName: LiteQuark.Runtime.UISystem, LiteQuark.Runtime.Addons,
         Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-    Common:
-      TargetFrameRate: 60
-      MultiTouch: 0
-      AutoRestartInBackground: 0
-      BackgroundLimitTime: 90
-      ThrowException: 0
-      DebugMode: 1
-      TimeScale: 1
-    Task:
-      ConcurrencyLimit: 20
-    Asset:
-      BundleMode: 0
-      BundleRemoteUri: https://localhost:8000/
-      ConcurrencyLimit: 5
-      TaskConcurrencyLimit: 20
-      BundleDownloadRetry:
-        Timeout: 60
-        MaxRetries: 3
-        RetryInterval: 1
-      DisableUnityWebCache: 0
-      EnableRetain: 1
-      BundleRetainTime: 300
-      EditorForceStreamingAssets: 1
-    Action:
-      SafetyMode: 0
-    Log:
-      SimpleLog: 1
-      ReceiveLog: 1
-      LogInfo: 1
-      LogWarn: 1
-      LogError: 1
-      LogFatal: 1
-      ShowLogViewer: 1
-    SystemSettings:
-    - rid: 4730454262242344961
-  _simulateReleaseBuild: 0
+      Setting:
+        rid: 1345213332320419840
+  EditorPreview: 0
   references:
     version: 2
     RefIds:
-    - rid: 4730454262242344960
-      type: {class: UISystemSetting, ns: LiteQuark.Runtime, asm: LiteQuark.Runtime.Addons}
-      data:
-        UICamera: {fileID: 2007689149}
-        ScaleMode: 1
-        MatchMode: 0
-        MatchValue: 0
-        ResolutionWidth: 1080
-        ResolutionHeight: 1920
-    - rid: 4730454262242344961
+    - rid: 1345213332320419840
       type: {class: UISystemSetting, ns: LiteQuark.Runtime, asm: LiteQuark.Runtime.Addons}
       data:
         UICamera: {fileID: 2007689149}

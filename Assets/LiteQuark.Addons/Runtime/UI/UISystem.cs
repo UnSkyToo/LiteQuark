@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
         private const int UIStepOrder = 100;
 
         public RectTransform CanvasRoot => _canvasRoot;
-        public Camera UICamera => Setting.UICamera ?? Camera.main;
+        public Camera UICamera => Setting?.UICamera != null ? Setting.UICamera : Camera.main;
 
         private RectTransform _canvasRoot;
         private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new();

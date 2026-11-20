@@ -9,7 +9,7 @@ LiteQuark 将系统服务（`ISystem`）与可选的游戏入口（`IGameEntry`�
 ## 接入与启动
 
 1. 在引导场景的 GameObject 上挂载 `LiteLauncher`。
-2. 分别配置 Launcher 的 Debug / Release 页签。在 `SystemList` 中添加扩展系统，在 **Game Entry** 中选择一个业务入口，选 **None** 可只启动系统。
+2. 在 Launcher 直接编辑 **Common / Task / Asset / Action / Log**，选择可选的 **Game Entry**。在 **System List** 点 **+** 选择扩展系统，需要的参数会随该条目创建。
 3. 入口使用有公共无参构造函数的普通 C# 类。系统就绪后 Runtime 创建并等待入口初始化，关闭时先等待入口释放。按需实现 `ITick`、`ILateTick` 或两者。
 
 ```csharp
@@ -32,7 +32,21 @@ public sealed class GameEntry : IGameEntry
 }
 ```
 
-开发构建和编辑器默认使用 DebugSetting，普通构建使用 ReleaseSetting；编辑器可通过 `_simulateReleaseBuild` 模拟 Release 设置。仅创建调用 `DontDestroyOnLoad` 的组件不会启动框架。
+### Release 默认值与 Development 覆盖
+
+一个项目使用一个启动场景。Launcher 把配置保存在场景里，两个 Demo 是可独立运行的启动场景，各自保存自己的值。普通字段只填写一次。
+
+Launcher 的 **Environment** 同时选择当前编辑环境和下次 Editor 启动或重启的预览环境。**Release** 页直接编辑默认值、共享字段及 System List。**Development** 页显示实际生效值，普通字段、游戏入口和系统列表结构只读，模块与系统条目仍可展开。
+
+扩展设置里的列表和数组也可以在 Development 页展开，元素中的 `BuildValue<T>` 可单独覆盖。增删、排序和修改普通字段都在 Release 页完成。
+
+在 Development 页，`BuildValue<T>` 字段右侧有 **Override**。未勾选时显示 Release 值并锁定输入；勾选后只编辑 Development 值。取消勾选立即恢复继承，再次勾选可继续使用上次的开发值。显式覆盖支持 `false`、`0`、空字符串及 `LogLevel.None`。资源模式、CDN、日志级别、日志窗口和异常抛出策略使用此机制。扩展模块可声明自己的 `BuildValue<T>`，初始化时用 `Resolve(LiteRuntime.Setting.Environment)` 取值。
+
+普通 Player 使用 Release，Development Build 使用 Development。两个 Demo 的 Release 使用 BuiltIn 和 Error/Fatal 日志；Development 使用 Simulate、全部级别和日志窗口。当前环境的资源模式为 Remote 时，Inspector 会检查实际生效的 CDN 地址；空值或无效的绝对 URI 会显示警告。预览 BuiltIn 需要准备本地 Bundle。
+
+每个扩展系统的参数直接保存在它的 **System List** 注册项中，禁用保留参数，拖动条目会一起移动参数。系统升级后需要新增配置时，在 Release 页点该行的 **Create Settings**；配置类型发生变化时，先核对旧值再点 **Replace Settings**。替换会创建新类型的默认值，可用 Undo 恢复旧值。UI 相机在 UISystem 项内绑定，可直接拖入场景对象。
+
+Launcher 每次启动或重启都解析一份独立的运行配置。通过 `LiteRuntime.Setting.Asset` 和 `LiteRuntime.Setting.Log` 等模块读取有效值；运行副本中的场景对象引用仍指向同一个 Unity 对象。集成方显式调用 `Startup(launcher, setting)` 时，重启沿用调用方提供的有效设置。
 
 ## 生命周期与注册
 
@@ -64,7 +78,7 @@ Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步�
 | `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |
 | 配置类 | 实现 `ISystemSetting`，使用可序列化类型和无参构造函数 |
 
-扩展系统加入 `LiteSetting.SystemList`，对应配置放入 `SystemSettings`。缺少配置时框架创建默认实例并记录警告。更改启动配置应在初始化前完成；修改列表不会动态注册系统。
+程序化注册使用 `LiteSystemEntry`，将系统类型名和可选的 `Setting` 放在同一条目。未指定参数时，具有配置契约的系统使用默认实例并记录警告。更改启动配置应在初始化前完成；修改列表不会动态注册系统。
 
 晚更新复用本帧普通更新的 deltaTime，适合在游戏入口完成相机跟随后，由系统投影世界坐标。`LiteRuntime.Instance.CanLateTick` 表示 Runtime 处于 Running 且未暂停，分发子对象时可用它判断是否继续。暂停、关闭或错误会停止后续晚更新。自定义驱动先调用 `Tick(deltaTime)`，同一帧再调用一次 `LateTick()`。跳过普通更新的帧也跳过晚更新。
 
@@ -86,7 +100,7 @@ var tasks = LiteRuntime.Get<TaskSystem>();
 | [Timer](Runtime/Core/Async/Timer/README.md) | 时间回调、重复执行、暂停与取消 |
 | [Action](Runtime/Core/Async/Action/README.md) | Transform 补间、序列/并行、条件等待 |
 | [ObjectPool](Runtime/Core/ObjectPool/README.md) | GameObject、集合复用及预生成 |
-| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置。调试模式下启用 `ReceiveLog` 和 `ShowLogViewer` 可在系统就绪后显示控制台，入口可留空 |
+| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置。`Levels` 过滤框架日志（None 关闭全部级别），`ShowLogViewer` 单独控制窗口；Development 和 Release 均使用所选策略，入口可留空 |
 
 UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons` 包，不会自动注册。安装并注册后使用 `LiteRuntime.Get<UISystem>()` 等泛型入口；网络入口为 `LiteRuntime.Get<NetworkSystem>().Http`。
 
@@ -94,7 +108,7 @@ UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons`
 
 资源默认位于 `Assets/StandaloneAssets`，加载路径包含扩展名，可使用根目录相对路径或完整 Assets 项目路径。加载、实例化、预加载和场景所有权通过 Handle 管理；持有期间使用结果，结束时 Dispose。路径规则、错误处理和配置见 [Asset 指南](Runtime/Asset/README.md)。
 
-AssetSystem 在初始化时选择加载后端，交由 AssetManager 统一执行 Bundle 管理流程。默认 Simulate 在编辑器中收集项目资源进行模拟，非编辑器环境自动使用 BuiltIn 本地资源包；可显式选择 BuiltIn 或 Remote 验证真实 Bundle。通过 `Lite > Builder` 构建资源包和版本文件；目标平台须安装对应 Unity 构建支持。命令行入口为 `LiteQuark.Editor.ProjectBuilderCommandLine.Build`，参数见 [ProjectBuilderCommandLine.cs](Editor/Builder/ProjectBuilderCommandLine.cs)。`-copyToStreaming true` 会删除并替换 `Assets/StreamingAssets/LiteQuark`，构建准备也可能修改项目设置，完成后检查差异。
+AssetSystem 在初始化时选择加载后端，交由 AssetManager 统一执行 Bundle 管理流程。Development 默认 Simulate，在编辑器中收集项目资源进行模拟，非编辑器环境自动使用 BuiltIn 本地资源包；可显式选择 BuiltIn 或 Remote 验证真实 Bundle。通过 `Lite > Builder` 构建资源包和版本文件；目标平台须安装对应 Unity 构建支持。命令行入口为 `LiteQuark.Editor.ProjectBuilderCommandLine.Build`，参数见 [ProjectBuilderCommandLine.cs](Editor/Builder/ProjectBuilderCommandLine.cs)。`-copyToStreaming true` 会删除并替换 `Assets/StreamingAssets/LiteQuark`，构建准备也可能修改项目设置，完成后检查差异。
 
 ## 通用路径与文件操作
 

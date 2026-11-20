@@ -7,31 +7,35 @@ namespace LiteQuark.Runtime
     [DefaultExecutionOrder(9999)]
     public class LiteLauncher : MonoBehaviour
     {
-        [SerializeField] public LiteSetting DebugSetting = new();
-        [SerializeField] public LiteSetting ReleaseSetting = new();
-        [SerializeField] private bool _simulateReleaseBuild;
+        public LiteLauncherSettings Settings = new();
+#if UNITY_EDITOR
+        public LiteBuildProfile EditorPreview = LiteBuildProfile.Development;
+#endif
 
         private const int MaxConsecutiveErrors = 30;
         private int _consecutiveUpdateErrors;
         private int _consecutiveLateUpdateErrors;
-        private LiteSetting _setting;
+
+        public LiteSetting CreateRuntimeSetting()
+        {
+#if UNITY_EDITOR
+            var environment = EditorPreview;
+#else
+            const LiteBuildProfile environment = LiteSetting.DefaultEnvironment;
+#endif
+            return Settings.CreateRuntimeSetting(environment);
+        }
 
         private void Awake()
         {
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
-            _setting = _simulateReleaseBuild ? ReleaseSetting : DebugSetting;
-#else
-            _setting = ReleaseSetting;
-#endif
-
             try
             {
                 DontDestroyOnLoad(this);
-                LiteRuntime.Instance.Startup(this, _setting);
+                LiteRuntime.Instance.Startup(this);
             }
             catch (Exception ex)
             {
-                if (_setting.Common.ThrowException)
+                if (LiteRuntime.Setting?.Common.ThrowException == true)
                 {
                     throw;
                 }
@@ -89,7 +93,7 @@ namespace LiteQuark.Runtime
                     LiteRuntime.Instance.EnterErrorState(FrameworkErrorCode.Unknown);
                     return false;
                 }
-                if (_setting.Common.ThrowException)
+                if (LiteRuntime.Setting?.Common.ThrowException == true)
                 {
                     throw;
                 }
@@ -106,7 +110,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                if (_setting.Common.ThrowException)
+                if (LiteRuntime.Setting?.Common.ThrowException == true)
                 {
                     throw;
                 }

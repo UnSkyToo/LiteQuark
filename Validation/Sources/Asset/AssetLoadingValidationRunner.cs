@@ -156,30 +156,6 @@ namespace LiteQuark.Editor
                     build.assetNames.Select(AssetPath.ResolveProjectAssetPath).ToArray(), null)).ToArray());
             File.WriteAllBytes(Path.Combine(Reports, "version.bytes"), pack.ToBinaryData());
             File.WriteAllText(Path.Combine(Reports, "fixture-assets.json"), JsonUtility.ToJson(new FixturePaths { assets = builds.SelectMany(b => b.assetNames).ToArray() }, true));
-            BuildLegacySettingsFixtures();
-        }
-
-        private static void BuildLegacySettingsFixtures()
-        {
-            Directory.CreateDirectory(Fixture + "/Settings");
-            foreach (var mode in new[] { BundleLoadMode.Simulate, BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
-            {
-                var path = Fixture + "/Settings/" + mode + ".prefab";
-                var go = new GameObject("Legacy bundle settings");
-                go.SetActive(false);
-                try
-                {
-                    var launcher = go.AddComponent<LiteLauncher>();
-                    launcher.DebugSetting.Asset.BundleMode = mode;
-                    launcher.ReleaseSetting.Asset.BundleMode = mode;
-                    PrefabUtility.SaveAsPrefabAsset(go, path);
-                }
-                finally { UnityEngine.Object.DestroyImmediate(go); }
-                var yaml = File.ReadAllText(path);
-                if (!yaml.Contains("BundleMode: " + (int)mode)) throw new Exception("Expected text-serialized settings fixture.");
-                File.WriteAllText(path, yaml.Replace("BundleMode:", "BundleLocater:"));
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-            }
         }
         [Serializable] private sealed class FixturePaths { public string[] assets; }
         [Serializable] private sealed class BuildOptionEvidence
@@ -360,13 +336,13 @@ namespace LiteQuark.Editor
             var setting = LiteRuntime.Setting.Asset;
             var previousMode = setting.BundleMode;
             var previousUri = setting.BundleRemoteUri;
-            var previousCache = setting.DisableUnityWebCache;
+            var previousCache = LiteRuntime.Setting.Asset.DisableUnityWebCache;
             var assets = new AssetSystem();
             try
             {
                 setting.BundleMode = BundleLoadMode.Remote;
                 setting.BundleRemoteUri = "https://cdn.example/base%20dir?token=a%2Bb#part";
-                setting.DisableUnityWebCache = true;
+                LiteRuntime.Setting.Asset.DisableUnityWebCache = true;
                 var locator = (RemoteBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true });
                 var platform = Uri.EscapeDataString(AppUtils.GetCurrentPlatformName().ToLowerInvariant());
                 var version = Uri.EscapeDataString(AppUtils.GetMainVersion());
@@ -381,7 +357,7 @@ namespace LiteQuark.Editor
                 await assets.DisposeAsync();
                 setting.BundleMode = previousMode;
                 setting.BundleRemoteUri = previousUri;
-                setting.DisableUnityWebCache = previousCache;
+                LiteRuntime.Setting.Asset.DisableUnityWebCache = previousCache;
             }
             var packBytes = File.ReadAllBytes(Path.Combine(Reports, "version.bytes"));
             using var versionServer = new BundleHttpServer(packBytes);
@@ -708,7 +684,7 @@ namespace LiteQuark.Editor
                 try { await initialization; } catch (Exception ex) { failure = ex; }
                 Check(failure?.GetType() == expectedException && failure.StackTrace.Contains("CreateBundleProvider"),
                     "Await preserves the original backend exception type and creation stack.");
-                Check(registeredGroup != null && registeredGroup.ConcurrencyLimit == Math.Max(1, setting.TaskConcurrencyLimit) &&
+                Check(registeredGroup != null && registeredGroup.ConcurrencyLimit == Math.Max(1, LiteRuntime.Setting.Asset.TaskConcurrencyLimit) &&
                     registeredGroup.PendingTaskCount == 0 && registeredGroup.RunningTaskCount == 0,
                     "The Asset group is registered before the failure, without submitting resource work.");
                 Check(groups.SequenceEqual(originalGroups) && tasks.PendingTaskCount == pending && tasks.RunningTaskCount == running,
@@ -730,6 +706,7 @@ namespace LiteQuark.Editor
         {
             var setting = LiteRuntime.Setting.Asset;
             var previous = setting.BundleMode;
+            var previousUri = setting.BundleRemoteUri;
             var assets = new AssetSystem();
             var factory = typeof(AssetSystem).GetMethod("CreateBundleProvider", Private);
             try
@@ -738,13 +715,15 @@ namespace LiteQuark.Editor
                 var loader = Get<AssetBundleLoader>(manager, "_bundleLoader");
                 Check(Get<IBundleProvider>(loader, "_bundleProvider") is SimulateBundleProvider,
                     "Normal Runtime startup wires the simulated backend through AssetSystem initialization.");
-                Check(new LiteSetting.AssetSetting().BundleMode == BundleLoadMode.Simulate &&
+                Check(new LiteSetting(LiteBuildProfile.Development).Asset.BundleMode == BundleLoadMode.Simulate &&
+                    new LiteSetting(LiteBuildProfile.Release).Asset.BundleMode == BundleLoadMode.BuiltIn &&
                     (byte)BundleLoadMode.Simulate == 0 && (byte)BundleLoadMode.BuiltIn == 1 && (byte)BundleLoadMode.Remote == 2,
-                    "The single mode field defaults to Simulate with explicit serialized enum values.");
+                    "Asset mode defaults to Release BuiltIn and Development Simulate with explicit serialized enum values.");
                 setting.BundleMode = BundleLoadMode.Simulate;
                 Check(factory.Invoke(assets, new object[] { true }) is SimulateBundleProvider &&
                     factory.Invoke(assets, new object[] { false }) is BuiltInBundleProvider && setting.BundleMode == BundleLoadMode.Simulate,
                     "Editor selects simulation; the same configuration selects BuiltIn in Player without rewriting settings.");
+                setting.BundleRemoteUri = "https://cdn.example/validation/";
                 foreach (var mode in new[] { BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
                 {
                     setting.BundleMode = mode;
@@ -753,23 +732,12 @@ namespace LiteQuark.Editor
                         factory.Invoke(assets, new object[] { false }).GetType() == expected,
                         "Explicit " + mode + " is preserved in both environments.");
                 }
-                foreach (var mode in new[] { BundleLoadMode.Simulate, BundleLoadMode.BuiltIn, BundleLoadMode.Remote })
-                {
-                    var path = Fixture + "/Settings/" + mode + ".prefab";
-                    var yaml = File.ReadAllText(path);
-                    Check(yaml.Contains("BundleLocater: " + (int)mode) && !yaml.Contains("BundleMode:"),
-                        "The imported " + mode + " fixture still stores the former YAML field name.");
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                    var launcher = prefab.GetComponent<LiteLauncher>();
-                    Check(launcher.DebugSetting.Asset.BundleMode == mode && launcher.ReleaseSetting.Asset.BundleMode == mode,
-                        "Unity deserializes both legacy settings as " + mode + " without changing their values.");
-                    PrefabUtility.SavePrefabAsset(prefab);
-                    var saved = File.ReadAllText(path);
-                    Check(saved.Contains("BundleMode: " + (int)mode) && !saved.Contains("BundleLocater:"),
-                        "Saving the migrated " + mode + " Prefab writes only the new field name.");
-                }
             }
-            finally { setting.BundleMode = previous; }
+            finally
+            {
+                setting.BundleMode = previous;
+                setting.BundleRemoteUri = previousUri;
+            }
             var options = new ResBuildConfig().Options;
             Check((options & BuildAssetBundleOptions.ChunkBasedCompression) != 0, "Default compression remains ChunkBasedCompression.");
             Check((options & BuildAssetBundleOptions.DisableLoadAssetByFileName) != 0, "Default disables extensionless filename lookup.");

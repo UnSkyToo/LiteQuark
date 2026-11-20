@@ -1,6 +1,6 @@
 # DataSystem 数据持久化
 
-DataSystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并在 `SystemSettings` 配置 `DataSystemSetting`。初始化后使用 `LiteRuntime.Get<DataSystem>()`。
+DataSystem 属于 LiteQuark.Addons。将它加入 Launcher 的 **System List**，并在该注册项内配置 `DataSystemSetting`。初始化后使用 `LiteRuntime.Get<DataSystem>()`。
 
 ## 配置与格式
 

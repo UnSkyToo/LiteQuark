@@ -1,8 +1,8 @@
 # UISystem 界面
 
-UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 `SystemList`，并在 `SystemSettings` 配置 `UISystemSetting`。使用 `LiteRuntime.Get<UISystem>()` 访问。
+UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 **System List**，并在该注册项内配置 `UISystemSetting`。使用 `LiteRuntime.Get<UISystem>()` 访问。
 
-需要可用的 UI Camera（配置为空时回退到 `Camera.main`）。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
+把本场景的 UI 相机拖入注册项的 `UISystemSetting.UICamera`，留空时使用 `Camera.main`。参考分辨率与缩放参数保存在同一条目。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
 
 UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。根节点跨场景保留，系统关闭时销毁整个 Canvas 层级。
 

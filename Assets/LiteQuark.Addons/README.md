@@ -12,7 +12,7 @@ https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons
 
 核心包发布分支为 `#LiteQuark`。可复现安装应选择核对过的 tag 或 commit；安装前检查 Addons 声明的核心依赖是否与所选核心版本匹配。
 
-扩展系统不会自动注册。将需要的系统加入 LiteLauncher 的 `SystemList`，配置对应 `SystemSettings`，分别检查 Debug / Release 设置。在业务 `IGameEntry.Initialize()` 或之后通过 `LiteRuntime.Get<T>()` 获取已初始化的系统。
+扩展系统不会自动注册。在 Launcher 的 **System List** 点击 **+** 选择扩展系统，展开该注册项即可编辑自动创建的模块设置。在业务 `IGameEntry.Initialize()` 或之后通过 `LiteRuntime.Get<T>()` 获取已初始化的系统。
 
 已注册扩展系统由 Runtime 统一调用 Initialize 和 DisposeAsync；业务不要直接释放系统或在释放后继续使用旧实例。DisposeAsync 采用统一的可等待接口，同步清理可返回 `UniTask.CompletedTask`；它不额外保证每个模块的在途请求或原生操作已经结束，具体边界以模块指南为准。
 
