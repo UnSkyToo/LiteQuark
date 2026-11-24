@@ -8,7 +8,7 @@
 | --- | --- |
 | `LoadAssetHandle<T>(path, priority, ct)` | `AssetHandle<T>` 持有资源；Dispose 释放引用 |
 | `InstantiateHandle(path, parent, ...)` | `GameObjectHandle` 持有实例；Dispose 销毁实例并释放 prefab 引用 |
-| `LoadSceneHandle(path, parameters, priority, ct)` | `SceneHandle` 持有实际场景实例；Dispose 发起异步卸载 |
+| `LoadSceneHandle(path, priority, ct)` | 以 Additive 加载业务场景，`SceneHandle.Dispose()` 发起该实例的卸载 |
 | `PreloadAssetHandle<T>(paths, priority, ct)` | `PreloadHandle<T>` 持有批量资源引用，Result 为成功标志 |
 | `HasAsset(path)` / `GetVersion()` | 查询当前 Manager 的资源收录情况／版本，不取得资源所有权 |
 | `UnloadUnusedAssets(maxDepth: 5)` | 清理零引用缓存；不宜逐帧调用 |
@@ -62,9 +62,7 @@ handle.Dispose();
 ## 场景与预加载
 
 ```csharp
-var parameters = new UnityEngine.SceneManagement.LoadSceneParameters(
-    UnityEngine.SceneManagement.LoadSceneMode.Additive);
-var sceneHandle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle.unity", parameters);
+var sceneHandle = LiteRuntime.Asset.LoadSceneHandle("Scenes/Battle.unity");
 await sceneHandle;
 if (sceneHandle.Result == null)
 {
@@ -74,9 +72,9 @@ if (sceneHandle.Result == null)
 sceneHandle.Dispose();
 ```
 
-`SceneHandle.Result` 为 `Scene?`，失败、释放或场景失效时为空。同一 Manager 内，规范化后同一路径的并发加载会被拒绝；一次加载完成后再次 Additive 加载，可创建独立实例，各 Handle 卸载自己的实例。限制不覆盖业务直接调用 Unity 场景 API。
+启动场景常驻。单场景项目可以直接通过 Prefab Handle 管理内容。有独立关卡时，只将业务场景作为加载目标；请求已在场的启动场景会得到 Failed Handle。加载业务场景会保留当前活动场景，随关卡退场的动态对象应放到该关卡的根节点下。
 
-Single 模式替换或外部卸载后，Result 为空，成功历史状态保留；业务仍应 Dispose，框架不会重复卸载或释放引用。Unity 拒绝卸载时（例如最后一个场景），Dispose 不保证场景消失，框架保留必要资源直到确认实际卸载；没有公开的 Handle 重试入口，也不自动逐帧重试。
+`SceneHandle.Result` 为 `Scene?`，失败、释放或场景失效时为空。在同一轮 Runtime 内，从请求受理到场景实际卸载，该规范化路径一直被占用。重复请求立即得到 Failed Handle，原请求继续。加载失败且未留下场景时可以立即重试。不同路径可以同时加载。
 
 **需要同时加载的 Bundle 场景应使用不同文件名。** Unity 2022.3.62f3 的本地验证中，同名场景在同一个 Bundle 内会构建冲突，分到不同 Bundle 后并发装载也会冲突。Simulate 可区分不同目录的同名场景，完整路径不能消除 Bundle 层限制。
 
@@ -98,11 +96,11 @@ if (!preload.Result)
 
 ## 系统关闭
 
-AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束未完成请求，等待原生加载收尾和场景实际卸载，再释放全部 Bundle；不等待 Handle 归还，也不受 Retention 限制。Simulate 直接取消待交付的模拟资源，已启动的场景操作同样等待实际卸载。关闭中的迟到结果由原持有者清理。
+业务场景在场时也可以调用 Restart 或 Shutdown。已交付的场景由业务通过 SceneHandle 退场，可以在游戏入口的 DisposeAsync 中释放。资源系统关闭会释放旧 Bundle，仍在场的关卡可能失去材质等依赖。跨轮重开同一路径时，业务须释放旧 Handle，确认旧场景已实际卸载，再发起新请求。只使用 Prefab 的单场景项目可直接请求重启。
 
-业务应先停止资源使用并释放 Handle；遗漏 Handle 不保留旧资源的可用性，实例仍由其拥有者销毁。Handle／Lease 的 Dispose 仍是同步归还，返回不代表原生卸载已经结束。系统关闭不主动执行全局 Resources.UnloadUnusedAssets 或 GC。
+关闭开始后拒绝新请求。Asset 释放时取消排队的工作。Scene Cache 开始释放时，仍在等待交付的 SceneHandle 立即进入 Failed，业务可以结束等待。Cache 持有 Bundle 直到原生读取完成，并对迟到场景发起卸载、等待已发起的卸载结束。Unity 拒绝场景卸载时会记录错误。Loader 释放未交付的容器，Cache 释放已接收的容器。上层实例完成延迟销毁后卸包。加载失败由对应 Handle 的 Error 报告，关闭时停止下载或卸包的异常由本次 Shutdown 报告。
 
-加载途中可以请求热重启。只有 Shutdown 成功，新 Runtime 才启动并可重新加载同一资源或场景。内容收尾失败（例如 Unity 拒绝卸载唯一场景）会立即报告并跳过最终卸包。最终卸包遇错也会停止，此时可能已有部分包释放。Runtime 进入 ShutdownFailed，其他已发起的原生清理可能仍在进行。没有错误时，尚未结束的原生操作会继续阻挡关闭。
+业务应先停止使用旧资源并释放 Handle。遗漏 Handle 和缓存保留期均不会阻止卸包。应用退出回调只尽力发起清理，跨帧操作可能随进程结束而中断。
 
 ## 路径与模式
 
@@ -125,7 +123,7 @@ AssetSystem 由 Runtime 统一关闭。关闭开始后拒绝新加载，结束�
 
 ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作者数据，不接受磁盘绝对路径或真正的 UPM 路径。通用文件路径与 URI 操作见 [框架指南](../../README.md#通用路径与文件操作)。
 
-AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选择 IBundleProvider，再将后端传给 AssetManager。后端创建失败（例如非法模式或无效 Remote URI）通过返回的 UniTask 报错，await 时抛出原始异常；任务组重复注册等错误仍在调用时同步抛出。Manager 统一管理清单、缓存和加载协调；SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider 负责获取清单和 Bundle。IBundleResource、Cache／Lease 与 TaskSystem 的读取、所有权和调度职责保持独立。
+AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选择 IBundleProvider，再将后端传给 AssetManager。后端创建失败（例如非法模式或无效 Remote URI）通过返回的 UniTask 报错，await 时抛出原始异常；任务组重复注册等错误仍在调用时同步抛出。AssetManager 按清单定位 Bundle，协调包及其依赖的加载。每个 AssetBundleCache 创建并持有本包的 AssetInfoCache 和 SceneInfoCache。SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider 负责获取清单和 Bundle。
 
 在场景 Launcher 的 **Asset** 模块设置资源参数。资源模式和 CDN 各有 Release 默认值和可选的 Development 覆盖。并发、重试和缓存只配置一次，运行时统一从 `LiteRuntime.Setting.Asset` 读取。
 
@@ -143,7 +141,7 @@ BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制�
 
 收集配置优先读取 `Assets/Editor/ResSetting.asset`，不存在时查找项目中的 ResCollectorSetting；仍不存在则使用默认分包规则。Simulate、构建收集和 Bundle Viewer 均不会自动创建配置。只有实际修改文件夹 Inspector 的 Individual Bundle 选项或通过 Create 菜单明确创建配置时才写入资产。默认 Collector 在首次收集时读取并复制分包规则，因此构建前和收集步骤前的回调修改配置仍会生效；清单缓存期间不重新读取，清理缓存后再次收集时刷新规则。显式传入规则的 Collector 在构造时复制规则，清理缓存后也继续使用该副本。
 
-Provider 创建版本和 Bundle 任务，并通过 TaskSystem.AddTask 提交到 Asset 组后返回。版本任务成功结果为已初始化的 VersionPackInfo；三种 Bundle 任务的 Result、await 结果和 GetBundle 均观察同一个 IBundleResource。Loader 在 Tick 中统一处理成功、失败和取消，随后向 Cache 交付；任务成功不代表 Cache 已接收，关闭时 Loader 释放所有未交付成功容器并等待原生收尾。
+Provider 创建版本和 Bundle 任务，并通过 TaskSystem.AddTask 提交到 Asset 组后返回。版本任务成功结果为已初始化的 VersionPackInfo；Loader 在 Tick 中观察 Bundle 任务的 IsDone，通过 GetBundle 接收成功容器或从 Error 取得加载错误，再向 Cache 交付。关闭时各任务按当前阶段响应停止请求，已经提交的本地读盘继续完成，远端下载可以中止，成功但尚未交付的容器由 Loader 释放。
 
 Cache 收到主包后即由 Bundle 字段持有；依赖未就绪时仍处于 Loading，不启动资源读取。正常加载等主包和依赖全部返回后才发布成功或失败，失败或关闭时由 Cache 释放已接收的主包。
 

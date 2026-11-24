@@ -97,7 +97,7 @@ namespace LiteQuark.Runtime
             TryTerminate(TaskState.Failed, null, error);
         }
 
-        public void Cancel()
+        public virtual void Cancel()
         {
             TryTerminate(TaskState.Cancelled, null, null);
         }

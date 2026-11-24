@@ -8,14 +8,14 @@ namespace LiteQuark.Runtime
 {
     internal sealed class LoadEditorSceneTask : LoadSceneTask
     {
-        public LoadEditorSceneTask(string scenePath, LoadSceneParameters parameters, Action<ITask> callback)
-            : base(scenePath, parameters, callback)
+        public LoadEditorSceneTask(string scenePath, Action<LoadSceneTask> callback)
+            : base(scenePath, callback)
         {
         }
 
-        protected override AsyncOperation StartLoadScene(string path, LoadSceneParameters parameters)
+        protected override AsyncOperation StartLoadScene(string path)
         {
-            return EditorSceneManager.LoadSceneAsyncInPlayMode(path, parameters);
+            return EditorSceneManager.LoadSceneAsyncInPlayMode(path, new LoadSceneParameters(LoadSceneMode.Additive));
         }
     }
 }

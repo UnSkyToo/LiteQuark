@@ -74,12 +74,11 @@ namespace LiteQuark.Runtime
 
         private void CompleteAssetLoad(AssetLoadResult<UnityEngine.Object> result)
         {
+            _loadAssetTask = null;
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }
-
-            _loadAssetTask = null;
 
             var isLoaded = OnAssetLoaded(result.Value);
 

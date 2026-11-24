@@ -11,7 +11,6 @@ namespace LiteQuark.Runtime
 
         private readonly Dictionary<string, AssetBundleCache> _bundleCacheMap = new();
         private readonly List<string> _unloadBundleList = new();
-        private readonly HashSet<string> _loadingSceneSet = new(StringComparer.OrdinalIgnoreCase);
 
         private bool _isDisposed;
 
@@ -79,7 +78,6 @@ namespace LiteQuark.Runtime
             }
             _bundleCacheMap.Clear();
             _unloadBundleList.Clear();
-            _loadingSceneSet.Clear();
 
             _bundleLoader = null;
             _packInfo = null;

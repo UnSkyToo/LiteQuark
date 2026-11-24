@@ -43,7 +43,7 @@ namespace LiteQuark.Editor
             };
             if (suite == "lifecycle")
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(EditorScenePath));
+                Directory.CreateDirectory(EditorSceneFolder);
                 var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 marker.name = "SessionValidationSceneMarker";
@@ -51,7 +51,7 @@ namespace LiteQuark.Editor
                 EditorSceneManager.SaveScene(scene, Fixture + "/validation_scene.unity");
                 EditorSceneManager.SaveScene(scene, EditorScenePath, true);
                 var host = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                EditorSceneManager.SaveScene(host, Fixture + "/host.unity");
+                EditorSceneManager.SaveScene(host, EditorSceneFolder + "/host.unity");
                 builds.Add(Build("scene.ab", "validation_scene.unity"));
             }
             if (media != null) builds.AddRange(media());

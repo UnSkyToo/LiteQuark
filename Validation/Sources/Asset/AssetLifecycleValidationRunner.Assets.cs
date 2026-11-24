@@ -5,7 +5,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace LiteQuark.Editor
 {
@@ -156,38 +155,19 @@ namespace LiteQuark.Editor
                 ReferenceEquals(preload.Error, a.Error) && ReferenceEquals(preload.Errors[0], a.Error) &&
                 h.Refs("a.ab") == 0 && h.Refs("b.ab") == 0,
                 "Preload keeps the requested path separate from the failed dependency and preserves error identity after rollback.");
-            await UniTask.Yield();
+            await h.Shutdown();
+            Check(h.Disposed && ReferenceEquals(a.Error.Exception, original),
+                "A failed load retains its original error and allows a later clean shutdown.");
 
-        }
-
-        private static async UniTask ShutdownDuringLocalBundle()
-        {
-            var h = New();
-            var handle = h.Asset<TextAsset>(TextPath);
-            h.Provider.Tick(0f);
-            var task = TaskSnapshot().OfType<LoadLocalBundleTask>().Single(t => t.DebugName == "LoadBundle text.ab");
-            // Submit synchronously to control shutdown timing; the native request remains asynchronous.
-            task.Execute();
-            var request = Get<AssetBundleCreateRequest>(task, "_bundleRequest");
-            try
-            {
-                Check(request != null && !task.IsDone, "A real native Bundle request has been submitted before shutdown.");
-                await h.Shutdown();
-                Check(handle.IsDone && handle.Result == null, "Provider shutdown completes the pending Handle with failure.");
-                await WaitWithoutLoaderTick(() => request.isDone, "Canceled native Bundle completion");
-                await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
-                var bundle = request.assetBundle;
-                _case.evidence.Add($"Canceled task={task.State}, request done={request.isDone}, late Bundle alive={bundle != null}.");
-                Check(bundle == null, "Shutdown must unload a Bundle that completes after its request has been canceled.");
-            }
-            finally
-            {
-                if (request != null && request.isDone && request.assetBundle != null)
-                {
-                    _case.evidence.Add("Harness-only cleanup of the leaked late local Bundle; the production failure remains recorded.");
-                    request.assetBundle.Unload(true);
-                }
-            }
+            var stopping = new Harness(true, 1);
+            using var pending = stopping.Assets.LoadAssetHandle<TextAsset>(TextPath);
+            stopping.Provider.Tick(0);
+            var stopError = new IOException("Injected failure while stopping a Bundle request.");
+            stopping.Locater.Manual["text.ab"].StopFailure = stopError;
+            Exception closeError = null;
+            try { await stopping.Assets.DisposeAsync(); } catch (IOException ex) { closeError = ex; }
+            Check(ReferenceEquals(closeError, stopError) && pending.State == AssetHandleState.Failed,
+                "An error from this close reaches the caller and ends pending Handle delivery.");
         }
 
         private static async UniTask ShutdownBeforeBundleDelivery()
@@ -196,36 +176,17 @@ namespace LiteQuark.Editor
             var handle = h.Asset<TextAsset>(TextPath);
             h.Provider.Tick(0f);
             var task = TaskSnapshot().OfType<LoadLocalBundleTask>().Single(t => t.DebugName == "LoadBundle text.ab");
-            AssetBundle bundle = null;
-            UniTask shutdown = default;
-            var waitingForDelivery = false;
-            AssetHandle<TextAsset> retry = null;
-            task.Task.GetAwaiter().OnCompleted(() =>
-            {
-                bundle = NativeBundle(task.GetBundle());
-                var aliveBeforeClose = bundle != null && ReferenceEquals(task.GetBundle(), task.Result);
-                shutdown = h.Shutdown();
-                retry = h.Asset<TextAsset>(SecondTextPath);
-                waitingForDelivery = aliveBeforeClose && !shutdown.Status.IsCompleted();
-            });
-            try
-            {
-                await WaitWithoutLoaderTick(() => task.WaitForCleanupAsync().Status.IsCompleted(), "Local Bundle callback cleanup");
-                Check(waitingForDelivery, "Shutdown from the successful Task continuation waits for the pending result callback and cleanup.");
-                await shutdown;
-                Check(retry != null && retry.State == AssetHandleState.Failed && retry.Result == null, "Closing rejects new work during handoff.");
-                _case.evidence.Add($"Task={task.State}, Handle done={handle.IsDone}, completed undelivered Bundle alive={bundle != null}.");
-                Check(bundle == null && task.State == TaskState.Succeeded && handle.IsDone && handle.Result == null,
-                    "The closed Loader releases the late successful result without handing it to Cache or rewriting Task history.");
-            }
-            finally
-            {
-                if (bundle != null)
-                {
-                    _case.evidence.Add("Harness-only cleanup of the leaked completed undelivered Bundle; the production failure remains recorded.");
-                    bundle.Unload(true);
-                }
-            }
+            await WaitWithoutLoaderTick(() => task.IsDone, "Bundle completes before Loader delivery");
+            var bundle = NativeBundle(task.GetBundle());
+            h.Locater.Opened.Add(bundle);
+            Check(bundle != null && !handle.IsDone, "The native Bundle is loaded and its Handle still awaits delivery.");
+
+            var shutdown = h.Shutdown();
+            var retry = h.Asset<TextAsset>(SecondTextPath);
+            await shutdown;
+            Check(retry.State == AssetHandleState.Failed && retry.Result == null, "Closing rejects new work during handoff.");
+            Check(bundle == null && handle.State == AssetHandleState.Failed && handle.Result == null,
+                "Shutdown releases the undelivered Bundle and fails the waiting Handle.");
         }
 
         private static async UniTask ShutdownWithPendingDependency()
@@ -233,6 +194,7 @@ namespace LiteQuark.Editor
             var h = New();
             var group = RuntimeGroup(LiteConst.TaskGroupId.Asset);
             var gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
+            AssetBundleCreateRequest request = null;
             try
             {
                 await Wait(() => gates.All(task => task.IsExecuted), "Reserve admission to control native submission");
@@ -246,60 +208,58 @@ namespace LiteQuark.Editor
                 h.Provider.Tick(0);
                 var cache = h.Cache("a.ab");
                 var main = NativeBundle(cache.Bundle);
+                h.Locater.Opened.Add(main);
                 Check(main != null && !cache.IsLoaded && !handle.IsDone, "Cache owns the native main Bundle before dependency delivery.");
 
                 dependency.Execute();
-                var request = Get<AssetBundleCreateRequest>(dependency, "_bundleRequest");
+                request = Get<AssetBundleCreateRequest>(dependency, "_bundleRequest");
                 Check(request != null && !request.isDone, "Real dependency load is in flight when shutdown starts.");
-                await h.Shutdown();
-                Check(main == null && cache.Bundle == null && handle.IsDone && handle.Result == null &&
-                    request.isDone && request.assetBundle == null && dependency.State == TaskState.Cancelled && !h.Has("a.ab") && !h.Has("b.ab"),
-                    "Shutdown releases the main, drains the late dependency and leaves neither cache alive.");
+                var shutdown = h.Shutdown();
+                Check(!dependency.IsDone && shutdown.Status == UniTaskStatus.Pending && handle.State == AssetHandleState.Failed &&
+                    handle.Result == null, "Closing ends the Handle's wait while its submitted file read is still running.");
+                await shutdown;
+                Check(dependency.State == TaskState.Succeeded && request.isDone && request.assetBundle == null &&
+                    main == null && !h.Has("a.ab") && !h.Has("b.ab"),
+                    "Shutdown finishes the native dependency read and releases both Bundles and caches.");
             }
-            finally { await ReleaseGates(gates); }
+            finally
+            {
+                if (request != null && request.isDone) h.Locater.Opened.Add(request.assetBundle);
+                await ReleaseGates(gates);
+            }
         }
 
         private static async UniTask RemoteCleanup()
         {
-            using var server = new BundleHttpServer(File.ReadAllBytes(Path.Combine(BundleFolder, "text.ab")));
             var baseline = AssetBundle.GetAllLoadedAssetBundles().Select(bundle => bundle.GetInstanceID()).ToHashSet();
             var info = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { info });
-            var locator = new FileRemoteLocator { UriOverride = server.Url };
-            var loader = new AssetBundleLoader(locator, pack, 1);
-            try
+            var callbacks = 0;
+            var server = new BundleHttpServer(File.ReadAllBytes(Path.Combine(BundleFolder, "text.ab")));
+            using (server)
             {
-                var callbacks = 0;
-                loader.LoadBundle(info, AssetLoadPriority.Normal, _ => callbacks++); loader.Tick(0);
-                locator.Task.Execute();
-                var requestField = typeof(UnityDownloadBaseTask).GetField("_request", Private);
-                var request = (UnityWebRequest)requestField.GetValue(locator.Task);
-                Check(request != null && locator.Task.State == TaskState.Running, "A real HTTP Bundle request starts.");
-                var handler = (DownloadHandlerAssetBundle)request.downloadHandler;
-                Check(!handler.autoLoadAssetBundle && request.disposeDownloadHandlerOnDispose,
-                    "The request owns its handler and defers Bundle creation until extraction.");
-                await WaitWithoutLoaderTick(() => request.downloadedBytes > 0 || server.Work.IsFaulted, "First HTTP body segment");
-                Check(!server.Work.IsFaulted && !handler.isDownloadComplete && locator.Task.State == TaskState.Running,
-                    "The controlled HTTP body is incomplete before shutdown.");
-                Check(!AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
-                    "Downloading without GetContent has not created a native Bundle.");
-                await loader.DisposeAsync(); await loader.DisposeAsync();
-                Check(locator.Task.State == TaskState.Cancelled && locator.Task.Result == null && callbacks == 0,
-                    "Shutdown cancels without extracting or delivering a Bundle.");
-                await WaitWithoutLoaderTick(() => requestField.GetValue(locator.Task) == null, "Cancelled HTTP request disposal");
-                server.Dispose();
-                await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Loopback server shutdown");
-                await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
-                Check(!server.Work.IsFaulted && locator.Task.State == TaskState.Cancelled && locator.Task.GetBundle() == null && callbacks == 0,
-                    "Late completion keeps cancellation and does not notify consumers.");
-                Check(!AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
-                    "Cancelled HTTP cleanup leaves no new native Bundle.");
+                var origin = new Uri(server.Url).GetLeftPart(UriPartial.Authority);
+                var provider = new RemoteBundleProvider(origin) { DisableUnityWebCache = true };
+                var loader = new AssetBundleLoader(provider, pack, 1);
+                try
+                {
+                    loader.LoadBundle(info, AssetLoadPriority.Normal, _ => callbacks++);
+                    loader.Tick(0);
+                    await WaitWithoutLoaderTick(() => server.BodyStarted || server.Work.IsCompleted, "First HTTP body segment");
+                    Check(server.BodyStarted && !server.Work.IsCompleted, "The server holds the second half of the Bundle response.");
+                }
+                finally
+                {
+                    var shutdown = loader.DisposeAsync();
+                    await WaitWithoutLoaderTick(() => shutdown.Status.IsCompleted(), "Loader shutdown with HTTP body held");
+                    await shutdown;
+                }
+                await WaitWithoutLoaderTick(() => server.ClientClosed, "Client disconnects before the server releases the body");
             }
-            finally
-            {
-                await loader.DisposeAsync();
-                server.Dispose();
-            }
+            await WaitWithoutLoaderTick(() => server.Work.IsCompleted, "Loopback server shutdown");
+            Check(!server.Work.IsFaulted && callbacks == 0, "The interrupted download delivers no result.");
+            Check(!AssetBundle.GetAllLoadedAssetBundles().Any(bundle => !baseline.Contains(bundle.GetInstanceID())),
+                "The interrupted download leaves no native Bundle loaded.");
         }
 
         private static async UniTask InstantiateFailureProtocol()
@@ -346,19 +306,6 @@ namespace LiteQuark.Editor
             await Wait(() => instance == null, "Instance destruction");
             Check(success.State == AssetHandleState.Succeeded && success.IsDisposed && success.Error == null && success.Result == null,
                 "Successful GameObject disposal destroys the instance without changing its loading history.");
-        }
-
-        private sealed class FileRemoteLocator : IBundleProvider
-        {
-            internal LoadRemoteBundleTask Task;
-            internal string UriOverride;
-            public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
-            public ILoadBundleTask LoadBundle(string path, string hash)
-            {
-                Task = new LoadRemoteBundleTask(UriOverride ?? new Uri(Path.Combine(BundleFolder, path)).AbsoluteUri, null);
-                LiteRuntime.Task.AddTask(Task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
-                return Task;
-            }
         }
 
         private static async UniTask SharedRetention()
@@ -417,6 +364,19 @@ namespace LiteQuark.Editor
             other.Dispose();
             h.Assets.UnloadUnusedAssets();
             Check(native == null, "The native Bundle is released after the read settles.");
+
+            var pending = h.Asset<TextAsset>(SecondTextPath);
+            h.Provider.Tick(0);
+            var reloaded = h.Finish("text.ab", true);
+            var read = Get<BaseTask>(h.Entry("text.ab", SecondTextPath), "_loadAssetTask");
+            read.Execute();
+            var inFlight = Get<AssetBundleRequest>(read, "_assetRequest");
+            var close = h.Shutdown();
+            Check(pending.State == AssetHandleState.Failed && !inFlight.isDone && reloaded != null &&
+                close.Status == UniTaskStatus.Pending, "Closing ends delivery while the native read still owns its Bundle.");
+            await close;
+            Check(inFlight.isDone && reloaded == null && pending.Result == null,
+                "The submitted read settles before shutdown unloads its Bundle.");
         }
     }
 }

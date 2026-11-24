@@ -23,14 +23,14 @@ namespace LiteQuark.Editor
         protected const string AudioPath = "assets/__session_validation/tone.wav";
         protected const string EffectPath = "assets/__session_validation/effect.prefab";
         protected const string ScenePath = "assets/__session_validation/validation_scene.unity";
-        protected const string EditorScenePath = "Assets/StandaloneAssets/_session_validation/editor_validation_scene.unity";
+        protected const string EditorSceneFolder = "Assets/StandaloneAssets/_session_validation";
+        protected const string EditorScenePath = EditorSceneFolder + "/editor_validation_scene.unity";
         protected const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
         protected static string Root => Directory.GetParent(Application.dataPath).Parent.FullName;
         protected static string BundleFolder => Path.Combine(Root, "Bundles", SessionState.GetString(PendingKey + ".Suite", "tasks"));
         protected static readonly ValidationReport Results = new();
         private static readonly List<string> Errors = new();
         protected static Harness Current;
-        protected static AssetManager _simulateManager;
         private static bool _running;
         protected static ValidationCase _case;
 
@@ -147,7 +147,6 @@ namespace LiteQuark.Editor
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             if (Current != null && !Current.Disposed) Current.Provider.Tick(0);
-            _simulateManager?.Tick(0);
         }
 
         protected static async UniTask Cleanup()
@@ -185,20 +184,8 @@ namespace LiteQuark.Editor
             }
             if (!Current.Disposed)
             {
-                if (Current.ShutdownFailed)
-                {
-                    _case.evidence.Add("Fixture teardown after recorded close failure; this does not define a Runtime retry API.");
-                    var caches = Get<Dictionary<string, AssetBundleCache>>(Current.Provider, "_bundleCacheMap");
-                    // Failure fixtures settle their outstanding operations before teardown releases their remaining Bundles.
-                    foreach (var cache in caches.Values) if (cache.Bundle != null) cache.Bundle.Dispose();
-                    caches.Clear();
-                    Current.Disposed = true;
-                }
-                else
-                {
-                    Current.Assets.UnloadUnusedAssets(20);
-                    await Current.Shutdown();
-                }
+                Current.Assets.UnloadUnusedAssets(20);
+                await Current.Shutdown();
             }
             foreach (var bundle in Current.Locater.Opened)
             {
@@ -275,30 +262,19 @@ namespace LiteQuark.Editor
             internal readonly Locator Locater;
             internal readonly List<IDisposable> Handles = new();
             internal bool Disposed;
-            internal bool ShutdownFailed;
-            internal HashSet<string> LoadingNames => Get<HashSet<string>>(Provider, "_loadingSceneSet");
-            internal List<SceneInfoCache> SceneEntries() => Get<List<SceneInfoCache>>(Cache("scene.ab"), "_sceneCacheMap");
             internal SceneHandle Scene(CancellationToken token = default)
             {
-                var handle = Assets.LoadSceneHandle(ScenePath, new LoadSceneParameters(LoadSceneMode.Additive), ct: token);
+                var handle = Assets.LoadSceneHandle(ScenePath, ct: token);
                 Handles.Add(handle);
                 return handle;
             }
             internal async UniTask Shutdown()
             {
                 if (Disposed) return;
-                try
-                {
-                    var shutdown = Assets.DisposeAsync();
-                    await Wait(() => shutdown.Status.IsCompleted(), "Asset fixture shutdown");
-                    await shutdown;
-                    Disposed = true;
-                }
-                catch
-                {
-                    ShutdownFailed = true;
-                    throw;
-                }
+                var shutdown = Assets.DisposeAsync();
+                await Wait(() => shutdown.Status.IsCompleted(), "Asset fixture shutdown");
+                await shutdown;
+                Disposed = true;
             }
             internal Harness(bool manual, int concurrency = 10, bool scheduleManual = false)
             {
@@ -376,6 +352,13 @@ namespace LiteQuark.Editor
 
         protected sealed class ManualTask : BaseTask, ILoadBundleTask
         {
+            internal Exception StopFailure;
+            public override void Cancel()
+            {
+                base.Cancel();
+                if (StopFailure != null) throw StopFailure;
+            }
+
             public IBundleResource GetBundle() => Result as IBundleResource;
             internal void Finish(AssetBundle bundle)
             {

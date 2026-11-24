@@ -10,57 +10,35 @@ namespace LiteQuark.Runtime
         public Scene? Scene => Stage == AssetCacheStage.Loaded && _scene.IsValid() && _scene.isLoaded ? _scene : null;
 
         private readonly string _sceneKey;
-        private readonly string _loadPath;
-        private readonly LoadSceneParameters _parameters;
         private readonly Type _assetType = typeof(Scene);
 
-        private AssetBundleCache.Lease _bundleLease;
+        private readonly AssetBundleCache.Lease _bundleLease;
         private Scene _scene;
         private BaseTask _loadSceneTask;
         private UnityEngine.AsyncOperation _unloadOperation;
         private bool _isRequestingUnload;
         private Action<AssetLoadResult<IAssetLease<Scene?>>> _sceneLoaderCallback;
 
-        public SceneInfoCache(AssetBundleCache.Lease bundleLease, string sceneKey, string loadPath, LoadSceneParameters parameters)
+        public SceneInfoCache(AssetBundleCache.Lease bundleLease, string sceneKey)
         {
             Stage = AssetCacheStage.Idle;
             _sceneKey = sceneKey;
-            _loadPath = loadPath;
-            _parameters = parameters;
             _bundleLease = bundleLease ?? throw new ArgumentNullException(nameof(bundleLease));
         }
 
         public async UniTask DisposeAsync()
         {
-            var task = _loadSceneTask;
-            try
+            _loadSceneTask?.Cancel();
+            if (_sceneLoaderCallback != null)
             {
-                if (Stage == AssetCacheStage.Loading)
-                {
-                    // 迟到场景归加载任务清理；保留 Bundle Lease 直到该任务收尾。
-                    Stage = AssetCacheStage.Unloading;
-                }
-                else if (Stage != AssetCacheStage.Unloading)
-                {
-                    Unload();
-                }
-                task?.Cancel();
+                NotifyCompleted(AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(_sceneKey, "Scene cache was disposed before delivery")));
             }
-            finally
+            while (_loadSceneTask != null || _isRequestingUnload || _unloadOperation is { isDone: false })
             {
-                if (_sceneLoaderCallback != null)
-                {
-                    NotifyCompleted(AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(_sceneKey, "Scene cache was disposed before delivery")));
-                }
+                await UniTask.Yield();
             }
-
-            if (task is IResourceTaskCleanup cleanup)
-            {
-                await cleanup.WaitForCleanupAsync();
-            }
-            _loadSceneTask = null;
-            await WaitForUnloadAsync();
-            CompleteUnload();
+            // 已交付的场景仍由 Handle 卸载，关闭只归还资源引用。
+            _bundleLease.Dispose();
         }
 
         internal void Unload()
@@ -79,19 +57,6 @@ namespace LiteQuark.Runtime
             else
             {
                 CompleteUnload();
-            }
-        }
-
-        private async UniTask WaitForUnloadAsync()
-        {
-            var operation = _unloadOperation;
-            if (operation != null)
-            {
-                await UniTask.WaitUntil(() => operation.isDone);
-            }
-            if (_scene.IsValid() && _scene.isLoaded)
-            {
-                throw new InvalidOperationException($"Scene has not been unloaded: {_sceneKey}");
             }
         }
 
@@ -131,7 +96,7 @@ namespace LiteQuark.Runtime
             };
         }
 
-        private void CompleteUnload()
+        internal void CompleteUnload()
         {
             if (Stage == AssetCacheStage.Unloaded || _isRequestingUnload || _unloadOperation is { isDone: false })
             {
@@ -142,17 +107,14 @@ namespace LiteQuark.Runtime
             _unloadOperation = null;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
 
-            var lease = _bundleLease;
-            _bundleLease = null;
-            lease?.Dispose();
+            _bundleLease.Dispose();
         }
 
         private bool OnSceneLoaded(bool success, Scene scene)
         {
-            if (!success || !scene.IsValid() || !scene.isLoaded)
+            if (!scene.IsValid() || !scene.isLoaded)
             {
                 CompleteUnload();
-                LLog.Error("Load scene failed : {0}", scene.name);
                 return false;
             }
 
@@ -160,6 +122,12 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loaded;
 
             SceneManager.sceneUnloaded += OnSceneUnloaded;
+            if (!success || _sceneLoaderCallback == null)
+            {
+                // 任务完成的续体可能先触发关闭，已结束交付的场景仍由 Cache 卸载。
+                Unload();
+                return false;
+            }
             return true;
         }
 

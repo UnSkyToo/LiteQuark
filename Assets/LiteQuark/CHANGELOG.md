@@ -66,10 +66,12 @@
 - 调整：默认 Simulate 在 Editor 中执行清单收集及共享 Bundle 管理链路，在非 Editor（含 Development Build）自动使用 BuiltIn，仍需构建并部署本地资源包；原 Editor 配置若在 Player 使用 Remote，应明确改为 Remote。不会自动改写保存的 Locater 值。
 - 调整：移除无 Cache 的资源 Lease 和预先加载场景的特殊入口。模拟资源必须收录于初始化清单，缓存命中可能同步完成；删除旧直读模式的随机延迟行为，修改收录／分包／依赖后需重新初始化。
 
-- 破坏：Asset 关闭遇错立即报告并停止重启。集成代码只有在 Shutdown 成功后才能复用同路径资源，失败时其他已启动的清理可能尚未结束，最终卸包也可能只完成了一部分。
-- 调整：AssetSystem 关闭拒绝新请求，等待原生加载收尾和场景实际卸载后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。
+- 破坏：调用 `LoadSceneHandle(path, priority, ct)` 时移除原 `LoadSceneParameters` 参数。业务场景固定 Additive 加载，使用默认物理场景；原先通过 Single 切关的项目改为保存并释放旧关卡的 SceneHandle，保留启动场景和 Launcher。
+- 破坏：同一轮 Runtime 内，同一路径从开始加载到实际卸载只允许一个业务场景。重复请求请复用已持有的 Handle。跨轮重开同一路径时，业务须等旧场景实际卸载后再请求。需要并存的场景使用不同路径。
+- 破坏：同进程 Restart 和显式 Shutdown 即使有关卡仍在场也会执行。原先依赖拒绝关闭来保留旧游戏的项目，应自行决定重启时机。需要清空关卡时，由业务释放已交付的 SceneHandle；旧 Bundle 随关闭释放。加载失败保留在对应 Handle 上，关闭时停止下载或卸包的异常由本次 Shutdown 报告。
+- 调整：AssetSystem 关闭拒绝新请求，等普通资源的原生读取结束后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。
 - 迁移：Provider 实现改为 IDisposeAsync，关闭调用方须等待终结完成；Handle／Lease 仍同步 Dispose。业务须停止使用旧资源，遗漏 Handle 不延长系统生命周期。
-- 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；场景实际卸载结束后才归还 Bundle 引用。
+- 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；正常运行时场景实际卸载后归还 Bundle 引用。
 - 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。
 - 破坏：四种 Handle 的 Task 属性改为 internal；`var result = await handle.Task` 改为 `await handle; var result = handle.Result;`。Handle 必须覆盖资源使用期，不能同步读取未完成的结果。
 - 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐。取消或等待中 Dispose 立即结束请求；终态后 Dispose 保留 State / Error。
@@ -87,7 +89,6 @@
 - 破坏：通用提交入口由 `AddTask(ITask, ...)` 改为 `AddTask(BaseTask, ...)`。提交任务的参数／工厂返回值使用 BaseTask 或具体派生类型；提交后用于观察、等待和取消的引用仍使用 ITask。独立实现 ITask 不提供调度资格。
 - 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
 - 调整：下载任务终结后停止重试并释放请求；回调完成后释放本轮请求，传输失败仍按配置重试。
-- 新增：内置资源加载任务提供独立的原生收尾等待，AssetSystem 关闭已接入；取消或失败后的迟到 Bundle／Scene 由任务清理，清理失败不改写逻辑终态。
 - 修复：await 续体中回收任务包装器不会丢失成功结果通知，也不会中断迟到场景清理。
 - 破坏：TaskState.InProgress / Completed 改名为 Running / Succeeded，更新枚举引用；失败和取消等待仍返回 null，调用者检查 State / Error。
 - 破坏：提交对象必须派生 BaseTask。ITask 不再继承 ITick / IDispose，外部通过 TaskSystem 提交、Cancel 取消，不直接 Execute / Tick / Dispose / Fail。

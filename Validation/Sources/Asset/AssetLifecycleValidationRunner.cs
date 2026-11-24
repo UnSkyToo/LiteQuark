@@ -24,19 +24,18 @@ namespace LiteQuark.Editor
             await Run("lifecycle/dependency-failure", DependencyFailure, "Load bundle failed");
             await Run("lifecycle/queued-cancel", QueuedCancel);
             await Run("lifecycle/submitted-asset", SubmittedAsset);
-            await Run("lifecycle/late-bundle", ShutdownDuringLocalBundle);
             await Run("lifecycle/undelivered-bundle", ShutdownBeforeBundleDelivery);
             await Run("lifecycle/close-with-dependency", ShutdownWithPendingDependency, "Bundle load failed");
             await Run("lifecycle/remote-cleanup", RemoteCleanup);
-            await Run("lifecycle/scene-instances", SceneInstances, "Scene is already loading");
+            await Run("lifecycle/scene-path-ownership", ScenePathOwnership);
             await Run("lifecycle/submitted-scene", async () =>
             {
-                await ShutdownWaitsForNativeScene();
+                await SubmittedScene(closeFromTaskContinuation: false);
                 await Cleanup();
-                await EditorShutdownScene();
+                await SubmittedScene(closeFromTaskContinuation: true);
             });
-            await Run("lifecycle/last-scene", ShutdownReportsSceneRefusal, "Start scene unload failed", "Unloading the last loaded scene");
-            await Run("lifecycle/scene-retry", SceneMissingMetadata, "Can't get bundle info");
+            await Run("lifecycle/scene-restart", RestartWithScene);
+            await Run("lifecycle/scene-retry", SceneFailureRetry, "Load bundle failed : scene.ab");
             await Run("lifecycle/priority", PrioritySharedDependencies);
             await Run("lifecycle/quotas", async () =>
             {

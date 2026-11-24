@@ -1,18 +1,14 @@
 using System;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadLocalBundleTask : BaseTask, ILoadBundleTask, IResourceTaskCleanup
+    internal sealed class LoadLocalBundleTask : BaseTask, ILoadBundleTask
     {
         public override string DebugName => $"LoadBundle {PathUtils.GetFileName(_bundleUri)}";
 
         private readonly string _bundleUri;
         private AssetBundleCreateRequest _bundleRequest;
-        private readonly UniTaskCompletionSource _cleanupCompletion = new();
-
-        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadLocalBundleTask(string bundleUri)
             : base()
@@ -20,11 +16,12 @@ namespace LiteQuark.Runtime
             _bundleUri = bundleUri;
         }
 
-        protected override void OnTerminated()
+        public override void Cancel()
         {
-            if (_bundleRequest == null && State != TaskState.Succeeded)
+            // 已提交的本地读取由回调发布结果，关闭中的 Loader 接手卸包。
+            if (_bundleRequest == null)
             {
-                _cleanupCompletion.TrySetResult();
+                base.Cancel();
             }
         }
 
@@ -48,47 +45,34 @@ namespace LiteQuark.Runtime
         {
             op.completed -= OnBundleRequestCompleted;
 
+            AssetBundle bundle = null;
+            Exception error = null;
             try
             {
-                var bundle = _bundleRequest.assetBundle;
-                if (State is TaskState.Failed or TaskState.Cancelled)
+                bundle = ((AssetBundleCreateRequest)op).assetBundle;
+                if (IsDone && bundle != null)
                 {
-                    if (bundle != null)
-                    {
-                        bundle.Unload(true);
-                    }
-                    return;
-                }
-
-                if (bundle == null)
-                {
-                    Fail(new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
-                    return;
-                }
-
-                var resource = new AssetBundleResource(bundle);
-                if (!Complete(resource))
-                {
-                    resource.Dispose();
+                    bundle.Unload(true);
                 }
             }
             catch (Exception ex)
             {
-                if (IsDone)
-                {
-                    _cleanupCompletion.TrySetException(ex);
-                    LLog.Exception(ex, "Release late bundle failed : {0}", _bundleUri);
-                }
-                else
-                {
-                    Fail(ex);
-                }
+                error = ex;
             }
-            finally
+
+            _bundleRequest = null;
+            if (IsDone)
             {
-                _bundleRequest = null;
-                _cleanupCompletion.TrySetResult();
+                if (error != null) LLog.Exception(error, "Release late bundle failed : {0}", _bundleUri);
+                return;
             }
+
+            if (error != null || bundle == null)
+            {
+                Fail(error ?? new InvalidOperationException($"Bundle load returned no bundle: {_bundleUri}"));
+                return;
+            }
+            Complete(new AssetBundleResource(bundle));
         }
 
         public IBundleResource GetBundle() => Result as IBundleResource;

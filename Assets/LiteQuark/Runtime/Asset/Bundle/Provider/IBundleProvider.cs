@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
         // 清单成功结果为已 Initialize 的 VersionPackInfo。
         BaseTask LoadVersionPack(string versionFileName);
         // 成功容器由 Loader 接收并管理；关闭时未交付的成功结果也由 Loader 释放。
-        // 任务负责取消／失败后的迟到资源；原生加载任务通过 IResourceTaskCleanup 暴露收尾等待。
+        // 任务自行处理停止请求，就绪后由 Loader 交付或释放容器。
         ILoadBundleTask LoadBundle(string bundlePath, string hash);
     }
 }

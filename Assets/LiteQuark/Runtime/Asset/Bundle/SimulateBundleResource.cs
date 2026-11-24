@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -36,10 +35,10 @@ namespace LiteQuark.Runtime
             return new LoadSimulateAssetTask<T>(_sourcePaths[assetKey], callback);
         }
 
-        public BaseTask CreateLoadSceneTask(string loadPath, LoadSceneParameters parameters, Action<ITask> callback)
+        public BaseTask CreateLoadSceneTask(string loadPath, Action<LoadSceneTask> callback)
         {
             ThrowIfDisposed();
-            return new LoadEditorSceneTask(loadPath, parameters, callback);
+            return new LoadEditorSceneTask(loadPath, callback);
         }
 
         public void Dispose()

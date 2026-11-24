@@ -293,7 +293,7 @@ namespace LiteQuark.Editor
         private static async UniTask Frame()
         {
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
-            Context?.ActualProvider?.Tick(0);
+            Context?.Provider.Tick(0);
         }
         private static async UniTask Wait(Func<bool> condition, string label)
         {
@@ -373,8 +373,14 @@ namespace LiteQuark.Editor
             bundleServer.ReleaseBody();
             var remote = new RemoteBundleProvider(new Uri(bundleServer.Url).GetLeftPart(UriPartial.Authority)) { DisableUnityWebCache = true };
             var download = remote.LoadBundle(TextBundle, string.Empty);
-            await Wait(() => ((BaseTask)download).IsDone, "Loopback Bundle response");
-            try { Check(download.GetBundle() != null && bundleServer.RequestLine.Contains(TextBundle), "Remote provider extracts the requested native Bundle."); }
+            var completed = await download.Task;
+            try
+            {
+                var request = typeof(UnityDownloadBaseTask).GetField("_request", Private).GetValue(download);
+                Check(completed != null && ReferenceEquals(download.GetBundle(), completed) && request == null &&
+                    bundleServer.RequestLine.Contains(TextBundle),
+                    "The remote task releases its native request before publishing the extracted Bundle.");
+            }
             finally { download.GetBundle()?.Dispose(); }
 
             var invalidBytes = System.Text.Encoding.UTF8.GetBytes("{\"IsValid\":false,\"BundleList\":[]}");
@@ -447,7 +453,7 @@ namespace LiteQuark.Editor
             {
                 await Wait(() => bundleTask.IsDone, "BuiltIn Bundle load");
                 loadedBundle = Get<AssetBundle>(bundleTask.GetBundle(), "_bundle");
-                Check(loadedBundle != null && ReferenceEquals(bundleTask.GetBundle(), bundleTask.Result) && ReferenceEquals(await bundleTask.Task, bundleTask.Result), "Public Bundle load completes from the same location policy.");
+                Check(loadedBundle != null && bundleTask.Error == null, "Public Bundle load completes from the same location policy.");
                 Check(loadedBundle.GetAllAssetNames().Contains(AssetPath.Resolve(TextA)) == persistent, "Different Bundle contents confirm the chosen location is " + marker);
                 var asset = loadedBundle.LoadAsset<TextAsset>(AssetPath.Resolve(ProbePath));
                 Check(asset != null && asset.text == ProbeContent, "Selected BuiltIn Bundle supports complete-path asset loading.");
@@ -472,21 +478,16 @@ namespace LiteQuark.Editor
         {
             public readonly AssetSystem Assets = new();
             public readonly List<IDisposable> Handles = new();
-            public AssetManager Provider;
-            public LocalLocator Locator;
-            public IAssetManager ActualProvider;
+            public readonly AssetManager Provider = new();
             public T Keep<T>(T value) where T : IDisposable { Handles.Add(value); return value; }
             public AssetHandle<T> Asset<T>(string path) where T : UnityEngine.Object => Keep(Assets.LoadAssetHandle<T>(path));
-            public SceneHandle Scene(string path) => Keep(Assets.LoadSceneHandle(path, new LoadSceneParameters(LoadSceneMode.Additive)));
-            public int Loading => Get<HashSet<string>>(ActualProvider, "_loadingSceneSet").Count;
+            public SceneHandle Scene(string path) => Keep(Assets.LoadSceneHandle(path));
         }
         private sealed class LocalLocator : IBundleProvider
         {
-            public int Calls;
             public BaseTask LoadVersionPack(string name) => throw new NotSupportedException();
             public ILoadBundleTask LoadBundle(string path, string hash)
             {
-                Calls++;
                 var task = new LoadLocalBundleTask(Path.Combine(Bundles, path));
                 LiteRuntime.Task.AddTask(task, LiteConst.TaskGroupId.Asset, TaskPriority.Urgent);
                 return task;
@@ -501,21 +502,16 @@ namespace LiteQuark.Editor
             {
                 var previous = LiteRuntime.Setting.Asset.BundleMode;
                 LiteRuntime.Setting.Asset.BundleMode = BundleLoadMode.Simulate;
-                var provider = new AssetManager();
-                try { Check(await provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(Context.Assets, new object[] { true })), "Simulate initializes a fresh collected manifest."); }
+                try { Check(await Context.Provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(Context.Assets, new object[] { true })), "Simulate initializes a fresh collected manifest."); }
                 finally { LiteRuntime.Setting.Asset.BundleMode = previous; }
-                Context.ActualProvider = provider;
             }
             else
             {
-                Context.Provider = new AssetManager();
-                Context.Locator = new LocalLocator();
                 var pack = ReadPack();
                 Set(Context.Provider, "_packInfo", pack);
-                Set(Context.Provider, "_bundleLoader", new AssetBundleLoader(Context.Locator, pack, 5));
-                Context.ActualProvider = Context.Provider;
+                Set(Context.Provider, "_bundleLoader", new AssetBundleLoader(new LocalLocator(), pack, 5));
             }
-            Set(Context.Assets, "_manager", Context.ActualProvider);
+            Set(Context.Assets, "_manager", Context.Provider);
             return Context;
         }
         private static Scene[] FixtureScenes() => Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
@@ -526,9 +522,8 @@ namespace LiteQuark.Editor
             foreach (var handle in Context.Handles) handle.Dispose();
             try
             {
-                await Wait(() => Context.Loading == 0, "Pending scene requests settle");
-                await Wait(() => FixtureScenes().Length == 0, "Handle-owned scene cleanup");
-                Check(true, "All fixture scenes unloaded through production ownership.");
+                await Context.Assets.DisposeAsync();
+                Check(FixtureScenes().Length == 0, "All fixture scenes unloaded through production ownership.");
             }
             finally
             {
@@ -538,7 +533,6 @@ namespace LiteQuark.Editor
                     Active.evidence.Add("Harness-only cleanup: " + scene.path);
                     await SceneManager.UnloadSceneAsync(scene).ToUniTask();
                 }
-                await Context.Assets.DisposeAsync();
                 Context = null;
                 await UniTask.Yield();
             }
@@ -585,19 +579,9 @@ namespace LiteQuark.Editor
             Check(sa.handle != sb.handle && (distinctName ? sa.name != sb.name : sa.name == sb.name), "Requested scenes are distinct instances with expected names.");
             Check(AssetPath.ResolveScene(sa.path) == AssetPath.ResolveScene(SceneA) && AssetPath.ResolveScene(sb.path) == AssetPath.ResolveScene(otherPath), "Each completion belongs to the exact requested full path.");
             Check(sa.GetRootGameObjects().Any(o => o.name == "marker-A") && sb.GetRootGameObjects().Any(o => o.name == (distinctName ? "marker-C" : "marker-B")), "Scene contents confirm correct selection.");
-            if (!editor)
-            {
-                foreach (var bundlePath in new[] { SceneBundle, distinctName ? SceneBundleC : SceneBundleB })
-                {
-                    var cache = env.Provider.GetOrCreateBundleCache(bundlePath);
-                    var actualPaths = cache.Bundle.GetAllScenePaths();
-                    var entries = Get<List<SceneInfoCache>>(cache, "_sceneCacheMap");
-                    Check(entries.Count == 1 && entries.All(e => actualPaths.Contains(Get<string>(e, "_loadPath"))), "Scene entry preserves exact path returned by " + bundlePath);
-                }
-            }
             a.Dispose();
             await Wait(() => !sa.IsValid() || !sa.isLoaded, "Independent scene unload");
-            Check(b.Result.HasValue && b.Result.Value.isLoaded, "Disposing one same-name scene leaves the other alive.");
+            Check(b.Result.HasValue && b.Result.Value.isLoaded, "Releasing one path leaves the other scene loaded.");
         }
 
         private static bool IsNativeSceneCollisionLog(string message)

@@ -9,7 +9,7 @@ Use the editor version in [ProjectVersion.txt](ProjectSettings/ProjectVersion.tx
 1. Clone the repository outside another project's `Assets` directory and open it with the matching editor.
 2. Open [Demo.unity](Assets/Scenes/Demo.unity), the only enabled scene in Build Settings.
 3. Select **Launcher** to edit the scene's module settings. Under **Environment**, choose **Release** to edit defaults or **Development** to inspect the effective values. Enable **Override** beside a field to edit its development value. This selection also sets the profile for the next Editor startup or restart. In **System List**, expand UISystem to see its scene camera and reference resolution.
-4. Follow the [framework guide](Assets/LiteQuark/README.md) to select an optional `IGameEntry` and register systems. Put loadable assets under `Assets/StandaloneAssets`.
+4. Follow the [framework guide](Assets/LiteQuark/README.md) to select an optional `IGameEntry` and register systems. Keep the Launcher scene loaded. Manage gameplay with prefabs or load additional scenes with `LoadSceneHandle` and dispose each handle on exit. Put loadable assets under `Assets/StandaloneAssets`.
 
 To integrate into an existing project, copy `Assets/LiteQuark` and optionally `Assets/LiteQuark.Addons`, including their `.meta` files, or use the published package branches in Package Manager:
 

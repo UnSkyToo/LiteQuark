@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEngine.SceneManagement;
 
 namespace LiteQuark.Runtime
 {
@@ -20,7 +19,7 @@ namespace LiteQuark.Runtime
         private readonly AssetManager _manager;
         private readonly List<Action<AssetLoadResult<IBundleResource>>> _bundleLoaderCallbackList = new();
         private readonly Dictionary<(string, Type), AssetInfoCache> _assetCacheMap = new();
-        private readonly List<SceneInfoCache> _sceneCacheMap = new();
+        private Dictionary<string, SceneInfoCache> _sceneCacheMap;
 
         public bool IsUsed => _refCount > 0;
         private int _refCount;
@@ -51,9 +50,14 @@ namespace LiteQuark.Runtime
                 cleanups.Add(asset.DisposeAsync());
             }
 
-            foreach (var scene in _sceneCacheMap)
+            var scenes = _sceneCacheMap;
+            _sceneCacheMap = null;
+            if (scenes != null)
             {
-                cleanups.Add(scene.DisposeAsync());
+                foreach (var scene in scenes.Values)
+                {
+                    cleanups.Add(scene.DisposeAsync());
+                }
             }
 
             if (_bundleLoaderCallbackList.Count > 0)
@@ -106,7 +110,7 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Unloading;
 
             _assetCacheMap.Clear();
-            _sceneCacheMap.Clear();
+            _sceneCacheMap = null;
 
             if (_refCount > 0)
             {
@@ -134,14 +138,6 @@ namespace LiteQuark.Runtime
             if (IsRetained)
             {
                 _retainTime -= deltaTime;
-            }
-
-            for (var index = _sceneCacheMap.Count - 1; index >= 0; index--)
-            {
-                if (_sceneCacheMap[index].Stage == AssetCacheStage.Unloaded)
-                {
-                    _sceneCacheMap.RemoveAt(index);
-                }
             }
         }
 
@@ -199,11 +195,18 @@ namespace LiteQuark.Runtime
             return cache;
         }
 
-        private SceneInfoCache CreateSceneCache(string sceneKey, string loadPath, LoadSceneParameters parameters, Lease bundleLease)
+        private bool TryCreateSceneCache(string sceneKey, out SceneInfoCache cache)
         {
-            var cache = new SceneInfoCache(bundleLease, sceneKey, loadPath, parameters);
-            _sceneCacheMap.Add(cache);
-            return cache;
+            _sceneCacheMap ??= new(StringComparer.OrdinalIgnoreCase);
+            if (_sceneCacheMap.TryGetValue(sceneKey, out var existing) && existing.Stage != AssetCacheStage.Unloaded)
+            {
+                cache = null;
+                return false;
+            }
+
+            cache = new SceneInfoCache(AcquireLease(), sceneKey);
+            _sceneCacheMap[sceneKey] = cache;
+            return true;
         }
 
         private void RaiseLoadPriority(AssetLoadPriority priority)
@@ -229,6 +232,12 @@ namespace LiteQuark.Runtime
         {
             loadPath = null;
             error = null;
+
+            if (!IsLoaded)
+            {
+                error = new AssetError(sceneKey, "Bundle cache closed before scene delivery");
+                return false;
+            }
 
             foreach (var candidate in Bundle.GetAllScenePaths())
             {

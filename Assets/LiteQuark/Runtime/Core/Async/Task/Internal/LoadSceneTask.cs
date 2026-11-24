@@ -1,39 +1,24 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal class LoadSceneTask : BaseTask, IResourceTaskCleanup
+    internal class LoadSceneTask : BaseTask
     {
         public override string DebugName => $"LoadScene:{_scenePath}";
 
         private readonly string _scenePath;
-        private readonly LoadSceneParameters _parameters;
-        private Action<ITask> _callback;
+        private Action<LoadSceneTask> _callback;
         private AsyncOperation _sceneRequest;
         private Scene _scene;
-        private readonly UniTaskCompletionSource _cleanupCompletion = new();
 
-        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
-
-        public LoadSceneTask(string scenePath, LoadSceneParameters parameters, Action<ITask> callback)
+        public LoadSceneTask(string scenePath, Action<LoadSceneTask> callback)
             : base()
         {
             _scenePath = scenePath;
-            _parameters = parameters;
             _callback = callback;
             _sceneRequest = null;
-        }
-
-        protected override void OnDispose()
-        {
-            _callback = null;
-            if (_sceneRequest == null)
-            {
-                SceneManager.sceneLoaded -= OnSceneLoaded;
-            }
         }
 
         public Scene GetScene()
@@ -43,17 +28,18 @@ namespace LiteQuark.Runtime
 
         protected override void OnTerminated()
         {
-            if (State != TaskState.Succeeded && (_sceneRequest == null || _sceneRequest.isDone))
-            {
-                var callback = _callback;
-                _callback = null;
-                LiteUtils.SafeInvoke(callback, this);
-            }
             if (_sceneRequest == null && State != TaskState.Succeeded)
             {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
-                _cleanupCompletion.TrySetResult();
+                NotifyCompleted();
             }
+        }
+
+        private void NotifyCompleted()
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, this);
         }
 
         protected override void OnTick(float deltaTime)
@@ -65,7 +51,7 @@ namespace LiteQuark.Runtime
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            _sceneRequest = StartLoadScene(_scenePath, _parameters);
+            _sceneRequest = StartLoadScene(_scenePath);
 
             if (_sceneRequest == null)
             {
@@ -75,9 +61,9 @@ namespace LiteQuark.Runtime
             _sceneRequest.completed += OnSceneRequestLoadCompleted;
         }
 
-        protected virtual AsyncOperation StartLoadScene(string path, LoadSceneParameters parameters)
+        protected virtual AsyncOperation StartLoadScene(string path)
         {
-            return SceneManager.LoadSceneAsync(path, parameters);
+            return SceneManager.LoadSceneAsync(path, LoadSceneMode.Additive);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -98,74 +84,19 @@ namespace LiteQuark.Runtime
             op.completed -= OnSceneRequestLoadCompleted;
             SceneManager.sceneLoaded -= OnSceneLoaded;
 
-            if (State is TaskState.Failed or TaskState.Cancelled)
-            {
-                CleanupLateSceneAsync().Forget();
-                return;
-            }
-
-            try
-            {
-                if (!_scene.IsValid() || !_scene.isLoaded)
-                {
-                    Fail(new InvalidOperationException($"Scene load returned no valid scene: {_scenePath}"));
-                    return;
-                }
-
-                var callback = _callback;
-                _callback = null;
-                if (Complete(_scene))
-                {
-                    LiteUtils.SafeInvoke(callback, this);
-                }
-            }
-            catch (Exception ex)
-            {
-                Fail(ex);
-            }
-            finally
-            {
-                _sceneRequest = null;
-                _cleanupCompletion.TrySetResult();
-            }
-        }
-
-        private async UniTask CleanupLateSceneAsync()
-        {
-            Exception failure = null;
-            try
+            _sceneRequest = null;
+            if (!IsDone)
             {
                 if (_scene.IsValid() && _scene.isLoaded)
                 {
-                    var operation = SceneManager.UnloadSceneAsync(_scene);
-                    if (operation == null)
-                    {
-                        throw new InvalidOperationException($"Could not unload cancelled scene: {_scenePath}");
-                    }
-
-                    await UniTask.WaitUntil(() => operation.isDone);
-                    if (_scene.IsValid() && _scene.isLoaded)
-                    {
-                        throw new InvalidOperationException($"Cancelled scene is still loaded: {_scenePath}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-            finally
-            {
-                _sceneRequest = null;
-                if (failure == null)
-                {
-                    _cleanupCompletion.TrySetResult();
+                    Complete(_scene);
                 }
                 else
                 {
-                    _cleanupCompletion.TrySetException(failure);
+                    Fail(new InvalidOperationException($"Scene load returned no valid scene: {_scenePath}"));
                 }
             }
+            NotifyCompleted();
         }
     }
 }

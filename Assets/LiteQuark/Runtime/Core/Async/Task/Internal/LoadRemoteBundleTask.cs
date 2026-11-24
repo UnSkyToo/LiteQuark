@@ -1,19 +1,15 @@
 using System;
 using UnityEngine;
 using UnityEngine.Networking;
-using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadRemoteBundleTask : UnityDownloadBaseTask, ILoadBundleTask, IResourceTaskCleanup
+    internal sealed class LoadRemoteBundleTask : UnityDownloadBaseTask, ILoadBundleTask
     {
         public override string DebugName => $"LoadBundle {PathUtils.GetFileName(_bundleUri)}";
 
         private readonly string _bundleUri;
         private readonly string _hash;
-        private readonly UniTaskCompletionSource _cleanupCompletion = new();
-
-        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadRemoteBundleTask(string bundleUri, string hash)
             : base(bundleUri, LiteRuntime.Setting.Asset.BundleDownloadRetry, false)
@@ -22,15 +18,20 @@ namespace LiteQuark.Runtime
             _hash = hash;
         }
 
-        protected override void OnResourcesReleased(Exception error)
+        public override void Cancel()
         {
-            if (error == null)
+            if (IsDelivering || IsDone)
             {
-                _cleanupCompletion.TrySetResult();
+                return;
             }
-            else
+
+            try
             {
-                _cleanupCompletion.TrySetException(error);
+                ReleaseRequest(abort: true);
+            }
+            finally
+            {
+                base.Cancel();
             }
         }
 
@@ -59,15 +60,24 @@ namespace LiteQuark.Runtime
             }
             base.OnSuccess(request);
 
+            var downloadedBytes = request.downloadedBytes;
             var bundle = DownloadHandlerAssetBundle.GetContent(request);
             if (bundle == null)
             {
-                Fail(new InvalidOperationException($"Bundle download returned no bundle: {_bundleUri}"));
-                return;
+                throw new InvalidOperationException($"Bundle download returned no bundle: {_bundleUri}");
             }
 
-            var downloadedBytes = request.downloadedBytes;
             var resource = new AssetBundleResource(bundle);
+            try
+            {
+                // Complete 可能同步恢复等待者，先释放持有 DownloadHandler 的请求。
+                ReleaseRequest(abort: false);
+            }
+            catch
+            {
+                resource.Dispose();
+                throw;
+            }
             if (Complete(resource))
             {
                 LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, downloadedBytes / 1024);

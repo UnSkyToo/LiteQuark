@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         private UnityWebRequest _request;
         private int _retryCount;
         private ulong _retryTimerID;
-        private bool _isDelivering;
+        internal bool IsDelivering { get; private set; }
 
         protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
         protected override void OnDispose()
         {
             StopRetry();
-            if (!_isDelivering)
+            if (!IsDelivering)
             {
                 _request?.Dispose();
                 _request = null;
@@ -50,7 +50,7 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                if (!_isDelivering)
+                if (!IsDelivering)
                 {
                     FinishRequest();
                 }
@@ -113,7 +113,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                Fail(ex);
+                FailRequest(ex);
             }
         }
 
@@ -131,7 +131,7 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            _isDelivering = true;
+            IsDelivering = true;
             try
             {
                 var downloadHandler = _request.downloadHandler;
@@ -148,7 +148,7 @@ namespace LiteQuark.Runtime
                     }
                     else
                     {
-                        Fail(new InvalidOperationException(message));
+                        FailRequest(new InvalidOperationException(message));
                     }
                 }
                 else
@@ -164,7 +164,7 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    Fail(ex);
+                    FailRequest(ex);
                 }
             }
             finally
@@ -173,21 +173,35 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void FinishRequest()
+        internal void ReleaseRequest(bool abort)
         {
-            // 完成回调持有请求直到 OnSuccess 返回；提前取消则由终态路径接手。
             var request = _request;
             _request = null;
+            using (request)
+            {
+                if (abort) request?.Abort();
+            }
+        }
+
+        private void FailRequest(Exception error)
+        {
+            try
+            {
+                ReleaseRequest(abort: true);
+            }
+            catch (Exception ex)
+            {
+                error = new AggregateException(error, ex);
+            }
+            Fail(error);
+        }
+
+        private void FinishRequest()
+        {
             Exception releaseError = null;
             try
             {
-                using (request)
-                {
-                    if (State is TaskState.Cancelled or TaskState.Failed)
-                    {
-                        request?.Abort();
-                    }
-                }
+                ReleaseRequest(State is TaskState.Cancelled or TaskState.Failed);
             }
             catch (Exception ex)
             {
@@ -198,7 +212,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            _isDelivering = false;
+            IsDelivering = false;
             if (IsDone)
             {
                 OnResourcesReleased(releaseError);

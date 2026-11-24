@@ -12,7 +12,8 @@ namespace LiteQuark.Runtime
                 _refCount,
                 Stage.ToString(),
                 _retainTime,
-                _sceneCacheMap.Select(chunk => chunk.GetVisitorInfo()).ToArray(),
+                _sceneCacheMap?.Values.Where(scene => scene.Stage is not AssetCacheStage.Idle and not AssetCacheStage.Unloaded)
+                    .Select(scene => scene.GetVisitorInfo()).ToArray() ?? System.Array.Empty<SceneVisitorInfo>(),
                 _assetCacheMap.Select(chunk => chunk.Value.GetVisitorInfo()).ToArray());
             return info;
         }

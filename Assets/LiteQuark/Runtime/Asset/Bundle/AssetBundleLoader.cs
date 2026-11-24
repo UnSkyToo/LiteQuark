@@ -15,7 +15,6 @@ namespace LiteQuark.Runtime
         private readonly Dictionary<string, PendingTask> _taskMap;
         private readonly PriorityQueue<PendingTask> _pendingTaskQueue;
         private readonly List<RunningTask> _runningTasks;
-        private readonly List<UniTask> _pendingCleanup = new();
         private bool _isDisposed;
 
         public AssetBundleLoader(IBundleProvider provider, VersionPackInfo packInfo, int concurrencyLimit)
@@ -40,45 +39,27 @@ namespace LiteQuark.Runtime
             _taskMap.Clear();
             _pendingTaskQueue.Clear();
 
-            foreach (var task in _runningTasks)
+            var stops = new UniTask[_runningTasks.Count];
+            for (var i = 0; i < stops.Length; i++)
             {
-                TrackTaskCleanup(task.LoadTask, discardResult: true);
+                stops[i] = StopAndReleaseAsync(_runningTasks[i].LoadTask);
             }
             _runningTasks.Clear();
-            try
-            {
-                await UniTask.WhenAll(_pendingCleanup);
-            }
-            finally
-            {
-                _pendingCleanup.Clear();
-            }
+            await UniTask.WhenAll(stops);
         }
 
-        private void TrackTaskCleanup(ILoadBundleTask task, bool discardResult)
+        private static async UniTask StopAndReleaseAsync(ILoadBundleTask task)
         {
-            var cleanup = CleanupTaskAsync(task, discardResult);
-            if (cleanup.Status != UniTaskStatus.Succeeded)
-            {
-                // 归还 Loader 名额后，仍保留未结束或失败的原生收尾。
-                _pendingCleanup.Add(cleanup);
-            }
-        }
-
-        private static async UniTask CleanupTaskAsync(ILoadBundleTask task, bool discardResult)
-        {
-            if (discardResult)
+            // AssetSystem 已退出 Tick，原生回调仍可完成读取。
+            while (!task.IsDone)
             {
                 task.Cancel();
+                if (!task.IsDone)
+                {
+                    await UniTask.Yield();
+                }
             }
-            if (discardResult && task.State == TaskState.Succeeded)
-            {
-                task.GetBundle()?.Dispose();
-            }
-            if (task is IResourceTaskCleanup cleanup)
-            {
-                await cleanup.WaitForCleanupAsync();
-            }
+            task.GetBundle()?.Dispose();
         }
 
         public void LoadBundle(BundleInfo bundleInfo, AssetLoadPriority priority, Action<AssetLoadResult<IBundleResource>> callback)
@@ -137,19 +118,18 @@ namespace LiteQuark.Runtime
             {
                 return;
             }
-            _pendingCleanup.RemoveAll(static cleanup => cleanup.Status == UniTaskStatus.Succeeded);
             for (var i = _runningTasks.Count - 1; i >= 0 && !_isDisposed; i--)
             {
-                var runningTask = _runningTasks[i];
-                if (runningTask.LoadTask.IsDone)
+                var running = _runningTasks[i];
+                var task = running.LoadTask;
+                if (!task.IsDone)
                 {
-                    TrackTaskCleanup(runningTask.LoadTask, discardResult: false);
-                    _runningTasks.RemoveAt(i);
-
-                    // 先移出运行列表再交付，回调内关闭 Loader 不会释放已交付的容器。
-                    var bundle = runningTask.LoadTask.State == TaskState.Succeeded ? runningTask.LoadTask.GetBundle() : null;
-                    CompletePendingTask(runningTask.BundlePath, bundle, runningTask.LoadTask.Error);
+                    continue;
                 }
+
+                // 交付前移除记录，回调可以在当前栈上关闭 Loader。
+                _runningTasks.RemoveAt(i);
+                CompletePendingTask(running.BundlePath, task.GetBundle(), task.Error);
             }
 
             while (!_isDisposed && _runningTasks.Count < _concurrencyLimit && _pendingTaskQueue.Count > 0)
@@ -174,16 +154,6 @@ namespace LiteQuark.Runtime
 
         private void CompletePendingTask(string bundlePath, IBundleResource bundle, Exception error)
         {
-            // 已关闭的 Loader 不再交付结果。
-            if (_isDisposed)
-            {
-                if (bundle != null)
-                {
-                    bundle.Dispose();
-                }
-                return;
-            }
-
             if (!_taskMap.Remove(bundlePath, out var pendingTask))
             {
                 return;

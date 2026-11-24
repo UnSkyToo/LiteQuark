@@ -1,10 +1,9 @@
 using System;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class LoadAssetTask<T> : BaseTask, IResourceTaskCleanup where T : UnityEngine.Object
+    internal sealed class LoadAssetTask<T> : BaseTask where T : UnityEngine.Object
     {
         public override string DebugName => $"LoadAsset {_assetName}";
 
@@ -12,9 +11,6 @@ namespace LiteQuark.Runtime
         private readonly string _assetName;
         private Action<ITask> _callback;
         private AssetBundleRequest _assetRequest;
-        private readonly UniTaskCompletionSource _cleanupCompletion = new();
-
-        public UniTask WaitForCleanupAsync() => _cleanupCompletion.Task;
 
         public LoadAssetTask(AssetBundle bundle, string assetName, Action<ITask> callback)
             : base()
@@ -25,29 +21,19 @@ namespace LiteQuark.Runtime
             _assetRequest = null;
         }
 
-        protected override void OnDispose()
-        {
-            _callback = null;
-        }
-
-        public T GetAsset()
-        {
-            return Result as T;
-        }
-
         protected override void OnTerminated()
         {
-            if (State != TaskState.Succeeded && (_assetRequest == null || _assetRequest.isDone))
+            if (State != TaskState.Succeeded && _assetRequest == null)
             {
-                var callback = _callback;
-                _callback = null;
-                LiteUtils.SafeInvoke(callback, this);
+                NotifyCompleted();
             }
+        }
 
-            if (_assetRequest == null && State != TaskState.Succeeded)
-            {
-                _cleanupCompletion.TrySetResult();
-            }
+        private void NotifyCompleted()
+        {
+            var callback = _callback;
+            _callback = null;
+            LiteUtils.SafeInvoke(callback, this);
         }
 
         protected override void OnTick(float deltaTime)
@@ -86,12 +72,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                var callback = _callback;
-                _callback = null;
-                if (Complete(asset))
-                {
-                    LiteUtils.SafeInvoke(callback, this);
-                }
+                Complete(asset);
             }
             catch (Exception ex)
             {
@@ -100,7 +81,7 @@ namespace LiteQuark.Runtime
             finally
             {
                 _assetRequest = null;
-                _cleanupCompletion.TrySetResult();
+                NotifyCompleted();
             }
         }
     }

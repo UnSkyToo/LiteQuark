@@ -213,6 +213,8 @@ namespace LiteQuark.Editor
                 fixture.Failure?.Throw();
                 var newUI = LiteRuntime.Get<UISystem>();
                 var newRoot = newUI.CanvasRoot;
+                Check(fixture.Camera != null && newUI.UICamera == fixture.Camera.GetComponent<Camera>(),
+                    "The new UISystem reuses the configured scene camera.");
                 var newSystems = Get<List<ISystem>>(SystemCenter.Instance, "_systemList");
                 Check(fixture.PreviousRoundReleased && fixture.Events.SequenceEqual(new[] { "system 1 constructed", "entry 1 initialized", "entry 1 restart requested",
                     "entry 1 disposed", "system 1 disposing", "system 1 disposed", "system 2 constructed", "entry 2 initialized" }) &&

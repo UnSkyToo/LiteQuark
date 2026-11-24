@@ -60,11 +60,9 @@ ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或�
 
 `IsDone` 包括三个终态；终态不可逆。`Task` 为 `UniTask<object>`，**失败和取消都以 null 完成，不因这两种终态抛异常**，因此要检查 State / Error。终态前后取得 Task 的结果语义一致；失败或取消保留最后进度，不能用 Progress 判断成功。
 
-取消结束逻辑任务，不保证 Unity 原生操作停止。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
+默认的 `Cancel()` 将任务置为 Cancelled。内置本地 Bundle 任务在提交原生读盘前可以取消，提交后会读完并发布结果。业务释放 Handle 可立即结束自身等待。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
 
-原生 Bundle、Asset、Scene 加载任务通过内部 `IResourceTaskCleanup.WaitForCleanupAsync()` 提供可重复观察的原生收尾等待；等待本身不发起取消或清理。Task 负责清理取消／失败后的迟到 Bundle／Scene；Bundle 成功结果由持有任务的 Loader 管理，交付后由 Cache 管理。其他成功结果仍由接收方管理；Asset 读取结束前须保留所属 Bundle。收尾失败会抛异常，但不改写任务的逻辑终态。
-
-AssetSystem 关闭会等待它拥有的资源任务收尾，再卸载 Bundle；TaskSystem 本身只取消任务和回收包装器。其他资源拥有者也不能依据 IsDone 提前卸载在途操作依赖的资源。
+Bundle 加载任务负责停止在途请求。在结果可以交接时，Loader 交付或释放容器并归还名额。Asset Cache 持有 Bundle 直到资源读取回调结束。已交付的场景由业务通过 SceneHandle 管理退场。TaskSystem 负责取消任务并回收包装器。见[资源系统关闭](../../../Asset/README.md#系统关闭)。
 
 - Result 是最终结果；包装器清理不会清空它，但引用不代表独立的 Unity 资源所有权。
 - Bundle 加载任务通过 Task 发布 IBundleResource，不提供结果 callback；Loader 在 Tick 中读取终态、接收成功结果，并负责关闭时未交付容器的释放。取消／失败后的迟到原生资源仍由任务清理。

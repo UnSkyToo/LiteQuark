@@ -38,8 +38,7 @@ namespace LiteQuark.Runtime
                 return;
             }
             Stage = AssetCacheStage.Unloading;
-            var task = _loadAssetTask;
-            task?.Cancel();
+            _loadAssetTask?.Cancel();
 
             if (_assetLoaderCallbackList.Count > 0)
             {
@@ -53,9 +52,10 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            if (task is IResourceTaskCleanup cleanup)
+            // 已提交的原生读取在回调中交还 Bundle；取消业务等待后仍需等待读取结束。
+            while (_loadAssetTask != null)
             {
-                await cleanup.WaitForCleanupAsync();
+                await UniTask.Yield();
             }
             CompleteUnload();
         }

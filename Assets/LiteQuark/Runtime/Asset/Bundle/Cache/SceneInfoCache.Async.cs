@@ -5,7 +5,7 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class SceneInfoCache : IDisposeAsync
     {
-        public void LoadSceneAsync(IBundleResource bundle, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
+        public void LoadSceneAsync(IBundleResource bundle, string loadPath, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage != AssetCacheStage.Idle)
             {
@@ -15,11 +15,17 @@ namespace LiteQuark.Runtime
             _sceneLoaderCallback = callback;
             Stage = AssetCacheStage.Loading;
 
+            if (SceneManager.GetSceneByPath(loadPath).IsValid())
+            {
+                CompleteUnload();
+                NotifyCompleted(AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(_sceneKey, "Scene path is already in use")));
+                return;
+            }
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease.BundlePath);
 
             try
             {
-                _loadSceneTask = bundle.CreateLoadSceneTask(_loadPath, _parameters, HandleSceneLoadCompleted);
+                _loadSceneTask = bundle.CreateLoadSceneTask(loadPath, HandleSceneLoadCompleted);
                 LiteRuntime.Task.AddTask(_loadSceneTask, LiteConst.TaskGroupId.Asset, TaskPriority.Normal);
             }
             catch (Exception ex)
@@ -29,9 +35,9 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void HandleSceneLoadCompleted(ITask task)
+        private void HandleSceneLoadCompleted(LoadSceneTask task)
         {
-            var scene = task.Result is Scene result ? result : default;
+            var scene = task.GetScene();
             var error = task.State == TaskState.Succeeded ? null : new AssetError(_sceneKey, task.Error?.Message ?? "Scene load was cancelled", task.Error);
             CompleteSceneLoad(task.State == TaskState.Succeeded, scene, error);
         }
@@ -45,14 +51,13 @@ namespace LiteQuark.Runtime
 
             _loadSceneTask = null;
 
-            var bundlePath = _bundleLease?.BundlePath ?? string.Empty;
             var isLoaded = OnSceneLoaded(success, scene);
             if (!isLoaded)
             {
                 error ??= new AssetError(_sceneKey, "Scene load returned no valid scene");
             }
 
-            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, bundlePath, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
+            AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Scene, _sceneKey, _assetType, _bundleLease.BundlePath, isLoaded, errorMessage: isLoaded ? null : "Scene load failed");
 
             var result = isLoaded
                 ? AssetLoadResult<IAssetLease<Scene?>>.Success(AcquireLease())

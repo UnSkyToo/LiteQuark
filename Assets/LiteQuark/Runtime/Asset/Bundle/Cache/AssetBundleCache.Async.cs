@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             });
         }
 
-        public void LoadSceneAsync(string sceneKey, LoadSceneParameters parameters, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
+        public void LoadSceneAsync(string sceneKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
@@ -46,7 +46,11 @@ namespace LiteQuark.Runtime
             }
 
             var assetType = typeof(Scene);
-            var requestLease = AcquireLease();
+            if (!TryCreateSceneCache(sceneKey, out var cache))
+            {
+                LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Scene path is already in use")));
+                return;
+            }
 
             AssetLoadEventDispatcher.DispatchBegin(AssetLoadEventType.Session, sceneKey, assetType, BundlePath);
 
@@ -55,21 +59,20 @@ namespace LiteQuark.Runtime
                 if (!bundleResult.Succeeded)
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, false, errorMessage: "Bundle load failed");
-                    requestLease.Dispose();
+                    cache.CompleteUnload();
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(bundleResult.Error));
                     return;
                 }
 
                 if (!TryGetSceneLoadPath(sceneKey, out var loadPath, out var pathError))
                 {
-                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, false, errorMessage: "Scene path not found in bundle");
-                    requestLease.Dispose();
+                    AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, false, errorMessage: pathError.Message);
+                    cache.CompleteUnload();
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(pathError));
                     return;
                 }
 
-                var cache = CreateSceneCache(sceneKey, loadPath, parameters, requestLease);
-                cache.LoadSceneAsync(Bundle, result =>
+                cache.LoadSceneAsync(Bundle, loadPath, result =>
                 {
                     AssetLoadEventDispatcher.DispatchEnd(AssetLoadEventType.Session, sceneKey, assetType, BundlePath, result.Succeeded, errorMessage: result.Succeeded ? null : "Scene load failed");
                     LiteUtils.SafeInvoke(callback, result);

@@ -120,7 +120,7 @@ namespace LiteQuark.Runtime
             => new GameObjectHandle(LoadAssetHandle<UnityEngine.GameObject>(assetPath, priority, ct),
                 asset => UnityEngine.Object.Instantiate(asset, position, rotation, parent), ct);
 
-        public SceneHandle LoadSceneHandle(string scenePath, LoadSceneParameters parameters, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
+        public SceneHandle LoadSceneHandle(string scenePath, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
         {
             var sceneKey = AssetPath.ResolveScene(scenePath);
 
@@ -133,7 +133,7 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                _manager?.LoadSceneAsync(sceneKey, parameters, priority, callback);
+                _manager.LoadSceneAsync(sceneKey, priority, callback);
             }, ct);
         }
 

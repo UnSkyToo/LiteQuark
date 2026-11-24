@@ -10,191 +10,193 @@ namespace LiteQuark.Editor
 {
     internal sealed partial class AssetLifecycleValidationRunner : BundleValidation
     {
-        private static SceneHandle QueueScene(Harness h)
+        private static async UniTask SubmittedScene(bool closeFromTaskContinuation)
         {
+            var h = New(true);
             var handle = h.Scene();
             h.Provider.Tick(0);
             h.Finish("b.ab", true);
             h.Finish("scene.ab", true);
-            return handle;
-        }
-
-        private static async UniTask ShutdownWaitsForNativeScene()
-        {
-            var h = New(true);
-            var handle = QueueScene(h);
-            var entry = h.SceneEntries().Single();
-            var task = (LoadSceneTask)Get<BaseTask>(entry, "_loadSceneTask");
+            var task = TaskSnapshot().OfType<LoadSceneTask>().Single();
             var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
             var dependency = NativeBundle(h.Cache("b.ab").Bundle);
             task.Execute();
             var operation = Get<AsyncOperation>(task, "_sceneRequest");
-            Check(operation != null && !operation.isDone, "System close targets an actual native scene load.");
+            Check(operation != null && !operation.isDone, "Unity has accepted the native scene load.");
+            using var duplicate = h.Assets.LoadSceneHandle(ScenePath);
+            var scenes = h.Assets.GetVisitorInfo().BundleVisitors.Single(bundle => bundle.BundlePath == "scene.ab").SceneVisitors;
+            Check(duplicate.State == AssetHandleState.Failed && scenes.Length == 1 && scenes[0].SceneName == ScenePath,
+                "A loading scene is visible in the debugger and rejects a duplicate request.");
+            if (closeFromTaskContinuation)
+            {
+                await task.Task;
+                Check(task.State == TaskState.Succeeded && !handle.IsDone, "The native task succeeded before delivery to the scene Handle.");
+            }
+
+            var awaitingScene = handle.GetAwaiter();
             var shutdown = h.Shutdown();
-            task.Dispose();
-            Check(shutdown.Status == UniTaskStatus.Pending && task.State == TaskState.Cancelled && handle.IsDone && bundle != null && dependency != null,
-                "Closing ends the pending Handle while keeping its native loading dependencies alive.");
+            var error = handle.Error;
+            Check(handle.State == AssetHandleState.Failed && error?.ResourceKey == ScenePath && awaitingScene.IsCompleted &&
+                operation.isDone == closeFromTaskContinuation && shutdown.Status == UniTaskStatus.Pending && bundle != null && dependency != null,
+                "Shutdown ends the Handle wait immediately and keeps the Bundles until native cleanup finishes.");
             await shutdown;
-            Check(operation.isDone && task.WaitForCleanupAsync().Status == UniTaskStatus.Succeeded &&
+            Check(operation.isDone && ReferenceEquals(handle.Error, error) && !handle.Result.HasValue &&
                 !SceneManager.GetSceneByName("validation_scene").isLoaded && bundle == null && dependency == null,
-                "System close waits for the cancelled task's late Scene cleanup before unloading either Bundle.");
+                "Shutdown settles an undelivered scene and releases its scene Bundle and dependency.");
         }
 
-        private static async UniTask EditorShutdownScene()
+        private static async UniTask RestartWithScene()
         {
-            New();
-            await WithSimulateScenes(async (assets, provider) =>
-            {
-                var handle = EditorScene(assets);
-                // Start the queued native operation explicitly to close before the player loop completes it.
-                await Wait(() => TaskSnapshot().OfType<LoadEditorSceneTask>().Any(), "Simulate scene task admission");
-                var task = TaskSnapshot().OfType<LoadEditorSceneTask>().Single();
-                task.Execute();
-                var operation = (AsyncOperation)typeof(LoadSceneTask).GetField("_sceneRequest", Private).GetValue(task);
-                Check(operation != null && !operation.isDone && !handle.IsDone,
-                    "Close targets an actual native Editor scene load before result delivery.");
-                var shutdown = assets.DisposeAsync();
-                await shutdown;
-                Check(handle.State == AssetHandleState.Failed &&
-                    ((IResourceTaskCleanup)task).WaitForCleanupAsync().Status == UniTaskStatus.Succeeded &&
-                    !Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).Any(scene => scene.path == EditorScenePath),
-                    "Simulate close waits for the late native scene to unload.");
-            });
-        }
+            var runtime = LiteRuntime.Instance;
+            var original = LiteRuntime.Asset;
+            var launcher = runtime.Launcher;
+            var startup = SceneManager.GetActiveScene();
+            Check(original.HasAsset(startup.path), "The fixture manifest contains the active startup scene.");
+            using var duplicateStartup = original.LoadSceneHandle(startup.path.ToUpperInvariant());
+            await Wait(() => duplicateStartup.IsDone, "Duplicate startup scene request");
+            Check(duplicateStartup.State == AssetHandleState.Failed, "The startup scene cannot become a managed gameplay scene.");
 
-        private static SceneHandle EditorScene(AssetSystem assets, string path = EditorScenePath, CancellationToken token = default)
-        {
-            var handle = assets.LoadSceneHandle(path, new LoadSceneParameters(LoadSceneMode.Additive), ct: token);
-            Current.Handles.Add(handle);
-            return handle;
-        }
-
-        private static async UniTask WithSimulateScenes(Func<AssetSystem, AssetManager, UniTask> action)
-        {
-            var setting = LiteRuntime.Setting.Asset;
-            var oldLocater = setting.BundleMode;
-            AssetSystem assets = null;
-            try
-            {
-                setting.BundleMode = BundleLoadMode.Simulate;
-                assets = new AssetSystem();
-                var provider = (AssetManager)Get<IAssetManager>(assets, "_manager");
-                _simulateManager = provider;
-                // The fixture Runtime already owns the Asset group.
-                Check(await provider.Initialize((IBundleProvider)typeof(AssetSystem).GetMethod("CreateBundleProvider", Private).Invoke(assets, new object[] { true })), "Simulate initializes from collected project assets.");
-                await action(assets, provider);
-            }
-            finally
-            {
-                try { if (assets != null) await assets.DisposeAsync(); }
-                finally
-                {
-                    _simulateManager = null;
-                    setting.BundleMode = oldLocater;
-                }
-            }
-        }
-
-        private static async UniTask ShutdownReportsSceneRefusal()
-        {
-            var h = New();
-            var handle = h.Assets.LoadSceneHandle(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
-            h.Handles.Add(handle);
-            await Wait(() => handle.IsDone, "Single Scene before close");
+            using var handle = original.LoadSceneHandle(EditorScenePath);
+            await Wait(() => handle.IsDone, "Additive gameplay scene");
             var scene = handle.Result.Value;
-            var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
-            var asset = h.Asset<TextAsset>(TextPath);
-            await Wait(() => asset.IsDone, "Independent asset before close");
-            var entry = h.Entry("text.ab", TextPath);
-            var pending = new CleanupProbe();
-            Set(entry, "_loadAssetTask", pending);
+            runtime.Restart();
+            await Wait(() => runtime.State == LiteRuntime.RuntimeState.Running &&
+                !ReferenceEquals(original, LiteRuntime.Asset), "Restart while gameplay is loaded");
+            Check(launcher == runtime.Launcher && startup.isLoaded && scene.isLoaded,
+                "Restart reuses the Launcher and leaves the delivered scene to its owner.");
+
+            using var duplicate = LiteRuntime.Asset.LoadSceneHandle(EditorScenePath);
+            await Wait(() => duplicate.IsDone, "Cross-generation duplicate scene");
+            Check(duplicate.State == AssetHandleState.Failed, "The previous scene must exit before the same path can load again.");
+            handle.Dispose();
+            await Wait(() => !SceneManager.GetSceneByPath(EditorScenePath).IsValid(), "Old Handle finishes unloading its scene");
+            using var next = LiteRuntime.Asset.LoadSceneHandle(EditorScenePath);
+            await Wait(() => next.IsDone, "Scene reload after its owner releases it");
+            Check(next.Result.HasValue, "Released scene path reloads: " + next.Error?.Message);
+            var reloaded = next.Result.Value;
             try
             {
-                Exception failure = null;
-                try { await h.Shutdown(); } catch (Exception ex) { failure = ex; }
-                Check(pending.State == TaskState.Cancelled && entry.Stage == AssetCacheStage.Unloading,
-                    "Shutdown reports the scene failure while another started cleanup is still pending.");
-                Check(failure is InvalidOperationException && failure.Message.Contains("Scene has not been unloaded") &&
-                    scene.isLoaded && bundle != null && !h.Disposed && Get<IAssetManager>(h.Assets, "_manager") != null,
-                    "Refused native scene unloading fails shutdown without destroying its Bundle or clearing the Provider.");
+                await runtime.Shutdown();
+                Check(runtime.State == LiteRuntime.RuntimeState.Idle && reloaded.isLoaded,
+                    "Explicit Shutdown also completes with a delivered scene still loaded.");
+                next.Dispose();
+                await Wait(() => !reloaded.isLoaded, "Owner unloads its scene after Shutdown");
             }
             finally
             {
-                pending.FinishCleanup();
-                RestoreValidationHost();
-                if (scene.IsValid() && scene.isLoaded) await SceneManager.UnloadSceneAsync(scene).ToUniTask();
+                if (runtime.State == LiteRuntime.RuntimeState.Idle) runtime.Startup(launcher);
             }
+            await Wait(() => runtime.State == LiteRuntime.RuntimeState.Running, "Fixture Runtime is running");
         }
 
-        private static void RestoreValidationHost()
+        private static async UniTask SceneFailureRetry()
         {
-            if (!SceneManager.GetSceneByName("SessionValidationHost").isLoaded)
-            {
-                SceneManager.CreateScene("SessionValidationHost");
-            }
-        }
-
-        private static async UniTask SceneMissingMetadata()
-        {
-            var h = New();
-            var missing = h.Assets.LoadSceneHandle("missing/validation_scene.unity", new LoadSceneParameters(LoadSceneMode.Additive));
+            var h = New(true);
+            var missing = h.Assets.LoadSceneHandle("missing/validation_scene.unity");
             h.Handles.Add(missing);
-            Check(missing.IsDone && missing.Result == null && h.LoadingNames.Count == 0,
-                "Missing metadata ends the request and removes its scene-name registration.");
-            var valid = h.Scene();
-            await Wait(() => valid.IsDone, "Same name after missing metadata");
+            Check(missing.State == AssetHandleState.Failed && missing.Result == null,
+                "A scene outside the manifest reserves no path.");
+            var first = h.Scene();
+            async UniTask<SceneHandle> RetryOnFailure()
+            {
+                await first;
+                return h.Scene();
+            }
+            var retry = RetryOnFailure();
+            h.Provider.Tick(0);
+            h.Finish("b.ab", true);
+            h.Finish("scene.ab", false);
+            var valid = await retry;
+            Check(first.State == AssetHandleState.Failed && !valid.IsDone,
+                "The failure continuation can immediately reserve the same path again.");
+            h.Provider.Tick(0);
+            h.Finish("scene.ab", true);
+            await Wait(() => valid.IsDone, "Same path after Bundle failure");
             Check(valid.Result.HasValue && valid.Result.Value.path.Equals(ScenePath, StringComparison.OrdinalIgnoreCase) &&
                 valid.Result.Value.GetRootGameObjects().Any(go => go.name == "SessionValidationSceneMarker"),
-                "Retry selects the expected native scene path and content.");
-        }
-
-        private sealed class CleanupProbe : BaseTask, IResourceTaskCleanup
-        {
-            private readonly UniTaskCompletionSource _cleanup = new();
-            public UniTask WaitForCleanupAsync() => _cleanup.Task;
-            internal void FinishCleanup() => _cleanup.TrySetResult();
-            protected override void OnExecute() { }
+                "Retry loads the expected native scene.");
+            var scene = valid.Result.Value;
+            valid.Dispose();
+            using var unloading = h.Assets.LoadSceneHandle(ScenePath);
+            Check(unloading.State == AssetHandleState.Failed, "The path stays occupied while the Handle is unloading its scene.");
+            await Wait(() => !scene.isLoaded && h.Refs("scene.ab") == 0, "Retried scene exits and releases its Bundle lease");
+            using var missingInBundle = h.Assets.LoadSceneHandle("Assets/__session_validation/nonexistent_scene.unity");
+            Check(missingInBundle.State == AssetHandleState.Failed && missingInBundle.Result == null && h.Refs("scene.ab") == 0,
+                "A missing scene path fails the request and releases its Bundle lease.");
         }
 
         private static async UniTask QueuedCancel()
         {
+            var beforeDelivery = New(true);
+            using var missing = beforeDelivery.Assets.LoadSceneHandle("Assets/__session_validation/nonexistent_scene.unity");
+            var pending = beforeDelivery.Scene();
+            async UniTask CloseOnFailure()
+            {
+                await missing;
+                await beforeDelivery.Shutdown();
+            }
+            var closing = CloseOnFailure();
+            beforeDelivery.Provider.Tick(0);
+            beforeDelivery.Finish("b.ab", true);
+            beforeDelivery.Finish("scene.ab", true);
+            await closing;
+            Check(missing.State == AssetHandleState.Failed && pending.State == AssetHandleState.Failed &&
+                !SceneManager.GetSceneByName("validation_scene").isLoaded,
+                "Closing from the first delivery fails the other reservation without starting a scene read.");
+            await Cleanup();
+
             var h = New(true);
             var cancelled = h.Scene(new CancellationToken(true));
             var observed = false;
             try { await cancelled; } catch (OperationCanceledException) { observed = true; }
             Check(observed && h.Locater.Calls.Count == 0, "Pre-cancelled scene starts no Bundle work.");
-            var queued = QueueScene(h);
-            var task = Get<BaseTask>(h.SceneEntries().Single(), "_loadSceneTask");
+            var queued = h.Scene();
+            queued.Dispose();
+            using var duplicate = h.Assets.LoadSceneHandle(ScenePath);
+            Check(duplicate.State == AssetHandleState.Failed && h.Locater.Calls.Count == 0,
+                "The cancelled consumer leaves its queued scene path reserved.");
+            h.Provider.Tick(0);
+            h.Finish("b.ab", true);
+            h.Finish("scene.ab", true);
+            var task = TaskSnapshot().OfType<LoadSceneTask>().Single();
             await h.Shutdown();
-            Check(queued.IsDone && queued.Result == null && !task.IsExecuted && !SceneManager.GetSceneByName("validation_scene").isLoaded,
-                "Closing before admission ends the Handle without starting a native scene load.");
+            Check(!task.IsExecuted && task.State == TaskState.Cancelled && queued.State == AssetHandleState.Cancelled &&
+                !SceneManager.GetSceneByName("validation_scene").isLoaded, "Closing cancels a queued task before it reaches Unity.");
         }
 
-        private static async UniTask SceneInstances()
+        private static async UniTask ScenePathOwnership()
         {
             var h = New();
             var first = h.Scene();
-            var duplicate = h.Assets.LoadSceneHandle(ScenePath.ToUpperInvariant(), new LoadSceneParameters(LoadSceneMode.Additive));
-            h.Handles.Add(duplicate);
-            Check(duplicate.State == AssetHandleState.Failed, "A concurrent alias is rejected.");
-            await Wait(() => first.IsDone, "First instance");
-            var second = h.Scene();
-            await Wait(() => second.IsDone, "Second instance");
-            var a = first.Result.Value;
-            var b = second.Result.Value;
-            Check(a.handle != b.handle, "Sequential loads create independent native scenes.");
-            await SceneManager.UnloadSceneAsync(a).ToUniTask();
-            await Wait(() => !first.Result.HasValue, "External unload");
-            first.Dispose();
-            Check(b.isLoaded && second.Result.HasValue, "External unload leaves the other instance intact.");
-            try
+            SceneVisitorInfo[] SceneVisitors() => h.Assets.GetVisitorInfo().BundleVisitors.Single(bundle => bundle.BundlePath == "scene.ab").SceneVisitors;
+            void CheckDuplicate(string stage)
             {
-                var replacement = h.Assets.LoadSceneHandle(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
-                h.Handles.Add(replacement);
-                await Wait(() => replacement.IsDone, "Single scene replacement");
-                Check(replacement.Result.HasValue && !b.isLoaded && !second.Result.HasValue, "Single replacement invalidates only the old instances.");
+                using var duplicate = h.Assets.LoadSceneHandle(ScenePath.ToUpperInvariant());
+                Check(duplicate.State == AssetHandleState.Failed && duplicate.Error.ResourceKey == ScenePath,
+                    "Duplicate path rejected while " + stage);
             }
-            finally { RestoreValidationHost(); }
+            CheckDuplicate("waiting for the Bundle");
+            Check(SceneVisitors().Length == 0, "The debugger skips the scene while its Bundle is queued.");
+            await Wait(() => first.IsDone, "First scene load");
+            var original = first.Result.Value;
+            var scenes = SceneVisitors();
+            Check(scenes.Length == 1 && scenes[0].SceneName == ScenePath, "The debugger lists the managed path under its Bundle.");
+            CheckDuplicate("loaded");
+            await SceneManager.UnloadSceneAsync(original).ToUniTask();
+            Check(SceneVisitors().Length == 0, "The debugger hides the scene after native unload.");
+            var replacement = h.Scene();
+            await Wait(() => replacement.IsDone, "Reload after external scene unload");
+            var current = replacement.Result.Value;
+            Check(!first.Result.HasValue, "The old Handle remains empty after the same path loads again.");
+            first.Dispose();
+            Check(replacement.Result == current && current.isLoaded && AssetPath.ResolveScene(current.path) == ScenePath,
+                "Disposing the old Handle leaves the replacement scene loaded at the requested path.");
+            var main = NativeBundle(h.Cache("scene.ab").Bundle);
+            var dependency = NativeBundle(h.Cache("b.ab").Bundle);
+            await h.Shutdown();
+            Check(main == null && dependency == null, "Closing releases both native Bundles despite the outstanding scene Handle.");
+            if (current.isLoaded) await SceneManager.UnloadSceneAsync(current).ToUniTask();
+            Check(!replacement.Result.HasValue, "An externally unloaded scene is no longer returned by its old Handle.");
         }
     }
 }
