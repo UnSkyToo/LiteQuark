@@ -6,10 +6,12 @@
 - `Assets/LiteQuark`: core runtime, editor tools, bundled third-party libraries. `Assets/LiteQuark.Addons`: optional systems. `Assets/LiteBattle`: battle runtime and authoring tools. `Assets/Scripts`: examples.
 - For setup, builds and publishing, use [README.md](README.md). Before using a module in business code, read its README for capabilities, APIs and lifecycle contracts; inspect implementation as needed. Start with the [core guide](Assets/LiteQuark/README.md) or [Addons guide](Assets/LiteQuark.Addons/README.md). Before modifying a module, also read its applicable AGENTS.md.
 
-## Architecture reviews
+## Design & reviews
 
-- First ask what actual callers would lose without each abstraction, lifecycle mechanism, or defensive branch. Use observable consequences to recommend keeping, narrowing, merging, or removing it. Assess migration costs separately from the target design.
-- Define supported behavior from public APIs used on Unity's main thread during the normal lifecycle. A Validation fixture alone does not establish a production requirement.
+- Start with the smallest design you would build today for this project's callers; assess migration costs separately.
+- Keeping an abstraction, lifecycle state, or defensive check requires naming a real caller, the public API sequence reaching it on Unity's main thread during the normal lifecycle, and what that caller would lose. Do not keep safeguards or extension hooks for hypothetical third-party subclasses, post-shutdown misuse of disposed instances, or test-only timing.
+- When narrowing or removing a contract, remove its guards, docs, and obsolete regression checks together rather than leaving half-removed checks behind.
+- In external reviews, verify factual claims separately from the proposed design and limit changes to what the evidence supports without expanding scope.
 
 ## Change constraints
 
@@ -23,6 +25,7 @@
 
 ## Validation
 
+- Keep permanent regression cases for current public framework contracts only; existing tests document prior contracts and should be narrowed or removed when contracts simplify. For demo or gameplay bugs, fix that layer and use a temporary repro by default.
 - Documentation-only edits: check referenced APIs, local links and `git diff --check`; a Unity launch is unnecessary.
 - Runtime, assembly-definition or serialized-asset changes: run a Unity editor compile. Exercise affected behavior; include screenshots or recordings for editor UI changes when possible.
 - Maintained regression sources and native platform entries are in `Validation`; follow [its guide](Validation/README.txt) and [maintenance rules](Validation/AGENTS.md). Extend existing runners for relevant regression coverage; no dedicated Unity Test Framework test assembly currently exists.
