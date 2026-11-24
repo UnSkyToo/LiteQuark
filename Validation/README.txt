@@ -40,7 +40,7 @@ Validation — LiteQuark 隔离验证
              检查第三方同名泛型的只读边界、条件容器内的覆盖、注册项原位修复与撤销，以及生效环境的 Remote CDN 提示。
              环境选择、日志策略和重启隔离，可选游戏入口、Tick 与 LateTick 的顺序和时间、暂停、启动回滚、关闭顺序、重启、部分释放失败。
              通过 Editor 退出无入口且启用日志控制台的 Demo。真实战斗场景中移动玩家，并在同帧末验证相机与怪物血条投影。
-             ShutdownFailed 场景最后执行，保留终态至进程退出。
+             通过业务入口和系统的释放异常验证剩余系统继续退场，重启遇错回到 Idle 后可再次显式启动。
   loading    Asset/AssetLoadingValidationRunner.cs
              公开寻址、后端选择、默认资源模式和初始化错误、BuiltIn 优先级、Remote URI
              与真实回环下载、构建文件名标志，以及 Unity 场景包限制。

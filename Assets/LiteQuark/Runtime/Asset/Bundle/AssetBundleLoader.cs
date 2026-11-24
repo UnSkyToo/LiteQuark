@@ -50,14 +50,14 @@ namespace LiteQuark.Runtime
 
         private static async UniTask StopAndReleaseAsync(ILoadBundleTask task)
         {
-            // AssetSystem 已退出 Tick，原生回调仍可完成读取。
-            while (!task.IsDone)
+            if (task is LoadLocalBundleTask && task.State == TaskState.Running)
+            {
+                // 已提交的本地读取由 Unity 自行完成，等结果交还后再卸包。
+                await task.Task;
+            }
+            else if (!task.IsDone)
             {
                 task.Cancel();
-                if (!task.IsDone)
-                {
-                    await UniTask.Yield();
-                }
             }
             task.GetBundle()?.Dispose();
         }

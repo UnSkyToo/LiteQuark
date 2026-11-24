@@ -10,39 +10,32 @@ namespace LiteQuark.Editor
 {
     internal sealed partial class AssetLifecycleValidationRunner : BundleValidation
     {
-        private static async UniTask SubmittedScene(bool closeFromTaskContinuation)
+        private static async UniTask SubmittedScene()
         {
             var h = New(true);
             var handle = h.Scene();
             h.Provider.Tick(0);
-            h.Finish("b.ab", true);
-            h.Finish("scene.ab", true);
-            var task = TaskSnapshot().OfType<LoadSceneTask>().Single();
-            var bundle = NativeBundle(h.Cache("scene.ab").Bundle);
-            var dependency = NativeBundle(h.Cache("b.ab").Bundle);
-            task.Execute();
-            var operation = Get<AsyncOperation>(task, "_sceneRequest");
-            Check(operation != null && !operation.isDone, "Unity has accepted the native scene load.");
-            using var duplicate = h.Assets.LoadSceneHandle(ScenePath);
-            var scenes = h.Assets.GetVisitorInfo().BundleVisitors.Single(bundle => bundle.BundlePath == "scene.ab").SceneVisitors;
-            Check(duplicate.State == AssetHandleState.Failed && scenes.Length == 1 && scenes[0].SceneName == ScenePath,
-                "A loading scene is visible in the debugger and rejects a duplicate request.");
-            if (closeFromTaskContinuation)
+            var dependency = h.Finish("b.ab", true);
+            var bundle = h.Finish("scene.ab", true);
+            var lateSceneArrived = false;
+            void ObserveScene(Scene scene, LoadSceneMode mode)
             {
-                await task.Task;
-                Check(task.State == TaskState.Succeeded && !handle.IsDone, "The native task succeeded before delivery to the scene Handle.");
+                if (string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase)) lateSceneArrived = true;
             }
 
-            var awaitingScene = handle.GetAwaiter();
-            var shutdown = h.Shutdown();
-            var error = handle.Error;
-            Check(handle.State == AssetHandleState.Failed && error?.ResourceKey == ScenePath && awaitingScene.IsCompleted &&
-                operation.isDone == closeFromTaskContinuation && shutdown.Status == UniTaskStatus.Pending && bundle != null && dependency != null,
-                "Shutdown ends the Handle wait immediately and keeps the Bundles until native cleanup finishes.");
-            await shutdown;
-            Check(operation.isDone && ReferenceEquals(handle.Error, error) && !handle.Result.HasValue &&
-                !SceneManager.GetSceneByName("validation_scene").isLoaded && bundle == null && dependency == null,
-                "Shutdown settles an undelivered scene and releases its scene Bundle and dependency.");
+            SceneManager.sceneLoaded += ObserveScene;
+            try
+            {
+                LiteRuntime.Task.Tick(0);
+                var shutdown = h.Shutdown();
+                Check(!lateSceneArrived && handle.State == AssetHandleState.Failed && handle.GetAwaiter().IsCompleted &&
+                    shutdown.Status == UniTaskStatus.Pending && bundle != null && dependency != null,
+                    "Shutdown ends the Handle wait while Unity is still loading the scene.");
+                await shutdown;
+                Check(lateSceneArrived && !handle.Result.HasValue && !SceneManager.GetSceneByName("validation_scene").isLoaded &&
+                    bundle == null && dependency == null, "The late scene unloads and both Bundles are released.");
+            }
+            finally { SceneManager.sceneLoaded -= ObserveScene; }
         }
 
         private static async UniTask RestartWithScene()

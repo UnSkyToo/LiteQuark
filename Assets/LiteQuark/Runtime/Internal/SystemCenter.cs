@@ -5,7 +5,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, ILateTick, IDisposeAsync
+    internal sealed class SystemCenter : Singleton<SystemCenter>, ITick, ILateTick
     {
         private readonly List<ISystem> _systemList = new();
         private readonly Dictionary<System.Type, ISystem> _systemTypeMap = new();
@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
             var count = _systemList.Count;
             for (var i = 0; i < count && i < _systemList.Count; i++)
             {
-                if (LiteRuntime.Instance.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed)
+                if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Error)
                 {
                     break;
                 }
@@ -117,26 +117,29 @@ namespace LiteQuark.Runtime
             {
                 if (unpublished != null)
                 {
-                    await unpublished.DisposeAsync();
+                    await LiteRuntime.TryDisposeAsync(unpublished);
                 }
             }
         }
 
-        public async UniTask DisposeAsync()
+        internal async UniTask<bool> DisposeAsync()
         {
+            var success = true;
             while (_systemList.Count > 0)
             {
                 var index = _systemList.Count - 1;
                 var system = _systemList[index];
                 _systemList.RemoveAt(index);
-                await LiteRuntime.FinishAtFrameBoundary(DisposeSystem(system));
+                success &= await LiteRuntime.FinishAtFrameBoundary(DisposeSystem(system));
             }
+            return success;
         }
 
-        private async UniTask DisposeSystem(ISystem system)
+        private async UniTask<bool> DisposeSystem(ISystem system)
         {
-            await system.DisposeAsync();
+            var success = await LiteRuntime.TryDisposeAsync(system);
             _systemTypeMap.Remove(system.GetType());
+            return success;
         }
 
         public T GetSystem<T>() where T : ISystem

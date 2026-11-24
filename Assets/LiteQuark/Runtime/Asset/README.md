@@ -98,7 +98,7 @@ if (!preload.Result)
 
 业务场景在场时也可以调用 Restart 或 Shutdown。已交付的场景由业务通过 SceneHandle 退场，可以在游戏入口的 DisposeAsync 中释放。资源系统关闭会释放旧 Bundle，仍在场的关卡可能失去材质等依赖。跨轮重开同一路径时，业务须释放旧 Handle，确认旧场景已实际卸载，再发起新请求。只使用 Prefab 的单场景项目可直接请求重启。
 
-关闭开始后拒绝新请求。Asset 释放时取消排队的工作。Scene Cache 开始释放时，仍在等待交付的 SceneHandle 立即进入 Failed，业务可以结束等待。Cache 持有 Bundle 直到原生读取完成，并对迟到场景发起卸载、等待已发起的卸载结束。Unity 拒绝场景卸载时会记录错误。Loader 释放未交付的容器，Cache 释放已接收的容器。上层实例完成延迟销毁后卸包。加载失败由对应 Handle 的 Error 报告，关闭时停止下载或卸包的异常由本次 Shutdown 报告。
+业务从退场开始停止发起加载。Asset 系统开始释放时拒绝新请求并取消排队工作。仍在等待交付的 SceneHandle 进入 Failed。Cache 持有 Bundle 直到原生读取完成，并对迟到场景发起卸载。Unity 拒绝场景卸载时记录错误。Loader 释放未交付的容器，Cache 在上层实例完成延迟销毁后卸包。加载失败由对应 Handle 的 Error 报告。
 
 业务应先停止使用旧资源并释放 Handle。遗漏 Handle 和缓存保留期均不会阻止卸包。应用退出回调只尽力发起清理，跨帧操作可能随进程结束而中断。
 

@@ -18,23 +18,6 @@ namespace LiteQuark.Runtime
             _hash = hash;
         }
 
-        public override void Cancel()
-        {
-            if (IsDelivering || IsDone)
-            {
-                return;
-            }
-
-            try
-            {
-                ReleaseRequest(abort: true);
-            }
-            finally
-            {
-                base.Cancel();
-            }
-        }
-
         protected override UnityWebRequest CreateRequest()
         {
             if (string.IsNullOrEmpty(_hash))
@@ -68,16 +51,6 @@ namespace LiteQuark.Runtime
             }
 
             var resource = new AssetBundleResource(bundle);
-            try
-            {
-                // Complete 可能同步恢复等待者，先释放持有 DownloadHandler 的请求。
-                ReleaseRequest(abort: false);
-            }
-            catch
-            {
-                resource.Dispose();
-                throw;
-            }
             if (Complete(resource))
             {
                 LLog.Info("[LoadRemoteBundle] {0} : {1}KB", _bundleUri, downloadedBytes / 1024);

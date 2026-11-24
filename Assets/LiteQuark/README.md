@@ -52,13 +52,13 @@ Launcher 每次启动或重启都解析一份独立的运行配置。通过 `Lit
 
 已配置入口时启动顺序为 `Idle → InitSystem → InitGameEntry → Running`，入口留空时从 InitSystem 直接进入 Running，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `IGameEntry.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
 
-Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。当前实例释放成功后，Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理成功后回到 Idle，Idle 不表示初始化成功。初始化期间的关闭请求会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
+Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理结束后回到 Idle。初始化期间的关闭请求会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
 
-`Shutdown()` 返回 UniTask，进入 ShuttingDown 后先等待游戏入口释放，再逆序等待 System 的 DisposeAsync；完成后进入 Idle，释放已发布或未发布实例抛异常时进入 ShutdownFailed，停止更新并拒绝再次关闭或启动。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止入口更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
+`Shutdown()` 返回 UniTask。进入 ShuttingDown 后先等待游戏入口释放，再逆序等待各系统的 DisposeAsync。释放单个对象抛异常时，Runtime 记录错误并继续释放其余系统，移除注册后回到 Idle。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止入口更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
 
 业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。系统和游戏入口的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
 
-Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。如果重启期间收到应用退出通知，旧系统继续关闭，完成后停在 Idle。Idle、InitSystem、InitGameEntry、Error 和 ShutdownFailed 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
+Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。重启清理出现释放错误或期间收到应用退出通知时，旧系统继续关闭，本轮重启停在 Idle。业务可在处理错误后显式 Startup。Idle、InitSystem、InitGameEntry 和 Error 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
 
 资源加载中或玩法场景仍在场时可以请求 Restart 或 Shutdown。需要回到纯启动场景的项目，由业务释放 SceneHandle 并完成退场；旧 Bundle 会随资源系统关闭而释放。F5 和后台超时重启走同一流程。详见[资源关闭](Runtime/Asset/README.md#系统关闭)。应用退出回调只尽力发起清理，不保证跨帧等待能够完成；必要的数据保存应在退出前完成。
 

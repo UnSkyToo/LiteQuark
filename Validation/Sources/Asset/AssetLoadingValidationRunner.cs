@@ -376,10 +376,9 @@ namespace LiteQuark.Editor
             var completed = await download.Task;
             try
             {
-                var request = typeof(UnityDownloadBaseTask).GetField("_request", Private).GetValue(download);
-                Check(completed != null && ReferenceEquals(download.GetBundle(), completed) && request == null &&
+                Check(completed != null && ReferenceEquals(download.GetBundle(), completed) &&
                     bundleServer.RequestLine.Contains(TextBundle),
-                    "The remote task releases its native request before publishing the extracted Bundle.");
+                    "The remote task delivers the requested Bundle from the loopback server.");
             }
             finally { download.GetBundle()?.Dispose(); }
 

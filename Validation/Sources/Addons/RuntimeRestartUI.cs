@@ -208,7 +208,7 @@ namespace LiteQuark.Editor
                     "Old Canvas destruction completes while the outstanding system disposal still prevents any new round.");
 
                 fixture.DisposeGate.TrySetResult();
-                await WaitWithoutLoaderTick(() => runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed ||
+                await WaitWithoutLoaderTick(() => runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.Idle ||
                     fixture.Entries.Count == 2 && runtime.State == LiteRuntime.RuntimeState.Running, "New Runtime generation Running");
                 fixture.Failure?.Throw();
                 var newUI = LiteRuntime.Get<UISystem>();
@@ -273,8 +273,6 @@ namespace LiteQuark.Editor
             {
                 if (runtime.State == LiteRuntime.RuntimeState.ShuttingDown)
                     await WaitWithoutLoaderTick(() => runtime.State != LiteRuntime.RuntimeState.ShuttingDown, "Restart fixture leaves shutdown");
-                if (runtime.State == LiteRuntime.RuntimeState.ShutdownFailed)
-                    throw new InvalidOperationException("Restart fixture shutdown failed; baseline startup is skipped.");
                 if (runtime.State != LiteRuntime.RuntimeState.Idle)
                 {
                     fixture.CleanupShutdownCalls++;

@@ -38,6 +38,7 @@ namespace LiteQuark.Runtime
                 await UniTask.Yield();
             }
             // 已交付的场景仍由 Handle 卸载，关闭只归还资源引用。
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
             _bundleLease.Dispose();
         }
 
@@ -122,13 +123,11 @@ namespace LiteQuark.Runtime
             Stage = AssetCacheStage.Loaded;
 
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-            if (!success || _sceneLoaderCallback == null)
+            if (!success)
             {
-                // 任务完成的续体可能先触发关闭，已结束交付的场景仍由 Cache 卸载。
                 Unload();
-                return false;
             }
-            return true;
+            return success;
         }
 
         private void OnSceneUnloaded(Scene scene)

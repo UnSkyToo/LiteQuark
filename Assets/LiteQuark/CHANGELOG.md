@@ -22,11 +22,11 @@
 
 - 修复：Editor 停止 Play Mode 后的异步清理使用 Unity 对象判空，日志逻辑跳过已销毁的日志窗口，TaskSystem 跳过已销毁的协程宿主，避免编辑模式 Destroy 错误和 MissingReferenceException。
 - 破坏：Restart 仅在 Running 接受请求并在下一帧执行，多次请求合并；ShuttingDown 期间忽略请求，其他状态抛出 InvalidOperationException。启动错误回调中的直接 Restart 需改为等待清理回到 Idle 后再 Startup；已排队请求遇到错误或关闭会被放弃。
-- 修复：Error 与 ShutdownFailed 停止 Runtime 对 System 和 Logic 的 Tick；释放续体在系统 Tick 内失败时，该调用返回后也停止同轮剩余系统的更新。关闭失败后拒绝重试和启动。
+- 破坏：单个入口或系统释放异常改为记录日志并继续释放其余系统。关闭结束回到 Idle。本次自动重启遇错停止，修正错误后可显式 Startup。
 - 修复：启动错误订阅者抛异常时继续回滚。重启关闭期间收到应用退出通知时取消下一轮启动。
 - 修复：后台超时返回前台时，仅在前台事件处理后仍为 Running 才请求自动重启，避免初始化或错误状态触发 Restart 异常。
 - 破坏：`ISystem`、`ILogic` 改为继承 `IDisposeAsync`，释放方法由 `void Dispose()` 改为 `UniTask DisposeAsync()`；自定义实现需要迁移，同步清理返回 `UniTask.CompletedTask`。已注册对象由 Runtime 统一释放，业务不要直接释放系统；Handle、Lease 等资源对象仍使用同步 Dispose。
-- 破坏：`LiteRuntime.Shutdown()` 改为返回 UniTask；框架集成层调用方需要等待完成，不能把调用返回前已启动的清理视为完成。初始化中的对象会在 Initialize 退出后统一释放，初始化失败且清理成功后回到 Idle；清理异常进入 ShutdownFailed，不自动重新启动。
+- 破坏：`LiteRuntime.Shutdown()` 返回 UniTask。集成层应等待其完成，初始化中的对象在 Initialize 退出后释放。
 - 破坏：`ActionSystem.GetActionList()` 收为 internal，仅用于框架调试；外部业务通过 AddAction、StopAction、FindAction 等公开入口管理动作，不直接访问调度列表。
 - 调整：Runtime.Shutdown 不再统一调用 PlayerPrefs.Save、Resources.UnloadUnusedAssets 或 GC；依赖原退出保存行为的业务应显式保存，DataSystem 的 PlayerPrefsProvider 保留自身保存行为。
 - 修复：Center 先就地释放未发布实例，再由 Runtime 回滚已发布对象；系统开始释放时退出更新列表，依赖在关闭期间继续推进。
@@ -68,8 +68,8 @@
 
 - 破坏：调用 `LoadSceneHandle(path, priority, ct)` 时移除原 `LoadSceneParameters` 参数。业务场景固定 Additive 加载，使用默认物理场景；原先通过 Single 切关的项目改为保存并释放旧关卡的 SceneHandle，保留启动场景和 Launcher。
 - 破坏：同一轮 Runtime 内，同一路径从开始加载到实际卸载只允许一个业务场景。重复请求请复用已持有的 Handle。跨轮重开同一路径时，业务须等旧场景实际卸载后再请求。需要并存的场景使用不同路径。
-- 破坏：同进程 Restart 和显式 Shutdown 即使有关卡仍在场也会执行。原先依赖拒绝关闭来保留旧游戏的项目，应自行决定重启时机。需要清空关卡时，由业务释放已交付的 SceneHandle；旧 Bundle 随关闭释放。加载失败保留在对应 Handle 上，关闭时停止下载或卸包的异常由本次 Shutdown 报告。
-- 调整：AssetSystem 关闭拒绝新请求，等普通资源的原生读取结束后，忽略 Handle 引用和 Retention 释放全部 Bundle；不再主动执行全局资源扫描或 GC。
+- 破坏：同进程 Restart 和显式 Shutdown 在关卡仍在场时也会执行。需要清空关卡时，由业务释放已交付的 SceneHandle 并确认场景退场。旧 Bundle 随资源系统关闭释放。
+- 调整：业务退场时停止发起加载。AssetSystem 开始释放后拒绝新请求，等待原生读取，再忽略 Handle 引用和 Retention 卸包。
 - 迁移：Provider 实现改为 IDisposeAsync，关闭调用方须等待终结完成；Handle／Lease 仍同步 Dispose。业务须停止使用旧资源，遗漏 Handle 不延长系统生命周期。
 - 修复：关闭期间的迟到资源得到清理，已交付结果不会被加载任务误释放；正常运行时场景实际卸载后归还 Bundle 引用。
 - 破坏：公共加载统一为 Handle API，移除回调加载、非 Handle 加载、按路径／对象释放和手动场景卸载入口。实例化使用 `InstantiateHandle`，批量预加载使用 `PreloadAssetHandle<T>`，使用结束后 Dispose。
@@ -89,6 +89,7 @@
 - 破坏：通用提交入口由 `AddTask(ITask, ...)` 改为 `AddTask(BaseTask, ...)`。提交任务的参数／工厂返回值使用 BaseTask 或具体派生类型；提交后用于观察、等待和取消的引用仍使用 ITask。独立实现 ITask 不提供调度资格。
 - 修复：TaskSystem 关闭开始后拒绝 AddTask 提交并抛出 ObjectDisposedException，避免清理回调提交的新任务被接受后随记录清空而遗失；关闭后的提交不再以任务组不存在报错。
 - 调整：下载任务终结后停止重试并释放请求；回调完成后释放本轮请求，传输失败仍按配置重试。
+- 破坏：任务取消统一使用 `BaseTask.Cancel()`。原先覆写 `Cancel()` 的实现可在 `OnTerminated()` 中处理 Cancelled 状态。自定义下载任务移除 `OnResourcesReleased` 覆写。派生自 `UnityDownloadBaseTask` 的任务覆写 `OnTerminated()` 时必须调用 `base.OnTerminated()` 以停止重试并释放请求。自定义收尾可能抛错时，将基类调用放在 `finally` 中。
 - 修复：await 续体中回收任务包装器不会丢失成功结果通知，也不会中断迟到场景清理。
 - 破坏：TaskState.InProgress / Completed 改名为 Running / Succeeded，更新枚举引用；失败和取消等待仍返回 null，调用者检查 State / Error。
 - 破坏：提交对象必须派生 BaseTask。ITask 不再继承 ITick / IDispose，外部通过 TaskSystem 提交、Cancel 取消，不直接 Execute / Tick / Dispose / Fail。

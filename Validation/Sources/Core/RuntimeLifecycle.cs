@@ -23,7 +23,6 @@ namespace LiteQuark.Editor
             internal Type EntryType = typeof(ShutdownEntry);
             internal string FailedInitialization;
             internal string FailedDisposal;
-            internal readonly Exception DisposalError = new InvalidOperationException("InjectedValidation partial system disposal");
             internal bool ThrowOnInitialize;
             internal bool InTimerCallback;
             internal bool DisposalStartedInTimerCallback;
@@ -78,7 +77,7 @@ namespace LiteQuark.Editor
                 if (_name == "entry") await _fixture.EntryGate.Task;
                 if (_name == "system 2") await _fixture.SystemGate.Task;
                 _disposed = true;
-                if (_name == _fixture.FailedDisposal) throw _fixture.DisposalError;
+                if (_name == _fixture.FailedDisposal) throw new InvalidOperationException("InjectedValidation partial system disposal: " + _name);
                 _fixture.Events.Add(_name + " end");
             }
         }
@@ -142,8 +141,7 @@ namespace LiteQuark.Editor
                 fixture.SystemGate.TrySetResult();
 
                 var runtime = LiteRuntime.Instance;
-                if (!shutdown.HasValue && runtime.State is not LiteRuntime.RuntimeState.Idle
-                    and not LiteRuntime.RuntimeState.ShuttingDown and not LiteRuntime.RuntimeState.ShutdownFailed)
+                if (!shutdown.HasValue && runtime.State is not LiteRuntime.RuntimeState.Idle and not LiteRuntime.RuntimeState.ShuttingDown)
                     shutdown = runtime.Shutdown();
 
                 if (shutdown.HasValue)
@@ -187,6 +185,14 @@ namespace LiteQuark.Editor
         }
 
         private sealed class OtherEndpointProbe : EndpointProbe { }
+
+        private sealed class FailingCloseAppender : ILogAppender
+        {
+            public string Name { get; set; }
+            public void Open() { }
+            public void DoAppend(LoggingEvent logEvent) { }
+            public void Close() => throw new InvalidOperationException(nameof(FailingCloseAppender));
+        }
 
         private static async UniTask RuntimeSettingsProfiles(TaskSystem system)
         {
@@ -281,6 +287,16 @@ namespace LiteQuark.Editor
                     current.Asset.BundleDownloadRetry.MaxRetries > 0 && authored.Asset.BundleRemoteUriByBuild.Development == "https://dev.example/" &&
                     ui.ResolutionWidth == 1600,
                     "Runtime changes to profile, shared, nested retry and managed-reference Addon data do not write back to scene settings or leak across restart.");
+
+                ((LoggerBase)log.Logger).AddAppender(new FailingCloseAppender());
+                await runtime.Shutdown();
+                launcher.EditorPreview = LiteBuildProfile.Development;
+                startupOrder.Clear();
+                runtime.Startup(launcher);
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup after appender close failure");
+                Check(_current.evidence.Any(line => line.Contains(nameof(FailingCloseAppender))) &&
+                    startupOrder.Contains(typeof(EndpointProbe).AssemblyQualifiedName),
+                    "After an appender fails to close, LLog emits the new profile's Info messages.");
             }
             finally
             {
@@ -732,62 +748,34 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask RuntimeShutdownFailureStopsTick(TaskSystem system)
+        private static async UniTask RuntimeShutdownFailure(TaskSystem system)
         {
             var runtime = LiteRuntime.Instance;
-            var fixture = new ShutdownFixture { FailedDisposal = "system 2" };
-            fixture.EntryGate.TrySetResult();
-            try
+            foreach (var failure in new[] { "system 2", "entry" })
             {
-                await BeginShutdownFixture(fixture);
-                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Partial disposal startup");
-                runtime.Tick(0f);
-                Check(fixture.Instances.Values.All(probe => probe.Ticks > 0),
-                    "The probes participate in real Runtime updates before shutdown.");
-                var shutdown = runtime.Shutdown();
-                await WaitForRuntimeCondition(() => fixture.Events.Contains("system 2 start"), "Partial disposal waiting for Timer");
-                var ticksBeforeFailure = fixture.Instances.Values.Sum(probe => probe.Ticks);
-                var failureObservedInTimer = false;
-                LiteRuntime.Timer.NextFrame(() =>
+                var fixture = new ShutdownFixture { FailedDisposal = failure };
+                fixture.EntryGate.TrySetResult();
+                fixture.SystemGate.TrySetResult();
+                try
                 {
-                    fixture.SystemGate.TrySetResult();
-                    failureObservedInTimer = runtime.State == LiteRuntime.RuntimeState.ShutdownFailed;
-                });
-                runtime.Tick(1f);
-                Exception error = null;
-                try { await shutdown; } catch (Exception ex) { error = ex; }
-                Check(failureObservedInTimer && fixture.Instances.Values.Sum(probe => probe.Ticks) == ticksBeforeFailure &&
-                    fixture.TicksAfterDispose == 0,
-                    "Timer resumes the failing Dispose inside Runtime.Tick; remaining systems are skipped in that same traversal.");
-                Check(ReferenceEquals(error, fixture.DisposalError) && runtime.State == LiteRuntime.RuntimeState.ShutdownFailed &&
-                    fixture.Events.Contains("system 2 start") && !fixture.Events.Contains("system 2 end"),
-                    "The original partial-system disposal error propagates and leaves Runtime in ShutdownFailed.");
-                var ticks = fixture.Instances.Values.Sum(probe => probe.Ticks);
-                Throws<InvalidOperationException>(runtime.Restart, "ShutdownFailed rejects Restart.");
-                Throws<InvalidOperationException>(() => runtime.Startup(runtime.Launcher, LiteRuntime.Setting), "ShutdownFailed rejects Startup.");
-                Exception retryError = null;
-                try { await runtime.Shutdown(); } catch (InvalidOperationException ex) { retryError = ex; }
-                Check(retryError != null, "A failed shutdown cannot be retried.");
-                var timerFired = false;
-                LiteRuntime.Timer.NextFrame(() => timerFired = true);
-                foreach (var paused in new[] { false, true, false })
-                {
-                    runtime.IsPause = paused;
-                    runtime.Tick(1f);
-                    await UniTask.NextFrame();
+                    await BeginShutdownFixture(fixture);
+                    await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup after prior cleanup");
+                    if (failure == "entry")
+                    {
+                        await runtime.Shutdown();
+                    }
+                    else
+                    {
+                        runtime.Restart();
+                        await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Idle, "Failed restart finishes cleanup");
+                    }
+
+                    Check(_current.evidence.Any(line => line.Contains("InjectedValidation partial system disposal: " + failure)) &&
+                        runtime.State == LiteRuntime.RuntimeState.Idle && fixture.Instances.Values.All(probe => probe.Disposals == 1) &&
+                        LiteRuntime.Get<ShutdownSystemTwo>() == null && LiteRuntime.Asset == null && LiteRuntime.Task == null,
+                        $"A failing {failure} is logged, remaining systems are released, and Runtime returns to Idle.");
                 }
-                Check(!timerFired && fixture.Instances.Values.Sum(probe => probe.Ticks) == ticks && fixture.TicksAfterDispose == 0 &&
-                    runtime.State == LiteRuntime.RuntimeState.ShutdownFailed && fixture.Instances["system 2"].Disposals == 1 && fixture.Instances["system 1"].Disposals == 0,
-                    "Terminal Runtime ticks advance neither Timer nor any probe, retry disposal, or start a new generation.");
-            }
-            finally
-            {
-                if (runtime.State == LiteRuntime.RuntimeState.ShutdownFailed)
-                {
-                    // Final case in an isolated process; preserve the terminal Runtime through reporting.
-                    _shutdownFixture = null;
-                }
-                else { await FinishShutdownFixture(fixture); }
+                finally { await FinishShutdownFixture(fixture); }
             }
         }
     }

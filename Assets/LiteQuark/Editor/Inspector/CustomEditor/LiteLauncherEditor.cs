@@ -80,7 +80,7 @@ namespace LiteQuark.Editor
             {
                 var runtime = LiteRuntime.Instance;
                 var active = LiteRuntime.Setting;
-                var error = runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.ShutdownFailed;
+                var error = runtime.State == LiteRuntime.RuntimeState.Error;
                 EditorGUILayout.HelpBox($"{runtime.State}{(runtime.IsPause ? " (Paused)" : "")} · {active?.Environment}\nResources: {active?.Asset.BundleMode}   Log: {active?.Log.Levels}", error ? MessageType.Error : MessageType.Info);
             }
         }

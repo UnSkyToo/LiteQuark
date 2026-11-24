@@ -69,6 +69,6 @@ Runtime 等待 `DisposeAsync()` 完成：不取消已接受的异步读写或切
 
 候选初始化可在后台完成，替换和释放会回到主线程。初始化失败时保留旧 Provider；发布成功后若旧 Provider 的 Dispose 抛异常，切换仍报告错误，但已发布的新 Provider 继续由系统持有，不撤销发布或自动重试旧 Provider 的释放。
 
-关闭等待表示操作已结束，不保证写入成功；读写结果／异常仍由各调用返回的 UniTask 报告，业务应等待 SaveAsync 确认保存结果。Provider 的 Dispose 异常使关闭失败，不自动重试。自定义 Provider 的 UniTask 必须覆盖实际 I/O 寿命，Dispose 需支持部分初始化。当前不保证同 key 写入串行化、原子文件替换或断电持久化；必要保存应在应用退出前完成。
+关闭会等待已受理的操作结束。业务应等待 SaveAsync 确认保存结果，读写异常由各次调用报告。Provider 的 Dispose 异常由 Runtime 记录，其余系统继续释放。自定义 Provider 的 UniTask 应覆盖实际 I/O 寿命，Dispose 需支持部分初始化。必要保存应在应用退出前完成。当前不保证同 key 写入串行化、原子替换或断电持久化。
 
 实现见 [DataSystem.cs](DataSystem.cs)、[Provider](Provider) 和 [DataSystemSetting.cs](DataSystemSetting.cs)。

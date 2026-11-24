@@ -198,14 +198,14 @@ namespace LiteQuark.Editor
                     await RuntimeShutdownDuringInitialization(system);
                 }, $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed", "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("tasks/ordered-shutdown", RuntimeShutdownOrder, "FrameworkError: Unknown");
-                await RunAsync("tasks/settings-profiles", RuntimeSettingsProfiles);
+                await RunAsync("tasks/settings-profiles", RuntimeSettingsProfiles, nameof(FailingCloseAppender));
                 await RunAsync("tasks/late-tick", RuntimeLateTick);
                 await RunAsync("tasks/restart", async system =>
                 {
                     await RuntimeRestartStates(system);
                     await RuntimeRestartRequests(system);
                 }, "Enter <ErrorState>", "FrameworkError: Startup", "FrameworkError: Unknown", "Cannot restart runtime in state Error.", $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed");
-                await RunAsync("tasks/shutdown-failure", RuntimeShutdownFailureStopsTick);
+                await RunAsync("tasks/shutdown-failure", RuntimeShutdownFailure, "InjectedValidation partial system disposal");
             }
             catch (Exception ex)
             {
@@ -213,11 +213,6 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShutdownFailed)
-                {
-                    // Suppress quit-time shutdown after the final terminal-state case and isolated task cleanup.
-                    UnityEngine.Object.DestroyImmediate(LiteRuntime.Instance.Launcher.gameObject);
-                }
                 Application.logMessageReceived -= CaptureError;
                 var editorStop = JsonUtility.FromJson<ValidationCase>(SessionState.GetString(EditorStopResultKey, string.Empty));
                 Results.cases.Add(editorStop);
@@ -570,8 +565,6 @@ namespace LiteQuark.Editor
             File.WriteAllBytes(emptyPath, Array.Empty<byte>());
             try
             {
-                var requestField = typeof(UnityDownloadBaseTask).GetField("_request",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 var blocker = new ProbeTask();
                 system.AddTask(blocker); system.Tick(0);
                 var calls = 0;
@@ -579,15 +572,15 @@ namespace LiteQuark.Editor
                 var task = system.AddUnityWebGetRequestTask(new Uri(binaryPath).AbsoluteUri,
                     new RetryParam(1, 0, 0.01f), false, data => { calls++; delivered = data; });
                 system.Tick(0);
-                Check(task.State == TaskState.Pending && !task.IsExecuted && calls == 0 && requestField.GetValue(task) == null,
+                Check(task.State == TaskState.Pending && !task.IsExecuted && calls == 0,
                     "The WebGet factory still waits for Default capacity before creating a request.");
                 Check(system.RunningTaskCount == 1 && system.PendingTaskCount == 1,
                     "A queued snapshot request cannot bypass the existing quota.");
                 blocker.Finish();
                 await WaitDone(system, task);
-                Check(task.State == TaskState.Succeeded && task.Error == null && requestField.GetValue(task) == null
+                Check(task.State == TaskState.Succeeded && task.Error == null
                     && calls == 1 && delivered.SequenceEqual(expected),
-                    "The factory delivers binary bytes unchanged and releases its request during retirement.");
+                    "The factory delivers the requested binary data exactly once.");
 
                 await UniTask.Yield();
                 var late = (byte[])await task.Task;
@@ -597,8 +590,8 @@ namespace LiteQuark.Editor
                 var empty = system.AddUnityWebGetRequestTask(new Uri(emptyPath).AbsoluteUri,
                     new RetryParam(1, 0, 0.01f), false, callback: null);
                 await WaitDone(system, empty);
-                Check(empty.State == TaskState.Succeeded && empty.Error == null && empty.Result is byte[] { Length: 0 }
-                    && requestField.GetValue(empty) == null, "An empty response succeeds with an empty array and a disposed request.");
+                Check(empty.State == TaskState.Succeeded && empty.Error == null && empty.Result is byte[] { Length: 0 },
+                    "An empty response succeeds with an empty array.");
                 var absent = system.AddUnityWebGetRequestTask(new Uri(Path.Combine(scratch, "task-snapshot-missing.bin")).AbsoluteUri,
                     new RetryParam(1, 0, 0.01f), false, callback: null);
                 await WaitDone(system, absent);

@@ -55,18 +55,17 @@ namespace LiteBattle.Runtime
 
         private LiteInputManager()
         {
+            InputKeyMapping_.Add(KeyCode.J, LitePlayerInputKey.Attack);
+            InputKeyMapping_.Add(KeyCode.K, LitePlayerInputKey.Slot1);
+            InputKeyMapping_.Add(KeyCode.L, LitePlayerInputKey.Slot2);
+            InputKeyMapping_.Add(KeyCode.I, LitePlayerInputKey.Slot3);
+            InputKeyMapping_.Add(KeyCode.Space, LitePlayerInputKey.Jump);
         }
 
         public UniTask<bool> Startup()
         {
             Keyboard_ = new LiteKeyboardInput();
             Touch_ = new LiteTouchInput(OnTouchMove, OnTouchScale);
-
-            InputKeyMapping_.Add(KeyCode.J, LitePlayerInputKey.Attack);
-            InputKeyMapping_.Add(KeyCode.K, LitePlayerInputKey.Slot1);
-            InputKeyMapping_.Add(KeyCode.L, LitePlayerInputKey.Slot2);
-            InputKeyMapping_.Add(KeyCode.I, LitePlayerInputKey.Slot3);
-            InputKeyMapping_.Add(KeyCode.Space, LitePlayerInputKey.Jump);
 
             EnableKeyboard = false;
             EnableTouch = false;

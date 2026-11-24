@@ -16,15 +16,6 @@ namespace LiteQuark.Runtime
             _bundleUri = bundleUri;
         }
 
-        public override void Cancel()
-        {
-            // 已提交的本地读取由回调发布结果，关闭中的 Loader 接手卸包。
-            if (_bundleRequest == null)
-            {
-                base.Cancel();
-            }
-        }
-
         protected override void OnTick(float deltaTime)
         {
             Progress = _bundleRequest?.progress ?? 0f;

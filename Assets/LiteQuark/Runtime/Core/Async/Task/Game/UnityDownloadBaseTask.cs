@@ -15,7 +15,6 @@ namespace LiteQuark.Runtime
         private UnityWebRequest _request;
         private int _retryCount;
         private ulong _retryTimerID;
-        internal bool IsDelivering { get; private set; }
 
         protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
@@ -26,16 +25,6 @@ namespace LiteQuark.Runtime
             _retryInterval = Mathf.Max(retry.RetryInterval, 0.01f);
             _forceNoCache = forceNoCache;
             _retryTimerID = 0;
-        }
-
-        protected override void OnDispose()
-        {
-            StopRetry();
-            if (!IsDelivering)
-            {
-                _request?.Dispose();
-                _request = null;
-            }
         }
 
         protected override void OnTerminated()
@@ -50,9 +39,10 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                if (!IsDelivering)
+                using (var request = _request)
                 {
-                    FinishRequest();
+                    _request = null;
+                    request?.Abort();
                 }
             }
         }
@@ -113,7 +103,7 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                FailRequest(ex);
+                Fail(ex);
             }
         }
 
@@ -131,29 +121,29 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            IsDelivering = true;
+            // 完成回调持有请求直到结果读取结束。等待者可同步恢复并释放任务。
+            var request = _request;
+            _request = null;
             try
             {
-                var downloadHandler = _request.downloadHandler;
-                if (_request.result != UnityWebRequest.Result.Success || !(downloadHandler?.isDone ?? false))
+                using (request)
                 {
-                    var error = _request.error;
-                    var message = $"{GetType().Name} failed: {Uri}, {_request.result}, HTTP {_request.responseCode}, {error}";
+                    var downloadHandler = request.downloadHandler;
+                    if (request.result == UnityWebRequest.Result.Success && (downloadHandler?.isDone ?? false))
+                    {
+                        OnSuccess(request);
+                        return;
+                    }
+                    var error = request.error;
+                    var message = $"{GetType().Name} failed: {Uri}, {request.result}, HTTP {request.responseCode}, {error}";
                     LLog.Error(message);
-
                     if (_retryCount > 0 && RetryParam.IsCanRetryError(error ?? string.Empty))
                     {
                         _retryCount--;
                         _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
+                        return;
                     }
-                    else
-                    {
-                        FailRequest(new InvalidOperationException(message));
-                    }
-                }
-                else
-                {
-                    OnSuccess(_request);
+                    Fail(new InvalidOperationException(message));
                 }
             }
             catch (Exception ex)
@@ -164,66 +154,8 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    FailRequest(ex);
-                }
-            }
-            finally
-            {
-                FinishRequest();
-            }
-        }
-
-        internal void ReleaseRequest(bool abort)
-        {
-            var request = _request;
-            _request = null;
-            using (request)
-            {
-                if (abort) request?.Abort();
-            }
-        }
-
-        private void FailRequest(Exception error)
-        {
-            try
-            {
-                ReleaseRequest(abort: true);
-            }
-            catch (Exception ex)
-            {
-                error = new AggregateException(error, ex);
-            }
-            Fail(error);
-        }
-
-        private void FinishRequest()
-        {
-            Exception releaseError = null;
-            try
-            {
-                ReleaseRequest(State is TaskState.Cancelled or TaskState.Failed);
-            }
-            catch (Exception ex)
-            {
-                releaseError = ex;
-                if (!IsDone)
-                {
                     Fail(ex);
                 }
-            }
-
-            IsDelivering = false;
-            if (IsDone)
-            {
-                OnResourcesReleased(releaseError);
-            }
-        }
-
-        protected virtual void OnResourcesReleased(Exception error)
-        {
-            if (error != null)
-            {
-                LLog.Exception(error, "Release download request failed : {0}", Uri);
             }
         }
 

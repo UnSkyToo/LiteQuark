@@ -44,12 +44,11 @@ namespace LiteQuark.Runtime
 
         private void CompleteSceneLoad(bool success, Scene scene, AssetError error)
         {
+            _loadSceneTask = null;
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)
             {
                 return;
             }
-
-            _loadSceneTask = null;
 
             var isLoaded = OnSceneLoaded(success, scene);
             if (!isLoaded)

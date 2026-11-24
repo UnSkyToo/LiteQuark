@@ -8,6 +8,17 @@ namespace LiteQuark.Editor
 {
     internal sealed class PoolValidation : BundleValidation
     {
+        private sealed class FailingPool : EmptyGameObjectPool
+        {
+            internal readonly InvalidOperationException Failure = new("Pool disposal failed.");
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                throw Failure;
+            }
+        }
+
         internal static async UniTask Exercise(ValidationCase result)
         {
             _case = result;
@@ -45,10 +56,17 @@ namespace LiteQuark.Editor
                 try
                 {
                     var instance = await replacement.Alloc(borrower.transform);
-                    await pools.DisposeAsync();
+                    var root = pools.GetPoolRoot();
+                    var failing = pools.AddPool<FailingPool>("failing", root);
+                    var sibling = pools.GetEmptyGameObjectPool("sibling");
+                    Exception failure = null;
+                    try { await pools.DisposeAsync(); }
+                    catch (InvalidOperationException ex) { failure = ex; }
+                    Check(ReferenceEquals(failure, failing.Failure) && !sibling.IsReady,
+                        "A pool disposal error reaches the caller after the remaining pool is released.");
                     await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
-                    Check(instance != null && go == null && instance.transform.parent == borrower.transform,
-                        "Shutdown destroys idle objects while an externally parented instance stays with its borrower.");
+                    Check(root == null && go == null && instance != null && instance.transform.parent == borrower.transform,
+                        "Shutdown destroys the pool root and idle objects while an externally parented instance stays with its borrower.");
                 }
                 finally { UnityEngine.Object.DestroyImmediate(borrower); }
                 await h.Shutdown();

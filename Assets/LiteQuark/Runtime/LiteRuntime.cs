@@ -13,7 +13,6 @@ namespace LiteQuark.Runtime
             InitGameEntry,
             Running,
             ShuttingDown,
-            ShutdownFailed,
             Error,
         }
 
@@ -78,15 +77,14 @@ namespace LiteQuark.Runtime
         private async UniTask<bool> InitializeAsync(CancellationToken ct)
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            if (!await SystemCenter.Instance.InitializeSystem(ct) || ct.IsCancellationRequested)
-            {
-                return false;
-            }
-            LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
-
             IGameEntry entry = null;
             try
             {
+                if (!await SystemCenter.Instance.InitializeSystem(ct) || ct.IsCancellationRequested)
+                {
+                    return false;
+                }
+                LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
                 Log.OpenViewer();
                 if (ct.IsCancellationRequested)
                 {
@@ -133,29 +131,14 @@ namespace LiteQuark.Runtime
             {
                 if (entry != null)
                 {
-                    await entry.DisposeAsync();
+                    await TryDisposeAsync(entry);
                 }
             }
         }
 
         private async UniTask CompleteStartupAsync(CancellationToken ct)
         {
-            bool ready;
-            try
-            {
-                ready = await _initialization;
-            }
-            catch (System.Exception ex)
-            {
-                // An external shutdown observes the original disposal exception itself.
-                if (!ct.IsCancellationRequested)
-                {
-                    _state = RuntimeState.ShutdownFailed;
-                    LLog.Exception(ex);
-                }
-                return;
-            }
-
+            var ready = await _initialization;
             _initialization = default;
             if (ct.IsCancellationRequested)
             {
@@ -174,25 +157,25 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public UniTask Shutdown() => Shutdown(false);
+        public UniTask Shutdown() => Shutdown(false).AsUniTask();
 
         internal void OnApplicationQuit()
         {
             _quitRequested = true;
-            if (_state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+            if (_state != RuntimeState.ShuttingDown)
             {
                 Shutdown(true).Forget();
             }
         }
 
-        private async UniTask Shutdown(bool atFrameBoundary)
+        private async UniTask<bool> Shutdown(bool atFrameBoundary)
         {
             if (_state == RuntimeState.Idle)
             {
-                return;
+                return true;
             }
 
-            if (_state is RuntimeState.ShuttingDown or RuntimeState.ShutdownFailed)
+            if (_state == RuntimeState.ShuttingDown)
             {
                 throw new System.InvalidOperationException($"Cannot shutdown runtime in state {_state}.");
             }
@@ -208,30 +191,28 @@ namespace LiteQuark.Runtime
                 {
                     await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
                 }
-                await FinishAtFrameBoundary(_initialization.AsUniTask());
+                await FinishAtFrameBoundary(_initialization);
 
+                var success = true;
                 if (_gameEntry != null)
                 {
-                    await FinishAtFrameBoundary(_gameEntry.DisposeAsync());
+                    success = await FinishAtFrameBoundary(TryDisposeAsync(_gameEntry));
                     _gameEntry = null;
                 }
-                await SystemCenter.Instance.DisposeAsync();
-
+                success &= await SystemCenter.Instance.DisposeAsync();
+                return success;
+            }
+            finally
+            {
                 _startupCts?.Dispose();
                 _startupCts = null;
-
                 _state = RuntimeState.Idle;
-            }
-            catch
-            {
-                _state = RuntimeState.ShutdownFailed;
-                throw;
             }
         }
 
         internal void EnterErrorState(FrameworkErrorCode code)
         {
-            if (_state is not RuntimeState.ShuttingDown and not RuntimeState.ShutdownFailed)
+            if (_state != RuntimeState.ShuttingDown)
             {
                 _state = RuntimeState.Error;
                 LLog.Error("Enter <ErrorState>, please check log.");
@@ -243,7 +224,7 @@ namespace LiteQuark.Runtime
         public void Tick(float deltaTime)
         {
             _lateTickFrame = -1;
-            if (_state is RuntimeState.Idle or RuntimeState.Error or RuntimeState.ShutdownFailed)
+            if (_state is RuntimeState.Idle or RuntimeState.Error)
             {
                 return;
             }
@@ -312,15 +293,31 @@ namespace LiteQuark.Runtime
             SystemCenter.Instance.LateTick(deltaTime);
         }
 
-        internal static async UniTask FinishAtFrameBoundary(UniTask task)
+        internal static async UniTask<bool> TryDisposeAsync(IDisposeAsync target)
+        {
+            try
+            {
+                await target.DisposeAsync();
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                // LogSystem 自身也可能正在释放。
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+
+        internal static async UniTask<bool> FinishAtFrameBoundary(UniTask<bool> task)
         {
             var pending = task.Status == UniTaskStatus.Pending;
-            await task;
+            var result = await task;
             if (pending)
             {
                 // A Timer or Task tick may have resumed this continuation inline.
                 await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             }
+            return result;
         }
 
         public void Restart()
@@ -341,8 +338,7 @@ namespace LiteQuark.Runtime
         private async UniTask RestartRuntime()
         {
             Debug.ClearDeveloperConsole();
-            await Shutdown(true);
-            if (!_quitRequested)
+            if (await Shutdown(true) && !_quitRequested)
             {
                 Startup(Launcher, _useLauncherSettings ? null : _setting);
             }

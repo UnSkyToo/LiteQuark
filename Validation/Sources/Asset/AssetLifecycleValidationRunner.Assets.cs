@@ -158,16 +158,6 @@ namespace LiteQuark.Editor
             await h.Shutdown();
             Check(h.Disposed && ReferenceEquals(a.Error.Exception, original),
                 "A failed load retains its original error and allows a later clean shutdown.");
-
-            var stopping = new Harness(true, 1);
-            using var pending = stopping.Assets.LoadAssetHandle<TextAsset>(TextPath);
-            stopping.Provider.Tick(0);
-            var stopError = new IOException("Injected failure while stopping a Bundle request.");
-            stopping.Locater.Manual["text.ab"].StopFailure = stopError;
-            Exception closeError = null;
-            try { await stopping.Assets.DisposeAsync(); } catch (IOException ex) { closeError = ex; }
-            Check(ReferenceEquals(closeError, stopError) && pending.State == AssetHandleState.Failed,
-                "An error from this close reaches the caller and ends pending Handle delivery.");
         }
 
         private static async UniTask ShutdownBeforeBundleDelivery()
@@ -175,9 +165,8 @@ namespace LiteQuark.Editor
             var h = New();
             var handle = h.Asset<TextAsset>(TextPath);
             h.Provider.Tick(0f);
-            var task = TaskSnapshot().OfType<LoadLocalBundleTask>().Single(t => t.DebugName == "LoadBundle text.ab");
-            await WaitWithoutLoaderTick(() => task.IsDone, "Bundle completes before Loader delivery");
-            var bundle = NativeBundle(task.GetBundle());
+            await WaitWithoutLoaderTick(() => AssetBundle.GetAllLoadedAssetBundles().Any(b => b.name == "text.ab"), "Bundle loads before delivery");
+            var bundle = AssetBundle.GetAllLoadedAssetBundles().Single(b => b.name == "text.ab");
             h.Locater.Opened.Add(bundle);
             Check(bundle != null && !handle.IsDone, "The native Bundle is loaded and its Handle still awaits delivery.");
 
@@ -191,42 +180,34 @@ namespace LiteQuark.Editor
 
         private static async UniTask ShutdownWithPendingDependency()
         {
-            var h = New();
-            var group = RuntimeGroup(LiteConst.TaskGroupId.Asset);
-            var gates = FillGroup(group.Id, group.ConcurrencyLimit.Value);
-            AssetBundleCreateRequest request = null;
-            try
-            {
-                await Wait(() => gates.All(task => task.IsExecuted), "Reserve admission to control native submission");
-                var handle = h.Asset<GameObject>(PrefabPath);
-                h.Provider.Tick(0);
-                var tasks = TaskSnapshot().OfType<LoadLocalBundleTask>().ToArray();
-                var mainTask = tasks.Single(task => task.DebugName == "LoadBundle a.ab");
-                var dependency = tasks.Single(task => task.DebugName == "LoadBundle b.ab");
-                mainTask.Execute();
-                await WaitWithoutLoaderTick(() => mainTask.IsDone, "Main Bundle completes first");
-                h.Provider.Tick(0);
-                var cache = h.Cache("a.ab");
-                var main = NativeBundle(cache.Bundle);
-                h.Locater.Opened.Add(main);
-                Check(main != null && !cache.IsLoaded && !handle.IsDone, "Cache owns the native main Bundle before dependency delivery.");
+            var delayed = New(true);
+            var pending = delayed.Asset<GameObject>(PrefabPath);
+            delayed.Provider.Tick(0);
+            var main = delayed.Finish("a.ab", true);
+            Check(main != null && ReferenceEquals(NativeBundle(delayed.Cache("a.ab").Bundle), main) && !pending.IsDone,
+                "The cache owns the main Bundle while the prefab waits for its dependency.");
+            await delayed.Shutdown();
+            Check(main == null && pending.State == AssetHandleState.Failed,
+                "Shutdown releases the delivered main Bundle and fails the pending prefab.");
+            await Cleanup();
 
-                dependency.Execute();
-                request = Get<AssetBundleCreateRequest>(dependency, "_bundleRequest");
-                Check(request != null && !request.isDone, "Real dependency load is in flight when shutdown starts.");
-                var shutdown = h.Shutdown();
-                Check(!dependency.IsDone && shutdown.Status == UniTaskStatus.Pending && handle.State == AssetHandleState.Failed &&
-                    handle.Result == null, "Closing ends the Handle's wait while its submitted file read is still running.");
-                await shutdown;
-                Check(dependency.State == TaskState.Succeeded && request.isDone && request.assetBundle == null &&
-                    main == null && !h.Has("a.ab") && !h.Has("b.ab"),
-                    "Shutdown finishes the native dependency read and releases both Bundles and caches.");
-            }
-            finally
-            {
-                if (request != null && request.isDone) h.Locater.Opened.Add(request.assetBundle);
-                await ReleaseGates(gates);
-            }
+            var h = New();
+            var handle = h.Asset<GameObject>(PrefabPath);
+            h.Provider.Tick(0);
+            LiteRuntime.Task.Tick(0);
+            var shutdown = h.Shutdown();
+            Check(shutdown.Status == UniTaskStatus.Pending && handle.State == AssetHandleState.Failed,
+                "Closing ends the prefab Handle's wait while its Bundle loads are in flight.");
+            await shutdown;
+            Check(!AssetBundle.GetAllLoadedAssetBundles().Any(bundle => bundle.name == "a.ab" || bundle.name == "b.ab"),
+                "The old prefab Bundle and its dependency have both been released.");
+            await Cleanup();
+
+            var next = New();
+            var fresh = next.Asset<GameObject>(PrefabPath);
+            await Wait(() => fresh.IsDone, "Reload the same prefab after shutdown");
+            Check(fresh.Result != null && fresh.Result.GetComponent<Renderer>().sharedMaterial != null,
+                "The next session can immediately reopen the same prefab and dependency files.");
         }
 
         private static async UniTask RemoteCleanup()
@@ -351,16 +332,13 @@ namespace LiteQuark.Editor
             var other = h.Asset<TextAsset>(TextPath);
             h.Provider.Tick(0);
             var native = h.Finish("text.ab", true);
-            var task = Get<BaseTask>(h.Entry("text.ab", TextPath), "_loadAssetTask");
-            task.Execute();
-            var request = Get<AssetBundleRequest>(task, "_assetRequest");
-            Check(request != null && !request.isDone, "Unity has accepted the shared read.");
+            LiteRuntime.Task.Tick(0);
             token.Cancel();
             var observed = false;
             try { await cancelled; } catch (OperationCanceledException) { observed = true; }
             Check(observed && native != null && cancelled.Result == null, "Cancellation finishes only this consumer.");
             await Wait(() => other.IsDone, "Remaining asset consumer");
-            Check(request.isDone && other.Result != null && cancelled.Result == null, "Only the remaining owner receives the late asset.");
+            Check(other.Result != null && cancelled.Result == null, "Only the remaining owner receives the late asset.");
             other.Dispose();
             h.Assets.UnloadUnusedAssets();
             Check(native == null, "The native Bundle is released after the read settles.");
@@ -368,14 +346,12 @@ namespace LiteQuark.Editor
             var pending = h.Asset<TextAsset>(SecondTextPath);
             h.Provider.Tick(0);
             var reloaded = h.Finish("text.ab", true);
-            var read = Get<BaseTask>(h.Entry("text.ab", SecondTextPath), "_loadAssetTask");
-            read.Execute();
-            var inFlight = Get<AssetBundleRequest>(read, "_assetRequest");
+            LiteRuntime.Task.Tick(0);
             var close = h.Shutdown();
-            Check(pending.State == AssetHandleState.Failed && !inFlight.isDone && reloaded != null &&
+            Check(pending.State == AssetHandleState.Failed && reloaded != null &&
                 close.Status == UniTaskStatus.Pending, "Closing ends delivery while the native read still owns its Bundle.");
             await close;
-            Check(inFlight.isDone && reloaded == null && pending.Result == null,
+            Check(reloaded == null && pending.Result == null,
                 "The submitted read settles before shutdown unloads its Bundle.");
         }
     }

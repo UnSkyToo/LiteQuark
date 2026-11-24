@@ -27,9 +27,17 @@ namespace LiteQuark.Runtime
             _isClosing = true;
             var pools = new List<IBasePool>(_poolCache.Values);
             _poolCache.Clear();
+            System.Exception firstError = null;
             foreach (var pool in pools)
             {
-                pool.Dispose();
+                try
+                {
+                    pool.Dispose();
+                }
+                catch (System.Exception ex)
+                {
+                    firstError ??= ex;
+                }
             }
 
             if (_root != null)
@@ -38,7 +46,7 @@ namespace LiteQuark.Runtime
                 _root = null;
             }
 
-            return UniTask.CompletedTask;
+            return firstError == null ? UniTask.CompletedTask : UniTask.FromException(firstError);
         }
 
         public void RemoveUnusedPools()

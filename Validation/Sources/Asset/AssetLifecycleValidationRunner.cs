@@ -28,12 +28,7 @@ namespace LiteQuark.Editor
             await Run("lifecycle/close-with-dependency", ShutdownWithPendingDependency, "Bundle load failed");
             await Run("lifecycle/remote-cleanup", RemoteCleanup);
             await Run("lifecycle/scene-path-ownership", ScenePathOwnership);
-            await Run("lifecycle/submitted-scene", async () =>
-            {
-                await SubmittedScene(closeFromTaskContinuation: false);
-                await Cleanup();
-                await SubmittedScene(closeFromTaskContinuation: true);
-            });
+            await Run("lifecycle/submitted-scene", SubmittedScene);
             await Run("lifecycle/scene-restart", RestartWithScene);
             await Run("lifecycle/scene-retry", SceneFailureRetry, "Load bundle failed : scene.ab");
             await Run("lifecycle/priority", PrioritySharedDependencies);

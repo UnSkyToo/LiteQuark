@@ -7,7 +7,7 @@ namespace LiteQuark.Runtime
     {
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
-            if (_isDisposed || LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShuttingDown)
+            if (_isDisposed)
             {
                 LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(new AssetError(assetKey, "Asset loading is closed")));
                 return;
@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
 
         public void LoadSceneAsync(string sceneKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<Scene?>>> callback)
         {
-            if (_isDisposed || LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShuttingDown)
+            if (_isDisposed)
             {
                 LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(new AssetError(sceneKey, "Scene loading is closed")));
                 return;

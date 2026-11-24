@@ -9,6 +9,7 @@
 ## Architecture reviews
 
 - First ask what actual callers would lose without each abstraction, lifecycle mechanism, or defensive branch. Use observable consequences to recommend keeping, narrowing, merging, or removing it. Assess migration costs separately from the target design.
+- Define supported behavior from public APIs used on Unity's main thread during the normal lifecycle. A Validation fixture alone does not establish a production requirement.
 
 ## Change constraints
 

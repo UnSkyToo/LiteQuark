@@ -60,7 +60,7 @@ ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或�
 
 `IsDone` 包括三个终态；终态不可逆。`Task` 为 `UniTask<object>`，**失败和取消都以 null 完成，不因这两种终态抛异常**，因此要检查 State / Error。终态前后取得 Task 的结果语义一致；失败或取消保留最后进度，不能用 Progress 判断成功。
 
-默认的 `Cancel()` 将任务置为 Cancelled。内置本地 Bundle 任务在提交原生读盘前可以取消，提交后会读完并发布结果。业务释放 Handle 可立即结束自身等待。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动，完成也不等于其业务结果成功。
+`Cancel()` 立即将未终结的任务置为 Cancelled。取消业务 Handle 立即结束本次等待。关闭时，Loader 等待已提交的本地 Bundle 读盘完成并释放结果，排队任务和在途下载各取消一次。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动。
 
 Bundle 加载任务负责停止在途请求。在结果可以交接时，Loader 交付或释放容器并归还名额。Asset Cache 持有 Bundle 直到资源读取回调结束。已交付的场景由业务通过 SceneHandle 管理退场。TaskSystem 负责取消任务并回收包装器。见[资源系统关闭](../../../Asset/README.md#系统关闭)。
 

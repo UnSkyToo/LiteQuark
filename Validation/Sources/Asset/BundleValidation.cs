@@ -352,13 +352,6 @@ namespace LiteQuark.Editor
 
         protected sealed class ManualTask : BaseTask, ILoadBundleTask
         {
-            internal Exception StopFailure;
-            public override void Cancel()
-            {
-                base.Cancel();
-                if (StopFailure != null) throw StopFailure;
-            }
-
             public IBundleResource GetBundle() => Result as IBundleResource;
             internal void Finish(AssetBundle bundle)
             {

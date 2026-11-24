@@ -56,21 +56,22 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            if (_viewer != null)
+            try
             {
-                Object.Destroy(_viewer);
+                if (_viewer != null)
+                {
+                    Object.Destroy(_viewer);
+                }
+                _repository?.Dispose();
             }
-            _viewer = null;
-
-            _repository?.Dispose();
-            _repository = null;
-
-            _logCache?.Clear();
-            _logCache = null;
-
-            _commonLogger = null;
-
-            LLog.Reset();
+            finally
+            {
+                _viewer = null;
+                _repository = null;
+                _logCache = null;
+                _commonLogger = null;
+                LLog.Reset();
+            }
 
             return UniTask.CompletedTask;
         }
