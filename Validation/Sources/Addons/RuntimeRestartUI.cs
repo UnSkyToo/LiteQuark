@@ -64,7 +64,7 @@ namespace LiteQuark.Editor
                 Generation = _fixture.Systems.Count + 1;
                 if (Generation == 2)
                 {
-                    _fixture.OldAssetManagerReleased = Get<IAssetManager>(_fixture.OldAsset, "_manager") == null;
+                    _fixture.OldAssetManagerReleased = Get<AssetManager>(_fixture.OldAsset, "_manager") == null;
                 }
                 _fixture.Systems.Add(this);
                 _fixture.Events.Add("system " + Generation + " constructed");

@@ -10,42 +10,29 @@ namespace LiteQuark.Runtime
     /// </summary>
     public class PreloadHandle<T> : IAssetHandle<bool> where T : UnityEngine.Object
     {
-        private readonly List<Entry> _entries = new();
+        private readonly List<AssetHandle<T>> _handles = new();
         private readonly List<string> _failedPaths = new();
         private readonly List<AssetError> _errors = new();
         private readonly UniTaskCompletionSource<bool> _tcs = new();
         private CancellationTokenRegistration _ctr;
-        private bool _isDisposed;
-        private bool _result;
-        private int _loadedCount;
 
         public AssetHandleState State { get; private set; }
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
-        public bool IsDisposed => _isDisposed;
-        public bool Result => _result;
+        public bool IsDisposed { get; private set; }
+        public bool Result => State == AssetHandleState.Succeeded;
         internal UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
         public IReadOnlyList<string> FailedPaths => _failedPaths;
         public IReadOnlyList<AssetError> Errors => _errors;
-        public int TotalCount => _entries.Count;
-        public int LoadedCount => _loadedCount;
+        public int TotalCount { get; private set; }
+        public int LoadedCount { get; private set; }
         public int FailedCount => _failedPaths.Count;
 
         internal PreloadHandle(IEnumerable<string> assetPaths,
-            Func<string, CancellationToken, AssetHandle<T>> loadFunc,
+            Func<string, AssetHandle<T>> loadFunc,
             CancellationToken ct)
         {
-            if (assetPaths == null)
-            {
-                throw new ArgumentNullException(nameof(assetPaths));
-            }
-
-            if (loadFunc == null)
-            {
-                throw new ArgumentNullException(nameof(loadFunc));
-            }
-
             if (ct.IsCancellationRequested)
             {
                 Cancel(ct);
@@ -54,6 +41,7 @@ namespace LiteQuark.Runtime
 
             if (ct.CanBeCanceled)
             {
+                // 只有批次订阅 token，取消时统一释放子 Handle。
                 _ctr = ct.Register(() => Cancel(ct));
             }
 
@@ -69,10 +57,12 @@ namespace LiteQuark.Runtime
                         return;
                     }
 
-                    _entries.Add(new Entry(assetPath, loadFunc(assetPath, ct)));
+                    _handles.Add(loadFunc(assetPath));
+                    TotalCount++;
                     if (IsDone)
                     {
-                        DisposeEntries();
+                        // 提交子请求期间可能同步取消，刚返回的 Handle 也由本批次释放。
+                        ReleaseHandles();
                         return;
                     }
                 }
@@ -82,15 +72,9 @@ namespace LiteQuark.Runtime
                 var error = new AssetError(currentPath, ex.Message, ex);
                 if (TrySetTerminalState(AssetHandleState.Failed, error))
                 {
-                    DisposeEntries();
+                    ReleaseHandles();
                     _tcs.TrySetException(ex);
                 }
-                return;
-            }
-
-            if (_entries.Count == 0)
-            {
-                Complete(true);
                 return;
             }
 
@@ -99,18 +83,11 @@ namespace LiteQuark.Runtime
 
         private async UniTaskVoid WaitAsync(CancellationToken ct)
         {
-            var success = true;
-
-            foreach (var entry in _entries)
+            try
             {
-                if (IsDone)
+                foreach (var handle in _handles)
                 {
-                    return;
-                }
-
-                try
-                {
-                    var asset = await entry.Handle.Task;
+                    var asset = await handle.Task;
                     if (IsDone)
                     {
                         return;
@@ -124,67 +101,27 @@ namespace LiteQuark.Runtime
 
                     if (asset == null)
                     {
-                        success = false;
-                        AddError(entry, entry.Handle.Error ?? new AssetError(entry.Path, "Asset load returned no result"));
+                        _failedPaths.Add(handle.AssetKey);
+                        _errors.Add(handle.Error ?? new AssetError(handle.AssetKey, "Asset load returned no result"));
                     }
                     else
                     {
-                        _loadedCount++;
+                        LoadedCount++;
                     }
-                }
-                catch (OperationCanceledException)
-                {
-                    if (IsDone)
-                    {
-                        return;
-                    }
-
-                    if (ct.IsCancellationRequested)
-                    {
-                        Cancel(ct);
-                        return;
-                    }
-
-                    success = false;
-                    AddError(entry, new AssetError(entry.Path, "Preload child request was cancelled"));
-                }
-                catch (Exception ex)
-                {
-                    if (IsDone)
-                    {
-                        return;
-                    }
-
-                    success = false;
-                    AddError(entry, entry.Handle.Error ?? new AssetError(entry.Path, ex.Message, ex));
-                    LLog.Exception(ex, "Preload asset failed : {0}", entry.Path);
                 }
             }
-
-            if (IsDone)
+            catch (OperationCanceledException)
             {
+                Cancel(ct);
                 return;
             }
 
-            Complete(success);
-        }
-
-        private void Complete(bool success)
-        {
-            if (!TrySetTerminalState(success ? AssetHandleState.Succeeded : AssetHandleState.Failed,
+            var success = _errors.Count == 0;
+            if (TrySetTerminalState(success ? AssetHandleState.Succeeded : AssetHandleState.Failed,
                 success ? null : _errors[0]))
             {
-                return;
+                _tcs.TrySetResult(success);
             }
-
-            _result = success;
-            _tcs.TrySetResult(success);
-        }
-
-        private void AddError(Entry entry, AssetError error)
-        {
-            _failedPaths.Add(entry.Path);
-            _errors.Add(error);
         }
 
         private bool TrySetTerminalState(AssetHandleState state, AssetError error = null)
@@ -204,41 +141,35 @@ namespace LiteQuark.Runtime
         {
             if (TrySetTerminalState(AssetHandleState.Cancelled))
             {
-                DisposeEntries();
+                ReleaseHandles();
                 _tcs.TrySetCanceled(ct);
             }
         }
 
-        private void DisposeEntries()
+        private void ReleaseHandles()
         {
-            foreach (var entry in _entries)
+            foreach (var handle in _handles)
             {
-                entry.Handle?.Dispose();
+                handle.Dispose();
             }
+            _handles.Clear();
         }
 
         public void Dispose()
         {
-            if (_isDisposed)
+            if (IsDisposed)
             {
                 return;
             }
 
-            _isDisposed = true;
-            _ctr.Dispose();
-            Cancel();
-            DisposeEntries();
-        }
-
-        private readonly struct Entry
-        {
-            public readonly string Path;
-            public readonly AssetHandle<T> Handle;
-
-            public Entry(string path, AssetHandle<T> handle)
+            IsDisposed = true;
+            if (!IsDone)
             {
-                Path = path;
-                Handle = handle;
+                Cancel();
+            }
+            else if (State != AssetHandleState.Cancelled)
+            {
+                ReleaseHandles();
             }
         }
     }

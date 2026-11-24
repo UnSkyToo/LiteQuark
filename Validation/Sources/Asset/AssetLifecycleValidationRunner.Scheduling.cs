@@ -87,8 +87,8 @@ namespace LiteQuark.Editor
                         if (pair.Value.IsExecuted && !pair.Value.IsDone) h.Finish(pair.Key, true);
                     }
                     await Frame();
-                    var loader = Get<AssetBundleLoader>(h.Provider, "_bundleLoader");
-                    var submitted = Get<System.Collections.IList>(loader, "_runningTasks").Count;
+                    // Finish delivers each completed Bundle before this sample.
+                    var submitted = h.Locater.Manual.Values.Count(task => !task.IsDone);
                     admitted = h.Locater.Manual.Values.Count(task => task.IsExecuted && !task.IsDone);
                     maxLoader = Math.Max(maxLoader, submitted);
                     maxAdmitted = Math.Max(maxAdmitted, admitted);

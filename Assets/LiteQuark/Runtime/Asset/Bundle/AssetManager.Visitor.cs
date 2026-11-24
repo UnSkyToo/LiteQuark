@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetManager : IAssetManager
+    internal sealed partial class AssetManager
     {
         internal VisitorInfo GetVisitorInfo()
         {

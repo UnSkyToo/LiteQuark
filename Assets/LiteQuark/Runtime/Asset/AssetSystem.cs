@@ -9,12 +9,7 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class AssetSystem : ISystem, ITick
     {
-        private IAssetManager _manager = null;
-
-        public AssetSystem()
-        {
-            _manager = new AssetManager();
-        }
+        private AssetManager _manager = new();
 
         public UniTask<bool> Initialize()
         {
@@ -109,7 +104,7 @@ namespace LiteQuark.Runtime
                 }
             }
 
-            return new PreloadHandle<T>(assetKeys, (assetKey, token) => LoadAssetHandleInternal<T>(assetKey, priority, token), ct);
+            return new PreloadHandle<T>(assetKeys, assetKey => LoadAssetHandleInternal<T>(assetKey, priority, CancellationToken.None), ct);
         }
 
         public GameObjectHandle InstantiateHandle(string assetPath, UnityEngine.Transform parent, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
@@ -181,12 +176,7 @@ namespace LiteQuark.Runtime
 #if UNITY_EDITOR
         internal VisitorInfo GetVisitorInfo()
         {
-            if (_manager is AssetManager manager)
-            {
-                return manager.GetVisitorInfo();
-            }
-
-            return new VisitorInfo(null, Array.Empty<BundleVisitorInfo>());
+            return _manager?.GetVisitorInfo() ?? new VisitorInfo(null, Array.Empty<BundleVisitorInfo>());
         }
 #endif
     }

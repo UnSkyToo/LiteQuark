@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -35,6 +36,19 @@ namespace LiteQuark.Runtime
             _manager = manager;
             _refCount = 0;
             _retainTime = 0;
+        }
+
+        internal BundleVisitorInfo GetVisitorInfo()
+        {
+            var memSize = IsLoaded ? Bundle.GetRuntimeMemorySize() : 0L;
+            return new BundleVisitorInfo(_bundleInfo.BundlePath,
+                memSize,
+                _refCount,
+                Stage.ToString(),
+                _retainTime,
+                _sceneCacheMap?.Values.Where(scene => scene.Stage is not AssetCacheStage.Idle and not AssetCacheStage.Unloaded)
+                    .Select(scene => scene.GetVisitorInfo()).ToArray() ?? Array.Empty<SceneVisitorInfo>(),
+                _assetCacheMap.Values.Select(asset => asset.GetVisitorInfo()).ToArray());
         }
 
         internal void BeginReleaseContents(List<UniTask> cleanups)

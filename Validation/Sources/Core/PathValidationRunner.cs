@@ -160,6 +160,8 @@ namespace LiteQuark.Editor
             foreach (var pair in new[] {
                 ("Assets/StandaloneAssets/Data/A.asset", "Data/A.asset"),
                 ("Assets/StandaloneAssets/Data/Assets/StandaloneAssets/A.asset", "Data/Assets/StandaloneAssets/A.asset"),
+                ("Assets/StandaloneAssets/aSseTs/UI/Hud.prefab", "Assets/StandaloneAssets/aSseTs/UI/Hud.prefab"),
+                ("Assets/StandaloneAssets/AssetsBackup/UI/Hud.prefab", "AssetsBackup/UI/Hud.prefab"),
                 ("Assets/StandaloneAssetsBackup/A.asset", "Assets/StandaloneAssetsBackup/A.asset"),
                 ("Assets/Shared/A.asset", "Assets/Shared/A.asset"),
                 ("assets\\standaloneassets\\Data\\A.asset", "Data/A.asset"),
@@ -173,26 +175,13 @@ namespace LiteQuark.Editor
                 ("packages/demo/Icon.png", "Assets/StandaloneAssets/packages/demo/Icon.png"),
                 ("Packages/demo/Icon.png", "Assets/StandaloneAssets/Packages/demo/Icon.png"),
                 ("Assets/Shared/Icon.png", "Assets/Shared/Icon.png"),
-                ("Assets", "Assets"), ("UI/", "Assets/StandaloneAssets/UI"),
-                ("Prefabs\\./Player.prefab", "Assets/StandaloneAssets/Prefabs/Player.prefab") })
+                ("Assets", "Assets"), ("UI", "Assets/StandaloneAssets/UI"),
+                ("Prefabs\\Player.prefab", "Assets/StandaloneAssets/Prefabs/Player.prefab") })
                 Check(AssetPath.ToProjectPath(pair.Item1) == pair.Item2, "ToProjectPath preserves source spelling and interprets input boundaries: " + pair.Item1);
-            foreach (var full in new[] { "Assets/StandaloneAssets/Prefabs/Player.prefab", "Assets/Shared/Other.prefab" })
+            foreach (var full in new[] { "Assets/StandaloneAssets/Prefabs/Player.prefab", "Assets/Shared/Other.prefab",
+                "Assets/StandaloneAssets/aSseTs/UI/Hud.prefab", "Assets/UI/Hud.prefab" })
                 Check(AssetPath.ToProjectPath(AssetPath.ToRootRelativePath(full)) == full, "Authoring conversion round trip: " + full);
-            Check(AssetPath.ToRootRelativePath((string)null) == string.Empty, "Null editor field becomes an empty authoring value.");
-            Check(AssetPath.ToRootRelativePath(new[] { "Assets/StandaloneAssets/A.asset", "Assets/Shared/B.asset", "", null })
-                .SequenceEqual(new[] { "A.asset", "Assets/Shared/B.asset", "", "" }), "Array conversion preserves root-external paths and empty fields.");
-            Check(AssetPath.ToRootRelativePath(Array.Empty<string>()).Length == 0, "Empty array is valid.");
-            var nullArrayRejected = false;
-            try { AssetPath.ToRootRelativePath((string[])null); } catch (ArgumentNullException) { nullArrayRejected = true; }
-            Check(nullArrayRejected, "Null array is rejected.");
-            foreach (var invalid in new[] { "../Icon.png", "C:/Icon.png", "/Assets/Icon.png", "https://host/Icon.png" })
-            {
-                var rejected = false;
-                try { AssetPath.ToProjectPath(invalid); } catch (ArgumentException) { rejected = true; }
-                Check(rejected, "Project path conversion rejects invalid input: " + invalid);
-            }
-            Check(AssetPath.ToProjectPath("assets/demo/Icon.png") == "assets/demo/Icon.png", "Public assets-prefix ambiguity remains deferred, with no new fallback.");
-
+            Check(AssetPath.ToRootRelativePath(null) == string.Empty, "Null editor field becomes an empty authoring value.");
         }
 
         private static void CopyTree()

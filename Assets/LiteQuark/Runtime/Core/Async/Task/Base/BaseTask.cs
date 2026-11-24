@@ -10,6 +10,7 @@ namespace LiteQuark.Runtime
 
         public float Progress { get; protected set; }
         public bool IsExecuted { get; private set; }
+        internal bool IsSubmitted { get; set; }
 
         public TaskState State { get; private set; }
         public object Result { get; private set; }

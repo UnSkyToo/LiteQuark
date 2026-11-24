@@ -13,7 +13,9 @@
 | `HasAsset(path)` / `GetVersion()` | 查询当前 Manager 的资源收录情况／版本，不取得资源所有权 |
 | `UnloadUnusedAssets(maxDepth: 5)` | 清理零引用缓存；不宜逐帧调用 |
 
-加载入口的 priority 默认 `Normal`，ct 默认空令牌。建议使用 `priority:`、`ct:` 命名参数。完整重载见 [AssetSystem.cs](AssetSystem.cs)。示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 命名空间；调用在 Unity 主线程进行，含 await 的示例放在异步方法内，路径替换为实际资源。
+四种 Handle 均在 Unity 主线程创建和释放。传入 token 时，调用方也在主线程调用 `CancellationTokenSource.Cancel()`。
+
+加载入口的 priority 默认 `Normal`，ct 默认空令牌。建议使用 `priority:`、`ct:` 命名参数。示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 命名空间，含 await 的示例放在异步方法内，路径替换为实际资源。完整重载见 [AssetSystem.cs](AssetSystem.cs)。
 
 ```csharp
 using var handle = LiteRuntime.Asset.LoadAssetHandle<UnityEngine.TextAsset>("Config/game.json");
@@ -47,7 +49,7 @@ handle.Dispose();
 | --- | --- |
 | 成功 | `Succeeded`，Error 为 null，Handle 持有结果 |
 | 普通加载失败 | `Failed`，Error 非空；await 正常结束，Result 为 null / false |
-| 等待中 token 取消或 Dispose | 立即成为 `Cancelled`，Error 为 null；await 抛 `OperationCanceledException` |
+| 等待中在主线程取消 token 或 Dispose | 立即成为 `Cancelled`，Error 为 null；await 抛 `OperationCanceledException` |
 | 成功或失败后 Dispose | State / Error 保留，IsDisposed 为 true；释放持有的资源 |
 | 成功后 token 取消 | 保留成功及所有权，业务仍需 Dispose |
 
@@ -106,22 +108,13 @@ if (!preload.Result)
 
 资源默认放在 `Assets/StandaloneAssets`。加载入口接受带扩展名的根目录相对路径（`Prefabs/Player.prefab`）或完整项目路径（`Assets/StandaloneAssets/Prefabs/Player.prefab`）；场景须以 `.unity` 结尾。根目录外的 `Assets/...` 路径也可表达，但 Bundle 模式要求资源已被构建清单收录，不会因此扩大主动收集范围。
 
-[AssetPath](Base/AssetPath.cs) 将资源 key 统一为小写及 `/`，归一化重复斜杠和 `.` 段。空路径、`..`、磁盘绝对路径、URL、目录路径等非法输入使加载入口同步抛 `ArgumentException`，HasAsset 返回 false。路径合法不代表资源存在。资源 key 的小写规则不适用于任意磁盘路径或远端 URL。
+加载入口将反斜杠转为 `/`，按小写的完整项目路径查清单。路径应直接写成资源所在位置，每段之间使用一个分隔符。空路径、含 `..` 目录段、文件名缺少扩展名或场景扩展名错误时，对应加载入口同步抛 `ArgumentException`。其余未收录的键按资源缺失处理，`HasAsset` 返回 false，加载 Handle 为 Failed。
 
 - 以 `Assets/` 开头的输入按完整项目路径解释，不区分大小写。加载根目录内名为 assets 的子目录时，使用完整路径，例如 `Assets/StandaloneAssets/assets/demo/icon.png`。
 - `packages/demo/probe.txt` 相对资源根目录，不能用于访问真正的 UPM 包。框架不支持真正 `Packages/...` 资源的显式收集或直接加载；符合 Unity 构建条件的引用依赖可由 Unity 隐式打包。
 - Bundle 内按完整资源路径寻址；实际场景加载路径保留源路径大小写。
 
-| 路径工具 | 契约 |
-| --- | --- |
-| `ToProjectPath(input)` | 相对路径补资源根目录，允许目录，保留大小写，返回项目路径而非磁盘绝对路径 |
-| `Resolve(input)` / `TryResolve` | 按相同根目录规则解析资源文件，要求扩展名，生成规范 key |
-| `ResolveProjectAssetPath(input)` | 只接受完整 Assets 资源文件路径并生成 key |
-| `NormalizeProjectPath(input)` | 规范化已知完整项目路径，允许目录，保留大小写 |
-| `ToRootRelativePath(projectPath)` | 根内返回相对路径，根外保留完整项目路径，保留大小写；根目录自身、null 和空字符串返回空字符串；null 数组抛异常，空数组合法 |
-| `NormalizeBundlePath(path)` | 规范化 Bundle 逻辑路径的斜杠、首尾分隔符和大小写，不补资源根目录 |
-
-ToProjectPath 不恢复源文件真实大小写。ToRootRelativePath 用于作者数据，不接受磁盘绝对路径或真正的 UPM 路径。通用文件路径与 URI 操作见 [框架指南](../../README.md#通用路径与文件操作)。
+编辑器通过 `AssetPath.ToRootRelativePath` 保存路径，通过 `AssetPath.ToProjectPath` 回读，两者均保留输入大小写。资源根下的路径通常保存为相对路径。根外资源，以及资源根下第一段恰好为 `Assets`（忽略大小写）的路径，保存为完整项目路径，例如 `Assets/StandaloneAssets/Assets/UI/Hud.prefab`。[AssetPath.cs](Base/AssetPath.cs)
 
 AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选择 IBundleProvider，再将后端传给 AssetManager。后端创建失败（例如非法模式或无效 Remote URI）通过返回的 UniTask 报错，await 时抛出原始异常；任务组重复注册等错误仍在调用时同步抛出。AssetManager 按清单定位 Bundle，协调包及其依赖的加载。每个 AssetBundleCache 创建并持有本包的 AssetInfoCache 和 SceneInfoCache。SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider 负责获取清单和 Bundle。
 
@@ -145,13 +138,13 @@ Provider 创建版本和 Bundle 任务，并通过 TaskSystem.AddTask 提交到 
 
 Cache 收到主包后即由 Bundle 字段持有；依赖未就绪时仍处于 Loading，不启动资源读取。正常加载等主包和依赖全部返回后才发布成功或失败，失败或关闭时由 Cache 释放已接收的主包。
 
-同一逻辑 Bundle 的共享请求由 Cache 合并；Loader 按逻辑 BundlePath 定位调度项，每项只向一个接收方交付，不按物理文件路径合并或分发共享容器。
+同一逻辑 Bundle 的共享请求由 Cache 合并。Loader 按逻辑 BundlePath 查找排队请求以提升优先级，完成后将容器交给发起请求的 Cache。
 
 Simulate 的版本和 Bundle 任务进入 Asset 组、使用 Urgent；Asset 和 Scene 使用 Normal。Bundle／Asset 任务执行后在下一次任务 Tick 交付，场景使用 Editor 异步加载。所有模式共用 AssetManager，资源 Lease 必须持有 Cache，场景 Cache 必须持有 Bundle Lease；Simulate 不提供随机交付延迟。
 
 模拟清单关闭 HashMode／FlatMode，不读写版本文件或 Bundle 文件，Hash／Size 不代表构建产物，Bundle 内存统计为零。释放模拟容器不销毁 AssetDatabase 共享对象，因此模拟不保证复现原生 Bundle 卸载后的对象失效，也不验证物理命名、平台构建、压缩、网络或原生同名场景限制；这些仍需 BuiltIn／Remote 验证。Simulate 在非 Editor 环境（包括 Development Build）自动按 BuiltIn 定位，配置值不被改写；仍需构建并部署随包资源。远端部署须明确选择 Remote。
 
-发布前通过 `Lite > Builder` 生成资源包和版本文件，随包资源放入对应 StreamingAssets。版本文件失败或 Bundle 依赖环会使系统初始化失败。URI 能正确组成不代表所有 Player 平台的读取链都经过验证。
+发布前通过 `Lite > Builder` 生成资源包和版本文件，随包资源放入对应 StreamingAssets。构建和编辑器模拟都在收集清单时检查 Bundle 依赖环，发现环路会列出涉及的 Bundle 并停止收集。BuiltIn 和 Remote 使用已校验的清单，版本文件读取或解析失败会使资源系统初始化失败。自行生成清单的项目须在发布前确认依赖无环，否则相关资源的加载可能一直等待。URI 能正确组成不代表所有 Player 平台的读取链都经过验证。
 
 ## 加载优先级
 

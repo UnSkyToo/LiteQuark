@@ -35,11 +35,11 @@ namespace LiteQuark.Editor
             internal readonly GameObject Parent = new("EffectOwner");
             internal readonly EffectProbePool Pool;
             internal int Completions;
-            private readonly IAssetManager _original;
+            private readonly AssetManager _original;
 
             internal EffectHarness()
             {
-                _original = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+                _original = Get<AssetManager>(LiteRuntime.Asset, "_manager");
                 Set(LiteRuntime.Asset, "_manager", Assets.Provider);
                 Pool = LiteRuntime.ObjectPool.AddPool<EffectProbePool>(EffectPath, LiteRuntime.ObjectPool.GetPoolRoot());
             }

@@ -58,7 +58,7 @@
 - 修复：后端创建移至 AssetSystem 后，非法模式和无效 Remote URI 继续通过初始化 UniTask 交付原始异常，不从 Initialize 调用同步抛出；任务组注册的同步异常语义不变。
 
 - 破坏：配置字段 BundleLocater 改名为 BundleMode，类型 BundleLocaterMode 改为 BundleLoadMode；代码调用方更新名称，枚举数值仍为 Simulate=0、BuiltIn=1、Remote=2。旧双配置布局曾通过 FormerlySerializedAs("BundleLocater") 读取原值；迁入本版 Launcher 时需按上节手工转填。JSON 和其他自定义解析器也需更新字段名。
-- 调整：AssetBundleProvider／IAssetProvider 改名为 AssetManager／IAssetManager；IBundleLocater 及实现改为 IBundleProvider、SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider。相关源码与 Provider 文件夹沿用原 meta GUID。
+- AssetSystem 直接持有 AssetManager（原 AssetBundleProvider）。IBundleLocater 及实现改名为 IBundleProvider、SimulateBundleProvider、BuiltInBundleProvider、RemoteBundleProvider，并沿用原有 GUID。
 - 调整：后端选择和非 Editor 的 Simulate→BuiltIn 回退集中在 AssetSystem.Initialize；Manager 初始化接收已选好的 IBundleProvider，不再自行判断模式或平台。缓存、依赖、Lease、Retention 与任务调度行为不变。
 
 - 破坏：删除 AssetEditorProvider、AssetProviderMode、AssetSetting.AssetMode，以及 SimulateAsyncDelayInEditor／AsyncDelayMinFrame／AsyncDelayMaxFrame；只通过 BundleLocater 选择模式。代码配置改为 BundleLocaterMode.Simulate、BuiltIn 或 Remote。
@@ -77,11 +77,13 @@
 - 破坏：`IAssetHandle<T>` 增加 State、Error、IsDisposed，自定义实现需补齐。取消或等待中 Dispose 立即结束请求；终态后 Dispose 保留 State / Error。
 - 破坏：AssetError 删除 Code、Stage、Cause 及对应枚举；使用 `AssetError(string resourceKey, string message, Exception exception = null)`。ResourceKey 指向实际失败资源或依赖 Bundle，调用者不能假定它等于请求路径或继续遍历 Cause。
 - 新增：PreloadHandle.Errors 与 FailedPaths 按索引对应；部分失败时仍持有成功项直到 Dispose。
+- 预加载与其他资源 Handle 统一在 Unity 主线程取消。使用 `CancellationTokenSource.CancelAfter` 的预加载调用方，改在主线程计时回调中调用 `Cancel()`。
 - 新增：加载入口支持 AssetLoadPriority；旧的 `(path, token)` 调用改为 `(path, ct: token)`，或显式传 priority 后再传 ct。Asset 任务额度使用独立的 `Asset.TaskConcurrencyLimit`，与 Loader 的 ConcurrencyLimit 分别生效。
 - 破坏：移除 AssetRetainTime，仅配置 BundleRetainTime；资源无引用后不再额外等待 Asset 保留期。
 - 破坏：移除 Resource 模式，运行时使用 Bundle；随包资源使用 `BundleLocaterMode.BuiltIn`。
 - 优化：SceneHandle 按实际实例卸载，外部卸载后 Result 为空；战斗配置在数据管理器启动时异步加载，初始化失败或关闭时释放。
-- 修复：资源类型不匹配及失败路径的引用泄漏；VersionPack 解析错误状态；初始化时检测 Bundle 依赖环并终止失败的初始化。
+- 修复：资源类型不匹配及失败路径的引用泄漏；VersionPack 解析错误状态。
+- Bundle 依赖环统一在 Editor 收集清单时报告。自行生成 BuiltIn 或 Remote 版本文件的项目，应将依赖环检查放在导出或发布阶段。原先依赖启动时 `FrameworkErrorCode.LoadVersionPack` 报告环路的集成，应在发布前处理校验失败。
 
 ### Task
 
@@ -100,6 +102,10 @@
 
 ### 路径与构建
 
+- 编辑器保存资源根下 `Assets/...` 子目录中的资源时，使用完整项目路径。若旧字段已误存为 `Assets/UI/Hud.prefab` 一类值，请重新选择对应资源，或从源资源重新生成数据库。
+- 资源路径按清单键匹配。将配置中的 `./` 和重复分隔符改为实际资源路径。此前因控制字符、特殊文件名字符、绝对路径或 URL 被同步拒绝的带扩展名输入，现在通常得到缺失资源的 Failed Handle。批量预加载会继续处理同批有效资源。
+- `AssetPath` 对外只保留单路径 `ToProjectPath` 和 `ToRootRelativePath`。原先调用 `Resolve`、`TryResolve`、`ResolveScene` 或 `ResolveProjectAssetPath` 的业务改用 `AssetSystem` 查询和加载。原先使用 `NormalizeProjectPath` 统一分隔符的工具可用 `PathUtils.UnifyPath`。
+- 迁移 `TryGetRelativeToRoot` 时，保存供编辑器回读的资源字段用 `AssetPath.ToRootRelativePath`。判断路径是否位于指定目录下或生成相对名称时，先统一分隔符，再用 `StringComparison.OrdinalIgnoreCase` 匹配目录前缀 `root.TrimEnd('/') + "/"`。匹配且后缀非空时，截取后缀即可得到保留原始大小写的相对名称。
 - 修复：JSON 和二进制版本清单导出只在输出中编码依赖 ID。同一清单可重复导出，成功和失败均保留内存中的依赖路径。
 - 破坏：版本清单保存完整规范资源路径。旧相对路径清单须从源资源重新构建并与新读取器配套；读入旧清单再导出不能可靠迁移，解析成功也不证明兼容。
 - 破坏：ConcatPath 按宿主 Path.Combine 处理后续根路径，不裁剪其前导分隔符；URI 组合改用 ConcatUri，传未编码路径片段。
@@ -108,8 +114,8 @@
 | 旧入口 | 替换方式 |
 | --- | --- |
 | GetFullPathInAssetRoot | AssetPath.ToProjectPath |
-| GetRelativeAssetRootPath（含数组） | AssetPath.ToRootRelativePath |
-| FormatAssetPath | AssetPath.NormalizeBundlePath |
+| GetRelativeAssetRootPath（含数组） | AssetPath.ToRootRelativePath，数组逐项转换 |
+| FormatAssetPath / AssetPath.NormalizeBundlePath | 从清单读取 BundleInfo.BundlePath |
 | PathIsFile、GetPathFromFullPath、FileExists、DirectoryExists、CreateDirectory | 按实际需求使用 System.IO.File / Directory / Path；资产目录判断用 AssetDatabase.IsValidFolder |
 | GetLiteQuarkRootPath | 编辑器使用 LiteEditorUtils.GetLiteQuarkRootPath |
 | GetFullPathInRuntime | 资源定位交由 BundleBuiltInLocater；普通持久化目录使用 GetPersistentDataPath |

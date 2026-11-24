@@ -184,7 +184,7 @@ namespace LiteQuark.Editor
         {
             const string ignored = Root + "/Graph/A.v2/Child.v3";
             const string first = ignored + "/MixedCase.asset";
-            const string second = Root + "/Graph/B/Other.asset";
+            const string second = "Assets/StandaloneAssets/Assets/__CollectorReview20261022/Other.asset";
             const string dependency = Outside + "/Shared.asset";
             var shared = Node(dependency);
             Node(first, shared);
@@ -197,6 +197,8 @@ namespace LiteQuark.Editor
             var material = pack.GetBundleInfoFromAssetPath(dependency);
             Check(a.BundlePath.EndsWith("/a.v2.ab", StringComparison.Ordinal) && a != b,
                 "Ignored child joins its dotted parent while the other owner remains separate.");
+            Check(b.BundlePath == "assets/__collectorreview20261022.ab" && pack.GetBundleInfoFromAssetPath(AssetPath.ToRootRelativePath(second)) == b,
+                "An asset under a nested Assets directory retains its logical Bundle name and can be found using its stored path.");
             Check(a.DependencyList.Contains(material.BundlePath) && b.DependencyList.Contains(material.BundlePath) &&
                 pack.BundleList.Count(bundle => bundle.AssetList.Contains(AssetPath.Resolve(dependency))) == 1,
                 "Both owners refer to the same indexed dependency.");
@@ -233,9 +235,12 @@ namespace LiteQuark.Editor
                 catch (InvalidOperationException ex) when (ex.Message.Contains("发现循环依赖")) { rejected = true; }
                 Check(rejected, "Splitting the same graph across Bundles rejects its cycle.");
                 Node(first);
-                collector.CleanVersionPackInfo();
                 var fixedPack = collector.GetVersionPackInfo("cycle", ValidationEnvironment.BundleTarget, false, false);
-                Check(AssetBundleDependencyValidator.FindUniqueCycles(fixedPack).Count == 0, "The corrected graph can be collected again.");
+                fixedPack.Initialize();
+                var firstBundle = fixedPack.GetBundleInfoFromAssetPath(first);
+                var secondBundle = fixedPack.GetBundleInfoFromAssetPath(moved);
+                Check(!firstBundle.DependencyList.Contains(secondBundle.BundlePath) && secondBundle.DependencyList.Contains(firstBundle.BundlePath),
+                    "After the cycle is fixed, the same collector returns a manifest with only the remaining dependency between the two Bundles.");
             }
             finally { AssetDatabase.DeleteAsset(folder); }
         }

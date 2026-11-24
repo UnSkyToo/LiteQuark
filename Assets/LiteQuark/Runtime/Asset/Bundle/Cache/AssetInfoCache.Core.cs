@@ -31,6 +31,12 @@ namespace LiteQuark.Runtime
             _refCount = 0;
         }
 
+        internal AssetVisitorInfo GetVisitorInfo()
+        {
+            var memSize = IsLoaded ? UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(Asset) : 0L;
+            return new AssetVisitorInfo(_assetPath, memSize, _refCount, Stage.ToString());
+        }
+
         public async UniTask DisposeAsync()
         {
             if (Stage == AssetCacheStage.Unloaded)

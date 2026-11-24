@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
 {
-    internal sealed partial class AssetManager : IAssetManager
+    internal sealed partial class AssetManager : ITick, IDisposeAsync
     {
         private VersionPackInfo _packInfo = null;
         private AssetBundleLoader _bundleLoader = null;
@@ -13,10 +13,6 @@ namespace LiteQuark.Runtime
         private readonly List<string> _unloadBundleList = new();
 
         private bool _isDisposed;
-
-        public AssetManager()
-        {
-        }
 
         public async UniTask<bool> Initialize(IBundleProvider bundleProvider)
         {
@@ -28,16 +24,6 @@ namespace LiteQuark.Runtime
             _packInfo = await bundleProvider.LoadVersionPack(AppUtils.GetVersionFileName()).Task as VersionPackInfo;
             if (_packInfo == null)
             {
-                return false;
-            }
-
-            var cycles = AssetBundleDependencyValidator.FindUniqueCycles(_packInfo);
-            if (cycles.Count > 0)
-            {
-                var message = $"AssetBundle dependency cycle detected:{Environment.NewLine}{AssetBundleDependencyValidator.FormatCycles(cycles)}";
-                LLog.Error(message);
-                LiteRuntime.FrameworkError(FrameworkErrorCode.LoadVersionPack, message);
-                _packInfo = null;
                 return false;
             }
 

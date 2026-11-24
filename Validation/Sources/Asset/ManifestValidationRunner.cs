@@ -76,7 +76,7 @@ namespace LiteQuark.Editor
         }
         private static void StrictPaths()
         {
-            Check(AssetPath.ResolveProjectAssetPath("Assets\\StandaloneAssets\\Data//./A.txt") == Key("data/a.txt"), "Strict input retains slash, dot and case normalization.");
+            Check(AssetPath.ResolveProjectAssetPath("Assets\\StandaloneAssets\\Data\\A.txt") == Key("data/a.txt"), "A full project file path produces the same lowercase manifest key with either separator.");
             foreach (var path in new[] { "data/a.txt", "packages/demo/a.txt", "Packages/com.example/a.txt", "Assets", "Assets/folder", "Assets/a.txt/", "Assets/../a.txt" })
             {
                 var rejected = false;

@@ -359,10 +359,12 @@ namespace LiteQuark.Editor
             Check(order.Count == 0 && !blocker.IsDone, "Higher priority never preempts a running task");
             Throws<InvalidOperationException>(() => system.AddTask(blocker), "Duplicate submission is rejected.");
             var independent = new ProbeTask();
+            Throws<ArgumentException>(() => system.AddTask(independent, 17), "An unregistered group rejects submission.");
             system.RegisterGroup(17, 1);
+            Throws<InvalidOperationException>(() => system.AddTask(tasks["low"], 17), "A queued task cannot also be submitted to another group.");
             system.AddTask(independent, 17);
             system.Tick(0);
-            Check(independent.IsExecuted && order.Count == 0, "Independent quota progresses while Default is full.");
+            Check(independent.IsExecuted && order.Count == 0, "The previously rejected task runs in the newly registered group while Default is full.");
             independent.Finish();
             blocker.Finish();
             for (var i = 0; i < expected.Length; i++)

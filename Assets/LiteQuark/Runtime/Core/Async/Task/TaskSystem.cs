@@ -246,19 +246,6 @@ namespace LiteQuark.Runtime
             return null;
         }
 
-        private bool ContainsTask(BaseTask task)
-        {
-            foreach (var record in _records)
-            {
-                if (ReferenceEquals(record.Task, task))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         public void AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)
         {
             if (_isClosing)
@@ -277,12 +264,7 @@ namespace LiteQuark.Runtime
                 throw new ArgumentException($"Task group {groupId} does not exist.", nameof(groupId));
             }
 
-            if (ContainsTask(task))
-            {
-                throw new InvalidOperationException("Task is already registered.");
-            }
-
-            if (task.State != TaskState.Pending || task.IsExecuted || task.IsDone)
+            if (task.IsSubmitted || task.State != TaskState.Pending)
             {
                 throw new InvalidOperationException("Only a new pending task can be submitted.");
             }
@@ -290,6 +272,7 @@ namespace LiteQuark.Runtime
             var record = new TaskRecord(task, group, priority);
             _records.Add(record);
             group.Enqueue(record);
+            task.IsSubmitted = true;
         }
 
         public CoroutineTask AddTask(IEnumerator taskFunc, Action callback = null)

@@ -34,7 +34,7 @@ namespace LiteQuark.Editor
 
         private sealed class AssetScope : IDisposable
         {
-            private readonly IAssetManager _previous = Get<IAssetManager>(LiteRuntime.Asset, "_manager");
+            private readonly AssetManager _previous = Get<AssetManager>(LiteRuntime.Asset, "_manager");
             internal readonly Harness Content = New();
             internal AssetScope() => Set(LiteRuntime.Asset, "_manager", Content.Provider);
             public void Dispose() => Set(LiteRuntime.Asset, "_manager", _previous);

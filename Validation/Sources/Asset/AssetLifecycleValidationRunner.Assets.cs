@@ -17,7 +17,9 @@ namespace LiteQuark.Editor
             try { using var batch = h.Assets.PreloadAssetHandle<TextAsset>(new[] { TextPath, "../invalid.txt" }); }
             catch (ArgumentException) { invalid = true; }
             Check(invalid && h.Locater.Calls.Count == 0 && !h.Has("text.ab"), "Invalid input rejects the whole batch before submission.");
-            var missing = "assets/__session_validation/not-in-manifest.txt";
+            var missing = "assets/__session_validation/unlisted?.txt";
+            Check(h.Assets.HasAsset(TextPath) && !h.Assets.HasAsset(missing) && !h.Assets.HasAsset("./" + TextPath),
+                "Lookup finds the collected key and misses unlisted spellings.");
             var absentAsset = "assets/__session_validation/missing.txt";
             var preload = h.Assets.PreloadAssetHandle<TextAsset>(new[] { TextPath, TextPath.ToUpperInvariant(), missing, absentAsset });
             h.Handles.Add(preload);
@@ -39,13 +41,25 @@ namespace LiteQuark.Editor
             using var cts = new CancellationTokenSource();
             var cancelled = h.Assets.PreloadAssetHandle<TextAsset>(new[] { SecondTextPath }, ct: cts.Token);
             h.Handles.Add(cancelled);
+            var pending = h.Assets.PreloadAssetHandle<TextAsset>(new[] { TextPath, SecondTextPath });
+            h.Handles.Add(pending);
+            Check(!pending.IsDone && pending.LoadedCount == 1 && h.AssetRefs("text.ab", TextPath) == 1,
+                "The pending preload owns a cached asset while waiting on the shared read.");
+            pending.Dispose();
+            var disposeCancelled = false;
+            try { await pending; } catch (OperationCanceledException) { disposeCancelled = true; }
+            Check(disposeCancelled && pending.IsDisposed && pending.State == AssetHandleState.Cancelled &&
+                pending.TotalCount == 2 && h.AssetRefs("text.ab", TextPath) == 0 && !cancelled.IsDone,
+                "Disposing a pending preload cancels its wait, releases its cached asset and preserves the other consumer.");
             cts.Cancel();
+            Check(cancelled.GetAwaiter().IsCompleted, "Main-thread cancellation completes the preload wait before Cancel returns.");
             var didCancel = false;
-            try { await cancelled; } catch (OperationCanceledException) { didCancel = true; }
+            try { await cancelled; } catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token) { didCancel = true; }
             Check(didCancel && cancelled.State == AssetHandleState.Cancelled && cancelled.Error == null && !cancelled.IsDisposed,
                 "Preload cancellation ends waiting without masquerading as explicit disposal or a loading error.");
             await Wait(() => h.AssetRefs("text.ab", SecondTextPath) == 0, "Cancelled preload lease cleanup");
-            Check(cancelled.State == AssetHandleState.Cancelled && cancelled.Errors.Count == 0 && cancelled.LoadedCount == 0,
+            Check(cancelled.State == AssetHandleState.Cancelled && cancelled.Errors.Count == 0 && cancelled.LoadedCount == 0 &&
+                pending.LoadedCount == 1 && pending.Errors.Count == 0,
                 "Late child completion does not change cancelled preload statistics or errors.");
             cancelled.Dispose();
 

@@ -26,6 +26,8 @@ namespace LiteQuark.Runtime
             _bundleLease = bundleLease ?? throw new ArgumentNullException(nameof(bundleLease));
         }
 
+        internal SceneVisitorInfo GetVisitorInfo() => new SceneVisitorInfo(_sceneKey);
+
         public async UniTask DisposeAsync()
         {
             _loadSceneTask?.Cancel();

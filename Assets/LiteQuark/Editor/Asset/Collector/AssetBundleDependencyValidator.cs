@@ -1,50 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using LiteQuark.Runtime;
+using UnityEngine;
 
-namespace LiteQuark.Runtime
+namespace LiteQuark.Editor
 {
     internal static class AssetBundleDependencyValidator
     {
-        public static List<List<string>> FindUniqueCycles(VersionPackInfo versionPackInfo)
+        internal static void Validate(Dictionary<string, BundleInfo> bundles)
         {
             var cycles = new List<List<string>>();
-            if (versionPackInfo?.BundleList == null || versionPackInfo.BundleList.Length == 0)
-            {
-                return cycles;
-            }
-
-            var bundleDict = versionPackInfo.BundleList.ToDictionary(static b => b.BundlePath);
             var visited = new HashSet<string>();
             var recursionStack = new List<string>();
             var seen = new HashSet<string>();
 
-            foreach (var bundle in versionPackInfo.BundleList)
+            foreach (var bundlePath in bundles.Keys)
             {
-                if (!visited.Contains(bundle.BundlePath))
+                if (!visited.Contains(bundlePath))
                 {
-                    FindCycles(bundle.BundlePath, bundleDict, visited, recursionStack, cycles, seen);
+                    FindCycles(bundlePath, bundles, visited, recursionStack, cycles, seen);
                 }
             }
 
-            return cycles;
-        }
-
-        public static string FormatCycles(IEnumerable<List<string>> cycles)
-        {
-            var sb = new StringBuilder();
-            foreach (var cycle in cycles)
+            if (cycles.Count > 0)
             {
-                if (sb.Length > 0)
-                {
-                    sb.AppendLine();
-                }
-
-                sb.Append(string.Join(" -> ", cycle));
+                var paths = string.Join(Environment.NewLine, cycles.Select(cycle => string.Join(" -> ", cycle)));
+                var message = $"发现循环依赖:{Environment.NewLine}{paths}";
+                Debug.LogError(message);
+                throw new InvalidOperationException(message);
             }
-
-            return sb.ToString();
         }
 
         private static void FindCycles(

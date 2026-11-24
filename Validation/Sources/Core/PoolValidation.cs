@@ -24,7 +24,7 @@ namespace LiteQuark.Editor
             _case = result;
             var h = New();
             var assets = LiteRuntime.Asset;
-            var original = Get<IAssetManager>(assets, "_manager");
+            var original = Get<AssetManager>(assets, "_manager");
             Set(assets, "_manager", h.Provider);
             var pools = new ObjectPoolSystem();
             await pools.Initialize();
