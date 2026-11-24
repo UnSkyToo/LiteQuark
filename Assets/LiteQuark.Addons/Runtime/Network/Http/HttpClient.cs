@@ -90,12 +90,9 @@ namespace LiteQuark.Runtime
 
         public async UniTask<byte[]> DownloadFile(string url, IProgress<float> progress = null, CancellationToken cancellationToken = default)
         {
-            _networkSystem.ThrowIfClosing();
-            var hasSlot = false;
+            await _networkSystem.WaitForSlot(cancellationToken);
             try
             {
-                await _networkSystem.WaitForSlot(cancellationToken);
-                hasSlot = true;
                 using var request = UnityWebRequest.Get(url);
                 request.timeout = _networkSystem.DefaultTimeout;
 
@@ -123,16 +120,12 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                if (hasSlot)
-                {
-                    _networkSystem.ReleaseSlot();
-                }
+                _networkSystem.ReleaseSlot();
             }
         }
 
         public async UniTask<HttpResponse<T>> UploadFile<T>(string url, byte[] fileData, string fileName, string fieldName = "file", Dictionary<string, string> headers = null, IProgress<float> progress = null, int timeout = 0)
         {
-            _networkSystem.ThrowIfClosing();
             var hasSlot = false;
             try
             {
@@ -192,7 +185,6 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse<T>> SendWithRetry<T>(HttpRequest request, HttpRetryPolicy retryPolicy = null)
         {
-            _networkSystem.ThrowIfClosing();
             try
             {
                 if (retryPolicy == null)
@@ -211,7 +203,6 @@ namespace LiteQuark.Runtime
                 var attempt = 0;
                 while (attempt <= retryPolicy.MaxRetries)
                 {
-                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                     var response = await Send<T>(request);
 
                     if (response.IsSuccess)
@@ -250,7 +241,6 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse<T>[]> SendBatch<T>(HttpRequest[] requests, int maxConcurrent = 0)
         {
-            _networkSystem.ThrowIfClosing();
             if (requests == null || requests.Length == 0)
             {
                 return Array.Empty<HttpResponse<T>>();
@@ -304,7 +294,6 @@ namespace LiteQuark.Runtime
 
         public async UniTask<HttpResponse> SendRaw(HttpRequest request)
         {
-            _networkSystem.ThrowIfClosing();
             var hasSlot = false;
             try
             {
@@ -313,11 +302,9 @@ namespace LiteQuark.Runtime
                 // Apply interceptors - OnRequest
                 foreach (var interceptor in _interceptors)
                 {
-                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                     request = await interceptor.OnRequest(request);
                     _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                 }
-                _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
 
                 HttpResponse response;
 
@@ -345,13 +332,12 @@ namespace LiteQuark.Runtime
                 }
 
                 // Apply interceptors - OnResponse
+                request.CancellationToken.ThrowIfCancellationRequested();
                 foreach (var interceptor in _interceptors)
                 {
-                    _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                     response = await interceptor.OnResponse(response);
                     _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
                 }
-                _networkSystem.ThrowIfCancellationRequested(request.CancellationToken);
 
                 return response;
             }

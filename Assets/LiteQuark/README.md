@@ -56,7 +56,7 @@ Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法
 
 `Shutdown()` 返回 UniTask。进入 ShuttingDown 后先等待游戏入口释放，再逆序等待各系统的 DisposeAsync。释放单个对象抛异常时，Runtime 记录错误并继续释放其余系统，移除注册后回到 Idle。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止入口更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
 
-业务需要重启时调用 `LiteRuntime.Instance.Restart()`，不要直接释放已注册系统或继续使用旧实例。框架集成层调用 Shutdown 时应等待其完成。系统和游戏入口的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
+业务需要重启时调用 `LiteRuntime.Instance.Restart()`，已注册系统由 Runtime 释放。系统开始释放后，业务应停止向它提交工作，重启后重新取得系统实例。框架集成层调用 Shutdown 时应等待其完成。系统和游戏入口的 DisposeAsync 需要支持部分初始化状态；同步清理可直接返回 `UniTask.CompletedTask`，业务持有的 Handle、Lease 等仍按各自契约 Dispose。
 
 Restart 仅在 Running 接受请求，下一帧执行；执行前的重复请求合并为一次。ShuttingDown 期间请求被忽略，普通 Shutdown 不会因此转为重启。重启清理出现释放错误或期间收到应用退出通知时，旧系统继续关闭，本轮重启停在 Idle。业务可在处理错误后显式 Startup。Idle、InitSystem、InitGameEntry 和 Error 调用 Restart 抛出 InvalidOperationException。已接受的请求在执行时必须仍处于 Running，中途进入错误或开始关闭会放弃该请求。启动失败后如需重试，应等清理回到 Idle 后调用 Startup。后台超时自动重启也仅在 Running 触发，以前台事件处理结束后的状态为准；初始化期间返回前台继续原初始化流程。
 

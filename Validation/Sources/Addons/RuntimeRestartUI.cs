@@ -26,9 +26,8 @@ namespace LiteQuark.Editor
             internal int CleanupShutdownCalls;
             internal int BaselineStartups;
             internal AssetSystem OldAsset;
-            internal TaskSystem OldTask;
             internal bool RequestRestart;
-            internal bool PreviousRoundReleased;
+            internal bool OldAssetManagerReleased;
             internal string PlatformFolder => Path.Combine(Scratch, AppUtils.GetCurrentPlatformName().ToLowerInvariant());
             internal string ContentFolder => Path.Combine(PlatformFolder, AppUtils.GetMainVersion());
 
@@ -65,9 +64,7 @@ namespace LiteQuark.Editor
                 Generation = _fixture.Systems.Count + 1;
                 if (Generation == 2)
                 {
-                    _fixture.PreviousRoundReleased = _fixture.Events.Last() == "system 1 disposed" &&
-                        Get<IAssetManager>(_fixture.OldAsset, "_manager") == null &&
-                        Get<bool>(_fixture.OldTask, "_isClosing") && Get<List<TaskGroup>>(_fixture.OldTask, "_groups").Count == 0;
+                    _fixture.OldAssetManagerReleased = Get<IAssetManager>(_fixture.OldAsset, "_manager") == null;
                 }
                 _fixture.Systems.Add(this);
                 _fixture.Events.Add("system " + Generation + " constructed");
@@ -169,7 +166,7 @@ namespace LiteQuark.Editor
                 var oldViewer = GameObject.Find("IngameDebugConsole(Clone)");
                 Check(oldViewer != null, "The first LogSystem owns a visible console.");
                 fixture.OldAsset = LiteRuntime.Asset;
-                fixture.OldTask = LiteRuntime.Task;
+                var oldTask = LiteRuntime.Task;
                 var provider = Get<AssetManager>(fixture.OldAsset, "_manager");
 
                 // Warm only the Object-typed cache: GameObject extraction must still enter the real Asset task group.
@@ -189,6 +186,9 @@ namespace LiteQuark.Editor
                 Check(pending.Status == UniTaskStatus.Pending && assetTask.State == TaskState.Pending && opened.Count == 0,
                     "The old OpenUI is held at real prefab extraction, not by a timing-dependent frame delay.");
 
+                var callbackTask = oldTask.AddTask(_ => { });
+                await WaitWithoutLoaderTick(() => callbackTask.State == TaskState.Running, "Old callback task starts");
+                var generationAtCompletion = callbackTask.Task.ContinueWith(_ => fixture.Systems.Count);
                 fixture.RequestRestart = true;
                 await WaitWithoutLoaderTick(() => fixture.Events.Contains("system 1 disposing"), "Business Restart reaches asynchronous system disposal");
                 Check(fixture.Events.SequenceEqual(new[] { "system 1 constructed", "entry 1 initialized", "entry 1 restart requested", "entry 1 disposed", "system 1 disposing" }) &&
@@ -211,17 +211,19 @@ namespace LiteQuark.Editor
                 await WaitWithoutLoaderTick(() => runtime.State is LiteRuntime.RuntimeState.Error or LiteRuntime.RuntimeState.Idle ||
                     fixture.Entries.Count == 2 && runtime.State == LiteRuntime.RuntimeState.Running, "New Runtime generation Running");
                 fixture.Failure?.Throw();
+                Check(callbackTask.State == TaskState.Cancelled && generationAtCompletion.Status == UniTaskStatus.Succeeded &&
+                    await generationAtCompletion == 1, "Restart cancels the old callback task and resumes its waiter before the next probe is constructed.");
                 var newUI = LiteRuntime.Get<UISystem>();
                 var newRoot = newUI.CanvasRoot;
                 Check(fixture.Camera != null && newUI.UICamera == fixture.Camera.GetComponent<Camera>(),
                     "The new UISystem reuses the configured scene camera.");
                 var newSystems = Get<List<ISystem>>(SystemCenter.Instance, "_systemList");
-                Check(fixture.PreviousRoundReleased && fixture.Events.SequenceEqual(new[] { "system 1 constructed", "entry 1 initialized", "entry 1 restart requested",
+                Check(fixture.OldAssetManagerReleased && fixture.Events.SequenceEqual(new[] { "system 1 constructed", "entry 1 initialized", "entry 1 restart requested",
                     "entry 1 disposed", "system 1 disposing", "system 1 disposed", "system 2 constructed", "entry 2 initialized" }) &&
                     fixture.Systems[0].Disposals == 1 && fixture.Entries[0].Disposals == 1 && fixture.Entries[0].TicksAfterDispose == 0,
-                    "Old entry and system disposal finish exactly once, including Asset and Task cleanup, before the next probe is constructed.");
+                    "Before the next probe is constructed, the old entry and probe finish disposal once and the old AssetSystem releases its manager.");
                 Check(newSystems.Count == oldSystems.Length && newSystems.All(system => !oldSystems.Contains(system)) &&
-                    !ReferenceEquals(LiteRuntime.Asset, fixture.OldAsset) && !ReferenceEquals(LiteRuntime.Task, fixture.OldTask) && !ReferenceEquals(newUI, oldUI) &&
+                    !ReferenceEquals(LiteRuntime.Asset, fixture.OldAsset) && !ReferenceEquals(LiteRuntime.Task, oldTask) && !ReferenceEquals(newUI, oldUI) &&
                     oldBundles.All(bundle => bundle.Bundle == null) && Get<Dictionary<string, AssetBundleCache>>(provider, "_bundleCacheMap").Count == 0,
                     "Every registered System is replaced, and the old Provider unloads both the prefab Bundle and its dependency.");
 

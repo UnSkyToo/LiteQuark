@@ -63,14 +63,9 @@ namespace LiteQuark.Editor
                 try { await task; } catch (OperationCanceledException) { cancelled = true; }
                 Check(cancelled, "Closing cancels accepted config consumers.");
             }
-            var rejected = false;
-            try { config.RegisterTable<SecondRow>(SecondTextPath, _ => new List<SecondRow>()); } catch (ObjectDisposedException) { rejected = true; }
-            Check(rejected, "Closed registration rejects work.");
-            rejected = false;
-            try { await config.LoadAll(); } catch (ObjectDisposedException) { rejected = true; }
             await Wait(() => retained.IsDone, "Shared late TextAsset");
-            Check(rejected && retained.Result != null && parses == 0 && config.GetTable<FirstRow>() == null,
-                "Closed loading rejects work and the independent owner receives the late asset.");
+            Check(retained.Result != null && parses == 0,
+                "Only the independent owner receives the late asset and the cancelled loads skip parsing.");
         }
     }
 }

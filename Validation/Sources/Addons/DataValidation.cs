@@ -80,9 +80,7 @@ namespace LiteQuark.Editor
                 var write = data.SaveAsync("other", "value");
                 var read = data.LoadAsync<string>("ready");
                 var close = data.DisposeAsync().Preserve();
-                var rejected = false;
-                try { data.Has("ready"); } catch (ObjectDisposedException) { rejected = true; }
-                Check(rejected && close.Status == UniTaskStatus.Pending && provider.Disposals == 0, "Closing rejects new reads but waits for accepted I/O.");
+                Check(close.Status == UniTaskStatus.Pending && provider.Disposals == 0, "Closing waits for accepted I/O before disposing its provider.");
                 provider.WriteGate.TrySetResult();
                 Exception failure = null;
                 try { await write; } catch (IOException ex) { failure = ex; }
@@ -105,7 +103,12 @@ namespace LiteQuark.Editor
             var main = Thread.CurrentThread.ManagedThreadId;
             try
             {
-                await data.SwitchProvider(original);
+                var retired = new DataProviderProbe { DisposeError = new IOException("Controlled dispose failure") };
+                await data.SwitchProvider(retired);
+                IOException releaseError = null;
+                try { await data.SwitchProvider(original); } catch (IOException ex) { releaseError = ex; }
+                Check(ReferenceEquals(releaseError, retired.DisposeError) && retired.Disposals == 1 &&
+                    data.Provider == original && original.Disposals == 0, "A release error leaves the new provider in service.");
                 data.Save("ready", "value");
                 var failed = new DataProviderProbe { InitializeResult = false };
                 var rejected = false;

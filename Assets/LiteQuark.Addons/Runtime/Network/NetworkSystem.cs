@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
@@ -7,10 +6,10 @@ namespace LiteQuark.Runtime
     public sealed class NetworkSystem : ISystem, ISystemSettingProvider<NetworkSystemSetting>
     {
         public NetworkSystemSetting Setting { get; set; }
+        public HttpClient Http { get; private set; }
 
         private int _activeRequests = 0;
         private readonly CancellationTokenSource _shutdownCts = new();
-        private HttpClient _httpClient;
 
         public NetworkSystem()
         {
@@ -18,19 +17,17 @@ namespace LiteQuark.Runtime
 
         public UniTask<bool> Initialize()
         {
-            _httpClient = new HttpClient(this);
+            Http = new HttpClient(this);
             return UniTask.FromResult(true);
         }
 
         public UniTask DisposeAsync()
         {
             _shutdownCts.Cancel();
-            _httpClient?.ClearInterceptors();
-            _httpClient = null;
+            Http?.ClearInterceptors();
+            Http = null;
             return UniTask.CompletedTask;
         }
-
-        public HttpClient Http => IsClosing ? throw new ObjectDisposedException(nameof(NetworkSystem)) : _httpClient;
 
         public int MaxConcurrentRequests => Setting.MaxConcurrentRequests;
         public int DefaultTimeout => Setting.DefaultTimeout;
@@ -40,14 +37,6 @@ namespace LiteQuark.Runtime
         public int ActiveRequests => _activeRequests;
         internal bool IsClosing => _shutdownCts.IsCancellationRequested;
         internal CancellationToken ShutdownToken => _shutdownCts.Token;
-
-        internal void ThrowIfClosing()
-        {
-            if (IsClosing)
-            {
-                throw new ObjectDisposedException(nameof(NetworkSystem));
-            }
-        }
 
         internal void ThrowIfCancellationRequested(CancellationToken cancellationToken = default)
         {

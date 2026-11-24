@@ -62,7 +62,7 @@ POST/PUT 的对象通过 LitJson 编码；泛型响应通过 `UnityEngine.JsonUt
 
 `DisposeAsync()` 发出取消并立即完成。旧请求在恢复时终止传输并归还并发名额，排队和未发送的批次停止发送。`ActiveRequests` 在旧请求退出时归零。
 
-- 关闭开始后访问 `Http` 或通过已缓存的 HttpClient 发起请求，抛 `ObjectDisposedException`，包括空批处理；不要继续使用旧系统或客户端。
+- 重启后从新一轮的 NetworkSystem 获取 `Http`。
 - 关闭前已接受的普通请求、上传、重试和未完成的批处理项，以失败响应结束（`StatusCode = 0`）；下载抛 `OperationCanceledException`。批处理保留输入顺序和已经完成的结果；已交付响应不被改写。
 - 已经进入的拦截器和调用方续体可能在重启后返回。框架阻止后续拦截器和发送；业务须避免旧续体或已排队的进度通知更新新会话。
 - Abort 只终止本地传输，不撤销服务端已经执行的写入。必须取得结果的请求应由业务在 Shutdown 前等待；必要的保存不要依赖应用退出时的跨帧关闭。

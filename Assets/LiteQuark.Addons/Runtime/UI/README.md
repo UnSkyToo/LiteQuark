@@ -82,7 +82,7 @@ uiSystem.CloseUI(menu);
 
 ## 系统关闭
 
-UISystem 由 Runtime 统一关闭，业务不要直接释放已注册系统或在关闭后使用旧实例。关闭开始后，新的 `OpenUI` 请求抛 `ObjectDisposedException`，尚未完成的请求被取消，已打开的界面统一关闭。
+UISystem 由 Runtime 统一关闭，业务不要直接释放已注册系统或在关闭后使用旧实例。关闭时取消尚未完成的打开请求，并关闭已打开的界面。
 
 调用方 await 时应处理 `OperationCanceledException`。无需等待结果时可用 `.Forget()` 消费任务，UniTask 默认不报告取消异常；仅处理成功结果可用 `.ContinueWith(ui => ...).Forget()`，取消时不会执行该回调。
 

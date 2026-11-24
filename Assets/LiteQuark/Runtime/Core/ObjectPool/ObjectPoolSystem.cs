@@ -83,7 +83,6 @@ namespace LiteQuark.Runtime
 
         public TPool GetPool<TPool>(string key, params object[] args) where TPool : class, IBasePool
         {
-            ThrowIfClosing();
             if (_poolCache.TryGetValue(key, out var pool))
             {
                 return pool as TPool;
@@ -94,7 +93,11 @@ namespace LiteQuark.Runtime
 
         public TPool AddPool<TPool>(string key, params object[] args) where TPool : IBasePool
         {
-            ThrowIfClosing();
+            if (_isClosing)
+            {
+                throw new System.ObjectDisposedException(nameof(ObjectPoolSystem));
+            }
+
             var pool = System.Activator.CreateInstance<TPool>();
             try
             {
@@ -107,14 +110,6 @@ namespace LiteQuark.Runtime
                 throw;
             }
             return pool;
-        }
-
-        private void ThrowIfClosing()
-        {
-            if (_isClosing)
-            {
-                throw new System.ObjectDisposedException(nameof(ObjectPoolSystem));
-            }
         }
 
         public void RemovePool<TPool>(TPool pool) where TPool : IBasePool

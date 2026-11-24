@@ -152,12 +152,11 @@ namespace LiteQuark.Runtime
         /// </summary>
         public async UniTask SwitchProvider(IDataProvider newProvider)
         {
-            var previous = GetProvider();
             if (newProvider == null)
             {
                 throw new ArgumentNullException(nameof(newProvider));
             }
-            if (ReferenceEquals(previous, newProvider))
+            if (ReferenceEquals(GetProvider(), newProvider))
             {
                 return;
             }
@@ -165,23 +164,24 @@ namespace LiteQuark.Runtime
             Interlocked.Increment(ref _pendingOperations);
             try
             {
-                var initialized = await newProvider.Initialize();
-                await UniTask.SwitchToMainThread();
-                if (!initialized)
+                try
                 {
-                    throw new InvalidOperationException("Data provider initialization failed.");
+                    if (!await newProvider.Initialize())
+                    {
+                        throw new InvalidOperationException("Data provider initialization failed.");
+                    }
+                }
+                catch
+                {
+                    await UniTask.SwitchToMainThread();
+                    newProvider.Dispose();
+                    throw;
                 }
 
-                previous = _provider;
-                _provider = newProvider;
-                newProvider = null; // Ownership is published before old-provider disposal can invoke callbacks or throw.
-                previous.Dispose();
-            }
-            catch
-            {
                 await UniTask.SwitchToMainThread();
-                newProvider?.Dispose();
-                throw;
+                var previous = _provider;
+                _provider = newProvider;
+                previous.Dispose();
             }
             finally
             {

@@ -42,6 +42,4 @@ AudioObject 持有音频 AssetHandle，系统清理时释放 Handle 并归还承
 
 Runtime 调用 `DisposeAsync()` 时，AudioSystem 同步停止音频、取消在途 Clip Handle、清空记录，释放内部对象池并销毁根节点。正常加载失败、入口路径异常及部分取得资源的对象也会归还 Carrier。Unity 的 Destroy 可能到帧末才实际执行；共享加载及原生资源收尾仍由 AssetSystem 负责，Audio 不单独等待它们。
 
-关闭开始后 `PlaySound`、`PlayMusic`、`PauseAllAudio`、`ResumeAllAudio` 抛 `ObjectDisposedException`，不会建立请求或改变全局暂停。业务不要继续使用旧系统实例。
-
 实现见 [AudioSystem.cs](AudioSystem.cs) 和 [AudioObject.cs](AudioObject.cs)。

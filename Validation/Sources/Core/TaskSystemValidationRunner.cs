@@ -183,7 +183,7 @@ namespace LiteQuark.Editor
                 launcher.enabled = false;
 
                 await Run("tasks/admission", PriorityOrder);
-                await RunAsync("tasks/cancel", CancelQueue, "TaskSystem is closing or disposed.");
+                await RunAsync("tasks/cancel", CancelQueue);
                 await Run("tasks/terminal", TerminalContract, "Validation execution failure");
                 await RunAsync("tasks/coroutine-child", FlowParent);
                 await RunAsync("tasks/download-result", WebGetSnapshots, "task-snapshot-missing.bin");
@@ -675,9 +675,10 @@ namespace LiteQuark.Editor
             system.Tick(0);
             Check(waiting.Executions == 0 && waiting.Disposals == 1 && running.Disposals == 1 && successor.IsExecuted,
                 "Queued cancellation starts no work and running cancellation releases exactly one slot.");
+            var completion = successor.Task;
             await system.DisposeAsync();
-            Check(successor.State == TaskState.Cancelled && system.RunningTaskCount == 0, "Shutdown ends accepted work.");
-            Throws<ObjectDisposedException>(() => system.AddTask(new ProbeTask()), "Closed scheduler rejects new work.");
+            Check(completion.Status == UniTaskStatus.Succeeded && await completion == null &&
+                successor.State == TaskState.Cancelled && successor.Disposals == 1, "Shutdown settles the accepted task and releases it once.");
         }
     }
 }

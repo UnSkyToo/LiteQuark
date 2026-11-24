@@ -39,7 +39,6 @@ namespace LiteQuark.Runtime
 
         public void RegisterTable<T>(string assetPath, Func<string, List<T>> parseFunc) where T : IConfigData
         {
-            ThrowIfClosing();
             _registrations.Add(new TableRegistration(
                 typeof(T),
                 assetPath,
@@ -49,7 +48,6 @@ namespace LiteQuark.Runtime
 
         public async UniTask LoadAll()
         {
-            ThrowIfClosing();
             foreach (var reg in _registrations)
             {
                 await LoadTable(reg);
@@ -58,7 +56,6 @@ namespace LiteQuark.Runtime
 
         public async UniTask Load<T>() where T : IConfigData
         {
-            ThrowIfClosing();
             var type = typeof(T);
             foreach (var reg in _registrations)
             {
@@ -126,14 +123,6 @@ namespace LiteQuark.Runtime
             {
                 _lifetimeCts.Token.ThrowIfCancellationRequested();
                 LLog.Error("ConfigSystem: error loading {0}: {1}", reg.AssetPath, ex.Message);
-            }
-        }
-
-        private void ThrowIfClosing()
-        {
-            if (_lifetimeCts.IsCancellationRequested)
-            {
-                throw new ObjectDisposedException(nameof(ConfigSystem));
             }
         }
 

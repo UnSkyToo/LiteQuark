@@ -5,7 +5,6 @@ namespace LiteQuark.Runtime
     public sealed class EffectSystem : ISystem, ITick
     {
         private readonly SafeList<EffectObject> _effectList = new();
-        private bool _isClosing;
 
         public EffectSystem()
         {
@@ -18,7 +17,6 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            _isClosing = true;
             foreach (var effect in _effectList)
             {
                 effect.Dispose();
@@ -59,11 +57,6 @@ namespace LiteQuark.Runtime
 
         public ulong PlayEffect(EffectCreateInfo info)
         {
-            if (_isClosing)
-            {
-                throw new System.ObjectDisposedException(nameof(EffectSystem));
-            }
-
             if (string.IsNullOrWhiteSpace(info.Path))
             {
                 return 0;

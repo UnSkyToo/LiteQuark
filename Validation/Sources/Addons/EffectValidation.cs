@@ -44,9 +44,9 @@ namespace LiteQuark.Editor
                 Pool = LiteRuntime.ObjectPool.AddPool<EffectProbePool>(EffectPath, LiteRuntime.ObjectPool.GetPoolRoot());
             }
 
-            internal ulong Play(bool loop = false, int order = -1, string path = EffectPath)
+            internal ulong Play(bool loop = false, int order = -1)
             {
-                var info = new EffectCreateInfo(Parent.transform, path, EffectSpace.Local, Vector3.zero, 1f, Quaternion.identity, 1f, loop, 0.1f, order);
+                var info = new EffectCreateInfo(Parent.transform, EffectPath, EffectSpace.Local, Vector3.zero, 1f, Quaternion.identity, 1f, loop, 0.1f, order);
                 info.SetCompleteCallback(() => Completions++);
                 return System.PlayEffect(info);
             }
@@ -99,13 +99,6 @@ namespace LiteQuark.Editor
                 await shutdown;
                 Check(first.IsDone && second.IsDone && !second.IsValid && h.Find(secondID) == null,
                     "Stopped and shutdown requests both remain terminal and disappear from the system list.");
-                foreach (var path in new[] { EffectPath, " " })
-                {
-                    var rejected = false;
-                    try { h.Play(path: path); }
-                    catch (ObjectDisposedException) { rejected = true; }
-                    Check(rejected, "Closing rejects PlayEffect before either resource loading or the blank-path shortcut.");
-                }
                 await Wait(() => retained.IsDone && h.Pool.IsReady, "Shared Effect template delivery after shutdown");
                 await retained;
                 Check(retained.Result != null && h.Assets.AssetRefs("effect.ab", EffectPath, typeof(GameObject)) == 2,

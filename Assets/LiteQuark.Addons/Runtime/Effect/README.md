@@ -68,7 +68,7 @@ await LiteRuntime.ObjectPool.PreloadPoolAsync<ActiveGameObjectPool>(
 
 ## 生命周期
 
-Runtime 调用 `DisposeAsync()` 时，EffectSystem 同步释放已有特效并归还实例，跳过停止后的 RetainTime，不调用自然完成回调；关闭开始后 `PlayEffect` 抛 `ObjectDisposedException`。共享池和模板 Handle 仍由 ObjectPoolSystem 管理，原生加载收尾由 AssetSystem 负责，Effect 不单独等待它们。
+Runtime 调用 `DisposeAsync()` 时，EffectSystem 同步释放已有特效并归还实例，跳过停止后的 RetainTime，不调用自然完成回调。共享池和模板 Handle 仍由 ObjectPoolSystem 管理，原生加载收尾由 AssetSystem 负责，Effect 不单独等待它们。
 
 `EffectObject.Dispose()` 先进入终态、清空实例和 Binder 引用，再归还对象；重复释放不会重复归还，已释放对象在后续 Tick 移出系统列表。完成或释放后调用 Stop 不会重新进入停止流程，也不会控制被复用的实例。
 

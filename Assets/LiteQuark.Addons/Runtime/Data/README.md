@@ -63,12 +63,12 @@ bool hasSave = data.Has("player");
 
 ## 生命周期
 
-系统调用从 Unity 主线程发起。关闭开始后拒绝全部存取、切换及 Provider 查询，抛 `ObjectDisposedException`。Provider 是借用引用，不应自行 Dispose；直接调用 Provider 的操作不经系统追踪，须在切换或关闭前自行等待。
+系统调用从 Unity 主线程发起。Provider 是借用引用，不应自行 Dispose；直接调用 Provider 的操作不经系统追踪，须在切换或关闭前自行等待。
 
-Runtime 等待 `DisposeAsync()` 完成：不取消已接受的异步读写或切换，等待它们退出后才释放当前 Provider。已接受的切换若与关闭重叠，关闭会等待初始化退出再释放当前 Provider。Provider 不应反向等待本系统的关闭，否则会互相等待。
+`DisposeAsync()` 等待已受理的异步读写和切换结束，再释放当前 Provider。Provider 不应反向等待本系统的关闭，否则会互相等待。
 
 候选初始化可在后台完成，替换和释放会回到主线程。初始化失败时保留旧 Provider；发布成功后若旧 Provider 的 Dispose 抛异常，切换仍报告错误，但已发布的新 Provider 继续由系统持有，不撤销发布或自动重试旧 Provider 的释放。
 
-关闭会等待已受理的操作结束。业务应等待 SaveAsync 确认保存结果，读写异常由各次调用报告。Provider 的 Dispose 异常由 Runtime 记录，其余系统继续释放。自定义 Provider 的 UniTask 应覆盖实际 I/O 寿命，Dispose 需支持部分初始化。必要保存应在应用退出前完成。当前不保证同 key 写入串行化、原子替换或断电持久化。
+业务应等待 SaveAsync 确认保存结果，读写异常由各次调用报告。Provider 的 Dispose 异常由 Runtime 记录，其余系统继续释放。自定义 Provider 的 UniTask 应覆盖实际 I/O 寿命，Dispose 需支持部分初始化。必要保存应在应用退出前完成。当前不保证同 key 写入串行化、原子替换或断电持久化。
 
 实现见 [DataSystem.cs](DataSystem.cs)、[Provider](Provider) 和 [DataSystemSetting.cs](DataSystemSetting.cs)。

@@ -13,7 +13,6 @@ namespace LiteQuark.Runtime
         private readonly List<AudioObject> _removeList = new();
         private EmptyGameObjectPool _pool = null;
         private Transform _root = null;
-        private bool _isClosing;
         private bool? _listenerPauseBeforeChange;
 
         public AudioSystem()
@@ -34,7 +33,6 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            _isClosing = true;
             foreach (var audio in _audioCache.Values)
             {
                 audio.Unload(_pool);
@@ -103,7 +101,6 @@ namespace LiteQuark.Runtime
 
         private ulong PlayAudio(AudioType type, Transform parent, string path, bool isLoop = false, int limit = 0, float volume = 1.0f, float delay = 0f)
         {
-            ThrowIfClosing();
             if (limit > 0)
             {
                 var count = GetAudioCountByPath(path);
@@ -240,7 +237,6 @@ namespace LiteQuark.Runtime
 
         public void PauseAllAudio()
         {
-            ThrowIfClosing();
             _listenerPauseBeforeChange ??= AudioListener.pause;
             AudioListener.pause = true;
 
@@ -252,21 +248,12 @@ namespace LiteQuark.Runtime
 
         public void ResumeAllAudio()
         {
-            ThrowIfClosing();
             _listenerPauseBeforeChange ??= AudioListener.pause;
             AudioListener.pause = false;
 
             foreach (var chunk in _audioCache)
             {
                 chunk.Value.Resume();
-            }
-        }
-
-        private void ThrowIfClosing()
-        {
-            if (_isClosing)
-            {
-                throw new System.ObjectDisposedException(nameof(AudioSystem));
             }
         }
     }
