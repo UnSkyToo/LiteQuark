@@ -15,7 +15,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             Http = new HttpClient(this);
             return UniTask.FromResult(true);

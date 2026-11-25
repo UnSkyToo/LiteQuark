@@ -1,6 +1,6 @@
 # ConfigSystem 配置表
 
-ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 JSON 和 C#，运行时通过 `LiteRuntime.Get<ConfigSystem>()` 注册、加载和查询配置表。先将 ConfigSystem 加入 Launcher 的 **System List**，并在该注册项内配置 `ConfigSystemSetting`。
+ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 JSON 和 C#。将 ConfigSystem 加入 Launcher 的 **System List**，然后通过 `LiteRuntime.Get<ConfigSystem>()` 注册、加载和查询配置表。
 
 ## 制作与导出
 
@@ -46,35 +46,53 @@ ConfigSystem 属于 LiteQuark.Addons。`Lite > Config Tool` 将 Excel 导出为 
 
 ## 注册与加载
 
-示例使用 `LiteQuark.Runtime` 命名空间，在 `IGameEntry.Initialize()` 等系统初始化完成后的异步方法中调用。以下示例使用上面的表和默认 `GamePlay` 命名空间：
+示例使用 `LiteQuark.Runtime` 命名空间，放在 `IGameEntry.Initialize(CancellationToken ct)` 中。以下示例使用上面的表和默认 `GamePlay` 命名空间。
 
 ```csharp
 var config = LiteRuntime.Get<ConfigSystem>();
 GamePlay.ConfigSystemGenerated.Register(config);
-await config.LoadAll();
+await config.LoadAll(ct);
 if (config.TryGetData<GamePlay.PeopleData>(101, out var person))
 {
     LLog.Info("Name: {0}", person.Name);
 }
 ```
 
-每个系统实例只注册一次。`LoadAllOnInitialize` 默认 false；它只加载系统初始化前已经注册的表，不会自动发现导出文件。按上面的业务初始化方式接入时，显式调用 `LoadAll()` 或 `Load<T>()`。
+每个系统实例中，一个行类型对应一张表。重复注册同一行类型会抛 `ArgumentException`。注册后显式调用 `LoadAll(ct)` 或 `Load<T>(ct)`。批量加载同时提交各表的读取请求，由 AssetSystem 控制并发。每张表在资源就绪后于 Unity 主线程解析并发布。
 
 | API | 用途与结果 |
 | --- | --- |
-| `RegisterTable<T>(assetPath, parseFunc)` | 手动登记资源路径和 `Func<string, List<T>>` 解析函数，T 实现 `IConfigData` |
-| `Load<T>()` / `LoadAll()` | 加载指定类型／全部已注册表；重复调用会重新加载和解析 |
+| `RegisterTable<T>(assetPath, parseFunc)` | 登记使用整数 Id 的文本表，T 实现 `IConfigData` |
+| `RegisterTable<T, TKey>(assetPath, parseFunc, keySelector)` | 登记自定义主键表，解析函数接收 `TextAsset` 并返回 `List<T>`，主键选择器从行数据取得键 |
+| `Load<T>(ct)` / `LoadAll(ct)` | 加载指定类型／全部已注册表。可传入启动 token，重复调用会重新加载和解析 |
 | `GetData<T>(id)` | 未加载或找不到 id 时记录警告并返回 default |
 | `TryGetData<T>(id, out data)` | 找到返回 true，否则返回 false；表未加载时也会记录警告 |
-| `GetTable<T>()` | 返回表或 null；表提供 `Count`、`Get`、`TryGet`、`GetAll` |
+| `GetTable<T>()` / `GetTable<T, TKey>()` | 返回对应类型的表或 null。表提供 `Count`、`Get`、`TryGet`、`GetAll` |
 
-资源路径遵循核心 AssetSystem 的规则，包含扩展名。数据必须能被当前 Editor / Bundle 模式加载；随应用发布时将 JSON 纳入资源构建。ConfigSystem 在解析期间持有 TextAsset Handle，解析完成或失败时释放。
+### 自定义主键和二进制表
 
-加载异常在内部记录，await 完成不代表每张表成功。使用前检查查询结果；重新加载失败不会清除已经加载的旧表。`GetAll()` 返回表持有的列表，应按只读使用，修改它不会同步 id 索引。系统关闭会清空表和注册信息。
+手写表可以用 `string` 作主键，或用元组组合多列。解析函数可以读取 `TextAsset.text`，也可以从以 `.bytes` 导入的资源读取 `TextAsset.bytes`。下面以业务定义的 `RewardRow` 和 `ParseRewards(byte[])` 为例。 [Unity TextAsset 手册](https://docs.unity3d.com/cn/2022.3/Manual/class-TextAsset.html)
+
+```csharp
+config.RegisterTable<RewardRow, (string Region, int Level)>(
+    "Configs/rewards.bytes",
+    asset => ParseRewards(asset.bytes),
+    row => (row.Region, row.Level));
+await config.Load<RewardRow>(ct);
+var rewards = config.GetTable<RewardRow, (string Region, int Level)>();
+if (rewards != null && rewards.TryGet(("sg", 10), out var reward))
+{
+    // 使用 reward。
+}
+```
+
+资源路径遵循 AssetSystem 的规则，包含扩展名。随应用发布时将这些资源纳入资源构建。解析函数应生成独立的行数据。ConfigSystem 在解析期间持有 TextAsset Handle，解析结束时释放。
+
+加载失败会记录日志。批次结束后可以查询各表结果，重载失败时保留该表的旧数据。`GetAll()` 返回表持有的列表，应按只读使用。系统关闭会清空表和注册信息。
 
 ## 生命周期
 
-注册和加载从 Unity 主线程调用，已注册实例由 Runtime 统一释放。`DisposeAsync()` 同步取消在途 TextAsset Handle 的等待，清空表和注册信息；未完成的 `Load<T>()`／`LoadAll()` 以 `OperationCanceledException` 结束，不作为普通加载错误记录。
+注册和加载从 Unity 主线程调用，已注册实例由 Runtime 统一释放。调用方取消 token 会结束该次加载，其他并发调用可继续。`DisposeAsync()` 取消本系统的在途 TextAsset Handle，并清空表和注册信息。取消的 `Load<T>(ct)` 或 `LoadAll(ct)` 以 `OperationCanceledException` 结束。
 
 共享加载和原生资源收尾仍由 AssetSystem 负责，Config 不另行等待；普通资源／解析失败仍按原有日志和返回方式处理。
 

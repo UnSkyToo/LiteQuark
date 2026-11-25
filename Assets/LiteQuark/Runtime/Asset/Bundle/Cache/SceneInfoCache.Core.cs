@@ -8,6 +8,7 @@ namespace LiteQuark.Runtime
     {
         public AssetCacheStage Stage { get; private set; }
         public Scene? Scene => Stage == AssetCacheStage.Loaded && _scene.IsValid() && _scene.isLoaded ? _scene : null;
+        internal float LoadProgress => Stage == AssetCacheStage.Loaded ? 1f : _loadSceneTask?.Progress ?? 0f;
 
         private readonly string _sceneKey;
         private readonly Type _assetType = typeof(Scene);

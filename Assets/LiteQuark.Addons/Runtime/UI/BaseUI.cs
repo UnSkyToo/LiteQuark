@@ -41,6 +41,16 @@ namespace LiteQuark.Runtime
             SortingOrder = Go.GetComponent<Canvas>().sortingOrder;
         }
 
+        internal void SetSortingOrder(int order)
+        {
+            if (SortingOrder != order)
+            {
+                var canvas = Go.GetComponent<Canvas>();
+                canvas.sortingOrder = order;
+                SortingOrder = canvas.sortingOrder;
+            }
+        }
+
         internal void ReleaseGo()
         {
             if (_goHandle != null)

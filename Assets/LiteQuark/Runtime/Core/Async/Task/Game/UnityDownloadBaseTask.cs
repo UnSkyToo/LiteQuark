@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -58,7 +59,22 @@ namespace LiteQuark.Runtime
 
         protected override void OnTick(float deltaTime)
         {
-            Progress = _request?.downloadProgress ?? 0f;
+            var request = _request;
+            if (request == null)
+            {
+                Progress = 0f;
+                return;
+            }
+
+            var progress = request.downloadProgress;
+            // AssetBundle downloads can report zero progress while bytes have already arrived.
+            if (progress <= 0f && request.downloadedBytes > 0 &&
+                ulong.TryParse(request.GetResponseHeader("Content-Length"), NumberStyles.None, CultureInfo.InvariantCulture, out var totalBytes) &&
+                totalBytes > 0)
+            {
+                progress = (float)((double)request.downloadedBytes / totalBytes);
+            }
+            Progress = Mathf.Clamp01(progress);
         }
 
         protected override void OnExecute()

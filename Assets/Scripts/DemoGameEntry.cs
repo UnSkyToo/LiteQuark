@@ -1,3 +1,4 @@
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteBattle.Runtime;
 using LiteQuark.Runtime;
@@ -7,9 +8,9 @@ namespace LiteQuark.Demo
     [UnityEngine.Scripting.Preserve]
     public sealed class DemoGameEntry : IGameEntry, ITick, ILateTick
     {
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
-            return LiteNexusEngine.Instance.Startup();
+            return LiteNexusEngine.Instance.Startup(ct);
         }
 
         public UniTask DisposeAsync()

@@ -70,6 +70,35 @@ namespace LiteQuark.Editor
                 "An empty successful preload retains its bool result after Dispose.");
         }
 
+        private static async UniTask HandleProgress()
+        {
+            var h = New(true);
+            var prefab = h.Asset<GameObject>(PrefabPath);
+            var scene = h.Scene();
+            using var instance = h.Assets.InstantiateHandle(PrefabPath, null);
+            using var batch = h.Assets.PreloadAssetHandle<GameObject>(new[] { PrefabPath });
+            using var ct = new CancellationTokenSource();
+            var canceled = h.Asset<GameObject>(PrefabPath, ct.Token);
+            Check(prefab.Progress == 0f && instance.Progress == 0f && scene.Progress == 0f && batch.Progress == 0f,
+                "Queued handles start at zero.");
+
+            h.Provider.Tick(0f);
+            h.Finish("a.ab", true);
+            h.Finish("scene.ab", true);
+            var partial = canceled.Progress;
+            Check(partial > 0f && partial < 1f && !prefab.IsDone && prefab.Progress == partial &&
+                instance.Progress == partial && batch.Progress == partial && scene.Progress is > 0f and < 1f,
+                "Handles expose actual Bundle progress while their real dependency is still held.");
+            ct.Cancel();
+            h.Finish("b.ab", true);
+            await Wait(() => prefab.IsDone && instance.IsDone && batch.IsDone && scene.IsDone, "Progress fixture loads");
+            Check(prefab.Result != null && instance.Result != null && batch.Result && scene.Result.HasValue &&
+                prefab.Progress == 1f && instance.Progress == 1f && batch.Progress == 1f && scene.Progress == 1f,
+                "Every successful handle reaches one after delivery.");
+            Check(canceled.State == AssetHandleState.Cancelled && canceled.Progress == partial,
+                "A cancelled handle keeps its last progress while the shared read finishes.");
+        }
+
         private static async UniTask SharedCancellationFailureRetry()
         {
             var h = New(true, 1);
@@ -227,10 +256,10 @@ namespace LiteQuark.Editor
         private static async UniTask RemoteCleanup()
         {
             var baseline = AssetBundle.GetAllLoadedAssetBundles().Select(bundle => bundle.GetInstanceID()).ToHashSet();
-            var info = new BundleInfo(1, "text.ab", new[] { TextPath }, null);
+            var info = new BundleInfo(1, "b.ab", new[] { MaterialPath }, null);
             var pack = new VersionPackInfo("validation", "windows", false, false, new[] { info });
             var callbacks = 0;
-            var server = new BundleHttpServer(File.ReadAllBytes(Path.Combine(BundleFolder, "text.ab")));
+            var server = new BundleHttpServer(File.ReadAllBytes(Path.Combine(BundleFolder, info.BundlePath)));
             using (server)
             {
                 var origin = new Uri(server.Url).GetLeftPart(UriPartial.Authority);
@@ -242,6 +271,8 @@ namespace LiteQuark.Editor
                     loader.Tick(0);
                     await WaitWithoutLoaderTick(() => server.BodyStarted || server.Work.IsCompleted, "First HTTP body segment");
                     Check(server.BodyStarted && !server.Work.IsCompleted, "The server holds the second half of the Bundle response.");
+                    await WaitWithoutLoaderTick(() => loader.GetProgress(info.BundlePath) is > 0f and < 1f, "Partial HTTP Bundle progress");
+                    Check(!server.Work.IsCompleted, "The submitted Bundle task reports a partial native download while the response is held.");
                 }
                 finally
                 {

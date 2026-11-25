@@ -29,6 +29,7 @@ namespace LiteQuark.Editor
                 writer.Write(samples * 2);
                 for (var i = 0; i < samples; i++) writer.Write((short)(Math.Sin(i * 2 * Math.PI * 440 / 44100) * 1000));
             }
+            File.WriteAllBytes(Fixture + "/config.bytes", new byte[] { 7, 128, 255, 7, 129, 0 });
             AssetDatabase.Refresh();
             var effect = new GameObject("validation_effect", typeof(ParticleSystem));
             var particle = effect.GetComponent<ParticleSystem>();
@@ -47,7 +48,7 @@ namespace LiteQuark.Editor
             binder.RetainTime = 0.5f;
             PrefabUtility.SaveAsPrefabAsset(effect, Fixture + "/effect.prefab");
             UnityEngine.Object.DestroyImmediate(effect);
-            return new[] { Build("audio.ab", "tone.wav"), Build("effect.ab", "effect.prefab") };
+            return new[] { Build("audio.ab", "tone.wav"), Build("effect.ab", "effect.prefab"), Build("config.ab", "config.bytes") };
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -16,7 +17,7 @@ namespace LiteQuark.Runtime
             _frameInterval = MathF.Max(0.01f, 1.0f / LiteRuntime.Setting.Common.TargetFrameRate);
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             return UniTask.FromResult(true);
         }

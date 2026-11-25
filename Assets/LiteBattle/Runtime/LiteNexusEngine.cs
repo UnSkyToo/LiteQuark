@@ -1,3 +1,4 @@
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
@@ -15,9 +16,11 @@ namespace LiteBattle.Runtime
             GlobalContext = new LiteContext(null);
         }
 
-        public async UniTask<bool> Startup()
+        public UniTask<bool> Startup() => Startup(default);
+
+        public async UniTask<bool> Startup(CancellationToken ct)
         {
-            if (!await LiteNexusDataManager.Instance.Startup())
+            if (!await LiteNexusDataManager.Instance.Startup(ct))
             {
                 return false;
             }

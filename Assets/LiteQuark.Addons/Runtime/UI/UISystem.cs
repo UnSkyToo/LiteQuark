@@ -14,13 +14,14 @@ namespace LiteQuark.Runtime
         private const int UIStepOrder = 100;
 
         public RectTransform CanvasRoot => _canvasRoot;
-        public Camera UICamera => Setting?.UICamera != null ? Setting.UICamera : Camera.main;
+        public Camera UICamera { get; private set; }
 
         private RectTransform _canvasRoot;
         private readonly Dictionary<UIDepthMode, Transform> _canvasTransform = new();
         private readonly List<BaseUI> _openList = new();
         private readonly List<BaseUI> _uiList = new();
         private readonly List<BaseUI> _closeList = new();
+        private readonly Dictionary<Type, AsyncLazy<BaseUI>> _mutexOpens = new();
         private readonly HashSet<GameObjectHandle> _pendingHandles = new();
         private bool _isClosing;
 
@@ -28,7 +29,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             var parent = new GameObject("Canvas", typeof(RectTransform));
             _canvasRoot = (RectTransform)parent.transform;
@@ -70,6 +71,7 @@ namespace LiteQuark.Runtime
                 _canvasRoot = null;
             }
             _canvasTransform.Clear();
+            UICamera = null;
 
             return UniTask.CompletedTask;
         }
@@ -114,24 +116,54 @@ namespace LiteQuark.Runtime
             return OpenUI<T>(config, CancellationToken.None, paramList);
         }
 
-        public async UniTask<T> OpenUI<T>(UIConfig config, CancellationToken ct, params object[] paramList) where T : BaseUI
+        public UniTask<T> OpenUI<T>(UIConfig config, CancellationToken ct, params object[] paramList) where T : BaseUI
         {
             if (_isClosing)
             {
-                throw new ObjectDisposedException(nameof(UISystem));
+                return UniTask.FromException<T>(new ObjectDisposedException(nameof(UISystem)));
             }
 
-            ct.ThrowIfCancellationRequested();
-
-            if (config.IsMutex)
+            if (ct.IsCancellationRequested)
             {
-                var existUI = FindUI<T>();
-                if (existUI != null)
+                return UniTask.FromCanceled<T>(ct);
+            }
+
+            return config.IsMutex ? OpenMutexUI<T>(config, ct, paramList) : OpenNewUI<T>(config, ct, paramList);
+        }
+
+        private async UniTask<T> OpenMutexUI<T>(UIConfig config, CancellationToken ct, object[] paramList) where T : BaseUI
+        {
+            var type = typeof(T);
+            if (_mutexOpens.TryGetValue(type, out var opening))
+            {
+                return (T)await opening.Task.AttachExternalCancellation(ct);
+            }
+
+            var existing = FindUI<T>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            opening = new AsyncLazy<BaseUI>(OpenAndRemove);
+            _mutexOpens.Add(type, opening);
+            return (T)await opening.Task;
+
+            async UniTask<BaseUI> OpenAndRemove()
+            {
+                try
                 {
-                    return existUI;
+                    return await OpenNewUI<T>(config, ct, paramList);
+                }
+                finally
+                {
+                    _mutexOpens.Remove(type);
                 }
             }
+        }
 
+        private async UniTask<T> OpenNewUI<T>(UIConfig config, CancellationToken ct, object[] paramList) where T : BaseUI
+        {
             var ui = Activator.CreateInstance<T>();
             ui.Config = config;
             ui.System = this;
@@ -157,7 +189,13 @@ namespace LiteQuark.Runtime
                 // Binding can synchronously invoke callbacks that release the caller.
                 ct.ThrowIfCancellationRequested();
                 ui.State = UIState.Opened;
+                var openCount = _openList.Count;
                 ui.Open(paramList);
+                if (_openList.Count != openCount)
+                {
+                    // OnOpen can synchronously publish a cached UI that took this sorting order.
+                    ui.SetSortingOrder(RefreshSortingOrders(config.DepthMode));
+                }
                 _openList.Add(ui);
                 return ui;
             }
@@ -237,9 +275,14 @@ namespace LiteQuark.Runtime
 
         public void CloseAllUI()
         {
+            var pendingCount = _openList.Count;
             foreach (var ui in _uiList)
             {
                 CloseUI(ui);
+            }
+            for (var i = 0; i < pendingCount; i++)
+            {
+                CloseUI(_openList[i]);
             }
         }
 
@@ -251,6 +294,7 @@ namespace LiteQuark.Runtime
                 {
                     CloseUIInternal(ui);
                     _uiList.Remove(ui);
+                    RefreshSortingOrders(ui.Config.DepthMode);
                 }
                 _closeList.Clear();
             }
@@ -258,13 +302,13 @@ namespace LiteQuark.Runtime
 
         public T FindUI<T>() where T : BaseUI
         {
-            return _uiList.Find(ui => ui.GetType() == typeof(T) && (ui.State is UIState.Opening or UIState.Opened)) as T;
+            static bool IsOpenType(BaseUI ui) => ui.State == UIState.Opened && ui.GetType() == typeof(T);
+
+            return (_uiList.Find(IsOpenType) ?? _openList.Find(IsOpenType)) as T;
         }
 
         private void SetupUI(BaseUI ui, GameObject instance, GameObjectHandle handle)
         {
-            var parent = GetUIParent(ui.Config.DepthMode);
-
             var rectTransform = instance.GetComponent<RectTransform>();
             if (rectTransform == null)
             {
@@ -277,13 +321,39 @@ namespace LiteQuark.Runtime
 
             var canvas = instance.GetOrAddComponent<Canvas>();
             canvas.overrideSorting = true;
-            canvas.sortingOrder = (int)ui.Config.DepthMode + (parent.childCount - 1) * (ui.Config.DepthMode == UIDepthMode.Scene ? 0 : UIStepOrder);
+            canvas.sortingOrder = RefreshSortingOrders(ui.Config.DepthMode);
 
             var raycaster = instance.GetOrAddComponent<GraphicRaycaster>();
             raycaster.blockingMask = LayerMask.GetMask("UI");
 
             ui.BindGo(instance, handle);
             UIBinder.AutoBind(ui);
+        }
+
+        private int RefreshSortingOrders(UIDepthMode depthMode)
+        {
+            var order = (int)depthMode;
+            if (depthMode == UIDepthMode.Scene)
+            {
+                return order;
+            }
+
+            order = RefreshSortingOrders(_uiList, depthMode, order);
+            return RefreshSortingOrders(_openList, depthMode, order);
+        }
+
+        private static int RefreshSortingOrders(List<BaseUI> windows, UIDepthMode depthMode, int order)
+        {
+            foreach (var ui in windows)
+            {
+                if (ui.Config.DepthMode == depthMode)
+                {
+                    ui.SetSortingOrder(order);
+                    order += UIStepOrder;
+                }
+            }
+
+            return order;
         }
 
         private Transform GetUIParent(UIDepthMode depthMode)
@@ -301,8 +371,10 @@ namespace LiteQuark.Runtime
         {
             go.layer = LayerMask.NameToLayer("UI");
 
+            var configuredCamera = Setting.UICamera;
+            UICamera = configuredCamera != null ? configuredCamera : Camera.main;
             var canvas = go.GetOrAddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.renderMode = UICamera != null ? RenderMode.ScreenSpaceCamera : RenderMode.ScreenSpaceOverlay;
             canvas.worldCamera = UICamera;
 
             var scaler = go.GetOrAddComponent<CanvasScaler>();
@@ -312,8 +384,11 @@ namespace LiteQuark.Runtime
             scaler.matchWidthOrHeight = Setting.MatchValue;
             scaler.referencePixelsPerUnit = 100;
 
-            UICamera.orthographic = true;
-            UICamera.orthographicSize = Screen.height / (2f * scaler.referencePixelsPerUnit);
+            if (configuredCamera != null)
+            {
+                configuredCamera.orthographic = true;
+                configuredCamera.orthographicSize = Screen.height / (2f * scaler.referencePixelsPerUnit);
+            }
 
             var raycaster = go.GetOrAddComponent<GraphicRaycaster>();
             raycaster.ignoreReversedGraphics = true;

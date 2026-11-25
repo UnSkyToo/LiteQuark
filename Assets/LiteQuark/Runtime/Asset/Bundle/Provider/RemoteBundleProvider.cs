@@ -39,8 +39,7 @@ namespace LiteQuark.Runtime
                 separator = string.Empty;
             }
 
-            var version = System.Uri.EscapeDataString(AppUtils.GetVersion());
-            return $"{uri}{separator}t={version}{fragment}";
+            return $"{uri}{separator}t={System.Guid.NewGuid():N}{fragment}";
         }
 
         public ILoadBundleTask LoadBundle(string bundlePath, string hash)

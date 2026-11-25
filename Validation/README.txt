@@ -43,15 +43,15 @@ Validation — LiteQuark 隔离验证
              通过业务入口和系统的释放异常验证剩余系统继续退场，重启遇错回到 Idle 后可再次显式启动。
   loading    Asset/AssetLoadingValidationRunner.cs
              公开寻址、后端选择、默认资源模式和初始化错误、BuiltIn 优先级、Remote URI
-             与真实回环下载、构建文件名标志，以及 Unity 场景包限制。
+             与真实回环下载、启动时中止在途清单、构建文件名标志，以及 Unity 场景包限制。
   lifecycle  Asset/AssetLifecycleValidationRunner.cs 及同名前缀的主题文件
              从共享 Handle 和 Lease 到保留期、卸载、重载。覆盖排队终止、原生结果
              迟到、Loader 交付前关闭、Cache 等待依赖时关闭、同路径场景独占与卸载后重载、
-             启动场景常驻、业务场景在场时关闭和重启、在途场景读取收尾、预加载、优先级和两道并发限额。
+             启动场景常驻、业务场景在场时关闭和重启、在途场景读取收尾、Handle 进度、预加载、优先级和两道并发限额。
   addons     Addons/AddonsValidationRunner.cs 及各模块的验证文件
-             UI 打开、取消与关闭，Audio Clip 与 Carrier，Effect 模板及实例复用，
+             UI 打开、互斥、取消、关闭、同层排序与相机回退，Audio Clip 与 Carrier，Effect 模板及实例复用，
              HTTP 排队、重试、拦截器及文件传输，Data 读写／切换／持久化，Config
-             重载及关闭。RuntimeRestartUI.cs 单独保护从旧 UI 在途到新 UI 同路径
+             并发读取、二进制与复合键、重载和取消。RuntimeRestartUI.cs 单独保护从旧 UI 在途到新 UI 同路径
              重开的真实链路，使用公开 Restart、真实 Bundle 及两轮 Runtime。
 
 判定与边界

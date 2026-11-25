@@ -58,7 +58,7 @@ namespace LiteQuark.Runtime
                 {
                     TryInjectSetting(system, setting);
                 }
-                var initialized = await system.Initialize();
+                var initialized = await system.Initialize(ct);
                 if (ct.IsCancellationRequested) return false;
                 if (!initialized)
                 {

@@ -24,8 +24,8 @@ namespace LiteQuark.Editor
             protected override void OnClose() => Closing?.Invoke();
         }
 
-        private static UniTask<ProbeUI> Open(UISystem ui, CancellationToken token = default)
-            => ui.OpenUI<ProbeUI>(new UIConfig(PrefabPath, UIDepthMode.Normal, false, false), token);
+        private static UniTask<ProbeUI> Open(UISystem ui, CancellationToken token = default, UIDepthMode depthMode = UIDepthMode.Normal)
+            => ui.OpenUI<ProbeUI>(new UIConfig(PrefabPath, depthMode, false, false), token);
 
         private static async UniTask UIOpen()
         {
@@ -48,19 +48,19 @@ namespace LiteQuark.Editor
                 var window = await second;
                 Check(window.Go != null && opens == 1, "Independent open on the same prefab survives.");
                 using var handoff = new CancellationTokenSource();
-                GameObject abandoned = null;
+                var closes = 0;
                 ProbeUI.Opening = opened =>
                 {
-                    abandoned = opened.Go;
+                    opened.Closing = () => closes++;
                     handoff.Cancel();
-                    handoff.Token.ThrowIfCancellationRequested();
                 };
-                var interrupted = Open(ui, handoff.Token);
-                await Wait(() => interrupted.Status.IsCompleted(), "Cancellation inside OnOpen");
-                cancelled = false;
-                try { await interrupted; } catch (OperationCanceledException) { cancelled = true; }
-                await Wait(() => abandoned == null, "Unpublished instance destruction");
-                Check(cancelled && window.Go != null, "Cancellation at handoff releases just the unpublished UI.");
+                var delivered = await Open(ui, handoff.Token);
+                Check(handoff.IsCancellationRequested && delivered.Go != null && delivered.State == UIState.Opened && closes == 0,
+                    "A normally returned OnOpen delivers its window even when the callback cancels the token.");
+                ui.CloseUI(delivered);
+                ui.Tick(0);
+                Check(closes == 1 && delivered.Go == null && window.Go != null,
+                    "Closing the delivered window runs its business cleanup once and releases its instance.");
             }
             finally
             {
@@ -69,6 +69,71 @@ namespace LiteQuark.Editor
                 await ui.DisposeAsync();
                 UnityEngine.Object.Destroy(camera);
             }
+        }
+
+        private static async UniTask UIMutex()
+        {
+            using var content = new AssetScope();
+            var camera = new GameObject("Validation UI camera", typeof(Camera));
+            var ui = new UISystem { Setting = new UISystemSetting { UICamera = camera.GetComponent<Camera>() } };
+            var config = new UIConfig(PrefabPath, UIDepthMode.Normal, autoAdapt: false);
+            var laterConfig = new UIConfig(PrefabPath, UIDepthMode.Top, autoAdapt: false);
+            var opens = 0;
+            var visibleWhileOpening = false;
+            ProbeUI.Opening = window =>
+            {
+                opens++;
+                visibleWhileOpening |= ReferenceEquals(window, ui.FindUI<ProbeUI>());
+            };
+            try
+            {
+                await ui.Initialize();
+                using var owner = new CancellationTokenSource();
+                var abandoned = ui.OpenUI<ProbeUI>(config, owner.Token);
+                var sharedAbandoned = ui.OpenUI<ProbeUI>(config);
+                Check(!abandoned.Status.IsCompleted() && !sharedAbandoned.Status.IsCompleted() && ui.FindUI<ProbeUI>() == null,
+                    "An in-flight mutex open is shared and remains undiscoverable until handoff.");
+                owner.Cancel();
+                Check(await WasCanceled(abandoned, owner.Token) && await WasCanceled(sharedAbandoned, owner.Token) && opens == 0,
+                    "Canceling the owner cancels the shared open before any window opens.");
+
+                using var observer = new CancellationTokenSource();
+                var first = ui.OpenUI<ProbeUI>(config);
+                var second = ui.OpenUI<ProbeUI>(laterConfig);
+                var canceledWait = ui.OpenUI<ProbeUI>(config, observer.Token);
+                observer.Cancel();
+                Check(await WasCanceled(canceledWait, observer.Token), "A joined caller can cancel its own wait.");
+                var window = await first;
+                Check(window != null && ReferenceEquals(window, await second) && opens == 1 &&
+                    window.Config.DepthMode == UIDepthMode.Normal,
+                    "Overlapping mutex opens return the same instance using the first request's config.");
+                Check(!visibleWhileOpening && ReferenceEquals(window, ui.FindUI<ProbeUI>()) &&
+                    ReferenceEquals(window, await ui.OpenUI<ProbeUI>(config)),
+                    "A window can be found and reused after OnOpen finishes, before the next UI tick.");
+
+                ui.CloseUI<ProbeUI>();
+                Check(window.State == UIState.Closing && ui.FindUI<ProbeUI>() == null,
+                    "Closing by type works in the same frame and the closing window is no longer discoverable.");
+                var reopened = await ui.OpenUI<ProbeUI>(config);
+                Check(reopened != null && !ReferenceEquals(reopened, window) && opens == 2,
+                    "A closing window leaves room for the next mutex open.");
+                ui.CloseAllUI();
+                ui.Tick(0);
+                Check(window.Go == null && reopened.Go == null, "CloseAllUI includes windows opened before the next tick.");
+            }
+            finally
+            {
+                ProbeUI.Opening = null;
+                await ui.DisposeAsync();
+                UnityEngine.Object.Destroy(camera);
+            }
+        }
+
+        private static async UniTask<bool> WasCanceled(UniTask<ProbeUI> opening, CancellationToken token)
+        {
+            try { await opening; }
+            catch (OperationCanceledException ex) { return ex.CancellationToken == token; }
+            return false;
         }
 
         private static async UniTask UIClose()
@@ -89,8 +154,8 @@ namespace LiteQuark.Editor
                 var lateUpdates = 0;
                 second.LateUpdating = () => lateUpdates++;
                 ui.LateTick(0);
-                Check(lateUpdates == 1 && ui.FindUI<ProbeUI>() == null,
-                    "An opened window can project before its first Update without flushing the open queue.");
+                Check(lateUpdates == 1 && ReferenceEquals(ui.FindUI<ProbeUI>(), first),
+                    "An opened window can project and be found before its first Update.");
                 second.Listen(() => events++);
                 LiteRuntime.Event.Send(new CloseEvent());
                 Check(events == 1, "Second UI owns a live event listener.");
@@ -112,6 +177,90 @@ namespace LiteQuark.Editor
                 Check(first.Go == null && ui.CanvasRoot == null, "Business close failure still releases the Canvas and the remaining UI.");
             }
             finally { await ui.DisposeAsync(); UnityEngine.Object.Destroy(camera); }
+        }
+
+        private static async UniTask UISort()
+        {
+            using var content = new AssetScope();
+            var camera = new GameObject("Validation UI camera", typeof(Camera));
+            var ui = new UISystem { Setting = new UISystemSetting { UICamera = camera.GetComponent<Camera>() } };
+            try
+            {
+                await ui.Initialize();
+                var first = await Open(ui);
+                var middle = await Open(ui);
+                var last = await Open(ui);
+                var top = await Open(ui, depthMode: UIDepthMode.Top);
+                var sceneFirst = await Open(ui, depthMode: UIDepthMode.Scene);
+                var sceneSecond = await Open(ui, depthMode: UIDepthMode.Scene);
+                Check(HasOrder(first, 10000) && HasOrder(middle, 10100) && HasOrder(last, 10200),
+                    "Windows opened before the first UI tick are ordered within their layer.");
+
+                ui.CloseUI(middle);
+                var next = await Open(ui);
+                Check(HasOrder(middle, 10100) && HasOrder(next, 10300),
+                    "Opening while a sibling is still closing keeps both canvases in order.");
+
+                ui.Tick(0);
+                Check(middle.Go == null && HasOrder(first, 10000) && HasOrder(last, 10100) && HasOrder(next, 10200),
+                    "Releasing the middle window compacts its layer and updates the public sorting orders.");
+                var reopened = await Open(ui);
+                Check(HasOrder(reopened, 10300) && HasOrder(top, 15000) &&
+                    HasOrder(sceneFirst, 0) && HasOrder(sceneSecond, 0),
+                    "The next window stacks above its layer without affecting Top or Scene.");
+
+                UniTask<ProbeUI> nested = default;
+                ProbeUI.Opening = _ =>
+                {
+                    ProbeUI.Opening = null;
+                    nested = Open(ui);
+                };
+                var outer = await Open(ui);
+                Check(nested.Status == UniTaskStatus.Succeeded, "A cached same-layer window can open synchronously inside OnOpen.");
+                var inner = await nested;
+                Check(HasOrder(inner, 10400) && HasOrder(outer, 10500),
+                    "Both windows have distinct sorting orders in publication order.");
+            }
+            finally
+            {
+                ProbeUI.Opening = null;
+                await ui.DisposeAsync();
+                UnityEngine.Object.Destroy(camera);
+            }
+        }
+
+        private static bool HasOrder(BaseUI ui, int order)
+            => ui.SortingOrder == order && ui.Go.GetComponent<Canvas>().sortingOrder == order;
+
+        private static async UniTask UICameraFallback()
+        {
+            var cameraObject = new GameObject("Validation perspective main camera", typeof(Camera));
+            var camera = cameraObject.GetComponent<Camera>();
+            cameraObject.tag = "MainCamera";
+            camera.orthographic = false;
+            camera.orthographicSize = 7f;
+            var fallback = new UISystem { Setting = new UISystemSetting() };
+            var overlay = new UISystem { Setting = new UISystemSetting() };
+            try
+            {
+                await fallback.Initialize();
+                var canvas = fallback.CanvasRoot.GetComponent<Canvas>();
+                Check(fallback.UICamera == camera && canvas.worldCamera == camera && canvas.renderMode == RenderMode.ScreenSpaceCamera &&
+                    !camera.orthographic && camera.orthographicSize == 7f,
+                    "The unconfigured UI uses Camera.main without adjusting its projection or size.");
+
+                cameraObject.tag = "Untagged";
+                await overlay.Initialize();
+                canvas = overlay.CanvasRoot.GetComponent<Canvas>();
+                Check(overlay.UICamera == null && canvas.worldCamera == null && canvas.renderMode == RenderMode.ScreenSpaceOverlay,
+                    "With no configured or main camera, UI initializes in overlay mode.");
+            }
+            finally
+            {
+                await overlay.DisposeAsync();
+                await fallback.DisposeAsync();
+                UnityEngine.Object.Destroy(cameraObject);
+            }
         }
 
         private static (IDisposable Entity, CancellationToken Token) NewUIOwnerEntity()

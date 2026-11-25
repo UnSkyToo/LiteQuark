@@ -19,6 +19,7 @@ namespace LiteQuark.Editor
         {
             await Run("lifecycle/shared-retention", SharedRetention);
             await Run("lifecycle/preload", PreloadErrorProtocol, "Load asset failed");
+            await Run("lifecycle/progress", HandleProgress);
             await Run("lifecycle/retry", SharedCancellationFailureRetry, "Load bundle failed");
             await Run("lifecycle/dependency-life", DependencyRetention);
             await Run("lifecycle/dependency-failure", DependencyFailure, "Load bundle failed");

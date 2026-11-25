@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         public AssetCacheStage Stage { get; private set; }
         public UnityEngine.Object Asset { get; private set; }
         public bool IsLoaded => Stage == AssetCacheStage.Loaded;
+        internal float LoadProgress => IsLoaded ? 1f : _loadAssetTask?.Progress ?? 0f;
 
         private readonly string _assetPath;
         private readonly Type _assetType;

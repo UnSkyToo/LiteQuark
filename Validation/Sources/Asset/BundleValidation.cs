@@ -18,6 +18,7 @@ namespace LiteQuark.Editor
         protected const string Fixture = "Assets/__session_validation";
         protected const string TextPath = "assets/__session_validation/payload.txt";
         protected const string SecondTextPath = "assets/__session_validation/second.txt";
+        protected const string BinaryConfigPath = "assets/__session_validation/config.bytes";
         protected const string PrefabPath = "assets/__session_validation/a.prefab";
         protected const string MaterialPath = "assets/__session_validation/shared.mat";
         protected const string AudioPath = "assets/__session_validation/tone.wav";
@@ -287,7 +288,8 @@ namespace LiteQuark.Editor
                     new BundleInfo(4, "c.ab", new[] { "assets/__session_validation/c.prefab" }, new[] { "b.ab" }),
                     new BundleInfo(5, "scene.ab", new[] { ScenePath, "assets/__session_validation/nonexistent_scene.unity" }, new[] { "b.ab" }),
                     new BundleInfo(6, "audio.ab", new[] { AudioPath }, null),
-                    new BundleInfo(7, "effect.ab", new[] { EffectPath }, null)
+                    new BundleInfo(7, "effect.ab", new[] { EffectPath }, null),
+                    new BundleInfo(8, "config.ab", new[] { BinaryConfigPath }, null)
                 });
                 pack.Initialize();
                 Set(Provider, "_packInfo", pack);

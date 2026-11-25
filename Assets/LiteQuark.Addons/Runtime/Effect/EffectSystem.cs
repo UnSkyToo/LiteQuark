@@ -1,3 +1,4 @@
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -10,7 +11,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             return UniTask.FromResult(true);
         }

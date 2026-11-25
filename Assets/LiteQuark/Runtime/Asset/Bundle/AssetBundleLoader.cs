@@ -88,6 +88,18 @@ namespace LiteQuark.Runtime
             }
         }
 
+        internal float GetProgress(string bundlePath)
+        {
+            foreach (var request in _submittedRequests)
+            {
+                if (request.BundlePath == bundlePath)
+                {
+                    return Mathf.Clamp01(request.LoadTask.Progress);
+                }
+            }
+            return 0f;
+        }
+
         public void Tick(float deltaTime)
         {
             if (_isDisposed)

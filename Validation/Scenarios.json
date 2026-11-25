@@ -42,6 +42,7 @@
         "loading/scene-paths",
         "loading/builtin",
         "loading/remote",
+        "loading/remote-startup-cancel",
         "loading/backend-init",
         "loading/filename-flags",
         "loading/same-name-limit",
@@ -50,6 +51,7 @@
     "lifecycle": [
         "lifecycle/shared-retention",
         "lifecycle/preload",
+        "lifecycle/progress",
         "lifecycle/retry",
         "lifecycle/dependency-life",
         "lifecycle/dependency-failure",
@@ -68,7 +70,10 @@
     ],
     "addons": [
         "addons/ui-open",
+        "addons/ui-mutex",
         "addons/ui-close",
+        "addons/ui-sort",
+        "addons/ui-camera",
         "addons/audio",
         "addons/effect-pending",
         "addons/effect-reuse",
@@ -80,6 +85,7 @@
         "addons/data-switch",
         "addons/data-persistence",
         "addons/config-reload",
+        "addons/config-formats",
         "addons/config-close",
         "addons/restart-ui"
     ]

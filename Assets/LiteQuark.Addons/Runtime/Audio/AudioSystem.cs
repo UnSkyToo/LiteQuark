@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace LiteQuark.Runtime
             _muteMusic = false;
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             _root = UnityUtils.CreateHoldGameObject("Audio").transform;
             _pool = new EmptyGameObjectPool();

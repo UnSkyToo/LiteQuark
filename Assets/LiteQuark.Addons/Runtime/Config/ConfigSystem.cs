@@ -6,32 +6,16 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class ConfigSystem : ISystem, ISystemSettingProvider<ConfigSystemSetting>
+    public sealed class ConfigSystem : ISystem
     {
-        public ConfigSystemSetting Setting { get; set; }
-
-        private readonly Dictionary<Type, object> _tableMap = new();
-        private readonly List<TableRegistration> _registrations = new();
+        private readonly Dictionary<Type, TableRegistration> _registrations = new();
         private readonly CancellationTokenSource _lifetimeCts = new();
 
-        public ConfigSystem()
-        {
-        }
-
-        public async UniTask<bool> Initialize()
-        {
-            if (Setting.LoadAllOnInitialize)
-            {
-                await LoadAll();
-            }
-
-            return true;
-        }
+        public UniTask<bool> Initialize(CancellationToken ct = default) => UniTask.FromResult(true);
 
         public UniTask DisposeAsync()
         {
             _lifetimeCts.Cancel();
-            _tableMap.Clear();
             _registrations.Clear();
 
             return UniTask.CompletedTask;
@@ -39,34 +23,44 @@ namespace LiteQuark.Runtime
 
         public void RegisterTable<T>(string assetPath, Func<string, List<T>> parseFunc) where T : IConfigData
         {
-            _registrations.Add(new TableRegistration(
-                typeof(T),
-                assetPath,
-                json => new ConfigTable<T>(parseFunc(json))
-            ));
+            _registrations.Add(typeof(T), new TableRegistration(assetPath, asset => new ConfigTable<T>(parseFunc(asset.text))));
         }
 
-        public async UniTask LoadAll()
+        public void RegisterTable<T, TKey>(string assetPath, Func<TextAsset, List<T>> parseFunc, Func<T, TKey> keySelector)
         {
-            foreach (var reg in _registrations)
-            {
-                await LoadTable(reg);
-            }
+            _registrations.Add(typeof(T), new TableRegistration(assetPath,
+                asset => new ConfigTable<T, TKey>(parseFunc(asset), keySelector)));
         }
 
-        public async UniTask Load<T>() where T : IConfigData
+        public async UniTask LoadAll(CancellationToken ct = default)
+        {
+            using var linked = ct.CanBeCanceled ? CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetimeCts.Token) : null;
+            var token = linked?.Token ?? _lifetimeCts.Token;
+            token.ThrowIfCancellationRequested();
+
+            var registrations = new List<TableRegistration>(_registrations.Values);
+            var loads = new UniTask[registrations.Count];
+            for (var i = 0; i < registrations.Count; i++)
+            {
+                loads[i] = LoadTable(registrations[i], token);
+            }
+            await UniTask.WhenAll(loads);
+            token.ThrowIfCancellationRequested();
+        }
+
+        public async UniTask Load<T>(CancellationToken ct = default)
         {
             var type = typeof(T);
-            foreach (var reg in _registrations)
+            if (!_registrations.TryGetValue(type, out var registration))
             {
-                if (reg.DataType == type)
-                {
-                    await LoadTable(reg);
-                    return;
-                }
+                LLog.Warning("ConfigSystem: no registration found for {0}", type.Name);
+                return;
             }
 
-            LLog.Warning("ConfigSystem: no registration found for {0}", type.Name);
+            using var linked = ct.CanBeCanceled ? CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetimeCts.Token) : null;
+            var token = linked?.Token ?? _lifetimeCts.Token;
+            await LoadTable(registration, token);
+            token.ThrowIfCancellationRequested();
         }
 
         public T GetData<T>(int id) where T : IConfigData
@@ -92,23 +86,29 @@ namespace LiteQuark.Runtime
             return false;
         }
 
-        public ConfigTable<T> GetTable<T>() where T : IConfigData
+        public ConfigTable<T> GetTable<T>() where T : IConfigData => GetLoadedTable<ConfigTable<T>>(typeof(T));
+
+        public ConfigTable<T, TKey> GetTable<T, TKey>() => GetLoadedTable<ConfigTable<T, TKey>>(typeof(T));
+
+        private TTable GetLoadedTable<TTable>(Type rowType) where TTable : class
         {
-            if (_tableMap.TryGetValue(typeof(T), out var obj))
+            if (_registrations.TryGetValue(rowType, out var registration) && registration.Table is TTable table)
             {
-                return (ConfigTable<T>)obj;
+                return table;
             }
 
-            LLog.Warning("ConfigSystem: table not loaded for {0}", typeof(T).Name);
+            LLog.Warning("ConfigSystem: table not loaded for {0} as {1}", rowType.Name, typeof(TTable));
             return null;
         }
 
-        private async UniTask LoadTable(TableRegistration reg)
+        private async UniTask LoadTable(TableRegistration reg, CancellationToken ct)
         {
             try
             {
-                using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(reg.AssetPath, ct: _lifetimeCts.Token);
+                ct.ThrowIfCancellationRequested();
+                using var handle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(reg.AssetPath, ct: ct);
                 await handle;
+                ct.ThrowIfCancellationRequested();
                 var textAsset = handle.Result;
                 if (textAsset == null)
                 {
@@ -116,25 +116,28 @@ namespace LiteQuark.Runtime
                     return;
                 }
 
-                var table = reg.ParseFunc(textAsset.text);
-                _tableMap[reg.DataType] = table;
+                var table = reg.ParseFunc(textAsset);
+                ct.ThrowIfCancellationRequested();
+                reg.Table = table;
             }
             catch (Exception ex)
             {
-                _lifetimeCts.Token.ThrowIfCancellationRequested();
-                LLog.Error("ConfigSystem: error loading {0}: {1}", reg.AssetPath, ex.Message);
+                // Report cancellation after the caller has waited for every table to release its handle.
+                if (!ct.IsCancellationRequested)
+                {
+                    LLog.Error("ConfigSystem: error loading {0}: {1}", reg.AssetPath, ex.Message);
+                }
             }
         }
 
-        private class TableRegistration
+        private sealed class TableRegistration
         {
-            public readonly Type DataType;
             public readonly string AssetPath;
-            public readonly Func<string, object> ParseFunc;
+            public readonly Func<TextAsset, object> ParseFunc;
+            public object Table { get; set; }
 
-            public TableRegistration(Type dataType, string assetPath, Func<string, object> parseFunc)
+            public TableRegistration(string assetPath, Func<TextAsset, object> parseFunc)
             {
-                DataType = dataType;
                 AssetPath = assetPath;
                 ParseFunc = parseFunc;
             }

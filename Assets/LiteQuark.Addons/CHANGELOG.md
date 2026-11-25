@@ -2,6 +2,12 @@
 
 ## **[Unreleased]**
 
+- 破坏：自定义 Data Provider 改用 `Initialize(CancellationToken ct = default)`。DataSystem 启动时会传入启动 token。
+- 破坏：移除 `ConfigSystemSetting.LoadAllOnInitialize`。在 `IGameEntry.Initialize` 中先注册表，再调用 `LoadAll(ct)`。旧场景若仍保存该设置，在 Launcher 中重新登记 ConfigSystem 并恢复原来的位置。每个行类型登记一次。
+- 变更：`ConfigSystem.LoadAll(ct)` 并发提交读取请求，表按资源就绪顺序解析。单表 `Load<T>(ct)` 也可接收启动 token。
+- 新增：ConfigSystem 支持通过主键选择器查询字符串或复合主键，以及从 `.bytes` 资源解析配置表。
+- 修复：UI 的互斥打开复用同类型在途请求，打开成功后同帧即可按类型查找和关闭，同层排序在关闭队列释放窗口后重排。
+- 修复：未配置 UI 相机时保留主相机参数，场景没有主相机时使用 Overlay Canvas。
 - 扩展系统开始释放后，调用方应停止发起新操作，重启后重新取得系统和 HTTP 客户端。依赖捕获 `ObjectDisposedException` 判断系统是否可用的代码应迁移到调用方的生命周期中。
 - 新增：UISystem 在游戏入口晚更新完成后，为实现 `ILateTick` 的已打开界面分发晚更新，可用于世界坐标投影。
 - 破坏：ConfigSystem 关闭时，在途 Load／LoadAll 同步取消 Handle 等待并向调用方传播 `OperationCanceledException`，调用方需等待或按 UniTask 取消契约消费任务。共享加载及原生收尾仍归 AssetSystem，查询和普通加载失败语义不变。

@@ -211,6 +211,7 @@ namespace LiteQuark.Editor
                 });
                 await Run("loading/builtin", BuiltInLocation);
                 await Run("loading/remote", RemoteUriComposition, "VersionPack is invalid");
+                await Run("loading/remote-startup-cancel", RemoteStartupCancellation);
                 await Run("loading/backend-init", async () =>
                 {
                     await DefaultOptions();
@@ -315,22 +316,24 @@ namespace LiteQuark.Editor
 
         private static async UniTask RemoteUriComposition()
         {
-            var versionQuery = "t=" + Uri.EscapeDataString(AppUtils.GetVersion());
             var compose = typeof(RemoteBundleProvider).GetMethod("GetVersionPackUri", Private);
             foreach (var item in new[] {
-                (Base: "https://cdn.example/res", Query: versionQuery, Fragment: ""),
-                (Base: "https://cdn.example/res?token=a%2Bb#part", Query: "token=a%2Bb&" + versionQuery, Fragment: "#part"),
-                (Base: "https://cdn.example/res?token=x&", Query: "token=x&" + versionQuery, Fragment: ""),
-                (Base: "https://cdn.example/res?", Query: versionQuery, Fragment: ""),
-                (Base: "https://cdn.example/res#part?note=1", Query: versionQuery, Fragment: "#part?note=1"),
-                (Base: "https://cdn.example/res??flag#part", Query: "?flag&" + versionQuery, Fragment: "#part") })
+                (Base: "https://cdn.example/res", Query: "?t=", Fragment: ""),
+                (Base: "https://cdn.example/res?token=a%2Bb#part", Query: "?token=a%2Bb&t=", Fragment: "#part"),
+                (Base: "https://cdn.example/res?token=x&", Query: "?token=x&t=", Fragment: ""),
+                (Base: "https://cdn.example/res?", Query: "?t=", Fragment: ""),
+                (Base: "https://cdn.example/res#part?note=1", Query: "?t=", Fragment: "#part?note=1"),
+                (Base: "https://cdn.example/res??flag#part", Query: "??flag&t=", Fragment: "#part") })
             {
                 var locator = new RemoteBundleProvider(item.Base);
                 var result = (string)compose.Invoke(locator, new object[] { "version #?.txt" });
-                var expected = "https://cdn.example/res/version%20%23%3F.txt?" + item.Query + item.Fragment;
-                Check(result == expected, "Version URI expected=[" + expected + "]; actual=[" + result + "]");
                 var parsed = new Uri(result);
-                Check(parsed.Query == "?" + item.Query && parsed.Fragment == item.Fragment, "Cache query is inserted before the fragment without losing original query data.");
+                Check(parsed.AbsolutePath == "/res/version%20%23%3F.txt" && parsed.Fragment == item.Fragment &&
+                    parsed.Query.StartsWith(item.Query, StringComparison.Ordinal) &&
+                    Guid.TryParseExact(parsed.Query.Substring(item.Query.Length), "N", out _),
+                    "The nonce is appended to the escaped manifest address without losing the existing query or fragment.");
+                Check(result != (string)compose.Invoke(locator, new object[] { "version #?.txt" }),
+                    "The same provider generates a new cache key for a new manifest request.");
             }
 
             var setting = LiteRuntime.Setting.Asset;
@@ -349,7 +352,9 @@ namespace LiteQuark.Editor
                 var expectedBase = "https://cdn.example/base%20dir/" + platform + "/" + version;
                 Check(Get<string>(locator, "_remoteUri") == expectedBase + "?token=a%2Bb#part", "Actual provider appends platform and main version as URI directory segments.");
                 Check(locator.DisableUnityWebCache, "Remote cache option is preserved.");
-                Check((string)compose.Invoke(locator, new object[] { "version.txt" }) == expectedBase + "/version.txt?token=a%2Bb&" + versionQuery + "#part", "Provider-to-Locator version address composition retains all suffix data.");
+                var versionUri = (string)compose.Invoke(locator, new object[] { "version.txt" });
+                Check(versionUri.StartsWith(expectedBase + "/version.txt?token=a%2Bb&t=", StringComparison.Ordinal) &&
+                    versionUri.EndsWith("#part", StringComparison.Ordinal), "The manifest nonce retains the provider's version directory and suffix.");
                 Check(PathUtils.ConcatUri(Get<string>(locator, "_remoteUri"), "ui/my icon.ab") == expectedBase + "/ui/my%20icon.ab?token=a%2Bb#part", "Bundle URI uses the same configured base with an escaped resource filename.");
             }
             finally
@@ -365,8 +370,11 @@ namespace LiteQuark.Editor
             var origin = new Uri(versionServer.Url).GetLeftPart(UriPartial.Authority);
             var versionTask = new RemoteBundleProvider(origin + "/content?token=a%2Bb#part").LoadVersionPack("version file.txt");
             await Wait(() => versionTask.IsDone && versionServer.Work.IsCompleted, "Loopback version response");
+            var target = versionServer.RequestLine.Split(' ')[1];
+            const string expectedTarget = "/content/version%20file.txt?token=a%2Bb&t=";
             Check(versionTask.Result is VersionPackInfo received && received.IsValid &&
-                versionServer.RequestLine.Contains("/content/version%20file.txt?token=a%2Bb&" + versionQuery),
+                target.StartsWith(expectedTarget, StringComparison.Ordinal) &&
+                Guid.TryParseExact(target.Substring(expectedTarget.Length), "N", out _),
                 "Server received the escaped version request and returned a usable manifest.");
 
             using var bundleServer = new BundleHttpServer(File.ReadAllBytes(Path.Combine(Bundles, TextBundle)));
@@ -388,6 +396,43 @@ namespace LiteQuark.Editor
             var failed = new RemoteBundleProvider(new Uri(invalid.Url).GetLeftPart(UriPartial.Authority)).LoadVersionPack("invalid.txt");
             await Wait(() => failed.IsDone, "Invalid version response");
             Check(failed.State == TaskState.Failed && failed.Error != null, "Invalid version content fails the returned task.");
+        }
+
+        private static async UniTask RemoteStartupCancellation()
+        {
+            using var server = new BundleHttpServer(File.ReadAllBytes(Path.Combine(Reports, "version.bytes")));
+            var runtime = LiteRuntime.Instance;
+            var launcher = runtime.Launcher;
+            var previous = LiteRuntime.Setting;
+            var setting = new LiteSetting();
+            setting.Asset.BundleMode = BundleLoadMode.Remote;
+            setting.Asset.BundleRemoteUri = new Uri(server.Url).GetLeftPart(UriPartial.Authority);
+
+            await runtime.Shutdown();
+            UniTask? shutdown = null;
+            try
+            {
+                runtime.Startup(launcher, setting);
+                await Wait(() => server.BodyStarted, "In-flight startup manifest");
+                Check(runtime.State == LiteRuntime.RuntimeState.InitSystem && LiteRuntime.Asset == null && !server.Work.IsCompleted,
+                    "AssetSystem initialization waits for the held HTTP manifest.");
+
+                shutdown = runtime.Shutdown().Preserve();
+                await Wait(() => shutdown.Value.Status.IsCompleted() && server.ClientClosed, "Cancelled startup HTTP request");
+                await shutdown.Value;
+                Check(runtime.State == LiteRuntime.RuntimeState.Idle && LiteRuntime.Asset == null && !server.Work.IsCompleted,
+                    "Shutdown aborts the socket and rolls back before the server releases the manifest.");
+            }
+            finally
+            {
+                if (runtime.State != LiteRuntime.RuntimeState.Idle)
+                {
+                    server.ReleaseBody();
+                    await (shutdown ?? runtime.Shutdown());
+                }
+                runtime.Startup(launcher, previous);
+                await Wait(() => runtime.State == LiteRuntime.RuntimeState.Running, "Runtime startup after cancellation");
+            }
         }
 
         private static async UniTask BuiltInLocation()

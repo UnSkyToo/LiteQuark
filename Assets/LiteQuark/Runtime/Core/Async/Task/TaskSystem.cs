@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             RegisterGroup(LiteConst.TaskGroupId.Flow, null);
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             return UniTask.FromResult(true);
         }

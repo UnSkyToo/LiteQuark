@@ -27,7 +27,7 @@ namespace LiteQuark.Editor
             public int Disposals;
             public int DisposeThread;
 
-            public async UniTask<bool> Initialize()
+            public async UniTask<bool> Initialize(CancellationToken ct = default)
             {
                 Initializations++;
                 if (InitializeGate != null) await InitializeGate.Task;

@@ -103,7 +103,7 @@ namespace LiteQuark.Runtime
                 }
 
                 entry = (IGameEntry)System.Activator.CreateInstance(type);
-                var initialized = await entry.Initialize();
+                var initialized = await entry.Initialize(ct);
                 if (ct.IsCancellationRequested)
                 {
                     return false;

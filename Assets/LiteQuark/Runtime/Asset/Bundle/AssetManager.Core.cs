@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace LiteQuark.Runtime
@@ -14,14 +15,19 @@ namespace LiteQuark.Runtime
 
         private bool _isDisposed;
 
-        public async UniTask<bool> Initialize(IBundleProvider bundleProvider)
+        public async UniTask<bool> Initialize(IBundleProvider bundleProvider, CancellationToken ct = default)
         {
             if (bundleProvider == null)
             {
                 return false;
             }
 
-            _packInfo = await bundleProvider.LoadVersionPack(AppUtils.GetVersionFileName()).Task as VersionPackInfo;
+            ct.ThrowIfCancellationRequested();
+            var task = bundleProvider.LoadVersionPack(AppUtils.GetVersionFileName());
+            using var cancellation = ct.Register(task.Cancel);
+            var packInfo = await task.Task as VersionPackInfo;
+            ct.ThrowIfCancellationRequested();
+            _packInfo = packInfo;
             if (_packInfo == null)
             {
                 return false;
@@ -184,6 +190,8 @@ namespace LiteQuark.Runtime
         {
             _bundleLoader.LoadBundle(bundleInfo, priority, callback);
         }
+
+        internal float GetBundleProgress(string bundlePath) => _bundleLoader?.GetProgress(bundlePath) ?? 0f;
 
         internal void RaiseBundlePriority(BundleInfo bundleInfo, AssetLoadPriority priority)
         {

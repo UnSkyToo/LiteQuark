@@ -13,13 +13,14 @@ LiteQuark 将系统服务（`ISystem`）与可选的游戏入口（`IGameEntry`�
 3. 入口使用有公共无参构造函数的普通 C# 类。系统就绪后 Runtime 创建并等待入口初始化，关闭时先等待入口释放。按需实现 `ITick`、`ILateTick` 或两者。
 
 ```csharp
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 
 [UnityEngine.Scripting.Preserve]
 public sealed class GameEntry : IGameEntry
 {
-    public UniTask<bool> Initialize()
+    public UniTask<bool> Initialize(CancellationToken ct = default)
     {
         LLog.Info("Game entry initialized");
         return UniTask.FromResult(true);
@@ -50,9 +51,11 @@ Launcher 每次启动或重启都解析一份独立的运行配置。通过 `Lit
 
 ## 生命周期与注册
 
-已配置入口时启动顺序为 `Idle → InitSystem → InitGameEntry → Running`，入口留空时从 InitSystem 直接进入 Running，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `IGameEntry.Initialize()` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
+已配置入口时启动顺序为 `Idle → InitSystem → InitGameEntry → Running`，入口留空时从 InitSystem 直接进入 Running，`Startup()` 只允许从 Idle 调用。启动过程异步执行，业务对服务的访问应放在 `IGameEntry.Initialize` 或之后。`LiteLauncher` 驱动每帧更新、前后台通知和退出清理。
 
-Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理结束后回到 Idle。初始化期间的关闭请求会阻止后续初始化并等待当前 Initialize 退出，不会强行终止模块内部的异步操作。
+Runtime 统一管理各个系统和游戏入口的生命周期。初始化方法持有当前实例直到发布；失败或取消时，先就地释放该实例，已发布的依赖保持可用。System 成功后立即可查询；本轮系统遍历中发布的对象从下一次系统遍历起参与更新。Runtime 报告启动失败并关闭已发布对象。错误通知中的订阅者异常会记录到日志，回滚继续执行。清理结束后回到 Idle。
+
+系统和游戏入口收到同一个启动 token。初始化期间关闭会取消它，并等待当前 `Initialize` 退出后完成回滚。异步初始化应将 token 传给实际的网络请求、资源 Handle 或批量加载。未响应 token 的操作仍需自行结束。
 
 `Shutdown()` 返回 UniTask。进入 ShuttingDown 后先等待游戏入口释放，再逆序等待各系统的 DisposeAsync。释放单个对象抛异常时，Runtime 记录错误并继续释放其余系统，移除注册后回到 Idle。关闭期间重复 Shutdown 被拒绝，错误报告不会覆盖关闭状态。关闭时停止入口更新，系统推进不受 IsPause 和业务时间缩放阻挡；系统从开始释放起停止更新。DisposeAsync 可以等待尚未关闭的 Timer、Task 或 PlayerLoop，不应等待本系统自己的 Tick。Error 停止框架更新；运行期错误仍可显式 Shutdown。
 
@@ -70,7 +73,7 @@ Editor 停止 Play Mode 时，Unity 可能先销毁场景对象，随后异步�
 
 | 扩展点 | 约定 |
 | --- | --- |
-| `ISystem`、`IGameEntry` | `UniTask<bool> Initialize()`、`UniTask DisposeAsync()` |
+| `ISystem`、`IGameEntry` | `UniTask<bool> Initialize(CancellationToken ct = default)`、`UniTask DisposeAsync()` |
 | `ITick` | Unity Update 中调用 `Tick(float deltaTime)`。先按注册顺序更新系统，再更新 Running 状态的游戏入口 |
 | `ILateTick` | Unity LateUpdate 中调用 `LateTick(float deltaTime)`。先更新游戏入口，再按注册顺序更新系统，可独立于 `ITick` 实现 |
 | `ISystemSettingProvider<TSetting>` | 实现可写 `Setting` 属性，初始化前由框架注入配置 |

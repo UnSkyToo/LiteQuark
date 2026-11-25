@@ -11,6 +11,7 @@ namespace LiteQuark.Runtime
     {
         private readonly UniTaskCompletionSource<T> _tcs = new();
         private CancellationTokenRegistration _ctr;
+        private AssetLoadProgress _progress;
         private IAssetLease<T> _lease;
         private bool _isDisposed;
 
@@ -18,12 +19,14 @@ namespace LiteQuark.Runtime
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
         public bool IsDisposed => _isDisposed;
+        public float Progress => _progress.Read();
         public T Result => _lease?.Value;
         internal string AssetKey { get; }
         internal UniTask<T> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
 
-        internal AssetHandle(string assetKey, Action<Action<AssetLoadResult<IAssetLease<T>>>> invoke, CancellationToken ct)
+        internal AssetHandle(string assetKey, Action<Action<AssetLoadResult<IAssetLease<T>>>> invoke,
+            Func<float> readProgress, CancellationToken ct)
         {
             AssetKey = assetKey;
             if (ct.IsCancellationRequested)
@@ -37,6 +40,7 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => Cancel(ct));
             }
 
+            _progress = new AssetLoadProgress(readProgress);
             invoke(OnCompleted);
         }
 
@@ -60,6 +64,7 @@ namespace LiteQuark.Runtime
             }
 
             State = state;
+            _progress.Complete(state);
             Error = error;
             _ctr.Dispose();
             return true;

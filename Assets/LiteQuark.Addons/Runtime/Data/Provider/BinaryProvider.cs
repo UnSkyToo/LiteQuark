@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace LiteQuark.Runtime
             _encryptionKey = encryptionKey;
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             if (!Directory.Exists(_savePath))
             {

@@ -9,6 +9,7 @@ namespace LiteQuark.Runtime
         public AssetError Error { get; }
         public bool IsDone { get; }
         public bool IsDisposed { get; }
+        public float Progress { get; }
         public T Result { get; }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
@@ -16,12 +17,14 @@ namespace LiteBattle.Runtime
         {
         }
 
-        public async UniTask<bool> Startup()
+        public UniTask<bool> Startup() => Startup(default);
+
+        public async UniTask<bool> Startup(CancellationToken ct)
         {
             var initialized = false;
             try
             {
-                initialized = await Load();
+                initialized = await Load(ct);
                 return initialized;
             }
             finally
@@ -39,9 +42,9 @@ namespace LiteBattle.Runtime
             LiteNexusConfig.Release();
         }
 
-        private async UniTask<bool> Load()
+        private async UniTask<bool> Load(CancellationToken ct = default)
         {
-            var config = await LiteNexusConfig.LoadAsync();
+            var config = await LiteNexusConfig.LoadAsync(ct);
             if (config == null)
             {
                 LLog.Error("can't load nexus config");
@@ -49,7 +52,7 @@ namespace LiteBattle.Runtime
             }
 
             var jsonPath = config.GetDatabaseJsonPath();
-            using var jsonHandle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(jsonPath);
+            using var jsonHandle = LiteRuntime.Asset.LoadAssetHandle<TextAsset>(jsonPath, ct: ct);
             await jsonHandle;
             var text = jsonHandle.Result;
             if (text == null)
@@ -62,20 +65,20 @@ namespace LiteBattle.Runtime
             var database = LitJson.JsonMapper.ToObject<LiteNexusDatabase>(json);
             foreach (var unitConfigPath in database.UnitList)
             {
-                var unitConfigHandle = LiteRuntime.Asset.LoadAssetHandle<LiteUnitConfig>(unitConfigPath);
+                var unitConfigHandle = LiteRuntime.Asset.LoadAssetHandle<LiteUnitConfig>(unitConfigPath, ct: ct);
+                UnitConfigHandleList_.Add(unitConfigHandle);
                 await unitConfigHandle;
                 var unitConfig = unitConfigHandle.Result;
                 if (unitConfig == null)
                 {
+                    UnitConfigHandleList_.Remove(unitConfigHandle);
                     unitConfigHandle.Dispose();
                     LLog.Error($"can't load unit config : {unitConfigPath}");
                     continue;
                 }
 
                 UnitConfigMap_.Add(unitConfig.StateGroup, unitConfig);
-                UnitConfigHandleList_.Add(unitConfigHandle);
-
-                var group = await LoadStateGroup(database.StateMap[unitConfig.StateGroup]);
+                var group = await LoadStateGroup(database.StateMap[unitConfig.StateGroup], ct);
                 StateConfigMap_.Add(unitConfig.StateGroup, group);
             }
             return true;
@@ -99,13 +102,13 @@ namespace LiteBattle.Runtime
             await Load();
         }
 
-        private async UniTask<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList)
+        private async UniTask<Dictionary<string, LiteStateConfig>> LoadStateGroup(List<string> stateList, CancellationToken ct)
         {
             var group = new Dictionary<string, LiteStateConfig>();
 
             foreach (var filePath in stateList)
             {
-                using var timelineHandle = LiteRuntime.Asset.LoadAssetHandle<TimelineAsset>(filePath);
+                using var timelineHandle = LiteRuntime.Asset.LoadAssetHandle<TimelineAsset>(filePath, ct: ct);
                 await timelineHandle;
                 var timelineAsset = timelineHandle.Result;
                 if (timelineAsset == null)

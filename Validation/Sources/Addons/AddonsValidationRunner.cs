@@ -16,7 +16,10 @@ namespace LiteQuark.Editor
         private static async UniTask RunScenarios()
         {
             await Run("addons/ui-open", UIOpen);
+            await Run("addons/ui-mutex", UIMutex);
             await Run("addons/ui-close", UIClose, "Validation OnClose");
+            await Run("addons/ui-sort", UISort);
+            await Run("addons/ui-camera", UICameraFallback);
             await Run("addons/audio", Audio);
             await Run("addons/effect-pending", EffectShutdownPendingLoads);
             await Run("addons/effect-reuse", EffectTerminalReuse);
@@ -28,6 +31,7 @@ namespace LiteQuark.Editor
             await Run("addons/data-switch", DataSwitch);
             await Run("addons/data-persistence", DataPersistence);
             await Run("addons/config-reload", ConfigReload, "ConfigSystem: error loading");
+            await Run("addons/config-formats", ConfigFormats);
             await Run("addons/config-close", ConfigClose);
             await Run("addons/restart-ui", RuntimeRestartPendingUI, "Enter <ErrorState>", "FrameworkError: Unknown, Framework error");
         }
@@ -35,8 +39,13 @@ namespace LiteQuark.Editor
         private sealed class AssetScope : IDisposable
         {
             private readonly AssetManager _previous = Get<AssetManager>(LiteRuntime.Asset, "_manager");
-            internal readonly Harness Content = New();
-            internal AssetScope() => Set(LiteRuntime.Asset, "_manager", Content.Provider);
+            internal readonly Harness Content;
+
+            internal AssetScope(bool manual = false)
+            {
+                Content = New(manual);
+                Set(LiteRuntime.Asset, "_manager", Content.Provider);
+            }
             public void Dispose() => Set(LiteRuntime.Asset, "_manager", _previous);
         }
     }

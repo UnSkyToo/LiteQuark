@@ -14,6 +14,7 @@ namespace LiteQuark.Runtime
         private readonly Func<GameObject, GameObject> _instantiateFunc;
         private readonly UniTaskCompletionSource<GameObject> _tcs = new();
         private CancellationTokenRegistration _ctr;
+        private AssetLoadProgress _progress;
         private GameObject _instance;
         private bool _isDisposed;
 
@@ -21,6 +22,7 @@ namespace LiteQuark.Runtime
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
         public bool IsDisposed => _isDisposed;
+        public float Progress => _progress.Read();
         public GameObject Result => _instance;
         internal UniTask<GameObject> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
@@ -43,6 +45,7 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => Cancel(ct));
             }
 
+            _progress = new AssetLoadProgress(() => _prefabHandle.Progress);
             InstantiateAsync(ct).Forget();
         }
 
@@ -110,6 +113,7 @@ namespace LiteQuark.Runtime
             }
 
             State = state;
+            _progress.Complete(state);
             Error = error;
             _ctr.Dispose();
             return true;

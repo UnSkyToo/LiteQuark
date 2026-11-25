@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEngine;
@@ -70,7 +71,7 @@ namespace LiteQuark.Editor
                 _fixture.Events.Add("system " + Generation + " constructed");
             }
 
-            public UniTask<bool> Initialize() => UniTask.FromResult(true);
+            public UniTask<bool> Initialize(CancellationToken ct = default) => UniTask.FromResult(true);
 
             public async UniTask DisposeAsync()
             {
@@ -94,7 +95,7 @@ namespace LiteQuark.Editor
                 _fixture.Entries.Add(this);
             }
 
-            public UniTask<bool> Initialize()
+            public UniTask<bool> Initialize(CancellationToken ct = default)
             {
                 _fixture.Events.Add("entry " + Generation + " initialized");
                 return UniTask.FromResult(true);

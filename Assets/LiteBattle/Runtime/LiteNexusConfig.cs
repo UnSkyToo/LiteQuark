@@ -1,3 +1,4 @@
+using System.Threading;
 using LiteQuark.Runtime;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -48,12 +49,13 @@ namespace LiteBattle.Runtime
             }
         }
 
-        internal static async UniTask<LiteNexusConfig> LoadAsync()
+        internal static async UniTask<LiteNexusConfig> LoadAsync(CancellationToken ct)
         {
+            ct.ThrowIfCancellationRequested();
 #if UNITY_EDITOR
             return await UniTask.FromResult(Instance);
 #else
-            ConfigHandle_ ??= LiteRuntime.Asset.LoadAssetHandle<LiteNexusConfig>(ConfigName);
+            ConfigHandle_ ??= LiteRuntime.Asset.LoadAssetHandle<LiteNexusConfig>(ConfigName, ct: ct);
             var handle = ConfigHandle_;
             try
             {

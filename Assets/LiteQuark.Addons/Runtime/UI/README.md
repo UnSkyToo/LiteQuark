@@ -2,11 +2,11 @@
 
 UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 **System List**，并在该注册项内配置 `UISystemSetting`。使用 `LiteRuntime.Get<UISystem>()` 访问。
 
-把本场景的 UI 相机拖入注册项的 `UISystemSetting.UICamera`，留空时使用 `Camera.main`。参考分辨率与缩放参数保存在同一条目。系统使用 ScreenSpaceCamera Canvas 并设置相机为正交；需要独立相机行为时应明确配置 UI Camera。交互界面还需场景中的 EventSystem / 输入模块。
+在注册项的 `UISystemSetting.UICamera` 配置专用 UI 相机时，系统使用 ScreenSpaceCamera Canvas 并将该相机设为正交。留空时，系统在初始化时取 `Camera.main` 作为渲染相机，保留其相机参数。场景没有主相机时，系统使用 ScreenSpaceOverlay Canvas，此时 `UISystem.UICamera` 为 null。参考分辨率与缩放参数保存在同一注册项。交互界面还需场景中的 EventSystem / 输入模块。
 
 UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。根节点跨场景保留，系统关闭时销毁整个 Canvas 层级。
 
-跨场景使用时，需保证 UI Camera 常驻，并保持 EventSystem / 输入模块可用；它们不随 Canvas 自动保留。
+跨场景使用时，需保证 Canvas 所用的相机常驻，并保持 EventSystem / 输入模块可用。
 
 ## 定义与打开
 
@@ -52,7 +52,7 @@ uiSystem.CloseUI(menu);
 
 世界坐标跟随类界面可实现 `ILateTick.LateTick(float deltaTime)`。游戏入口完成晚更新后，UISystem 将同一帧的 deltaTime 传给已打开且实现该接口的窗口。本轮晚更新开始前已完成打开的窗口即可参与，开始关闭的窗口立即停止接收。普通 `OnUpdate` 和打开、关闭队列仍在原有的 Update 阶段处理。
 
-调用方可能先于 UISystem 释放时，使用 `OpenUI<T>(config, ct, paramList)`，并在自身释放时取消对应的 `CancellationTokenSource`。取消仅影响该调用方尚未完成的打开请求，不会自动关闭已成功返回的 UI；已打开的 UI 仍需调用 `CloseUI`。
+调用方可能先于 UISystem 释放时，使用 `OpenUI<T>(config, ct, paramList)`，并在自身释放时取消对应的 `CancellationTokenSource`。系统在进入 `OnOpen` 前处理取消。如果调用方在回调中取消且 `OnOpen` 正常返回，`OpenUI` 仍交付该窗口，由调用方用 `CloseUI` 关闭。
 
 ## 层级与查找
 
@@ -64,9 +64,11 @@ uiSystem.CloseUI(menu);
 | Normal | 10000 |
 | Top | 15000 |
 
-非 Scene 层同层实例按创建时的子节点数量递增排序。
+`Scene` 层统一使用排序值 0。其他层按同层窗口的打开顺序从基础值起每次递增 100。打开窗口时分配排序，关闭队列在 Tick 释放窗口后重排同层，更新 Canvas 和 `BaseUI.SortingOrder`。
 
-`FindUI<T>()` 返回已纳入活动列表的对应类型界面；`CloseUI<T>()` 关闭找到的一个实例，`CloseAllUI()` 关闭活动列表内界面。`isMutex` 复用找到的同类型界面，不会关闭其他类型；它不是并发打开锁，连续/同时打开仍需调用者协调。
+`OpenUI<T>()` 成功返回后，同帧即可通过 `FindUI<T>()` 查询、通过 `CloseUI<T>()` 关闭找到的实例，或通过 `CloseAllUI()` 关闭所有已打开的界面。
+
+`isMutex: true` 复用已打开的同类型实例。同类型的互斥打开请求尚在进行时，后续互斥请求等待同一个结果，使用首个请求的配置和参数。首个请求因取消而终止时，共用该结果的等待均取消。后续调用方取消时，仅结束自己的等待。`isMutex: false` 每次独立打开。
 
 ## BaseUI 与生命周期
 

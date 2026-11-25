@@ -1,35 +1,36 @@
+using System;
 using System.Collections.Generic;
 
 namespace LiteQuark.Runtime
 {
-    public sealed class ConfigTable<T> where T : IConfigData
+    public class ConfigTable<T, TKey>
     {
-        private readonly Dictionary<int, T> _dataMap;
+        private readonly Dictionary<TKey, T> _dataMap;
         private readonly List<T> _dataList;
 
-        public ConfigTable(List<T> dataList)
+        internal ConfigTable(List<T> dataList, Func<T, TKey> keySelector)
         {
             _dataList = dataList;
-            _dataMap = new Dictionary<int, T>(dataList.Count);
+            _dataMap = new Dictionary<TKey, T>(dataList.Count);
 
             foreach (var data in dataList)
             {
-                _dataMap[data.Id] = data;
+                _dataMap[keySelector(data)] = data;
             }
         }
 
-        public T Get(int id)
+        public T Get(TKey id)
         {
             if (_dataMap.TryGetValue(id, out var data))
             {
                 return data;
             }
 
-            LLog.Warning("ConfigTable<{0}> id not found: {1}", typeof(T).Name, id);
+            LLog.Warning("ConfigTable<{0}> key not found: {1}", typeof(T).Name, id);
             return default;
         }
 
-        public bool TryGet(int id, out T data)
+        public bool TryGet(TKey id, out T data)
         {
             return _dataMap.TryGetValue(id, out data);
         }
@@ -40,5 +41,12 @@ namespace LiteQuark.Runtime
         }
 
         public int Count => _dataList.Count;
+    }
+
+    public sealed class ConfigTable<T> : ConfigTable<T, int> where T : IConfigData
+    {
+        public ConfigTable(List<T> dataList) : base(dataList, static data => data.Id)
+        {
+        }
     }
 }

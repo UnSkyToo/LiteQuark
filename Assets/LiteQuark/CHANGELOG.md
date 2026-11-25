@@ -2,6 +2,10 @@
 
 ## **[Unreleased]**
 
+- 破坏：将自定义 `IInitializeAsync` 实现改为 `Initialize(CancellationToken ct = default)`。系统和游戏入口将该 token 传给启动期间的异步操作。
+- 新增：资源 Handle 提供 `float Progress`。自定义 `IAssetHandle<T>` 实现需提供此属性。
+- 修复：关闭启动中的 Runtime 会中止在途清单请求。Remote 清单每次请求使用新的 `t` 值，资源包地址与缓存规则沿用原配置。
+
 ### 从 Launcher 的 DebugSetting / ReleaseSetting 手工迁移
 
 1. **在仍使用旧框架的工程中先备份，再升级。** 提交或复制含 Launcher 的启动场景、Prefab 及其 `.meta`。使用 Prefab 实例的场景也要保留其覆盖值。分别记录 `ReleaseSetting` 和 `DebugSetting` 的 GameEntry、SystemList 顺序与 Disabled 标记、各模块数值、SystemSettings 及其中的场景对象引用（尤其是 UI 相机）。新版读取不到旧字段，直接重新保存会丢掉旧配置。如果已经升级，从版本控制或备份中用旧版查看原值。

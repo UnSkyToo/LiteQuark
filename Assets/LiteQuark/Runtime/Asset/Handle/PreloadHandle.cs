@@ -15,11 +15,13 @@ namespace LiteQuark.Runtime
         private readonly List<AssetError> _errors = new();
         private readonly UniTaskCompletionSource<bool> _tcs = new();
         private CancellationTokenRegistration _ctr;
+        private AssetLoadProgress _progress;
 
         public AssetHandleState State { get; private set; }
         public AssetError Error { get; private set; }
         public bool IsDone => State != AssetHandleState.Pending;
         public bool IsDisposed { get; private set; }
+        public float Progress => _progress.Read();
         public bool Result => State == AssetHandleState.Succeeded;
         internal UniTask<bool> Task => _tcs.Task;
         public UniTask.Awaiter GetAwaiter() => Task.AsUniTask().GetAwaiter();
@@ -45,6 +47,7 @@ namespace LiteQuark.Runtime
                 _ctr = ct.Register(() => Cancel(ct));
             }
 
+            _progress = new AssetLoadProgress(ReadBatchProgress);
             string currentPath = null;
             try
             {
@@ -79,6 +82,21 @@ namespace LiteQuark.Runtime
             }
 
             WaitAsync(ct).Forget();
+        }
+
+        private float ReadBatchProgress()
+        {
+            if (_handles.Count == 0)
+            {
+                return 0f;
+            }
+
+            var total = 0f;
+            foreach (var handle in _handles)
+            {
+                total += handle.Progress;
+            }
+            return total / _handles.Count;
         }
 
         private async UniTaskVoid WaitAsync(CancellationToken ct)
@@ -132,6 +150,7 @@ namespace LiteQuark.Runtime
             }
 
             State = state;
+            _progress.Complete(state);
             Error = error;
             _ctr.Dispose();
             return true;

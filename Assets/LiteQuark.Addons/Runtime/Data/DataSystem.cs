@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public async UniTask<bool> Initialize()
+        public async UniTask<bool> Initialize(CancellationToken ct = default)
         {
             switch (Setting.ProviderMode)
             {
@@ -41,8 +41,7 @@ namespace LiteQuark.Runtime
                     break;
             }
 
-            var result = await _provider.Initialize();
-            return result;
+            return await _provider.Initialize(ct);
         }
 
         public async UniTask DisposeAsync()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,7 +20,7 @@ namespace LiteQuark.Runtime
         {
         }
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
             _repository = new DefaultLoggerRepository();
             _logCache = new Dictionary<string, ILog>();

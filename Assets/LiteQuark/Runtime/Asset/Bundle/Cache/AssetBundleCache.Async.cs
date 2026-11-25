@@ -5,6 +5,29 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetBundleCache
     {
+        internal float GetLoadProgress(string assetKey, Type assetType)
+        {
+            if (IsLoaded)
+            {
+                var progress = assetType == typeof(Scene)
+                    ? (_sceneCacheMap != null && _sceneCacheMap.TryGetValue(assetKey, out var scene) ? scene.LoadProgress : 0f)
+                    : (_assetCacheMap.TryGetValue((assetKey, assetType), out var asset) ? asset.LoadProgress : 0f);
+                return 0.5f + 0.5f * progress;
+            }
+
+            var total = GetOwnBundleProgress();
+            foreach (var dependency in DependencyList)
+            {
+                if (_manager.TryGetBundleCache(dependency, out var cache))
+                {
+                    total += cache.GetOwnBundleProgress();
+                }
+            }
+            return 0.5f * total / (DependencyList.Length + 1);
+        }
+
+        private float GetOwnBundleProgress() => Bundle != null ? 1f : _manager.GetBundleProgress(BundlePath);
+
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (Stage is AssetCacheStage.Unloading or AssetCacheStage.Unloaded)

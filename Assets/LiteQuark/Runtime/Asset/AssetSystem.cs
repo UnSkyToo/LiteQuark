@@ -11,8 +11,13 @@ namespace LiteQuark.Runtime
     {
         private AssetManager _manager = new();
 
-        public UniTask<bool> Initialize()
+        public UniTask<bool> Initialize(CancellationToken ct = default)
         {
+            if (ct.IsCancellationRequested)
+            {
+                return UniTask.FromCanceled<bool>(ct);
+            }
+
             var concurrencyLimit = Math.Max(1, LiteRuntime.Setting.Asset.TaskConcurrencyLimit);
             LiteRuntime.Task.RegisterGroup(LiteConst.TaskGroupId.Asset, concurrencyLimit);
 
@@ -27,7 +32,7 @@ namespace LiteQuark.Runtime
                 return UniTask.FromException<bool>(ex);
             }
 
-            return _manager.Initialize(bundleProvider);
+            return _manager.Initialize(bundleProvider, ct);
         }
 
         public async UniTask DisposeAsync()
@@ -72,17 +77,18 @@ namespace LiteQuark.Runtime
             CancellationToken ct)
             where T : UnityEngine.Object
         {
+            var manager = _manager;
             return new AssetHandle<T>(assetKey, callback =>
             {
-                if (_manager == null)
+                if (manager == null)
                 {
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<T>>.Failure(
                         new AssetError(assetKey, "Asset manager is unavailable")));
                     return;
                 }
 
-                _manager.LoadAssetAsync(assetKey, priority, callback);
-            }, ct);
+                manager.LoadAssetAsync(assetKey, priority, callback);
+            }, () => manager?.GetLoadProgress(assetKey, typeof(T)) ?? 0f, ct);
         }
 
         public PreloadHandle<T> PreloadAssetHandle<T>(IEnumerable<string> assetPaths, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default) where T : UnityEngine.Object
@@ -118,18 +124,19 @@ namespace LiteQuark.Runtime
         public SceneHandle LoadSceneHandle(string scenePath, AssetLoadPriority priority = AssetLoadPriority.Normal, CancellationToken ct = default)
         {
             var sceneKey = AssetPath.ResolveScene(scenePath);
+            var manager = _manager;
 
             return new SceneHandle(callback =>
             {
-                if (_manager == null)
+                if (manager == null)
                 {
                     LiteUtils.SafeInvoke(callback, AssetLoadResult<IAssetLease<Scene?>>.Failure(
                         new AssetError(sceneKey, "Asset manager is unavailable")));
                     return;
                 }
 
-                _manager.LoadSceneAsync(sceneKey, priority, callback);
-            }, ct);
+                manager.LoadSceneAsync(sceneKey, priority, callback);
+            }, () => manager?.GetLoadProgress(sceneKey, typeof(Scene)) ?? 0f, ct);
         }
 
         /// <summary>

@@ -5,6 +5,16 @@ namespace LiteQuark.Runtime
 {
     internal sealed partial class AssetManager
     {
+        internal float GetLoadProgress(string assetKey, Type assetType)
+        {
+            if (_packInfo != null && _packInfo.TryGetBundleInfoByAssetKey(assetKey, out var bundleInfo) &&
+                TryGetBundleCache(bundleInfo.BundlePath, out var cache))
+            {
+                return cache.GetLoadProgress(assetKey, assetType);
+            }
+            return 0f;
+        }
+
         public void LoadAssetAsync<T>(string assetKey, AssetLoadPriority priority, Action<AssetLoadResult<IAssetLease<T>>> callback) where T : UnityEngine.Object
         {
             if (_isDisposed)

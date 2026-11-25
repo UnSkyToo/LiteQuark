@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -39,6 +40,7 @@ namespace LiteQuark.Editor
             private bool _disposed;
             internal int Disposals;
             internal int Ticks;
+            internal CancellationToken StartupToken;
 
             protected ShutdownProbe(string name)
             {
@@ -47,8 +49,9 @@ namespace LiteQuark.Editor
                 _fixture.Instances.Add(name, this);
             }
 
-            public async UniTask<bool> Initialize()
+            public async UniTask<bool> Initialize(CancellationToken ct = default)
             {
+                StartupToken = ct;
                 _fixture.Initialized.Add(_name);
                 if (_name == _fixture.FailedInitialization)
                 {
@@ -57,7 +60,7 @@ namespace LiteQuark.Editor
                     return false;
                 }
                 if (_name == _fixture.GatedInitialization && _fixture.InitializationGate != null)
-                    return await _fixture.InitializationGate.Task;
+                    return await _fixture.InitializationGate.Task.AttachExternalCancellation(ct);
                 return true;
             }
 
@@ -175,7 +178,7 @@ namespace LiteQuark.Editor
             public TimeoutSetting Setting { get; set; }
             public int Timeout { get; private set; }
 
-            public UniTask<bool> Initialize()
+            public UniTask<bool> Initialize(CancellationToken ct = default)
             {
                 Timeout = Setting.Timeout.Resolve(LiteRuntime.Setting.Environment);
                 return UniTask.FromResult(true);
@@ -488,13 +491,11 @@ namespace LiteQuark.Editor
                 await BeginShutdownFixture(fixture);
                 await WaitForRuntimeCondition(() => fixture.Initialized.Contains("entry"), "Pending entry initialization");
                 shutdown = LiteRuntime.Instance.Shutdown();
-                await UniTask.NextFrame();
-                Check(fixture.Events.Count == 0 && shutdown.Value.Status == UniTaskStatus.Pending,
-                    "Shutdown waits for the in-flight entry initialization.");
-                fixture.InitializationGate.TrySetResult(true);
                 await WaitForRuntimeCondition(() => fixture.Events.Contains("entry start"), "Cancelled entry disposal");
-                Check(fixture.Events.SequenceEqual(new[] { "entry start" }) && LiteRuntime.Get<ShutdownSystemTwo>() != null,
-                    "The cancelled entry is disposed with its systems still available.");
+                Check(fixture.Instances["entry"].StartupToken.IsCancellationRequested &&
+                    !fixture.InitializationGate.Task.Status.IsCompleted() &&
+                    fixture.Events.SequenceEqual(new[] { "entry start" }) && LiteRuntime.Get<ShutdownSystemTwo>() != null,
+                    "Shutdown cancels the entry's initialization before disposing it with its systems still available.");
             }
             finally { await FinishShutdownFixture(fixture, shutdown); }
             Check(fixture.Instances["entry"].Ticks == 0 && fixture.Instances.Values.All(probe => probe.Disposals == 1),
@@ -504,7 +505,6 @@ namespace LiteQuark.Editor
         private static async UniTask CheckShutdownDuringInitialization(bool quitting)
         {
             var fixture = new ShutdownFixture { InitializationGate = new UniTaskCompletionSource<bool>() };
-            fixture.SystemGate.TrySetResult();
             UniTask? shutdown = null;
             try
             {
@@ -516,17 +516,12 @@ namespace LiteQuark.Editor
 
                 if (quitting) LiteRuntime.Instance.OnApplicationQuit();
                 else shutdown = LiteRuntime.Instance.Shutdown();
-                await UniTask.NextFrame();
-                Check(fixture.Events.Count == 0 && LiteRuntime.Instance.State == LiteRuntime.RuntimeState.ShuttingDown &&
-                    (!shutdown.HasValue || shutdown.Value.Status == UniTaskStatus.Pending),
-                    "Shutdown or application quit waits for the current Initialize to return.");
-                LiteRuntime.Instance.IsPause = true;
-                LiteRuntime.Setting.Common.TimeScale = 0f;
-                LiteRuntime.Timer.NextFrame(() => fixture.InitializationGate.TrySetResult(true));
-                LiteRuntime.Instance.Tick(0f);
-                Check(fixture.Events.SequenceEqual(new[] { "system 2 start", "system 2 end" }) && LiteRuntime.Get<ShutdownSystemTwo>() == null &&
+                await WaitForRuntimeCondition(() => fixture.Events.Contains("system 2 start"), "Cancelled system disposal");
+                Check(fixture.Instances["system 2"].StartupToken.IsCancellationRequested &&
+                    !fixture.InitializationGate.Task.Status.IsCompleted() &&
+                    fixture.Events.SequenceEqual(new[] { "system 2 start" }) && LiteRuntime.Get<ShutdownSystemTwo>() == null &&
                     LiteRuntime.Get<ShutdownSystemOne>() != null,
-                    "The unpublished system is disposed inline as Initialize returns; published dependencies survive until the frame boundary.");
+                    "Shutdown or quit cancels the unpublished system's initialization while published dependencies stay available for disposal.");
             }
             finally { await FinishShutdownFixture(fixture, shutdown); }
 

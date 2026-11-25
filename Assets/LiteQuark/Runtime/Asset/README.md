@@ -43,7 +43,9 @@ handle.Dispose();
 
 ## 请求状态与错误
 
-四类 Handle 提供 `State`、`Error`、`IsDone`、`IsDisposed` 和 `Result`。状态从 `Pending` 单次进入下列终态；缓存命中可能在加载入口返回前完成。`IsDone` 表示请求已结束，不代表底层原生操作或迟到资源清理已结束。
+四类 Handle 提供 `State`、`Error`、`IsDone`、`IsDisposed`、`Progress` 和 `Result`。状态从 `Pending` 单次进入下列终态；缓存命中可能在加载入口返回前完成。`IsDone` 表示请求已结束，不代表底层原生操作或迟到资源清理已结束。
+
+在 Unity 主线程每帧可读取 `Progress` 绘制加载条。资源和场景的进度由 Bundle 下载或读取，以及 Unity 资源读取两个阶段估算。远端传输进度依赖响应提供 `Content-Length`。实例进度跟随 prefab，批次取各子 Handle 的平均值。成功时为 1，失败或取消保留最后一次读取的值。加载结果以 `State` 为准。
 
 | 情况 | 状态、等待与所有权 |
 | --- | --- |
@@ -127,6 +129,8 @@ AssetSystem 在初始化时注册 Asset 任务组，按配置和运行环境选�
 | `ConcurrencyLimit` | Bundle Loader 同时提交加载任务的上限，默认 5 |
 | `TaskConcurrencyLimit` | 独立 Asset 任务组额度，默认 20，运行时至少为 1；覆盖版本包、Bundle、Asset 和 Scene 加载任务 |
 | `EnableRetain` / `BundleRetainTime` | Bundle 零引用保留缓存开关／时间，默认 true／300 秒 |
+
+Remote 每次获取清单时生成一次随机 `t`，本次请求的重试沿用同一个值。该参数仅用于清单，CDN 需把它计入清单缓存键，或对清单路径启用绕过缓存或回源验证。Bundle 仍按现有地址和 Hash 缓存。初始化期间关闭 Runtime 会中止正在读取的清单请求及其重试。
 
 BuiltIn 在编辑器 `EditorForceStreamingAssets` 为 true（默认）时强制选择 StreamingAssets；否则优先选择 `persistentDataPath/LiteQuark` 中存在的文件，缺失时选择 `StreamingAssets/LiteQuark`。这是按存在性选路径，persistent 文件损坏或加载失败不会再次回退。
 
