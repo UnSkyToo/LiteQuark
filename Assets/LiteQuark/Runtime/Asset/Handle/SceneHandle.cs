@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 namespace LiteQuark.Runtime
 {
     /// <summary>
-    /// Handle for a loaded scene. Dispose unloads the scene owned by this handle.
+    /// Handle for a scene load. Disposing a loaded handle releases the scene without waiting for unload to finish.
     /// </summary>
     public class SceneHandle : IAssetHandle<Scene?>
     {

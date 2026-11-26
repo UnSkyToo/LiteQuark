@@ -8,10 +8,7 @@ namespace LiteBattle.Runtime
         Break,
     }
 
-    /// <summary>
-    /// <para>Clip event interface</para>
-    /// <para>Must be in the same assembly as the interface</para>
-    /// </summary>
+    /// <summary>Event data for a Timeline clip or marker.</summary>
     public interface ILiteEvent : IHasData, IClone<ILiteEvent>
     {
         void Enter(LiteState state);

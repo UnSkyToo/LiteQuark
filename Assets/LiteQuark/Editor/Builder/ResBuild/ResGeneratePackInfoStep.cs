@@ -3,7 +3,7 @@ using LiteQuark.Runtime;
 namespace LiteQuark.Editor
 {
     /// <summary>
-    /// Write bundle pack info to json
+    /// Writes the runtime version pack as UTF-8 JSON bytes, encrypted in security mode.
     /// </summary>
     internal sealed class ResGeneratePackInfoStep : IBuildStep
     {

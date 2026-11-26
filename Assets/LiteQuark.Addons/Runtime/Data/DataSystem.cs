@@ -59,41 +59,31 @@ namespace LiteQuark.Runtime
 
         #region Synchronous API
 
-        /// <summary>
-        /// 保存数据（同步）
-        /// </summary>
         public void Save<T>(string key, T data)
         {
             GetProvider().Save(key, data);
         }
 
-        /// <summary>
-        /// 加载数据（同步）
-        /// </summary>
         public T Load<T>(string key, T defaultValue = default)
         {
             return GetProvider().Load(key, defaultValue);
         }
 
-        /// <summary>
-        /// 检查键是否存在
-        /// </summary>
         public bool Has(string key)
         {
             return GetProvider().Has(key);
         }
 
-        /// <summary>
-        /// 删除指定键的数据
-        /// </summary>
         public void Delete(string key)
         {
             GetProvider().Delete(key);
         }
 
-        /// <summary>
-        /// 删除所有数据
-        /// </summary>
+        /// <summary>清空当前数据提供者的存储。</summary>
+        /// <remarks>
+        /// PlayerPrefs 模式会清空应用的全部 PlayerPrefs。JsonFile 和 BinaryFile 模式都会删除整个
+        /// <c>SaveData</c> 目录，包括另一种文件模式的存档。自定义模式的范围由提供者决定。
+        /// </remarks>
         public void DeleteAll()
         {
             GetProvider().DeleteAll();
@@ -103,9 +93,6 @@ namespace LiteQuark.Runtime
 
         #region Asynchronous API
 
-        /// <summary>
-        /// 保存数据（异步）
-        /// </summary>
         public async UniTask SaveAsync<T>(string key, T data)
         {
             var provider = GetProvider();
@@ -120,9 +107,6 @@ namespace LiteQuark.Runtime
             }
         }
 
-        /// <summary>
-        /// 加载数据（异步）
-        /// </summary>
         public async UniTask<T> LoadAsync<T>(string key, T defaultValue = default)
         {
             var provider = GetProvider();
@@ -141,14 +125,10 @@ namespace LiteQuark.Runtime
 
         #region Provider Management
 
-        /// <summary>
-        /// 获取当前使用的数据提供者
-        /// </summary>
         public IDataProvider Provider => GetProvider();
 
-        /// <summary>
-        /// 切换数据提供者（高级功能）
-        /// </summary>
+        /// <summary>初始化新的数据提供者，成功后替换并释放旧提供者。</summary>
+        /// <remarks>切换不会迁移已有数据。初始化失败时释放新提供者，继续使用旧提供者。</remarks>
         public async UniTask SwitchProvider(IDataProvider newProvider)
         {
             if (newProvider == null)

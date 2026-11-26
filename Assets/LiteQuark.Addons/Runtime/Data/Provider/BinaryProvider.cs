@@ -34,7 +34,6 @@ namespace LiteQuark.Runtime
         {
             var filePath = GetFilePath(key);
 
-            // Serialize to JSON first (more portable than BinaryFormatter)
             var json = LitJson.JsonMapper.ToJson(data);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
 
@@ -50,7 +49,6 @@ namespace LiteQuark.Runtime
         {
             var filePath = GetFilePath(key);
 
-            // Serialize to JSON first
             var json = LitJson.JsonMapper.ToJson(data);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
 
@@ -143,7 +141,6 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            // Nothing to dispose
         }
 
         private string GetFilePath(string key)

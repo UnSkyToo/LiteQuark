@@ -1,28 +1,17 @@
 namespace LiteQuark.Runtime
 {
-    /// <summary>
-    /// 数据存储模式
-    /// </summary>
     public enum DataProviderMode
     {
-        /// <summary>
-        /// PlayerPrefs存储（适合少量配置数据）
-        /// </summary>
+        /// <summary>以字符串形式写入应用的 PlayerPrefs。</summary>
         PlayerPrefs,
 
-        /// <summary>
-        /// JSON文件存储（适合结构化数据，可读性好）
-        /// </summary>
+        /// <summary>以 .json 文件保存明文 JSON 或 Base64 密文。</summary>
         JsonFile,
 
-        /// <summary>
-        /// 二进制文件存储（适合大量数据，性能好）
-        /// </summary>
+        /// <summary>以 .dat 文件保存 UTF-8 JSON 字节或加密后的字节。</summary>
         BinaryFile,
 
-        /// <summary>
-        /// 自定义存储（适合自定义数据存储方式）
-        /// </summary>
+        /// <summary>使用自定义 <see cref="IDataProvider"/>。</summary>
         Custom
     }
 }

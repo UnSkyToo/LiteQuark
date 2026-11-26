@@ -79,43 +79,32 @@ namespace LiteQuark.Runtime
             return UnifyPath(Path.GetRelativePath(UnifyPath(rootPath), UnifyPath(fullPath)));
         }
 
-        /// <summary>
-        /// Get the full path in the asset data.
-        /// </summary>
-        /// <returns>Assets/{path}</returns>
+        /// <summary>Combines <see cref="Application.dataPath"/> with the supplied path.</summary>
         public static string GetAssetDataPath(string path)
         {
             return ConcatPath(Application.dataPath, path);
         }
 
-        /// <summary>
-        /// Get the full path in persistent root.
-        /// </summary>
+        /// <summary>Combines <see cref="Application.persistentDataPath"/> with the supplied path.</summary>
         public static string GetPersistentDataPath(string path)
         {
             return ConcatPath(Application.persistentDataPath, path);
         }
 
-        /// <summary>
-        /// Get the full path in persistent tag root.
-        /// </summary>
+        /// <summary>Combines <see cref="Application.persistentDataPath"/> with a tag and path.</summary>
         public static string GetPersistentDataPath(string tag, string path)
         {
             return ConcatPath(Application.persistentDataPath, tag, path);
         }
 
-        /// <summary>
-        /// Get the full path in streaming assets.
-        /// </summary>
+        /// <summary>Returns a local path or URI for a relative path under StreamingAssets.</summary>
         public static string GetStreamingAssetsPath(string path)
         {
             var root = Application.streamingAssetsPath;
             return root.IndexOf("://", StringComparison.Ordinal) >= 0 ? ConcatUri(root, path) : ConcatPath(root, path);
         }
 
-        /// <summary>
-        /// Get the full path in streaming assets tag root.
-        /// </summary>
+        /// <summary>Combines a tag and relative path under StreamingAssets, returning a local path or URI.</summary>
         public static string GetStreamingAssetsPath(string tag, string path)
         {
             var root = Application.streamingAssetsPath;

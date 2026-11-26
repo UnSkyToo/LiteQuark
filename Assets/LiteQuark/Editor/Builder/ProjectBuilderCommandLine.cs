@@ -5,23 +5,22 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    /// <summary>
-    /// CI Build Command Line
-    /// -debugBuild : is debug build (true/false)
-    /// -target : build target (Android/iOS/WebGL)
-    /// -enableApp : isBuildApp (true/false)
-    /// -enableRes : isBuildRes (true/false)
-    /// -enableCustom : isBuildCustom (true/false)
-    /// -appVersion : app version (1.0.0)
-    /// -appCode : app build code (1)
-    /// -hashMode : enable hashMode (true/false)
-    /// -flatMode : enable flatMode (true/false)
-    /// -copyToStreaming : copy to streaming assets (true/false)
-    /// -arm64 : enable arm64 archive, only android (true/false)
-    /// -isAAB : enable aab mode, only android (true/false)
-    /// -splitApp : enable split apk, only android (true/false)
-    /// -createSymbols : enable create symbol file, only android (true/false)
-    /// </summary>
+    /// <summary>Unity batch-mode build entry point for <c>-executeMethod</c>.</summary>
+    /// <remarks>
+    /// <para><c>-target</c> is required and takes a <see cref="BuildTarget"/> name. Application builds support Android and iOS.</para>
+    /// <para>Boolean options take <c>true</c> or <c>false</c> and default to <c>false</c>.
+    /// <c>-enableApp</c> and <c>-enableRes</c> select the app and resource stages.
+    /// <c>-enableCustom</c> sets the custom configuration passed to build callbacks.
+    /// <c>-debugBuild</c> selects a Development Build.</para>
+    /// <para><c>-appVersion</c> defaults to <see cref="PlayerSettings.bundleVersion"/>.
+    /// <c>-appCode</c> defaults to the active Android or iOS build number (1 if the iOS value is not an integer).
+    /// With any other active target, <c>-appCode</c> is ignored and the build code is 0.</para>
+    /// <para><c>-hashMode</c> includes bundle hashes in published filenames, <c>-flatMode</c> flattens output paths,
+    /// and <c>-copyToStreaming</c> replaces the LiteQuark resource output under StreamingAssets.</para>
+    /// <para>When Android is the active build target, <c>-arm64</c> adds ARM64 alongside ARMv7,
+    /// <c>-isAAB</c> builds an App Bundle, <c>-splitApp</c> enables Split Application Binary for App Bundles,
+    /// and <c>-createSymbols</c> generates debugging symbols.</para>
+    /// </remarks>
     public static class ProjectBuilderCommandLine
     {
         public static void Build()

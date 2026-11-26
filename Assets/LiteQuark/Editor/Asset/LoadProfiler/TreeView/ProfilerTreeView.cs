@@ -193,7 +193,6 @@ namespace LiteQuark.Editor.LoadProfiler
 
             foreach (var child in children)
             {
-                // DependencyNode 现在直接持有 Record 引用
                 var record = child.Record;
 
                 var childItem = new ProfilerTreeItem

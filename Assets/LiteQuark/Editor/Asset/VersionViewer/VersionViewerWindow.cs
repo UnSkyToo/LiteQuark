@@ -63,10 +63,10 @@ namespace LiteQuark.Editor.VersionViewer
 
         private enum DiffStatus
         {
-            Added,      // 新增
-            Removed,    // 删除
-            Modified,   // 修改
-            Unchanged   // 未变化
+            Added,
+            Removed,
+            Modified,
+            Unchanged
         }
 
         private class BundleDiffInfo
@@ -134,7 +134,6 @@ namespace LiteQuark.Editor.VersionViewer
 
             EditorGUILayout.LabelField("Version Files", EditorStyles.boldLabel);
 
-            // 旧版本
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Old Version:", GUILayout.Width(80));
 
@@ -153,7 +152,6 @@ namespace LiteQuark.Editor.VersionViewer
                 EditorGUILayout.LabelField($"   Version: {_oldVersionInfo.Version} | Platform: {_oldVersionInfo.Platform} | Bundles: {_oldVersionInfo.BundleList.Length}", EditorStyles.miniLabel);
             }
 
-            // 新版本
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("New Version:", GUILayout.Width(80));
 
@@ -174,7 +172,6 @@ namespace LiteQuark.Editor.VersionViewer
 
             EditorGUILayout.Space(5);
 
-            // 对比按钮
             GUI.enabled = !string.IsNullOrEmpty(_oldVersionPath) && !string.IsNullOrEmpty(_newVersionPath);
             if (GUILayout.Button("Compare Versions", GUILayout.Height(30)))
             {
@@ -196,7 +193,6 @@ namespace LiteQuark.Editor.VersionViewer
 
             GUILayout.FlexibleSpace();
 
-            // 总大小变化
             var sizeChangeText = _totalSizeChange >= 0 ? $"+{FormatSize(_totalSizeChange)}" : FormatSize(_totalSizeChange);
             var sizeColor = _totalSizeChange >= 0 ? new Color(0.9f, 0.3f, 0.3f) : new Color(0.2f, 0.8f, 0.2f);
 
@@ -226,7 +222,6 @@ namespace LiteQuark.Editor.VersionViewer
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            // 筛选按钮
             if (DrawFilterButton("All", DiffFilter.All)) _currentFilter = DiffFilter.All;
             if (DrawFilterButton($"Added ({_addedCount})", DiffFilter.Added)) _currentFilter = DiffFilter.Added;
             if (DrawFilterButton($"Removed ({_removedCount})", DiffFilter.Removed)) _currentFilter = DiffFilter.Removed;
@@ -235,11 +230,9 @@ namespace LiteQuark.Editor.VersionViewer
 
             GUILayout.FlexibleSpace();
 
-            // 搜索框
             EditorGUILayout.LabelField("Search:", GUILayout.Width(50));
             _searchText = EditorGUILayout.TextField(_searchText, EditorStyles.toolbarSearchField, GUILayout.Width(200));
 
-            // 显示详情开关
             _showDetails = GUILayout.Toggle(_showDetails, "Details", EditorStyles.toolbarButton, GUILayout.Width(60));
 
             EditorGUILayout.EndHorizontal();
@@ -262,10 +255,8 @@ namespace LiteQuark.Editor.VersionViewer
 
         private void DrawDiffList()
         {
-            // 表头
             DrawListHeader();
 
-            // 列表内容
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             var filteredList = GetFilteredList();
@@ -313,15 +304,12 @@ namespace LiteQuark.Editor.VersionViewer
 
             EditorGUILayout.BeginHorizontal();
 
-            // 状态标签
             var statusColor = GetStatusColor(diff.Status);
             var statusText = GetStatusText(diff.Status);
             DrawColorLabel(statusText, statusColor, 70);
 
-            // Bundle 路径
             EditorGUILayout.LabelField(diff.BundlePath, EditorStyles.label);
 
-            // 大小变化
             if (diff.Status != DiffStatus.Removed && diff.Status != DiffStatus.Added)
             {
                 var sizeText = diff.SizeChange >= 0 ? $"+{FormatSize(diff.SizeChange)}" : FormatSize(diff.SizeChange);
@@ -336,7 +324,6 @@ namespace LiteQuark.Editor.VersionViewer
                 DrawColorLabel($"{prefix}{FormatSize(size)}", GetStatusColor(diff.Status), 90);
             }
 
-            // 展开/折叠按钮
             if (_showDetails && HasDetails(diff))
             {
                 if (GUILayout.Button(diff.IsExpanded ? "▼" : "▶", GUILayout.Width(20)))
@@ -351,7 +338,6 @@ namespace LiteQuark.Editor.VersionViewer
 
             EditorGUILayout.EndHorizontal();
 
-            // 详情展开
             if (_showDetails && diff.IsExpanded && HasDetails(diff))
             {
                 DrawDiffDetails(diff);
@@ -364,13 +350,11 @@ namespace LiteQuark.Editor.VersionViewer
         {
             EditorGUI.indentLevel++;
 
-            // Hash 变化
             if (diff.HashChanged && diff.OldBundle != null && diff.NewBundle != null)
             {
                 EditorGUILayout.LabelField($"Hash: {diff.OldBundle.Hash} → {diff.NewBundle.Hash}", EditorStyles.miniLabel);
             }
 
-            // 新增资源
             if (diff.AddedAssets.Count > 0)
             {
                 EditorGUILayout.LabelField($"Added Assets ({diff.AddedAssets.Count}):", EditorStyles.miniBoldLabel);
@@ -384,7 +368,6 @@ namespace LiteQuark.Editor.VersionViewer
                 }
             }
 
-            // 删除资源
             if (diff.RemovedAssets.Count > 0)
             {
                 EditorGUILayout.LabelField($"Removed Assets ({diff.RemovedAssets.Count}):", EditorStyles.miniBoldLabel);
@@ -398,7 +381,6 @@ namespace LiteQuark.Editor.VersionViewer
                 }
             }
 
-            // 依赖变化
             if (diff.AddedDependencies.Count > 0)
             {
                 EditorGUILayout.LabelField($"Added Dependencies ({diff.AddedDependencies.Count}):", EditorStyles.miniBoldLabel);
@@ -506,7 +488,6 @@ namespace LiteQuark.Editor.VersionViewer
 
                 if (!hasOld && hasNew)
                 {
-                    // 新增
                     diff.Status = DiffStatus.Added;
                     diff.AddedAssets = newBundle.AssetList.ToList();
                     diff.AddedDependencies = newBundle.DependencyList.ToList();
@@ -514,7 +495,6 @@ namespace LiteQuark.Editor.VersionViewer
                 }
                 else if (hasOld && !hasNew)
                 {
-                    // 删除
                     diff.Status = DiffStatus.Removed;
                     diff.RemovedAssets = oldBundle.AssetList.ToList();
                     diff.RemovedDependencies = oldBundle.DependencyList.ToList();
@@ -522,7 +502,6 @@ namespace LiteQuark.Editor.VersionViewer
                 }
                 else
                 {
-                    // 比较变化
                     diff.HashChanged = oldBundle.Hash != newBundle.Hash;
                     diff.SizeChange = newBundle.Size - oldBundle.Size;
 
@@ -551,7 +530,6 @@ namespace LiteQuark.Editor.VersionViewer
                 _diffList.Add(diff);
             }
 
-            // 统计
             _addedCount = _diffList.Count(d => d.Status == DiffStatus.Added);
             _removedCount = _diffList.Count(d => d.Status == DiffStatus.Removed);
             _modifiedCount = _diffList.Count(d => d.Status == DiffStatus.Modified);
@@ -563,7 +541,6 @@ namespace LiteQuark.Editor.VersionViewer
 
             _hasDiff = true;
 
-            // 默认排序
             SortList();
         }
 
@@ -571,7 +548,6 @@ namespace LiteQuark.Editor.VersionViewer
         {
             var list = _diffList.AsEnumerable();
 
-            // 状态筛选
             if (_currentFilter != DiffFilter.All)
             {
                 var targetStatus = _currentFilter switch
@@ -585,7 +561,6 @@ namespace LiteQuark.Editor.VersionViewer
                 list = list.Where(d => d.Status == targetStatus);
             }
 
-            // 搜索筛选
             if (!string.IsNullOrEmpty(_searchText))
             {
                 list = list.Where(d => d.BundlePath.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0);

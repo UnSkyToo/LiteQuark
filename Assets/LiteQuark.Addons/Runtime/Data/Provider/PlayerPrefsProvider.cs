@@ -4,10 +4,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    /// <summary>
-    /// PlayerPrefs数据提供者
-    /// 适合存储少量配置数据
-    /// </summary>
+    /// <summary>以字符串形式将明文 JSON 或 Base64 密文写入应用的 PlayerPrefs。</summary>
     public sealed class PlayerPrefsProvider : IDataProvider
     {
         private readonly bool _enableEncryption;

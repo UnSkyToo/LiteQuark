@@ -18,45 +18,28 @@ namespace LiteQuark.Editor
             }
         }
 
-        /// <summary>
-        /// <para>Support Data Type</para>
-        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
-        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
-        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
-        /// </summary>
         public static T DrawObject<T>(string name, T data) where T : class
         {
             return DrawObject(name, data, LitePropertyType.Object) as T;
         }
 
-        /// <summary>
-        /// <para>Support Data Type</para>
-        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
-        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
-        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
-        /// </summary>
         public static T DrawObject<T>(GUIContent title, T data) where T : class
         {
             return DrawObject(title, data, LitePropertyType.Object) as T;
         }
 
-        /// <summary>
-        /// <para>Support Data Type</para>
-        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
-        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
-        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
-        /// </summary>
         public static object DrawObject(string name, object data, LitePropertyType propertyType)
         {
             return DrawObject(new GUIContent(name), data, propertyType);
         }
 
-        /// <summary>
-        /// <para>Support Data Type</para>
-        /// <para>Primitive : bool, int, long, float, double, string, Enum</para>
-        /// <para>UnityEngine : Rect, RectInt, Vector2, Vector2Int, Vector3, Vector3Int, Vector4, Color, GameObject</para>
-        /// <para>Other : List, Object, ObjectList, CustomPopupList, OptionalType, OptionalTypeList</para>
-        /// </summary>
+        /// <summary>Draws a value using the specified property drawer and returns the edited value.</summary>
+        /// <remarks>
+        /// Drawers handle bool, int, long, float, double, string, enums, Rect, RectInt, Vector2, Vector2Int,
+        /// Vector3, Vector3Int, Vector4, Color, GameObject asset paths, lists, and nested objects.
+        /// Field attributes configure custom popups and optional type selectors; selectors discover types through
+        /// <see cref="LiteEditorUtils.GetTypeListWithBaseType"/>.
+        /// </remarks>
         public static object DrawObject(GUIContent title, object data, LitePropertyType propertyType)
         {
             if (data == null)

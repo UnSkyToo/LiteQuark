@@ -5,10 +5,7 @@ using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
-    /// <summary>
-    /// JSON文件数据提供者
-    /// 适合存储结构化数据，可读性好
-    /// </summary>
+    /// <summary>以 .json 文件保存明文 JSON 或 Base64 密文。</summary>
     public sealed class JsonFileProvider : IDataProvider
     {
         private readonly string _savePath;
@@ -136,7 +133,6 @@ namespace LiteQuark.Runtime
 
         public void Dispose()
         {
-            // Nothing to dispose
         }
 
         private string GetFilePath(string key)
