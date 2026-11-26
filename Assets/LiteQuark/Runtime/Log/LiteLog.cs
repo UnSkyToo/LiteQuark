@@ -8,8 +8,9 @@ namespace LiteQuark.Runtime
     {
         private static bool IsEnabled(LogLevel level)
         {
-            return LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle ||
-                (LiteRuntime.Setting.Log.Levels & level) != 0;
+            var setting = LiteRuntime.Setting;
+            return setting == null || LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle ||
+                (setting.Log.Levels & level) != 0;
         }
 
 #if UNITY_2022_2_OR_NEWER

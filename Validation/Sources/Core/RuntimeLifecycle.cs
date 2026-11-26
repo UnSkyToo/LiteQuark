@@ -229,7 +229,8 @@ namespace LiteQuark.Editor
                 authored.Task.ConcurrencyLimit = 9;
                 authored.Asset.BundleModeByBuild = new BuildValue<BundleLoadMode>(BundleLoadMode.Simulate);
                 authored.Asset.BundleRemoteUriByBuild = new BuildValue<string>("https://release.example/", "https://dev.example/");
-                authored.Log.LevelsByBuild = new BuildValue<LogLevel>(LogLevel.Warn, LogLevel.All);
+                const LogLevel releaseLevels = LogLevel.Warn | LogLevel.Fatal;
+                authored.Log.LevelsByBuild = new BuildValue<LogLevel>(releaseLevels, LogLevel.All);
                 var ui = new UISystemSetting { ResolutionWidth = 1600 };
                 authored.SystemList.Add(new LiteSystemEntry { Disabled = true, AssemblyQualifiedName = typeof(UISystem).AssemblyQualifiedName, Setting = ui });
                 authored.SystemList.Add(new LiteSystemEntry
@@ -253,7 +254,7 @@ namespace LiteQuark.Editor
                 }
                 launcher.EditorPreview = LiteBuildProfile.Release;
                 var release = launcher.CreateRuntimeSetting();
-                Check(release.Asset.BundleRemoteUri == "https://release.example/" && release.Log.Levels == LogLevel.Warn,
+                Check(release.Asset.BundleRemoteUri == "https://release.example/" && release.Log.Levels == releaseLevels,
                     "Release preview takes the release value even with a Development override.");
                 launcher.EditorPreview = LiteBuildProfile.Development;
                 runtime.Startup(launcher);
@@ -295,8 +296,9 @@ namespace LiteQuark.Editor
                 Check(current.Environment == LiteBuildProfile.Release && !LiteRuntime.IsDebugMode &&
                     current.Asset.BundleRemoteUri == "https://release.example/",
                     "Release restart applies the new environment and CDN.");
-                Check(startupOrder.Count == 0 && logs.Count == 1 && logs[0] == (LogType.Warning, LogProbePrefix + "warning"),
-                    "Release restart filters the first startup Info and emits only the configured Warning probe.");
+                Check(startupOrder.Count == 0 && logs.Count == 3 && logs[0] == (LogType.Warning, LogProbePrefix + "warning") &&
+                    logs[1].Type == LogType.Exception && logs[2].Type == LogType.Exception,
+                    "Release restart filters startup Info and the Error probe while emitting the Warning and both Fatal probes.");
                 Check(RegisteredSystems().All(s => s != null && !firstSystems.Contains(s)),
                     "Restart publishes fresh instances of the public built-ins and enabled extensions.");
                 Check(LiteRuntime.Get<EndpointProbe>().Timeout == 15 && LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
