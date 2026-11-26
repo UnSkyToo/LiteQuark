@@ -15,7 +15,7 @@ namespace LiteQuark.Editor
     /// -appVersion : app version (1.0.0)
     /// -appCode : app build code (1)
     /// -hashMode : enable hashMode (true/false)
-    /// -flatMode : enable flatMode (true/flase)
+    /// -flatMode : enable flatMode (true/false)
     /// -copyToStreaming : copy to streaming assets (true/false)
     /// -arm64 : enable arm64 archive, only android (true/false)
     /// -isAAB : enable aab mode, only android (true/false)
@@ -46,7 +46,7 @@ namespace LiteQuark.Editor
             var resCfg = new ResBuildConfig
             {
                 Enable = argumentData.GetEnableResBuild(),
-                IncrementBuildModel = false,
+                IncrementalBuild = false,
                 HashMode = argumentData.GetHashMode(),
                 FlatMode = argumentData.GetFlatMode(),
                 CopyToStreamingAssets = argumentData.GetCopyToStreaming(),
@@ -58,7 +58,7 @@ namespace LiteQuark.Editor
                 Enable = argumentData.GetEnableAppBuild(),
                 CleanBuildMode = true,
                 Identifier = PlayerSettings.applicationIdentifier,
-                ProduceName = PlayerSettings.productName,
+                ProductName = PlayerSettings.productName,
                 BuildCode = argumentData.GetAppCode(),
                 Backend = ScriptingImplementation.IL2CPP,
                 Architecture = argumentData.GetArm64() ? AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64 : AndroidArchitecture.ARMv7,
@@ -204,7 +204,7 @@ namespace LiteQuark.Editor
                 return defaultValue;
             }
 
-#region Cutsom Argument
+#region Custom Arguments
             public BuildTarget GetTarget()
             {
                 return GetEnumValue("target", BuildTarget.NoTarget);

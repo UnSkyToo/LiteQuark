@@ -2,7 +2,7 @@
 
 UISystem 属于 LiteQuark.Addons。将它加入 Launcher 的 **System List**，并在该注册项内配置 `UISystemSetting`。使用 `LiteRuntime.Get<UISystem>()` 访问。
 
-在注册项的 `UISystemSetting.UICamera` 配置专用 UI 相机时，系统使用 ScreenSpaceCamera Canvas 并将该相机设为正交。留空时，系统在初始化时取 `Camera.main` 作为渲染相机，保留其相机参数。场景没有主相机时，系统使用 ScreenSpaceOverlay Canvas，此时 `UISystem.UICamera` 为 null。参考分辨率与缩放参数保存在同一注册项。交互界面还需场景中的 EventSystem / 输入模块。
+在注册项的 `UISystemSetting.UICamera` 配置专用 UI 相机时，系统使用 ScreenSpaceCamera Canvas 并将该相机设为正交。留空时，系统在初始化时取 `Camera.main` 作为渲染相机，保留其相机参数。场景没有主相机时，系统使用 ScreenSpaceOverlay Canvas，此时 `UISystem.UICamera` 为 null。参考分辨率与缩放参数保存在同一注册项。交互界面还需要场景中的 `UnityEngine.EventSystems.EventSystem` 组件及输入模块。
 
 UISystem 创建并管理独立的 Canvas 根和子层，通过 `CanvasRoot` 访问。根节点跨场景保留，系统关闭时销毁整个 Canvas 层级。
 
@@ -73,7 +73,7 @@ uiSystem.CloseUI(menu);
 ## BaseUI 与生命周期
 
 - 状态包括 Opening、Opened、Closing、Closed 和 Error。
-- `RegisterEvent<T>(callback)` 使用每个 UI 实例自己的 Tag；关闭时自动注销。额外通过全局 EventSystem 注册的监听需自行清理。
+- `RegisterEvent<T>(callback)` 使用每个 UI 实例自己的 Tag；关闭时自动注销。额外通过 `LiteRuntime.Event`（框架的 `LiteQuark.Runtime.EventSystem`）注册的监听需自行清理。
 - `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。
 - `GetComponent<T>(path)`、`FindChild(path)`、`SetActive(path, value)` 操作 prefab 子节点。
 - `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。

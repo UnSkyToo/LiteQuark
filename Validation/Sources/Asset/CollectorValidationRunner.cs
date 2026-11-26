@@ -15,13 +15,11 @@ namespace LiteQuark.Editor
         private const string Root = "Assets/StandaloneAssets/__CollectorReview20261022";
         private const string Outside = "Assets/__CollectorOutside20261022/Shared";
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
-        private static string ReportRoot => ValidationEnvironment.Reports("collector");
 
         public static void Begin()
         {
             try
             {
-                Directory.CreateDirectory(ReportRoot);
                 Run("collector/bundle-graph", BundleGraph);
                 Run("collector/cycles", Cycles, "发现循环依赖:");
                 Run("collector/flat-collision", FlatBuildCollision);
@@ -39,8 +37,7 @@ namespace LiteQuark.Editor
 
         private static void Finish()
         {
-            Results.Save("collector");
-            EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
+            Results.Finish("collector");
         }
 
         private sealed class RegistrationSessions

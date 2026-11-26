@@ -13,7 +13,7 @@ namespace LiteBattle.Editor
         public static GUIStyle ButtonSelect { get; private set; }
 
         public static GUIContent PlayContent { get; private set; } = L10n.IconContent("Animation.Play", "Play the timeline (Space)");
-        public static GUIContent GotoBeginingContent { get; private set; } = L10n.IconContent("Animation.FirstKey", "Go to the beginning of the timeline (Shift+<)");
+        public static GUIContent GoToBeginningContent { get; private set; } = L10n.IconContent("Animation.FirstKey", "Go to the beginning of the timeline (Shift+<)");
         public static GUIContent GotoEndContent { get; private set; } = L10n.IconContent("Animation.LastKey", "Go to the end of the timeline (Shift+>)");
         public static GUIContent NextFrameContent { get; private set; } = L10n.IconContent("Animation.NextKey", "Go to the next frame");
         public static GUIContent PreviousFrameContent { get; private set; } = L10n.IconContent("Animation.PrevKey", "Go to the previous frame");

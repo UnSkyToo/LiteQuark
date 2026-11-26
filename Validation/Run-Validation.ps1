@@ -1,6 +1,5 @@
 #Requires -Version 7.0
 param(
-    [ValidateSet('all', 'paths', 'manifest', 'collector', 'addons', 'tasks', 'lifecycle', 'loading')]
     [string[]]$Suite = @('all'),
     [string]$UnityEditor,
     [ValidateRange(60, 3600)][int]$TimeoutSeconds = 600,
@@ -23,17 +22,24 @@ if (!(Test-Path -LiteralPath $UnityEditor -PathType Leaf)) { throw "Unity editor
 if ((Get-Item -LiteralPath $UnityEditor).VersionInfo.ProductVersion -notmatch ('^' + [regex]::Escape($unityVersion) + '(?:_|\s|$)'))
 { throw "Unity editor must match ProjectVersion.txt: $unityVersion" }
 $null = Get-Command git -ErrorAction Stop
-$suites = [ordered]@{
-    paths = @{ Runner = 'PathValidationRunner' }
-    manifest = @{ Runner = 'ManifestValidationRunner' }
-    collector = @{ Runner = 'CollectorValidationRunner' }
-    addons = @{ Runner = 'AddonsValidationRunner' }
-    tasks = @{ Runner = 'TaskSystemValidationRunner' }
-    lifecycle = @{ Runner = 'AssetLifecycleValidationRunner' }
-    loading = @{ Runner = 'AssetLoadingValidationRunner' }
+$catalog = Get-Content -Raw -LiteralPath (Join-Path $validationRoot 'Scenarios.json') | ConvertFrom-Json
+$names = @($catalog.suites | ForEach-Object name)
+if ($catalog.suites -isnot [array] -or !$names.Count -or ($names | Group-Object -CaseSensitive | Where-Object Count -gt 1))
+{ throw 'Missing or duplicate suite names in Scenarios.json.' }
+foreach ($entry in $catalog.suites)
+{
+    if ($entry.name -isnot [string] -or $entry.runner -isnot [string] -or
+        $entry.name -cnotmatch '^[a-z][a-z0-9-]*\z' -or $entry.name -ceq 'all' -or $entry.runner -cnotmatch '^[A-Za-z][A-Za-z0-9]*\z')
+    { throw "Invalid suite or runner in Scenarios.json: $($entry.name)." }
 }
-$expectedIds = Get-Content -Raw -LiteralPath (Join-Path $validationRoot 'Scenarios.json') | ConvertFrom-Json -AsHashtable
-$selected = @($suites.Keys | Where-Object { $Suite -contains 'all' -or $Suite -contains $_ })
+foreach ($name in $Suite)
+{
+    if ($name -ne 'all' -and $name -notin $names) { throw "Unknown suite: $name" }
+}
+$plan = @($catalog.suites | Where-Object { $Suite -contains 'all' -or $Suite -contains $_.name })
+if (!$plan.Count) { throw 'No suites selected.' }
+$selected = @($plan | ForEach-Object name)
+$reportTemplate = Get-Content -Raw -LiteralPath (Join-Path $validationRoot 'Report.html')
 
 function Assert-ChildPath([string]$Path, [string]$Parent)
 {
@@ -77,6 +83,17 @@ function Get-Changes($Hashes, [string]$Base)
     {
         $path = Join-Path $Base $row.Path
         if (!(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path).Hash -ne $row.SHA256) { $row.Path }
+    }
+}
+function Get-PackageHashes
+{
+    $packagesRoot = Join-Path $projectRoot 'Packages'
+    if (!(Test-Path -LiteralPath $packagesRoot -PathType Container)) { return }
+    Get-ChildItem -LiteralPath $packagesRoot -Recurse -File -Force | ForEach-Object {
+        [pscustomobject]@{
+            Path = [IO.Path]::GetRelativePath($projectRoot, $_.FullName).Replace('\', '/')
+            SHA256 = (Get-FileHash -LiteralPath $_.FullName).Hash
+        }
     }
 }
 function Get-IsolatedCodeHashes
@@ -245,91 +262,89 @@ try
     $process.Dispose(); $process = $null
     if ($preparation.ExitCode -ne 0) { throw "Preparation failed (exit $($preparation.ExitCode)). See $preparationLog" }
     Assert-PackageResolution
-    $packageHashes = @(Get-ChildItem (Join-Path $projectRoot 'Packages') -Recurse -File | ForEach-Object {
-        [pscustomobject]@{ Path = [IO.Path]::GetRelativePath($projectRoot, $_.FullName); SHA256 = (Get-FileHash -LiteralPath $_.FullName).Hash }
-    })
+    $packageHashes = @(Get-PackageHashes)
     if ((Get-FileHash (Join-Path $projectRoot 'Packages/manifest.json')).Hash -ne
         (Get-FileHash (Join-Path $repositoryRoot 'Packages/manifest.json')).Hash)
     { throw 'Preparation changed the copied package manifest.' }
     $preparation.Success = $true
-    foreach ($name in $selected)
+    foreach ($runner in ($plan.runner | Select-Object -Unique))
     {
-        $entry = $suites[$name]
-        $suiteRoot = Join-Path $reportRoot $name
-        New-Item -ItemType Directory -Path $suiteRoot -Force | Out-Null
-        $resultPath = Join-Path $suiteRoot 'results.json'
-        if (Test-Path -LiteralPath $resultPath) { Remove-Generated $resultPath $suiteRoot }
-        $logPath = Join-Path $suiteRoot 'unity.log'
-        $started = [DateTime]::UtcNow
-        $summary = [ordered]@{
-            Suite = $name; Passed = 0; Failed = 0; RegressionCases = 0
-            KnownLimitations = 0; Diagnostics = 0; DiagnosticsPassed = 0
-            Assertions = 0; ExitCode = $null; Success = $false; Error = $null
-            Failures = @(); KnownLimitationDetails = @(); DiagnosticDetails = @()
+        $suiteNames = @($plan | Where-Object runner -ceq $runner | ForEach-Object name)
+        $suiteArgument = $suiteNames -join ','
+        foreach ($name in $suiteNames)
+        {
+            $suiteRoot = Assert-ChildPath (Join-Path $reportRoot $name) $reportRoot
+            New-Item -ItemType Directory -Path $suiteRoot -Force | Out-Null
+            $resultPath = Join-Path $suiteRoot 'results.json'
+            if (Test-Path -LiteralPath $resultPath) { Remove-Generated $resultPath $suiteRoot }
         }
+        $logPath = Assert-ChildPath (Join-Path $reportRoot "$($suiteNames[0])/unity.log") $reportRoot
+        $started = [DateTime]::UtcNow
+        $exitCode = $null
+        $processError = $null
         try
         {
-            Write-Output "Running $name ..."
+            Write-Output "Running $suiteArgument ..."
             $process = Start-Process -FilePath $UnityEditor -ArgumentList @(
                 '-batchmode', '-nographics', '-buildTarget', 'Win64', '-projectPath', ('"' + $projectRoot + '"'),
-                '-executeMethod', ('LiteQuark.Editor.' + $entry.Runner + '.Begin'), '-logFile', ('"' + $logPath + '"')
+                '-executeMethod', ('LiteQuark.Editor.' + $runner + '.Begin'), '-validationSuites', $suiteArgument,
+                '-logFile', ('"' + $logPath + '"')
             ) -WindowStyle Hidden -PassThru
-            Wait-Unity $process $TimeoutSeconds $name $logPath
-            $summary.ExitCode = $process.ExitCode
-            if (!(Test-Path -LiteralPath $resultPath) -or (Get-Item $resultPath).LastWriteTimeUtc -lt $started)
-            { throw "No fresh result; Unity exit $($summary.ExitCode). See $logPath" }
-            $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
-            $cases = @($result.cases)
-            $expected = @($expectedIds[$name])
-            $actual = @($cases | ForEach-Object id)
-            $summary.Cases = $cases.Count
-            $known = @($cases | Where-Object { $_.status -eq 'known_limitation' })
-            $diagnostics = @($cases | Where-Object diagnostic)
-            $summary.KnownLimitations = $known.Count
-            $summary.Diagnostics = $diagnostics.Count
-            $summary.DiagnosticsPassed = @($diagnostics | Where-Object passed).Count
-            $summary.RegressionCases = $cases.Count - $known.Count - $diagnostics.Count
-            $summary.Passed = @($cases | Where-Object { $_.passed -and !$_.diagnostic }).Count
-            $summary.Assertions = ($cases | Measure-Object checks -Sum).Sum
-            $summary.Failures = @($cases | Where-Object { !$_.passed -and $_.status -ne 'known_limitation' } | ForEach-Object { [pscustomobject]@{ Name = $_.id; Failure = $_.failure } })
-            $summary.Failed = $summary.Failures.Count
-            $summary.KnownLimitationDetails = @($known | ForEach-Object { [pscustomobject]@{ Id = $_.limitationId; Name = $_.id; Reason = $_.failure; Evidence = $_.evidence } })
-            $summary.DiagnosticDetails = @($diagnostics | ForEach-Object { [pscustomobject]@{ Name = $_.id; Confirmed = $_.passed; Evidence = $_.evidence; Failure = $_.failure } })
-            if (!$expected.Count -or ($expected | Group-Object -CaseSensitive | Where-Object Count -gt 1) -or
-                ($actual | Group-Object -CaseSensitive | Where-Object Count -gt 1) -or
-                (Compare-Object -CaseSensitive $expected $actual))
-            { throw "Missing, duplicate or unexpected scenario ID. Expected [$($expected -join ', ')] actual [$($actual -join ', ')]." }
-            # Only this specific, independently confirmed Unity limitation is non-blocking.
-            # Do not infer a limitation from a case name or an arbitrary failure message.
-            if ($name -eq 'loading')
-            {
-                if ($known.Count -ne 1 -or $diagnostics.Count -ne 1 -or $diagnostics[0].id -cne 'loading/same-name-native')
-                { throw 'Missing or unexpected native diagnostic classification.' }
-            }
-            elseif ($diagnostics.Count) { throw 'Unexpected diagnostic classification outside loading.' }
-            foreach ($item in $known)
-            {
-                if ($name -ne 'loading' -or $known.Count -ne 1 -or $item.passed -or $item.diagnostic -or
-                    $item.id -cne 'loading/same-name-limit' -or
-                    [string]::IsNullOrWhiteSpace($item.failure) -or !$item.evidence.Count -or !($item.errors.Count -gt 0) -or
-                    $item.limitationId -cne 'UNITY-SAME-NAME-SCENE-BUNDLES' -or
-                    !$diagnostics[0].passed -or $diagnostics[0].status -ne 'diagnostic_passed')
-                { throw 'Unconfirmed or unexpected known limitation; counted as a validation failure.' }
-            }
-            $harnessCleanup = @($cases | Where-Object { @($_.evidence | Where-Object { $_ -like 'Harness-only cleanup*' }).Count -gt 0 }).Count
-            $summary.Success = $summary.ExitCode -eq 0 -and $summary.Cases -eq $expected.Count -and
-                ($summary.Passed + $summary.KnownLimitations + $summary.DiagnosticsPassed) -eq $expected.Count -and $summary.Failed -eq 0 -and
-                !$result.fatalError -and !@($result.unexpectedErrors | Where-Object { $_ }).Count -and !$harnessCleanup -and $result.unityVersion -eq $unityVersion
-            if (!$summary.Success) { $summary.Error = "Validation failed. Expected $($expected.Count) cases; fatal error: $($result.fatalError); harness cleanup: $harnessCleanup" }
+            Wait-Unity $process $TimeoutSeconds $suiteArgument $logPath
+            $exitCode = $process.ExitCode
         }
-        catch { $summary.Error = $_.Exception.Message }
+        catch { $processError = $_.Exception.Message }
         finally { if ($process) { $process.Dispose(); $process = $null } }
-        $summary.DurationSeconds = [math]::Round(([DateTime]::UtcNow - $started).TotalSeconds, 1)
-        if (!$summary.Success) { $runFailed = $true }
-        $summaries.Add([pscustomobject]$summary)
-        $summary | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $suiteRoot 'summary.json') -Encoding utf8
-        Write-Output "$name : regression $($summary.Passed)/$($summary.RegressionCases), failed $($summary.Failed), known limitations $($summary.KnownLimitations), diagnostics $($summary.DiagnosticsPassed)/$($summary.Diagnostics), $($summary.Assertions) assertions, exit $($summary.ExitCode)"
-        if ($summary.Cases -eq 0) { break }
+        $duration = [math]::Round(([DateTime]::UtcNow - $started).TotalSeconds, 1)
+        $groupSummaries = @(foreach ($name in $suiteNames)
+        {
+            $suiteRoot = Join-Path $reportRoot $name
+            $suiteLog = Assert-ChildPath (Join-Path $suiteRoot 'unity.log') $reportRoot
+            if ($suiteLog -ne $logPath -and (Test-Path -LiteralPath $logPath -PathType Leaf))
+            { Copy-Item -LiteralPath $logPath -Destination $suiteLog }
+            $resultPath = Join-Path $suiteRoot 'results.json'
+            $summary = [ordered]@{
+                Suite = $name; Cases = 0; Passed = 0; Failed = 0; RegressionCases = 0
+                KnownLimitations = 0; Diagnostics = 0; DiagnosticsPassed = 0
+                Assertions = 0; Success = $false; Error = $null
+                Failures = @(); KnownLimitationDetails = @(); DiagnosticDetails = @()
+            }
+            try
+            {
+                if ($processError) { throw $processError }
+                if (!(Test-Path -LiteralPath $resultPath) -or (Get-Item $resultPath).LastWriteTimeUtc -lt $started)
+                { throw "No fresh result for $name; Unity exit $exitCode. See $suiteLog" }
+                $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json -AsHashtable
+                $reported = $result.summary
+                if ($result.cases -isnot [array] -or $reported.Suite -cne $name -or
+                    $reported.Cases -ne $result.cases.Count -or $reported.Success -isnot [bool])
+                { throw "No complete result for $name. See $suiteLog" }
+                if ($result.unityVersion -cne $unityVersion)
+                { throw "Unexpected Unity version for ${name}: $($result.unityVersion)." }
+                $summary = $reported
+            }
+            catch { $summary.Error = $_.Exception.Message }
+            $summary.ExitCode = $exitCode
+            $summary.DurationSeconds = $duration
+            $summary
+        })
+        $complete = @($groupSummaries | Where-Object Cases -eq 0).Count -eq 0
+        $expectedExitCode = if ($groupSummaries | Where-Object { !$_.Success }) { 2 } else { 0 }
+        $normalExit = $complete -and $exitCode -eq $expectedExitCode
+        foreach ($summary in $groupSummaries)
+        {
+            if ($summary.Success -and !$normalExit)
+            {
+                $summary.Success = $false
+                $summary.Error = "Unity process for $suiteArgument returned exit $exitCode or did not finish all suites. See $logPath"
+            }
+            if (!$summary.Success) { $runFailed = $true }
+            $summaries.Add([pscustomobject]$summary)
+            $summary | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $reportRoot "$($summary.Suite)/summary.json") -Encoding utf8
+            $status = if ($summary.Success) { 'PASS' } else { 'FAIL' }
+            Write-Output "$($summary.Suite) [$status]: regression $($summary.Passed)/$($summary.RegressionCases), failed $($summary.Failed), known limitations $($summary.KnownLimitations), diagnostics $($summary.DiagnosticsPassed)/$($summary.Diagnostics), $($summary.Assertions) assertions, exit $($summary.ExitCode)"
+        }
+        if (!$complete) { break }
     }
 }
 catch { $runFailed = $true; $infrastructureError = $_.Exception.Message; Write-Output ("Validation infrastructure failed: " + $infrastructureError) }
@@ -349,7 +364,13 @@ finally
             Select-Object -ExpandProperty Path | Sort-Object -Unique -CaseSensitive)
         $snapshotUnchanged = $codeHashes.Count -gt 0 -and $copyChanges.Count -eq 0
         $scriptUnchanged = $scriptHash -and (Get-FileHash -LiteralPath $PSCommandPath).Hash -eq $scriptHash
-        $packagesUnchanged = $preparation.Success -and $packageHashes.Count -gt 0 -and @(Get-Changes $packageHashes $projectRoot).Count -eq 0
+        $packagesUnchanged = $false
+        if ($preparation.Success)
+        {
+            $currentPackageHashes = @(Get-PackageHashes)
+            $packagesUnchanged = $packageHashes.Count -gt 0 -and $packageHashes.Count -eq $currentPackageHashes.Count -and
+                !(Compare-Object $packageHashes $currentPackageHashes -Property Path,SHA256 -CaseSensitive)
+        }
         $sourceContentsUnchanged = !$sourceChanges.Count -and !$pathChanges.Count
         $productionUnchanged = $sourceContentsUnchanged -and $statusUnchanged -and $indexUnchanged
         if (!$productionUnchanged -or !$runnersUnchanged -or !$snapshotUnchanged -or !$scriptUnchanged -or !$packagesUnchanged) { $runFailed = $true }
@@ -365,33 +386,16 @@ finally
             KnownLimitations = ($summaries | Measure-Object KnownLimitations -Sum).Sum
             Diagnostics = ($summaries | Measure-Object Diagnostics -Sum).Sum
             DiagnosticsPassed = ($summaries | Measure-Object DiagnosticsPassed -Sum).Sum
+            Assertions = ($summaries | Measure-Object Assertions -Sum).Sum
             ProductionUnchanged = $productionUnchanged; SourceChanges = $sourceChanges; PathChanges = $pathChanges
             SourceContentsUnchanged = $sourceContentsUnchanged
             StatusUnchanged = $statusUnchanged; IndexUnchanged = $indexUnchanged; RunnersUnchanged = $runnersUnchanged
             SnapshotCodeUnchanged = $snapshotUnchanged; SnapshotChanges = $copyChanges; ScriptUnchanged = $scriptUnchanged
             Suites = @($summaries.ToArray()); SelectedSuites = $selected
         }
-        $summary | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $reportRoot 'summary.json') -Encoding utf8
-        $rows = foreach ($item in $summaries)
-        {
-            $status = if (!$item.Success) { 'FAIL' } elseif ($item.KnownLimitations) { 'OK · 含已知限制' } else { 'PASS' }
-            $details = [Net.WebUtility]::HtmlEncode(($item.Error + "`n" + ($item.Failures | ConvertTo-Json -Depth 5)))
-            $knownDetails = [Net.WebUtility]::HtmlEncode(($item.KnownLimitationDetails | ConvertTo-Json -Depth 5))
-            $diagnosticDetails = [Net.WebUtility]::HtmlEncode(($item.DiagnosticDetails | ConvertTo-Json -Depth 5))
-            "<tr><td>$($item.Suite)</td><td>$status</td><td>$($item.Passed)/$($item.RegressionCases)</td><td>$($item.Failed)</td><td>$($item.KnownLimitations)<pre>$knownDetails</pre></td><td>$($item.DiagnosticsPassed)/$($item.Diagnostics)<details><summary>诊断证据</summary><pre>$diagnosticDetails</pre></details></td><td>$($item.Assertions)</td><td><a href='$($item.Suite)/results.json'>结果</a> · <a href='$($item.Suite)/unity.log'>日志</a><pre>$details</pre></td></tr>"
-        }
-        $html = @"
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>SessionValidation</title>
-<style>body{font:16px system-ui;margin:32px;max-width:1200px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:10px;text-align:left;vertical-align:top}pre{white-space:pre-wrap}</style>
-<h1>当前代码统一验证</h1><p>Unity $unityVersion · $commit</p>
-<p>主工程文件内容保持不变：$sourceContentsUnchanged。Git 状态保持不变：$statusUnchanged。暂存区保持不变：$indexUnchanged。</p>
-<p>测试源码保持不变：$runnersUnchanged。隔离代码保持不变：$snapshotUnchanged。</p>
-<p>准备成功：$($preparation.Success)。依赖配置保持不变：$packagesUnchanged。<a href='prepare.log'>准备日志</a></p>
-<pre>$([Net.WebUtility]::HtmlEncode($infrastructureError))</pre>
-<p>本次范围：$($selected -join ', ')。日常回归 $($summary.Passed)/$($summary.RegressionCases)，失败 $($summary.Failed)，已知限制 $($summary.KnownLimitations)，诊断确认 $($summary.DiagnosticsPassed)/$($summary.Diagnostics)。共执行 $($summary.Cases) 组。</p>
-<p>已知限制和诊断单独计数，均不计入日常回归通过数。只有经原生诊断确认的指定限制不阻断回归；其他失败仍返回非零退出码。</p>
-<table><tr><th>模块</th><th>结果</th><th>日常回归</th><th>失败</th><th>已知限制</th><th>诊断确认</th><th>断言</th><th>证据</th></tr>$($rows -join "`n")</table></html>
-"@
+        $summaryJson = $summary | ConvertTo-Json -Depth 10
+        Set-Content (Join-Path $reportRoot 'summary.json') $summaryJson -Encoding utf8
+        $html = $reportTemplate.Replace('{{SUMMARY_JSON}}', $summaryJson.Replace('<', '\u003c'))
         Set-Content (Join-Path $reportRoot 'verification-report.html') $html -Encoding utf8
         Write-Output "Production unchanged: $productionUnchanged; report: $(Join-Path $reportRoot 'verification-report.html')"
     }

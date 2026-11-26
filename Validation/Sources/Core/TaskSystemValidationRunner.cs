@@ -26,7 +26,6 @@ namespace LiteQuark.Editor
         private static readonly ValidationReport Results = new();
         private static bool _running;
         private static ValidationCase _current;
-        private static string[] _expectedErrors = Array.Empty<string>();
 
         public static void Begin()
         {
@@ -126,7 +125,7 @@ namespace LiteQuark.Editor
 
         private static void CaptureEditorStopError(string message, string stack, LogType type)
         {
-            if (SessionState.GetInt(EditorStopStageKey, 0) == 0 || type is not (LogType.Error or LogType.Exception or LogType.Assert)) return;
+            if (SessionState.GetInt(EditorStopStageKey, 0) == 0 || !ValidationCaseExecution.IsError(type)) return;
             SessionState.SetString(EditorStopErrorsKey, SessionState.GetString(EditorStopErrorsKey, string.Empty) + message + "\n" + stack + "\n");
         }
 
@@ -162,7 +161,7 @@ namespace LiteQuark.Editor
         private static async UniTask RunAll()
         {
             Results.unityVersion = Application.unityVersion;
-            Application.logMessageReceived += CaptureError;
+            Application.logMessageReceived += CaptureOutsideCaseError;
             try
             {
                 const string battleScene = "Assets/LiteBattle/Resources/Scenes/LiteNexusEditorScene.unity";
@@ -213,12 +212,11 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                Application.logMessageReceived -= CaptureError;
+                Application.logMessageReceived -= CaptureOutsideCaseError;
                 var editorStop = JsonUtility.FromJson<ValidationCase>(SessionState.GetString(EditorStopResultKey, string.Empty));
                 Results.cases.Add(editorStop);
                 Results.cases.Add(JsonUtility.FromJson<ValidationCase>(SessionState.GetString(LauncherSettingsResultKey, string.Empty)));
-                Results.Save("tasks");
-                EditorApplication.Exit(Results.fatalError == null && Results.unexpectedErrors.Count == 0 && Results.cases.All(c => c.passed) ? 0 : 2);
+                Results.Finish("tasks");
             }
         }
 
@@ -286,39 +284,38 @@ namespace LiteQuark.Editor
 
         private static async UniTask RunAsync(string name, Func<TaskSystem, UniTask> test, params string[] expectedErrors)
         {
-            _current = new ValidationCase { id = name };
-            _expectedErrors = expectedErrors;
-            Results.cases.Add(_current);
-            var start = Time.realtimeSinceStartup;
-            var originalLimit = LiteRuntime.Setting.Task.ConcurrencyLimit;
-            LiteRuntime.Setting.Task.ConcurrencyLimit = 1;
-            TaskSystem system = null;
-            try
+            using (var execution = new ValidationCaseExecution(Results, name, RecordError))
             {
-                system = new TaskSystem();
-                LiteRuntime.Setting.Task.ConcurrencyLimit = originalLimit;
-                await system.Initialize();
-                await test(system);
-                _current.passed = true;
-            }
-            catch (Exception ex)
-            {
-                _current.failure = ex.ToString();
-            }
-            finally
-            {
-                LiteRuntime.Setting.Task.ConcurrencyLimit = originalLimit;
-                try { if (system != null) await system.DisposeAsync(); }
-                catch (Exception ex) { _current.passed = false; _current.failure += "\nCleanup: " + ex; }
-                if (_current.errors.Count > 0)
+                _current = execution.Result;
+                var originalLimit = LiteRuntime.Setting.Task.ConcurrencyLimit;
+                TaskSystem system = null;
+                await execution.RunAsync(async () =>
                 {
-                    _current.passed = false;
-                    _current.failure += "\nUnexpected errors: " + string.Join("\n", _current.errors);
+                    LiteRuntime.Setting.Task.ConcurrencyLimit = 1;
+                    system = new TaskSystem();
+                    LiteRuntime.Setting.Task.ConcurrencyLimit = originalLimit;
+                    await system.Initialize();
+                    await test(system);
+                }, async () =>
+                {
+                    LiteRuntime.Setting.Task.ConcurrencyLimit = originalLimit;
+                    if (system != null) await system.DisposeAsync();
+                });
+                execution.RejectUnexpectedErrors();
+            }
+            Debug.Log($"TASK_SYSTEM_CASE: {name}: {(_current.passed ? "PASS" : "FAIL")}");
+            _current = null;
+
+            void RecordError(ValidationCase item, string message, string stack)
+            {
+                if (expectedErrors.Any(message.Contains))
+                {
+                    // Lifecycle assertions read this evidence before the case finishes.
+                    item.evidence.Add("Expected task error log: " + message);
+                    return;
                 }
-                _current.seconds = Time.realtimeSinceStartup - start;
-                Debug.Log($"TASK_SYSTEM_CASE: {name}: {(_current.passed ? "PASS" : "FAIL")}");
-                _current = null;
-                _expectedErrors = Array.Empty<string>();
+                item.errors.Add(message);
+                Results.unexpectedErrors.Add(message + "\n" + stack);
             }
         }
 
@@ -631,18 +628,10 @@ namespace LiteQuark.Editor
             resumed();
         }
 
-        private static void CaptureError(string message, string stack, LogType type)
+        private static void CaptureOutsideCaseError(string message, string stack, LogType type)
         {
-            if (type is LogType.Error or LogType.Exception or LogType.Assert)
-            {
-                if (_current != null && _expectedErrors.Any(message.Contains))
-                {
-                    _current.evidence.Add("Expected task error log: " + message);
-                    return;
-                }
-                if (_current != null) _current.errors.Add(message);
+            if (_current == null && ValidationCaseExecution.IsError(type))
                 Results.unexpectedErrors.Add(message + "\n" + stack);
-            }
         }
 
         private sealed class ProbeTask : BaseTask

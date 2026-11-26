@@ -22,7 +22,7 @@ namespace LiteQuark.Editor
         protected override void DrawContent()
         {
             _config.Identifier = EditorGUILayout.TextField(new GUIContent("Identifier", "App Identifier"), _config.Identifier);
-            _config.ProduceName = EditorGUILayout.TextField(new GUIContent("Produce Name", "Display app name"), _config.ProduceName);
+            _config.ProductName = EditorGUILayout.TextField(new GUIContent("Product Name", "Display app name"), _config.ProductName);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -38,8 +38,8 @@ namespace LiteQuark.Editor
                 }
             }
 
-            _config.Options = (BuildOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), _config.Options, false);
-            _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Clean mode will be delete last build file"), _config.CleanBuildMode);
+            _config.Options = (BuildOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "App build options"), _config.Options, false);
+            _config.CleanBuildMode = EditorGUILayout.Toggle(new GUIContent("Clean Mode", "Delete the previous application build output before building."), _config.CleanBuildMode);
             _config.Backend = (ScriptingImplementation)EditorGUILayout.EnumPopup(new GUIContent("Backend", "Script backend"), _config.Backend);
 
             if (Window.Target == BuildTarget.Android)
@@ -65,7 +65,7 @@ namespace LiteQuark.Editor
                 if (!_config.IsDevelopmentBuild)
                 {
                     _config.CleanBuildMode = true;
-                    Window.ResCfg.IncrementBuildModel = false;
+                    Window.ResCfg.IncrementalBuild = false;
                     Window.ResCfg.CleanStreamingAssetsBeforeCopy = true;
                 }
             }

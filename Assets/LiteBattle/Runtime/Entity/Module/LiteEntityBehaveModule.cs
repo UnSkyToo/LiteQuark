@@ -105,7 +105,7 @@ namespace LiteBattle.Runtime
             var parent = string.IsNullOrWhiteSpace(hangPoint) ? TS_ : TS_.Find(hangPoint);
             if (parent == null)
             {
-                Debug.LogError($"{hangPoint} is not exist!");
+                Debug.LogError($"Attachment point '{hangPoint}' not found.");
                 return;
             }
 

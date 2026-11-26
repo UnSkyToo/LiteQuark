@@ -96,4 +96,4 @@ if (rewards != null && rewards.TryGet(("sg", 10), out var reward))
 
 共享加载和原生资源收尾仍由 AssetSystem 负责，Config 不另行等待；普通资源／解析失败仍按原有日志和返回方式处理。
 
-完整接口见 [ConfigSystem.cs](ConfigSystem.cs)、[ConfigTable.cs](ConfigTable.cs)；导出规则见 [Config Tool](../../Editor/Config)。
+完整接口见 [ConfigSystem.cs](ConfigSystem.cs)、[ConfigTable.cs](ConfigTable.cs)；导出规则见[制作与导出](#制作与导出)。

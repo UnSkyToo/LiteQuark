@@ -37,7 +37,7 @@ namespace LiteQuark.Editor
             _appCfg = new AppBuildConfig()
             {
                 Identifier = PlayerSettings.applicationIdentifier,
-                ProduceName = PlayerSettings.productName,
+                ProductName = PlayerSettings.productName,
             };
 
 #if UNITY_ANDROID

@@ -25,7 +25,7 @@ namespace LiteQuark.Editor
             EditorUserBuildSettings.development = builder.AppConfig.IsDevelopmentBuild;
             PlayerSettings.applicationIdentifier = builder.AppConfig.Identifier;
             PlayerSettings.bundleVersion = builder.Version;
-            PlayerSettings.productName = builder.AppConfig.ProduceName;
+            PlayerSettings.productName = builder.AppConfig.ProductName;
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

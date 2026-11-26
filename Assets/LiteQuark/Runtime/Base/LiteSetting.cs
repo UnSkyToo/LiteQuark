@@ -57,10 +57,10 @@ namespace LiteQuark.Runtime
             [SerializeField] public int TargetFrameRate = 60;
             [SerializeField] public bool MultiTouch = false;
 
-            [Tooltip("是否允许后台固定时长自动重启")] [SerializeField]
+            [Tooltip("回到前台时，若后台停留达到设定时长，则重启框架。")] [SerializeField]
             public bool AutoRestartInBackground = false;
 
-            [Tooltip("开启后台重启后，设定重启时间，单位（秒)")] [ConditionalShow(nameof(AutoRestartInBackground), true), SerializeField]
+            [Tooltip("触发重启所需的最短后台停留时间（秒）。")] [ConditionalShow(nameof(AutoRestartInBackground), true), SerializeField]
             public float BackgroundLimitTime = 90.0f;
 
             [Tooltip("当有异常时是否对外抛出，用于SDK崩溃收集")]

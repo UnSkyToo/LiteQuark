@@ -6,8 +6,7 @@ using UnityEngine;
 namespace LiteQuark.Runtime
 {
     /// <summary>
-    /// 二进制文件数据提供者
-    /// 适合存储大量数据，性能最好
+    /// 将 UTF-8 JSON 字节或加密后的字节保存为 .dat 文件。
     /// </summary>
     public sealed class BinaryProvider : IDataProvider
     {

@@ -1,20 +1,12 @@
 # LiteQuark.Addons
 
-LiteQuark 的可选系统包，需要先安装核心包。版本、最低 Unity 声明和核心依赖见 [package.json](package.json)，升级说明见 [CHANGELOG](CHANGELOG.md)。这些版本声明不代表所有旧编辑器均经过兼容验证。
+LiteQuark 的可选系统包。先安装 [package.json](package.json) 所要求的核心版本；升级见 [CHANGELOG](CHANGELOG.md)。
 
 ## 安装与接入
 
-可将本目录连同 `.meta` 文件复制到 Unity 项目，也可在 Package Manager 使用发布分支：
+最低 Unity 版本为 **2022.3.62f3**。将本目录连同 `.meta` 文件复制到项目，并启用 uGUI（`com.unity.ugui`）；也可在 Package Manager 使用 `https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons`。核心分支为 `#LiteQuark`；可复现安装应固定已核对的 tag 或 commit。
 
-```text
-https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons
-```
-
-核心包发布分支为 `#LiteQuark`。可复现安装应选择核对过的 tag 或 commit；安装前检查 Addons 声明的核心依赖是否与所选核心版本匹配。
-
-扩展系统不会自动注册。在 Launcher 的 **System List** 点击 **+** 选择扩展系统，展开该注册项即可编辑自动创建的模块设置。在业务 `IGameEntry.Initialize` 或之后通过 `LiteRuntime.Get<T>()` 获取已初始化的系统。
-
-已注册扩展系统由 Runtime 统一调用 Initialize 和 DisposeAsync；系统开始释放后，业务应停止向它提交工作，重启后重新取得实例。DisposeAsync 采用统一的可等待接口，同步清理可返回 `UniTask.CompletedTask`；它不额外保证每个模块的在途请求或原生操作已经结束，具体边界以模块指南为准。
+在 Launcher 的 **System List > +** 注册所需系统并配置条目，再于 `IGameEntry.Initialize` 或之后用 `LiteRuntime.Get<T>()` 获取。关闭时停止提交新工作，重启后重新获取实例；释放、取消和回调的边界见各模块指南。
 
 | 模块 | 能力与使用说明 |
 | --- | --- |
@@ -25,4 +17,6 @@ https://github.com/UnSkyToo/LiteQuark.git#LiteQuark.Addons
 | [Data](Runtime/Data/README.md) | 存档 Provider、保存、读取与迁移 |
 | [Config](Runtime/Config/README.md) | Excel 导出、配置表注册、加载与查询 |
 
-按需阅读模块指南后再接入；资源释放、取消和回调行为以对应模块契约为准。
+## 许可证
+
+LiteQuark.Addons 使用 [MIT 许可证](LICENSE.md)。随包组件的许可见[第三方许可声明](Third%20Party%20Notices.md)。

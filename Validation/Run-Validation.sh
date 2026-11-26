@@ -7,7 +7,7 @@ die() { infrastructure_error="$*"; printf '%s\n' "$*" >&2; exit 1; }
 usage() {
     printf '%s\n' 'Usage: bash Validation/Run-Validation.sh [--suite all|paths,manifest,...]' \
         '  --unity-editor PATH                 Unity executable (not the .app directory)' \
-        '  --timeout-seconds N                 Per module: 60..3600, default 600' \
+        '  --timeout-seconds N                 Per suite process: 60..3600, default 600' \
         '  --preparation-timeout-seconds N     Preparation: 60..7200, default 1800'
 }
 suite_arg=all unity_editor= timeout=600 preparation_timeout=1800
@@ -32,8 +32,10 @@ repository_root=$(cd "$validation_root/.." && pwd -P)
 project="$validation_root/Project"
 reports="$validation_root/Reports"
 sources="$validation_root/Sources"
-expected="$validation_root/Scenarios.json"
-[ -f "$expected" ] && [ -r "$expected" ] || die "Cannot read scenario manifest: $expected"
+catalog="$validation_root/Scenarios.json"
+report_template="$validation_root/Report.html"
+[ -r "$catalog" ] || die "Cannot read scenario manifest: $catalog"
+[ -r "$report_template" ] || die "Cannot read report template: $report_template"
 lock="$validation_root/.validation.lock"
 asmdef=Assets/LiteQuark/Editor/LiteQuark.Editor.asmdef
 test_directory=Assets/LiteQuark/Editor/SessionValidation
@@ -45,17 +47,8 @@ installed_version=$("$unity_editor" -version) || die 'Cannot query Unity version
 case "$installed_version" in "$unity_version"|"$unity_version "*|"$unity_version"_*) ;; *) die "Unity must match ProjectVersion.txt: $unity_version" ;; esac
 [ "$(cd "$(git -C "$repository_root" rev-parse --show-toplevel)" && pwd -P)" = "$repository_root" ] || die 'Validation must be directly inside the repository root.'
 
-all_suites='paths manifest collector addons tasks lifecycle loading'
 case "$suite_arg" in ''|,*|*,|*,,*) die 'Empty suite name.' ;; esac
 requested=$(printf '%s' "$suite_arg" | tr ',' ' ')
-for name in $requested; do
-    case " all $all_suites " in *" $name "*) ;; *) die "Unknown suite: $name" ;; esac
-done
-selected=
-for name in $all_suites; do
-    case " $requested " in *" all "*|*" $name "*) selected="$selected $name" ;; esac
-done
-[ -n "$selected" ] || die 'No suites selected.'
 
 owned_path() {
     case "$1" in "$2"/*) ;; *) die "Path outside owned directory: $1" ;; esac
@@ -125,11 +118,34 @@ function changes(before, after, pathsOnly) {
         return all.indexOf(p) === i && a[p] !== b[p];
     });
 }
-function html(value) {
-    return String(value === undefined || value === null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 function run(a) {
     var mode = a[0], report = a[1], work = a[2];
+    if (mode === 'plan') {
+        var suites = load(a[1]).suites;
+        if (!Array.isArray(suites) || !suites.length) throw Error('Missing suite names in Scenarios.json.');
+        var names = [];
+        suites.forEach(function(entry) {
+            if (typeof entry.name !== 'string' || !/^[a-z][a-z0-9-]*$/.test(entry.name) || entry.name === 'all' ||
+                typeof entry.runner !== 'string' || !/^[A-Za-z][A-Za-z0-9]*$/.test(entry.runner))
+                throw Error('Invalid suite or runner in Scenarios.json: ' + entry.name);
+            if (names.indexOf(entry.name) >= 0) throw Error('Duplicate suite: ' + entry.name);
+            names.push(entry.name);
+        });
+        var requested = a[2].trim().split(/\s+/).filter(Boolean);
+        requested.forEach(function(name) {
+            if (name !== 'all' && names.indexOf(name) < 0) throw Error('Unknown suite: ' + name);
+        });
+        var runners = [], groups = Object.create(null);
+        suites.forEach(function(entry) {
+            if (requested.indexOf('all') < 0 && requested.indexOf(entry.name) < 0) return;
+            if (!groups[entry.runner]) {
+                runners.push(entry.runner);
+                groups[entry.runner] = [];
+            }
+            groups[entry.runner].push(entry.name);
+        });
+        return runners.map(function(runner) { return runner + '\t' + groups[runner].join(','); }).join('\n');
+    }
     if (mode === 'asmdef') {
         var def = load(a[1]);
         def.references = (def.references || []).concat(['UniTask', 'LitJson', 'LiteQuark.Runtime.Addons']).filter(function(v, i, all) { return all.indexOf(v) === i; });
@@ -161,46 +177,37 @@ function run(a) {
         write(report + '/source-hashes.csv', '"Path","SHA256"\n' + rows.map(function(r) { return csv(r.Path) + ',' + csv(r.SHA256); }).join('\n') + '\n');
         return;
     }
-    if (mode === 'suite') {
-        var name = a[2], expected = load(a[3])[name], expectedCases = expected.length, version = a[4];
-        var s = { Suite: name, Passed: 0, Failed: 0, Cases: 0, RegressionCases: 0,
-            KnownLimitations: 0, Diagnostics: 0, DiagnosticsPassed: 0, Assertions: 0,
-            ExitCode: Number(a[5]), DurationSeconds: Number(a[6]), Success: false, Error: null,
-            Failures: [], KnownLimitationDetails: [], DiagnosticDetails: [] };
-        try {
-            var result = load(report + '/' + name + '/results.json');
-            var cases = result.cases;
-            if (!Array.isArray(cases)) throw Error('Missing cases.');
-            var actual = cases.map(function(c) { return c.id; }).sort();
-            s.Cases = cases.length;
-            var known = cases.filter(function(c) { return c.status === 'known_limitation'; });
-            var diagnostics = cases.filter(function(c) { return c.diagnostic; });
-            s.KnownLimitations = known.length; s.Diagnostics = diagnostics.length;
-            s.DiagnosticsPassed = diagnostics.filter(function(c) { return c.passed === true; }).length;
-            s.RegressionCases = cases.length - known.length - diagnostics.length;
-            s.Passed = cases.filter(function(c) { return c.passed === true && !c.diagnostic; }).length;
-            cases.forEach(function(c) { s.Assertions += Number(c.checks); });
-            s.Failures = cases.filter(function(c) { return !c.passed && c.status !== 'known_limitation'; }).map(function(c) { return { Name: c.id, Failure: c.failure }; });
-            s.Failed = s.Failures.length;
-            s.KnownLimitationDetails = known.map(function(c) { return { Id: c.limitationId, Name: c.id, Reason: c.failure, Evidence: c.evidence }; });
-            s.DiagnosticDetails = diagnostics.map(function(c) { return { Name: c.id, Confirmed: c.passed, Evidence: c.evidence, Failure: c.failure }; });
-            if (!expected.length || expected.some(function(id, i) { return expected.indexOf(id) !== i; }) ||
-                JSON.stringify(actual) !== JSON.stringify(expected.slice().sort())) throw Error('Missing, duplicate or unexpected scenario ID: ' + actual.join(', '));
-            if (name === 'loading') {
-                if (known.length !== 1 || diagnostics.length !== 1 || diagnostics[0].id !== 'loading/same-name-native') throw Error('Missing or unexpected native diagnostic.');
-            } else if (diagnostics.length) throw Error('Unexpected diagnostic outside loading.');
-            known.forEach(function(c) {
-                if (name !== 'loading' || known.length !== 1 || c.passed || c.diagnostic ||
-                    c.id !== 'loading/same-name-limit' || !c.failure || !(c.evidence || []).length || !(c.errors || []).length || c.limitationId !== 'UNITY-SAME-NAME-SCENE-BUNDLES' ||
-                    !diagnostics[0].passed || diagnostics[0].status !== 'diagnostic_passed') throw Error('Unconfirmed or unexpected known limitation.');
-            });
-            var cleanup = cases.some(function(c) { return (c.evidence || []).some(function(e) { return e.indexOf('Harness-only cleanup') === 0; }); });
-            s.Success = s.ExitCode === 0 && cases.length === expectedCases && s.Passed + known.length + s.DiagnosticsPassed === expectedCases &&
-                !s.Failed && !result.fatalError && !(result.unexpectedErrors || []).filter(Boolean).length && !cleanup && result.unityVersion === version;
-            if (!s.Success) s.Error = 'Validation failed. Expected ' + expectedCases + ' cases; fatal error: ' + (result.fatalError || '') + '; harness cleanup: ' + cleanup;
-        } catch (error) { s.Error = String(error); }
-        save(report + '/' + name + '/summary.json', s);
-        return (s.Success ? '1' : '0') + ' ' + s.Cases;
+    if (mode === 'group') {
+        var names = a[2].split(','), version = a[3], exitCode = Number(a[4]), duration = Number(a[5]);
+        var outcomes = names.map(function(name) {
+            var s = { Suite: name, Passed: 0, Failed: 0, Cases: 0, RegressionCases: 0,
+                KnownLimitations: 0, Diagnostics: 0, DiagnosticsPassed: 0, Assertions: 0,
+                Success: false, Error: null, Failures: [], KnownLimitationDetails: [], DiagnosticDetails: [] };
+            try {
+                var result = load(report + '/' + name + '/results.json');
+                var reported = result.summary;
+                if (!Array.isArray(result.cases) || !reported || reported.Suite !== name ||
+                    reported.Cases !== result.cases.length || typeof reported.Success !== 'boolean')
+                    throw Error('No complete result for ' + name + '. See unity.log.');
+                if (result.unityVersion !== version)
+                    throw Error('Unexpected Unity version for ' + name + ': ' + result.unityVersion + '.');
+                s = reported;
+            } catch (error) { s.Error = String(error); }
+            s.ExitCode = exitCode;
+            s.DurationSeconds = duration;
+            return s;
+        });
+        var complete = outcomes.every(function(s) { return s.Cases > 0; });
+        var expectedExitCode = outcomes.some(function(s) { return !s.Success; }) ? 2 : 0;
+        var normalExit = complete && exitCode === expectedExitCode;
+        outcomes.forEach(function(s) {
+            if (s.Success && !normalExit) {
+                s.Success = false;
+                s.Error = 'Unity process for ' + a[2] + ' returned exit ' + exitCode + ' or did not finish all suites. See unity.log.';
+            }
+            save(report + '/' + s.Suite + '/summary.json', s);
+        });
+        return (outcomes.every(function(s) { return s.Success; }) ? '1' : '0') + ' ' + (complete ? '1' : '0');
     }
     if (mode === 'finish') {
         var state = load(report + '/source-state.json'), flags = load(work + '/flags.json');
@@ -227,27 +234,18 @@ function run(a) {
         summary.Success = !flags.Failed && summary.ProductionUnchanged && runnersUnchanged && summary.SnapshotCodeUnchanged &&
             flags.ScriptUnchanged && packagesUnchanged && suites.length === state.SelectedSuites.length && suites.every(function(s) { return s.Success; });
         save(report + '/summary.json', summary);
-        var rows = suites.map(function(s) {
-            return '<tr><td>' + html(s.Suite) + '</td><td>' + (s.Success ? 'PASS' : 'FAIL') + '</td><td>' +
-                s.Passed + '/' + s.RegressionCases + '</td><td>' + s.KnownLimitations + '</td><td>' +
-                s.DiagnosticsPassed + '/' + s.Diagnostics + '</td><td><a href="' + s.Suite + '/results.json">结果</a> · <a href="' + s.Suite +
-                '/unity.log">日志</a><pre>' + html(JSON.stringify({ Error:s.Error, Failures:s.Failures, KnownLimitations:s.KnownLimitationDetails, Diagnostics:s.DiagnosticDetails }, null, 2)) + '</pre></td></tr>';
-        }).join('');
-        write(report + '/verification-report.html', '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Validation</title>' +
-            '<style>body{font:16px system-ui;margin:32px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:10px;vertical-align:top}pre{white-space:pre-wrap}</style>' +
-            '<h1>当前代码统一验证</h1><p>macOS · OSXUniversal · Unity ' + html(state.UnityVersion) + ' · ' + html(state.Commit) +
-            '</p><p>成功：' + summary.Success + '。日常回归 ' + summary.Passed + '/' + summary.RegressionCases +
-            '，已知限制 ' + summary.KnownLimitations + '，诊断 ' + summary.DiagnosticsPassed + '/' + summary.Diagnostics +
-            '。</p><p>源码/Git/暂存区不变：' + summary.ProductionUnchanged + '；验证源码：' + runnersUnchanged +
-            '；隔离代码：' + summary.SnapshotCodeUnchanged + '；入口：' + flags.ScriptUnchanged + '；依赖配置：' + packagesUnchanged +
-            '。</p><p><a href="prepare.log">准备日志</a> · <a href="summary.json">完整汇总与隔离检查</a></p><pre>' + html(summary.InfrastructureError) +
-            '</pre><table><tr><th>模块</th><th>结果</th><th>日常回归</th><th>已知限制</th><th>诊断</th><th>证据</th></tr>' + rows + '</table></html>\n');
+        var data = JSON.stringify(summary).replace(/</g, '\\u003c');
+        write(report + '/verification-report.html', read(a[3]).replace('{{SUMMARY_JSON}}', function() { return data; }));
         return summary.Success ? '0' : '1';
     }
     throw Error('Unknown JSON action: ' + mode);
 }
 JXA
 }
+
+plan=$(json_action plan "$catalog" "$requested")
+[ -n "$plan" ] || die 'No suites selected.'
+selected=$(printf '%s\n' "$plan" | cut -f2 | tr ',\n' ' ')
 
 for generated in Project Reports Bundles Scratch .validation.lock; do owned_path "$validation_root/$generated" "$validation_root"; done
 mkdir "$lock" 2>/dev/null || die 'Validation is already running or a stale .validation.lock exists; check its owner before removing it.'
@@ -277,7 +275,7 @@ finish() {
         printf '{"Failed":%s,"Copied":%s,"Prepared":%s,"IndexUnchanged":%s,"ScriptUnchanged":%s}\n' \
             "$([ "$run_failed" = 0 ] && echo false || echo true)" "$([ "$copied" = 1 ] && echo true || echo false)" \
             "$([ "$prepared" = 1 ] && echo true || echo false)" "$index_same" "$script_same" > "$lock/flags.json"
-        final_code=$(json_action finish "$reports" "$lock")
+        final_code=$(json_action finish "$reports" "$lock" "$report_template")
         if [ "$?" != 0 ] || [ "$final_code" != 0 ]; then exit_code=1; fi
         printf 'Validation exit %s; report: %s\n' "$exit_code" "$reports/verification-report.html"
     fi
@@ -367,7 +365,7 @@ run_unity() {
     wait "$unity_pid" || unity_exit=$?
     unity_pid=
 }
-printf 'Synchronized %s current files; Unity %s; suites:%s\n' "$copied_files" "$unity_version" "$selected"
+printf 'Synchronized %s current files; Unity %s; suites: %s\n' "$copied_files" "$unity_version" "$selected"
 started=$SECONDS
 run_unity "$preparation_timeout" "$reports/prepare.log" -quit
 json_action preparation "$reports" 0 "$unity_exit" "$((SECONDS - started))"
@@ -377,26 +375,31 @@ cmp -s "$repository_root/Packages/manifest.json" "$project/Packages/manifest.jso
 snapshot_tree "$project/Packages" > "$lock/packages.before"
 prepared=1
 json_action preparation "$reports" 1 "$unity_exit" "$((SECONDS - started))"
-for name in $selected; do
-    case "$name" in
-        paths) runner=PathValidationRunner ;;
-        manifest) runner=ManifestValidationRunner ;;
-        collector) runner=CollectorValidationRunner ;;
-        addons) runner=AddonsValidationRunner ;;
-        tasks) runner=TaskSystemValidationRunner ;;
-        lifecycle) runner=AssetLifecycleValidationRunner ;;
-        loading) runner=AssetLoadingValidationRunner ;;
-    esac
-    mkdir -p "$reports/$name"
-    remove_generated "$reports/$name/results.json" "$reports/$name"
-    printf 'Running %s ...\n' "$name"
+while IFS=$'\t' read -r runner suite_argument <&3; do
+    suite_names=${suite_argument//,/ }
+    log="$reports/${suite_names%% *}/unity.log"
+    owned_path "$log" "$reports"
+    for name in $suite_names; do
+        owned_path "$reports/$name" "$reports"
+        mkdir -p "$reports/$name"
+        remove_generated "$reports/$name/results.json" "$reports/$name"
+    done
+    printf 'Running %s ...\n' "$suite_argument"
     started=$SECONDS
-    run_unity "$timeout" "$reports/$name/unity.log" -executeMethod "LiteQuark.Editor.$runner.Begin"
-    outcome=$(json_action suite "$reports" "$name" "$expected" "$unity_version" "$unity_exit" "$((SECONDS - started))")
-    read -r success cases <<< "$outcome"
-    printf '%s\n' "$name" >> "$lock/completed"
-    printf '%s: success=%s, cases=%s, exit=%s\n' "$name" "$success" "$cases" "$unity_exit"
+    run_unity "$timeout" "$log" -executeMethod "LiteQuark.Editor.$runner.Begin" -validationSuites "$suite_argument"
+    duration=$((SECONDS - started))
+    for name in $suite_names; do
+        suite_log="$reports/$name/unity.log"
+        if [ "$suite_log" != "$log" ] && [ -f "$log" ]; then
+            owned_path "$suite_log" "$reports"
+            cp -p "$log" "$suite_log"
+        fi
+    done
+    outcome=$(json_action group "$reports" "$suite_argument" "$unity_version" "$unity_exit" "$duration")
+    read -r success complete <<< "$outcome"
+    for name in $suite_names; do printf '%s\n' "$name" >> "$lock/completed"; done
+    printf '%s: success=%s, complete=%s, exit=%s\n' "$suite_argument" "$success" "$complete" "$unity_exit"
     [ "$success" = 1 ] || run_failed=1
-    [ "$cases" != 0 ] || break
-done
+    [ "$complete" = 1 ] || break
+done 3<<< "$plan"
 exit "$run_failed"

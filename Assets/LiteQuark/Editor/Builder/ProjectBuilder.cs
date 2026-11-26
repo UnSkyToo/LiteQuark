@@ -62,7 +62,7 @@ namespace LiteQuark.Editor
 
             var steps = new List<IBuildStep>();
 
-            if (!config.IncrementBuildModel)
+            if (!config.IncrementalBuild)
             {
                 steps.Add(new ResCleanFileStep());
             }
@@ -242,15 +242,15 @@ namespace LiteQuark.Editor
             return "XCodeProject";
         }
 
-        public string GetLegalProduceName()
+        public string GetLegalProductName()
         {
-            var legalProduceName = AppConfig.ProduceName;
+            var legalProductName = AppConfig.ProductName;
             foreach (var c in System.IO.Path.GetInvalidFileNameChars())
             {
-                legalProduceName = legalProduceName.Replace(c, '_');
+                legalProductName = legalProductName.Replace(c, '_');
             }
 
-            return legalProduceName.Replace(' ', '_');
+            return legalProductName.Replace(' ', '_');
         }
 
         public string[] GetBuildSceneList()

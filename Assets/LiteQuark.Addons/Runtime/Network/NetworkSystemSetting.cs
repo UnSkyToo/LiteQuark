@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
         [Tooltip("默认超时时间（秒）"), Range(5, 60), SerializeField]
         public int DefaultTimeout = 10;
 
-        [Tooltip("启用自动重试机制"), SerializeField]
+        [Tooltip("只影响未显式传入策略的 SendWithRetry：开启时使用默认重试策略。"), SerializeField]
         public bool EnableAutoRetry = true;
 
         [Tooltip("默认重试次数"), ConditionalShow(nameof(EnableAutoRetry), true), Range(1, 10), SerializeField]

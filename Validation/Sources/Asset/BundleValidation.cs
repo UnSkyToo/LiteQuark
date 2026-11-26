@@ -30,7 +30,6 @@ namespace LiteQuark.Editor
         protected static string Root => Directory.GetParent(Application.dataPath).Parent.FullName;
         protected static string BundleFolder => Path.Combine(Root, "Bundles", SessionState.GetString(PendingKey + ".Suite", "tasks"));
         protected static readonly ValidationReport Results = new();
-        private static readonly List<string> Errors = new();
         protected static Harness Current;
         private static bool _running;
         protected static ValidationCase _case;
@@ -47,9 +46,8 @@ namespace LiteQuark.Editor
             catch (Exception ex)
             {
                 Results.fatalError = ex.ToString();
-                Results.Save(SessionState.GetString(PendingKey + ".Suite", string.Empty));
                 Debug.LogException(ex);
-                EditorApplication.Exit(2);
+                Results.Finish(suite);
             }
         }
 
@@ -70,7 +68,6 @@ namespace LiteQuark.Editor
 
         private static async UniTask RunAll(Func<UniTask> scenarios)
         {
-            Application.logMessageReceived += CaptureLog;
             try
             {
                 new GameObject("SessionValidationLauncher").AddComponent<LiteLauncher>();
@@ -88,50 +85,23 @@ namespace LiteQuark.Editor
             }
             finally
             {
-                Application.logMessageReceived -= CaptureLog;
-                Results.Save(SessionState.GetString(PendingKey + ".Suite", string.Empty));
-                EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
+                Results.Finish(SessionState.GetString(PendingKey + ".Suite", string.Empty));
             }
         }
 
         protected static async UniTask Run(string id, Func<UniTask> action, params string[] expected)
         {
-            _case = new ValidationCase { id = id };
-            Results.cases.Add(_case);
-            Errors.Clear();
-            var start = Time.realtimeSinceStartup;
-            LiteRuntime.Setting.Asset.EnableRetain = true;
-            LiteRuntime.Setting.Asset.BundleRetainTime = 300;
-            try
+            using (var execution = new ValidationCaseExecution(Results, id))
             {
-                await action();
-                _case.passed = true;
+                _case = execution.Result;
+                LiteRuntime.Setting.Asset.EnableRetain = true;
+                LiteRuntime.Setting.Asset.BundleRetainTime = 300;
+                await execution.RunAsync(action, Cleanup);
+                execution.RejectUnexpectedErrors(expected);
             }
-            catch (Exception ex)
-            {
-                _case.failure = ex.ToString();
-            }
-            finally
-            {
-                try { await Cleanup(); }
-                catch (Exception ex) { _case.passed = false; _case.failure += "\nCleanup: " + ex; }
-                _case.errors.AddRange(Errors);
-                var unexpected = Errors.Where(e => !expected.Any(e.Contains)).ToArray();
-                if (unexpected.Length > 0)
-                {
-                    _case.passed = false;
-                    _case.failure += "\nUnexpected errors: " + string.Join("\n", unexpected);
-                }
-                _case.seconds = Time.realtimeSinceStartup - start;
-                Debug.Log("SESSION_VALIDATION " + (_case.passed ? "PASS " : "FAIL ") + id);
-                Results.Save(SessionState.GetString(PendingKey + ".Suite", string.Empty));
-                _case = null;
-            }
-        }
-
-        private static void CaptureLog(string message, string stack, LogType type)
-        {
-            if (_case != null && (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)) Errors.Add(message);
+            Debug.Log("SESSION_VALIDATION " + (_case.passed ? "PASS " : "FAIL ") + id);
+            Results.Save(SessionState.GetString(PendingKey + ".Suite", string.Empty));
+            _case = null;
         }
 
         protected static async UniTask Wait(Func<bool> predicate, string operation, float seconds = 12)
@@ -172,8 +142,7 @@ namespace LiteQuark.Editor
                 }
                 catch (TimeoutException ex)
                 {
-                    _case.passed = false;
-                    _case.failure += "\nProduction scene cleanup did not finish: " + scene.name + "#" + scene.handle + "\n" + ex;
+                    _case.Fail("Production scene cleanup did not finish: " + scene.name + "#" + scene.handle + "\n" + ex);
                     if (scene.IsValid() && scene.isLoaded)
                     {
                         _case.evidence.Add("Harness-only cleanup after timeout for Scene " + scene.name + "#" + scene.handle +
@@ -191,9 +160,8 @@ namespace LiteQuark.Editor
             foreach (var bundle in Current.Locater.Opened)
             {
                 if (bundle == null) continue;
-                _case.passed = false;
                 _case.evidence.Add("Harness-only cleanup of native Bundle " + bundle.name);
-                _case.failure += "\nFixture shutdown left a native Bundle loaded.";
+                _case.Fail("Fixture shutdown left a native Bundle loaded.");
                 bundle.Unload(true);
             }
             Current = null;

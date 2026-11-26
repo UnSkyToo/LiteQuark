@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LiteQuark Validation</title>
+    <style>
+        body { font: 16px system-ui, sans-serif; margin: 32px; max-width: 1200px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
+        pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+</head>
+<body>
+    <h1>LiteQuark 隔离验证</h1>
+    <p id="environment"></p>
+    <p id="outcome"></p>
+    <p id="isolation"></p>
+    <p><a href="prepare.log">准备日志</a> · <a href="summary.json">完整汇总与隔离检查</a></p>
+    <pre id="infrastructure-error" hidden></pre>
+    <p>已知限制和独立诊断单独计数，不计入日常回归通过数。</p>
+    <table>
+        <thead>
+            <tr><th>模块</th><th>结果</th><th>日常回归</th><th>失败</th><th>已知限制</th><th>诊断确认</th><th>断言</th><th>证据</th></tr>
+        </thead>
+        <tbody id="suites"></tbody>
+    </table>
+    <noscript>请打开上面的完整汇总查看结果。</noscript>
+    <script id="report-data" type="application/json">{{SUMMARY_JSON}}</script>
+    <script>
+        const report = JSON.parse(document.getElementById('report-data').textContent);
+        const booleanText = value => value ? '是' : '否';
+        document.getElementById('environment').textContent =
+            `${report.HostPlatform} · ${report.BuildTarget} · Unity ${report.UnityVersion} · ${report.Commit}`;
+        document.getElementById('outcome').textContent =
+            `${report.Success ? 'PASS' : 'FAIL'}。范围：${report.SelectedSuites.join('、')}。` +
+            `日常回归 ${report.Passed}/${report.RegressionCases}，失败 ${report.Failed}，` +
+            `已知限制 ${report.KnownLimitations}，诊断 ${report.DiagnosticsPassed}/${report.Diagnostics}，` +
+            `共 ${report.Cases} 个场景、${report.Assertions} 项断言。`;
+        const checks = [
+            ['准备成功', report.Preparation.Success],
+            ['主工程文件不变', report.SourceContentsUnchanged],
+            ['Git 状态不变', report.StatusUnchanged],
+            ['暂存区不变', report.IndexUnchanged],
+            ['验证源码不变', report.RunnersUnchanged],
+            ['隔离代码不变', report.SnapshotCodeUnchanged],
+            ['入口不变', report.ScriptUnchanged],
+            ['依赖配置不变', report.PackagesUnchanged],
+        ];
+        document.getElementById('isolation').textContent = checks.map(([label, value]) => `${label}：${booleanText(value)}`).join('；');
+        const error = document.getElementById('infrastructure-error');
+        if (report.InfrastructureError) {
+            error.hidden = false;
+            error.textContent = report.InfrastructureError;
+        }
+        const table = document.getElementById('suites');
+        for (const suite of report.Suites) {
+            const row = table.insertRow();
+            const status = suite.Success ? (suite.KnownLimitations ? 'OK · 含已知限制' : 'PASS') : 'FAIL';
+            for (const value of [suite.Suite, status, `${suite.Passed}/${suite.RegressionCases}`, suite.Failed,
+                suite.KnownLimitations, `${suite.DiagnosticsPassed}/${suite.Diagnostics}`, suite.Assertions]) {
+                row.insertCell().textContent = value;
+            }
+            const evidence = row.insertCell();
+            for (const [file, label] of [['results.json', '结果'], ['unity.log', '日志']]) {
+                const link = document.createElement('a');
+                link.href = `${encodeURIComponent(suite.Suite)}/${file}`;
+                link.textContent = label;
+                evidence.append(link, ' ');
+            }
+            if (suite.Error || suite.Failures.length || suite.KnownLimitationDetails.length || suite.DiagnosticDetails.length) {
+                const details = document.createElement('details');
+                const title = document.createElement('summary');
+                title.textContent = '失败与诊断证据';
+                const content = document.createElement('pre');
+                content.textContent = JSON.stringify({
+                    Error: suite.Error, Failures: suite.Failures, KnownLimitations: suite.KnownLimitationDetails, Diagnostics: suite.DiagnosticDetails,
+                }, null, 2);
+                details.append(title, content);
+                evidence.append(details);
+            }
+        }
+    </script>
+</body>
+</html>

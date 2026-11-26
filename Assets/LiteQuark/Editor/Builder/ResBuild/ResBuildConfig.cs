@@ -17,19 +17,19 @@ namespace LiteQuark.Editor
                                                                BuildAssetBundleOptions.DisableLoadAssetByFileNameWithExtension;
 
         /// <summary>
-        /// Enable hash mode for bundle
+        /// Use bundle hashes in published filenames.
         /// </summary>
         public bool HashMode { get; set; } = true;
 
         /// <summary>
-        /// Flat mode will remove bundle folder
+        /// Write bundles to a flat output directory.
         /// </summary>
         public bool FlatMode { get; set; } = false;
 
         /// <summary>
-        /// Increment build mode will be use last build info
+        /// Keep the previous resource build output for reuse.
         /// </summary>
-        public bool IncrementBuildModel { get; set; } = false;
+        public bool IncrementalBuild { get; set; } = false;
 
         /// <summary>
         /// Copy asset bundle to streaming asset folder

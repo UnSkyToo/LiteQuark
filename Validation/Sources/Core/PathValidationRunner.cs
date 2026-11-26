@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using LiteQuark.Runtime;
-using UnityEditor;
 using UnityEngine;
 
 namespace LiteQuark.Editor
@@ -11,10 +10,8 @@ namespace LiteQuark.Editor
     {
         private static string Scratch;
         private static string Root => Directory.GetParent(Application.dataPath).Parent.FullName;
-        public static void Begin()
+        internal static void RunCases()
         {
-            var reports = ValidationEnvironment.Reports("paths");
-            Directory.CreateDirectory(reports);
             Scratch = Path.Combine(Root, "Scratch", "PathUtils-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Scratch);
             try
@@ -37,14 +34,11 @@ namespace LiteQuark.Editor
                 Run("paths/copy-tree", CopyTree);
                 Run("paths/rename", Rename);
             }
-            catch (Exception ex) { Results.fatalError = ex.ToString(); }
             finally
             {
                 var prefix = Path.GetFullPath(Path.Combine(Root, "Scratch")).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 if (Path.GetFullPath(Scratch).StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && Path.GetFileName(Scratch).StartsWith("PathUtils-", StringComparison.Ordinal))
                     Directory.Delete(Scratch, true);
-                Results.Save("paths");
-                EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
             }
         }
 

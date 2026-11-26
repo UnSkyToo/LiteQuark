@@ -1,92 +1,122 @@
 {
-    "paths": [
-        "paths/host-path",
-        "paths/uri",
-        "paths/copy-tree",
-        "paths/rename"
-    ],
-    "manifest": [
-        "manifest/asset-keys",
-        "manifest/dependency-ids",
-        "manifest/bundle-filenames"
-    ],
-    "collector": [
-        "collector/bundle-graph",
-        "collector/cycles",
-        "collector/flat-collision",
-        "collector/settings",
-        "collector/play-snapshot",
-        "collector/viewer",
-        "collector/upm-build"
-    ],
-    "tasks": [
-        "tasks/admission",
-        "tasks/cancel",
-        "tasks/terminal",
-        "tasks/coroutine-child",
-        "tasks/download-result",
-        "tasks/instantiate",
-        "tasks/startup-rollback",
-        "tasks/ordered-shutdown",
-        "tasks/settings-profiles",
-        "tasks/launcher-settings",
-        "tasks/late-tick",
-        "tasks/restart",
-        "tasks/shutdown-failure",
-        "tasks/demo-stop",
-        "tasks/battle-entry",
-        "tasks/pool-ownership"
-    ],
-    "loading": [
-        "loading/address",
-        "loading/scene-paths",
-        "loading/builtin",
-        "loading/remote",
-        "loading/remote-startup-cancel",
-        "loading/backend-init",
-        "loading/filename-flags",
-        "loading/same-name-limit",
-        "loading/same-name-native"
-    ],
-    "lifecycle": [
-        "lifecycle/shared-retention",
-        "lifecycle/preload",
-        "lifecycle/progress",
-        "lifecycle/retry",
-        "lifecycle/dependency-life",
-        "lifecycle/dependency-failure",
-        "lifecycle/queued-cancel",
-        "lifecycle/submitted-asset",
-        "lifecycle/undelivered-bundle",
-        "lifecycle/close-with-dependency",
-        "lifecycle/remote-cleanup",
-        "lifecycle/scene-path-ownership",
-        "lifecycle/submitted-scene",
-        "lifecycle/scene-restart",
-        "lifecycle/scene-retry",
-        "lifecycle/priority",
-        "lifecycle/quotas",
-        "lifecycle/prefab-handle"
-    ],
-    "addons": [
-        "addons/ui-open",
-        "addons/ui-mutex",
-        "addons/ui-close",
-        "addons/ui-sort",
-        "addons/ui-camera",
-        "addons/audio",
-        "addons/effect-pending",
-        "addons/effect-reuse",
-        "addons/network-queue",
-        "addons/network-retry",
-        "addons/network-interceptor",
-        "addons/network-files",
-        "addons/data-io",
-        "addons/data-switch",
-        "addons/data-persistence",
-        "addons/config-reload",
-        "addons/config-formats",
-        "addons/config-close",
-        "addons/restart-ui"
+    "suites": [
+        {
+            "name": "paths",
+            "runner": "EditModeValidationRunner",
+            "scenarios": [
+                "paths/host-path",
+                "paths/uri",
+                "paths/copy-tree",
+                "paths/rename"
+            ]
+        },
+        {
+            "name": "manifest",
+            "runner": "EditModeValidationRunner",
+            "scenarios": [
+                "manifest/asset-keys",
+                "manifest/dependency-ids",
+                "manifest/bundle-filenames"
+            ]
+        },
+        {
+            "name": "collector",
+            "runner": "CollectorValidationRunner",
+            "scenarios": [
+                "collector/bundle-graph",
+                "collector/cycles",
+                "collector/flat-collision",
+                "collector/settings",
+                "collector/play-snapshot",
+                "collector/viewer",
+                "collector/upm-build"
+            ]
+        },
+        {
+            "name": "addons",
+            "runner": "AddonsValidationRunner",
+            "scenarios": [
+                "addons/ui-open",
+                "addons/ui-mutex",
+                "addons/ui-close",
+                "addons/ui-sort",
+                "addons/ui-camera",
+                "addons/audio",
+                "addons/effect-pending",
+                "addons/effect-reuse",
+                "addons/network-queue",
+                "addons/network-retry",
+                "addons/network-interceptor",
+                "addons/network-files",
+                "addons/data-io",
+                "addons/data-switch",
+                "addons/data-persistence",
+                "addons/config-reload",
+                "addons/config-formats",
+                "addons/config-close",
+                "addons/restart-ui"
+            ]
+        },
+        {
+            "name": "tasks",
+            "runner": "TaskSystemValidationRunner",
+            "scenarios": [
+                "tasks/admission",
+                "tasks/cancel",
+                "tasks/terminal",
+                "tasks/coroutine-child",
+                "tasks/download-result",
+                "tasks/instantiate",
+                "tasks/startup-rollback",
+                "tasks/ordered-shutdown",
+                "tasks/settings-profiles",
+                "tasks/launcher-settings",
+                "tasks/late-tick",
+                "tasks/restart",
+                "tasks/shutdown-failure",
+                "tasks/demo-stop",
+                "tasks/battle-entry",
+                "tasks/pool-ownership"
+            ]
+        },
+        {
+            "name": "lifecycle",
+            "runner": "AssetLifecycleValidationRunner",
+            "scenarios": [
+                "lifecycle/shared-retention",
+                "lifecycle/preload",
+                "lifecycle/progress",
+                "lifecycle/retry",
+                "lifecycle/dependency-life",
+                "lifecycle/dependency-failure",
+                "lifecycle/queued-cancel",
+                "lifecycle/submitted-asset",
+                "lifecycle/undelivered-bundle",
+                "lifecycle/close-with-dependency",
+                "lifecycle/remote-cleanup",
+                "lifecycle/scene-path-ownership",
+                "lifecycle/submitted-scene",
+                "lifecycle/scene-restart",
+                "lifecycle/scene-retry",
+                "lifecycle/priority",
+                "lifecycle/quotas",
+                "lifecycle/prefab-handle"
+            ]
+        },
+        {
+            "name": "loading",
+            "runner": "AssetLoadingValidationRunner",
+            "scenarios": [
+                "loading/address",
+                "loading/scene-paths",
+                "loading/builtin",
+                "loading/remote",
+                "loading/remote-startup-cancel",
+                "loading/backend-init",
+                "loading/filename-flags",
+                "loading/same-name-limit",
+                "loading/same-name-native"
+            ]
+        }
     ]
 }

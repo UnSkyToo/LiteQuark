@@ -47,12 +47,11 @@ namespace LiteQuark.Editor
         private static string Bundles => Path.Combine(Root, "Bundles", "loading");
         private static string ControlBundles => Path.Combine(Root, "Bundles", "loading-control");
         private static readonly ValidationReport Report = new();
-        private static readonly List<string> Errors = new();
         private static ValidationCase Active;
         private static EnvironmentContext Context;
         private static bool Running;
-        private const string SceneCollisionId = "UNITY-SAME-NAME-SCENE-BUNDLES";
-        private const string NativeCollisionCase = "loading/same-name-native";
+        private const string SceneCollisionId = ValidationReport.SceneCollisionId;
+        private const string NativeCollisionCase = ValidationReport.NativeCollisionCase;
 
         private sealed class KnownSceneCollisionException : Exception
         {
@@ -71,9 +70,8 @@ namespace LiteQuark.Editor
             catch (Exception ex)
             {
                 Report.fatalError = ex.ToString();
-                Save();
                 Debug.LogException(ex);
-                EditorApplication.Exit(2);
+                Report.Finish("loading");
             }
         }
 
@@ -197,7 +195,6 @@ namespace LiteQuark.Editor
 
         private static async UniTask RunAll()
         {
-            Application.logMessageReceived += Capture;
             try
             {
                 new GameObject("AssetPathValidationLauncher").AddComponent<LiteLauncher>();
@@ -223,13 +220,12 @@ namespace LiteQuark.Editor
                     await LookupProbe(false);
                     await LookupProbe(true);
                 });
-                await Run("loading/same-name-limit", () => DifferentScenes(false));
+                await Run(ValidationReport.SceneCollisionCase, () => DifferentScenes(false));
                 await Run(NativeCollisionCase, NativeCollision);
             }
             catch (Exception ex) { Report.fatalError = ex.ToString(); }
             finally
             {
-                Application.logMessageReceived -= Capture;
                 var diagnostic = Report.cases.SingleOrDefault(c => c.id == NativeCollisionCase);
                 foreach (var item in Report.cases.Where(c => c.status == "pending_known_limitation"))
                 {
@@ -241,44 +237,34 @@ namespace LiteQuark.Editor
                     }
                     else
                     {
-                        item.status = "failed";
-                        item.failure += "\nNative diagnostic did not confirm the known limitation.";
+                        item.Fail("Native diagnostic did not confirm the known limitation.");
                     }
                 }
-                Save();
-                EditorApplication.Exit(Report.fatalError == null && Report.cases.All(c => c.passed || c.status == "known_limitation") ? 0 : 2);
+                Report.Finish("loading");
             }
         }
 
         private static async UniTask Run(string name, Func<UniTask> test, params string[] expectedErrors)
         {
-            Active = new ValidationCase { id = name, diagnostic = name == NativeCollisionCase };
-            Report.cases.Add(Active);
-            var start = Time.realtimeSinceStartup;
-            Errors.Clear();
-            try { await test(); Active.passed = true; }
-            catch (KnownSceneCollisionException ex) { Active.status = "pending_known_limitation"; Active.failure = ex.ToString(); }
-            catch (Exception ex) { Active.failure = ex.ToString(); }
-            finally
+            using (var execution = new ValidationCaseExecution(Report, name))
             {
-                var collisionObserved = Active.status == "pending_known_limitation";
-                try { await Cleanup(); }
-                catch (Exception ex) { Active.passed = false; Active.status = "failed"; Active.failure += "\nCleanup: " + ex; }
-                Active.errors.AddRange(Errors);
-                var unexpected = Errors.Where(e => Active.diagnostic ? !IsNativeSceneCollisionLog(e) :
-                    collisionObserved ? !IsSceneCollisionLog(e) : !expectedErrors.Any(e.Contains)).ToArray();
-                if (unexpected.Length > 0) { Active.passed = false; Active.status = "failed"; Active.failure += "\nUnexpected: " + string.Join("\n", unexpected); }
+                Active = execution.Result;
+                Active.diagnostic = name == NativeCollisionCase;
+                var collisionObserved = false;
+                await execution.RunAsync(test, Cleanup, ex =>
+                {
+                    if (ex is not KnownSceneCollisionException) return;
+                    collisionObserved = true;
+                    Active.status = "pending_known_limitation";
+                });
+                execution.RejectUnexpectedErrors(message => Active.diagnostic ? IsNativeSceneCollisionLog(message) :
+                    collisionObserved ? IsSceneCollisionLog(message) : expectedErrors.Any(message.Contains));
                 if (Active.status != "pending_known_limitation")
                     Active.status = Active.passed ? (Active.diagnostic ? "diagnostic_passed" : "passed") : "failed";
-                Active.seconds = Time.realtimeSinceStartup - start;
-                Debug.Log("ASSET_PATH_VALIDATION " + Active.status + " " + name);
-                Save();
-                Active = null;
             }
-        }
-        private static void Capture(string message, string stack, LogType type)
-        {
-            if (Active != null && (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)) Errors.Add(message);
+            Debug.Log("ASSET_PATH_VALIDATION " + Active.status + " " + name);
+            Save();
+            Active = null;
         }
         private static void Check(bool condition, string evidence)
         {
@@ -606,7 +592,7 @@ namespace LiteQuark.Editor
             var a = env.Scene(SceneA); var b = env.Scene(ProjectPath(otherPath).ToUpperInvariant());
             await Wait(() => a.IsDone && b.IsDone, "Different same-name scenes");
             if (!editor && !distinctName && a.Result.HasValue != b.Result.HasValue &&
-                Errors.Any(IsNativeSceneCollisionLog) && Errors.All(IsSceneCollisionLog))
+                Active.errors.Any(IsNativeSceneCollisionLog) && Active.errors.All(IsSceneCollisionLog))
             {
                 var survivor = a.Result.HasValue ? a.Result.Value : b.Result.Value;
                 var expectedPath = a.Result.HasValue ? SceneA : SceneB;
@@ -646,14 +632,14 @@ namespace LiteQuark.Editor
                 first = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundle));
                 Check(first != null && first.GetAllScenePaths().Single().ToLowerInvariant() == ProjectPath(SceneA).ToLowerInvariant(), "Native API loads A Bundle and confirms its exact scene path.");
                 second = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundleB));
-                Check(second == null && Errors.Count == 1 && IsNativeSceneCollisionLog(Errors[0]) && Errors[0].Contains(Path.GetFileName(SceneBundleB)),
+                Check(second == null && Active.errors.Count == 1 && IsNativeSceneCollisionLog(Active.errors[0]) && Active.errors[0].Contains(Path.GetFileName(SceneBundleB)),
                     "Native API rejects B with its exact same-file collision.");
                 first.Unload(true);
                 first = null;
                 second = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundleB));
                 Check(second != null && second.GetAllScenePaths().Single().ToLowerInvariant() == ProjectPath(SceneB).ToLowerInvariant(), "B Bundle loads independently after unloading A; build outputs represent different scene paths.");
                 first = AssetBundle.LoadFromFile(Path.Combine(Bundles, SceneBundle));
-                Check(first == null && Errors.Count == 2 && IsNativeSceneCollisionLog(Errors[1]) && Errors[1].Contains(Path.GetFileName(SceneBundle)),
+                Check(first == null && Active.errors.Count == 2 && IsNativeSceneCollisionLog(Active.errors[1]) && Active.errors[1].Contains(Path.GetFileName(SceneBundle)),
                     "Reversed order rejects A with its exact same-file collision.");
             }
             finally

@@ -21,21 +21,21 @@ namespace LiteQuark.Editor
 
         protected override void DrawContent()
         {
-            _config.Options = (BuildAssetBundleOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "Res build options"), _config.Options, false);
+            _config.Options = (BuildAssetBundleOptions)EditorGUILayout.EnumFlagsField(new GUIContent("Options", "AssetBundle build options."), _config.Options, false);
 
-            _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Hash mode will be generate hash for asset bundle"), _config.HashMode);
+            _config.HashMode = EditorGUILayout.Toggle(new GUIContent("Hash Mode", "Use bundle hashes in published filenames."), _config.HashMode);
 
-            _config.FlatMode = EditorGUILayout.Toggle(new GUIContent("Flat Mode", "Flat mode will remove bundle folder"), _config.FlatMode);
+            _config.FlatMode = EditorGUILayout.Toggle(new GUIContent("Flat Mode", "Write bundles to a flat output directory."), _config.FlatMode);
 
-            _config.IncrementBuildModel = EditorGUILayout.Toggle(new GUIContent("Increment Build", "Increment build mode will be use last build info"), _config.IncrementBuildModel);
+            _config.IncrementalBuild = EditorGUILayout.Toggle(new GUIContent("Incremental Build", "Keep the previous resource build output for reuse."), _config.IncrementalBuild);
 
-            _config.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("CopyTo StreamingAssets", "Copy asset bundle to streaming assets path"), _config.CopyToStreamingAssets);
+            _config.CopyToStreamingAssets = EditorGUILayout.Toggle(new GUIContent("Copy to StreamingAssets", "Copy the resource build output to StreamingAssets."), _config.CopyToStreamingAssets);
 
             if (_config.CopyToStreamingAssets)
             {
                 using (new IndentLevelScope())
                 {
-                    _config.CleanStreamingAssetsBeforeCopy = EditorGUILayout.Toggle(new GUIContent("Clean Before Copy", "Clean streaming assets before copy to streaming assets path"), _config.CleanStreamingAssetsBeforeCopy);
+                    _config.CleanStreamingAssetsBeforeCopy = EditorGUILayout.Toggle(new GUIContent("Clean Before Copy", "Delete the LiteQuark subdirectory in StreamingAssets before copying."), _config.CleanStreamingAssetsBeforeCopy);
                 }
             }
         }

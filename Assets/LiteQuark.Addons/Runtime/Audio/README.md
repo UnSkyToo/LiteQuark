@@ -1,6 +1,6 @@
 # AudioSystem 音频
 
-AudioSystem 属于 LiteQuark.Addons。先在 Launcher 的 `SystemList` 注册，再通过 `LiteRuntime.Get<AudioSystem>()` 获取；它依赖内置 AssetSystem。
+AudioSystem 属于 LiteQuark.Addons。先在 Launcher 的 **System List** 注册，再通过 `LiteRuntime.Get<AudioSystem>()` 获取；它依赖内置 AssetSystem。
 
 ## 播放
 
@@ -18,7 +18,7 @@ audio.StopAudio(musicId);
 
 | 接口 | 参数与行为 |
 | --- | --- |
-| `PlaySound(path, isLoop = false, limit = 0, volume = 1f, delay = 0f)` | 音效；`limit` 限制相同路径的活动音频数，0 表示不限；delay 单位为秒 |
+| `PlaySound(path, isLoop = false, limit = 0, volume = 1f, delay = 0f)` | 音效；`limit` 按传入的路径字符串统计尚未从系统移除的音频请求，包括加载中的请求；非正数表示不限；`delay` 单位为秒 |
 | `PlayMusic(path, isLoop = true, volume = 1f, isOnly = true)` | 音乐；默认先停止其他音乐 |
 | `GetAudio(id)` | 返回 `AudioObject` 或 null |
 | `StopAudio(id)` | 停止指定音频并加入清理队列 |

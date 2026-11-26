@@ -8,7 +8,7 @@ namespace LiteQuark.Editor
 {
     internal static class ProjectBuilderUtils
     {
-        internal static void CopyToStreamingAssets(string resPath, bool removeOriginFolder)
+        internal static void CopyToStreamingAssets(string resPath, bool cleanDestination)
         {
             bool CopyFilter(string path)
             {
@@ -21,7 +21,7 @@ namespace LiteQuark.Editor
             }
 
             var destPath = PathUtils.ConcatPath(Application.streamingAssetsPath, LiteConst.Tag);
-            if (removeOriginFolder)
+            if (cleanDestination)
             {
                 PathUtils.DeleteDirectory(destPath);
             }

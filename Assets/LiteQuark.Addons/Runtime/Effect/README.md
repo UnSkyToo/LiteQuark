@@ -1,6 +1,6 @@
 # EffectSystem 特效
 
-EffectSystem 属于 LiteQuark.Addons。在 Launcher 的 `SystemList` 注册后，使用 `LiteRuntime.Get<EffectSystem>()`。它借用 ActiveGameObjectPool 实例，管理粒子和 Animator，并对手动配置的 TrailRenderer 提供速度和停止处理。
+EffectSystem 属于 LiteQuark.Addons。在 Launcher 的 **System List** 注册后，使用 `LiteRuntime.Get<EffectSystem>()`。它借用 ActiveGameObjectPool 实例，管理粒子和 Animator，并对手动配置的 TrailRenderer 提供速度和停止处理。
 
 ## 播放与停止
 

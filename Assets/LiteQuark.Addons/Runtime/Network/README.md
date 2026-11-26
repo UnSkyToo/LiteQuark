@@ -44,11 +44,11 @@ POST/PUT 的对象通过 LitJson 编码；泛型响应通过 `UnityEngine.JsonUt
 
 ## 配置与重试
 
-`NetworkSystemSetting` 默认并发 5、超时 10 秒、`EnableAutoRetry = true`、重试次数 3。保持并发值大于 0。
+`NetworkSystemSetting` 的 `EnableAutoRetry` 只影响**未显式传入策略的 `SendWithRetry`**。默认开启，使用 `DefaultRetryCount = 3`；关闭时不重试。`Get` / `PostJson` / `Put` / `Delete`、`Send` / `SendRaw` 和 `SendBatch` 不会自动重试。
 
-`Get` / `PostJson` / `Put` / `Delete` 和 `SendBatch` 不会自动调用重试。只有 `SendWithRetry` 在未传 policy 时读取上述重试配置。手动传入 `HttpRetryPolicy` 可设置 `MaxRetries`、`RetryDelay`、`ExponentialBackoff`、`ShouldRetry`；默认不是指数退避。写入类请求重试前应由业务处理幂等性。
+手动传入 `HttpRetryPolicy` 可设置 `MaxRetries`、`RetryDelay`、`ExponentialBackoff`、`ShouldRetry`；默认不是指数退避。写入类请求重试前应由业务处理幂等性。
 
-`HttpRequest.Timeout` 自身默认 10 秒。手动创建请求时，若要使用系统当前超时，应显式赋值；基础便捷方法会采用系统默认值。
+系统默认最大并发为 5，超时为 10 秒。保持并发值大于 0。`HttpRequest.Timeout` 自身默认 10 秒。手动创建请求时，若要使用系统当前超时，应显式赋值；基础便捷方法会采用系统默认值。
 
 ## 取消、进度与拦截器
 
@@ -67,4 +67,4 @@ POST/PUT 的对象通过 LitJson 编码；泛型响应通过 `UnityEngine.JsonUt
 - 已经进入的拦截器和调用方续体可能在重启后返回。框架阻止后续拦截器和发送；业务须避免旧续体或已排队的进度通知更新新会话。
 - Abort 只终止本地传输，不撤销服务端已经执行的写入。必须取得结果的请求应由业务在 Shutdown 前等待；必要的保存不要依赖应用退出时的跨帧关闭。
 
-`INetworkChannel`、`IProtocolCodec` 是扩展接口；仓库没有内置 TCP/WebSocket 通道实现。详见 [HttpClient.cs](Http/HttpClient.cs)、[请求](Http/HttpRequest.cs) 和 [响应](Http/HttpResponse.cs)。
+`INetworkChannel`、`IProtocolCodec` 是独立接口，当前未接入 `NetworkSystem`。Addons 内置 HTTP 客户端，没有提供 TCP／WebSocket 通道实现。详见 [HttpClient.cs](Http/HttpClient.cs)、[请求](Http/HttpRequest.cs) 和 [响应](Http/HttpResponse.cs)。

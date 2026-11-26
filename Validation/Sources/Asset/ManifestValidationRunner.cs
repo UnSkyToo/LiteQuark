@@ -1,43 +1,32 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using LiteQuark.Runtime;
-using UnityEditor;
 using UnityEngine;
 
 namespace LiteQuark.Editor
 {
     internal sealed class ManifestValidationRunner : EditorValidation
     {
-        private static string Reports => ValidationEnvironment.Reports("manifest");
-
-        public static void Begin()
+        internal static void RunCases()
         {
-            Directory.CreateDirectory(Reports);
-            try
+            Run("manifest/asset-keys", () =>
             {
-                Run("manifest/asset-keys", () =>
-                {
-                    RoundTrip("default.ab", "config.json", "default/config.json", "data/assets/icon.png", "packages/demo/a.txt", "a/b/a/b/d.png");
-                    ExternalPaths();
-                    StrictPaths();
-                    Duplicates();
-                    LegacyRelative();
-                    LegacyAmbiguity();
-                });
-                Run("manifest/dependency-ids", () =>
-                {
-                    Dependencies();
-                    JsonAndBinary();
-                    InvalidDependencies();
-                }, "Failed to deserialize VersionPackInfo", "Dependency ID not found: 999");
-                Run("manifest/bundle-filenames", BundleNames);
-            }
-            catch (Exception ex) { Results.fatalError = ex.ToString(); }
-            Results.Save("manifest");
-            EditorApplication.Exit(Results.fatalError == null && Results.cases.All(c => c.passed) ? 0 : 2);
+                RoundTrip("default.ab", "config.json", "default/config.json", "data/assets/icon.png", "packages/demo/a.txt", "a/b/a/b/d.png");
+                ExternalPaths();
+                StrictPaths();
+                Duplicates();
+                LegacyRelative();
+                LegacyAmbiguity();
+            });
+            Run("manifest/dependency-ids", () =>
+            {
+                Dependencies();
+                JsonAndBinary();
+                InvalidDependencies();
+            }, "Failed to deserialize VersionPackInfo", "Dependency ID not found: 999");
+            Run("manifest/bundle-filenames", BundleNames);
         }
 
         private static string Key(string relative) => (LiteConst.AssetRootPath + "/" + relative).ToLowerInvariant();

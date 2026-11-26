@@ -15,12 +15,12 @@ namespace LiteQuark.Editor
         public BuildOptions Options { get; set; } = BuildOptions.None;
 
         /// <summary>
-        /// Clean mode will delete last build file
+        /// Delete the previous application build output before building.
         /// </summary>
         public bool CleanBuildMode { get; set; } = true;
 
         public string Identifier { get; set; } = "com.lite.game";
-        public string ProduceName { get; set; } = "game";
+        public string ProductName { get; set; } = "game";
 
         public int BuildCode { get; set; } = 1;
 

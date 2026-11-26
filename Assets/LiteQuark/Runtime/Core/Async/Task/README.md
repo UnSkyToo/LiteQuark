@@ -1,30 +1,22 @@
 # TaskSystem 任务调度
 
-`LiteRuntime.Task` 调度协程、Unity 异步操作和回调任务，并提供主线程投递。只有加入 TaskSystem 的任务受其调度；可与直接使用 UniTask 的异步方法并存。各任务组拥有独立并发额度，没有跨组总并发上限。
+`LiteRuntime.Task` 调度协程、Unity 异步操作和回调任务，也提供主线程投递。只调度显式提交的任务，可与直接使用 UniTask 并存。
 
 ## 提交、等待与取消
 
 示例使用 `LiteQuark.Runtime`、`Cysharp.Threading.Tasks` 命名空间，在框架初始化后的异步方法中调用：
 
 ```csharp
-var task = new WaitCallbackTask(done =>
-{
-    // 实际操作完成时调用 done(true)，失败时调用 done(false)。
-    done(true);
-});
+var task = new WaitCallbackTask(done => done(true));
 LiteRuntime.Task.AddTask(task, priority: TaskPriority.High);
 await task.Task;
 if (task.State == TaskState.Failed)
 {
     LLog.Exception(task.Error);
 }
-else if (task.State == TaskState.Cancelled)
-{
-    LLog.Warning("Task cancelled");
-}
 ```
 
-任务是一次性对象，只提交未执行的 Pending 任务，不重复或跨组提交。提交后由 TaskSystem 清理包装器，业务通过 `Cancel()` 请求取消，不手动 Dispose 或驱动 Execute / Tick。资源加载使用 AssetSystem 的 Handle API，Handle 仍由业务 Dispose。
+只提交新的 Pending 任务。`BaseTask` 用于实现和提交，`ITask` 用于观察、等待和取消。提交后由 TaskSystem 推进并清理任务；资源 Handle 仍由调用方释放。
 
 | 入口 | 默认组 | 用途 |
 | --- | --- | --- |
@@ -34,20 +26,9 @@ else if (task.State == TaskState.Cancelled)
 | `AddTask(Action<Action<bool>>)` | Default | 包装回调式操作，done(false) 表示失败 |
 | `AddInstantiateGoTask(...)`、`AddUnityWebGetRequestTask(...)` | Default | 异步实例化／下载 |
 
-上述便利入口使用 Normal 优先级。指定组或优先级时先构造 BaseTask 派生对象，再调用 `AddTask(BaseTask task, int groupId = LiteConst.TaskGroupId.Default, TaskPriority priority = TaskPriority.Normal)`。通用入口按传入组登记。Asset 模块的 Provider 以 Urgent 提交版本和 Bundle 任务，Cache 以 Normal 提交由 Bundle Resource 创建的 Asset 和 Scene 读取任务。
+便利入口使用 Normal。指定组或优先级时构造 `BaseTask` 派生实例，再传给 `AddTask(task, groupId: ..., priority: ...)`，省略组时使用 Default。
 
-ITask 是业务持有、观察、等待和取消任务的接口；BaseTask 是实现和提交可调度任务的基类。创建和提交时使用具体类型或 BaseTask，提交后仅需通用能力的字段、集合和回调参数使用 ITask。
-
-任务通过 `await task.Task` 等待，不实现 IEnumerator。已有协程需要等待任务时，先提交任务，再显式转换 UniTask：
-
-```csharp
-var task = new WaitCallbackTask(done => done(true));
-LiteRuntime.Task.AddTask(task);
-yield return task.Task.ToCoroutine();
-// 等待结束后仍按 State / Error 判断成功、失败或取消。
-```
-
-ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或释放。CoroutineTask / BaseCoroutineTask 仍支持用协程实现工作。
+在异步方法中用 `await task.Task`；在协程中先提交，再用 `yield return task.Task.ToCoroutine()`。`ToCoroutine()` 只等待终态，不传播失败或接管取消；父协程取消时仍需按需取消该任务。
 
 ## 状态、结果与通知
 
@@ -58,20 +39,11 @@ ToCoroutine 只适配等待，不提交任务，也不接管任务的取消或�
 | Failed | Error 为非空异常，Result 为 null |
 | Cancelled | Error 和 Result 均为 null |
 
-`IsDone` 包括三个终态；终态不可逆。`Task` 为 `UniTask<object>`，**失败和取消都以 null 完成，不因这两种终态抛异常**，因此要检查 State / Error。终态前后取得 Task 的结果语义一致；失败或取消保留最后进度，不能用 Progress 判断成功。
+`IsDone` 覆盖三个不可逆的终态。`Cancel()` 立即使未终结的任务进入 Cancelled，底层原生操作可能仍在进行。`Task` 为 `UniTask<object>`，**失败与取消均返回 `null`，不会因此抛异常**。检查 `State` / `Error`，不要用结果或进度判断成功。任务清理不会清空已发布的结果；结果不代表独立的 Unity 资源所有权。
 
-`Cancel()` 立即将未终结的任务置为 Cancelled。取消业务 Handle 立即结束本次等待。关闭时，Loader 等待已提交的本地 Bundle 读盘完成并释放结果，排队任务和在途下载各取消一次。观察已有 AsyncOperation / IAsyncResult 不会延迟底层操作的启动。
+框架提供的完成回调至多通知一次，取消或关闭时不保证通知；协程取消不会调用成功回调。`await` 只等待逻辑终态，回调与续体的先后因任务而异，续体可能同步重入。回调异常会记录，不改变终态。异步实例化失败时，回调收到空数组，`Result` 为 `null`。
 
-Bundle 加载任务负责停止在途请求。在结果可以交接时，Loader 交付或释放容器并归还名额。Asset Cache 持有 Bundle 直到资源读取回调结束。已交付的场景由业务通过 SceneHandle 管理退场。TaskSystem 负责取消任务并回收包装器。见[资源系统关闭](../../../Asset/README.md#系统关闭)。
-
-- Result 是最终结果；包装器清理不会清空它，但引用不代表独立的 Unity 资源所有权。
-- Bundle 加载任务通过 Task 发布 IBundleResource，不提供结果 callback；Loader 在 Tick 中读取终态、接收成功结果，并负责关闭时未交付容器的释放。取消／失败后的迟到原生资源仍由任务清理。
-- 其他任务的完成通知至多一次，不承诺取消或关闭时发送 callback。回调异常被记录，不改写终态。
-- await Task 只表示逻辑终态已确定，不表示 callback 中的业务处理完成。成功路径通常先发布等待结果再调用 callback，失败通知通常在已有等待恢复之前；续体可能同步重入，不能假定所有任务的通知顺序相同。
-- 协程捕获并释放自有嵌套迭代器，取消不调用成功回调；通过 `yield return task.Task.ToCoroutine()` 等待其他任务时，不传播其失败或接管其释放，取消父协程也不取消被等待的任务。
-- 异步实例化失败时，callback 收到空数组，Task / Result 为 null。
-
-`AddUnityWebGetRequestTask` 的成功结果为 `byte[]` 快照，callback、Result 和 await 返回同一数组，原生请求清理后仍可读取。按只读数据使用，需要修改时自行复制，文本由业务按协议解码。空响应成功时为空数组；失败结果为 null、失败回调传 null；取消不发送完成回调。快照由托管引用维持，业务无需 Dispose。
+`AddUnityWebGetRequestTask` 成功时返回 `byte[]` 快照（空响应返回空数组），回调和等待共享同一数组；按只读使用，无需 Dispose。失败回调收到 `null`，取消不发回调。
 
 ## 分组与并发
 
@@ -81,7 +53,7 @@ Bundle 加载任务负责停止在途请求。在结果可以交接时，Loader 
 | Flow | -1 | null，不限制准入数量 |
 | Asset | -2 | AssetSystem 注册；配置与加载行为见 [Asset 指南](../../../Asset/README.md#加载优先级) |
 
-业务使用其他 ID 注册组，有额度组要求正整数，null 表示无限额。ID 不可重复，提交到未注册组会报错；不提供运行时改额度、删除组或迁组接口。
+任务组独立计数，业务组用其他 ID，额度为正整数或 `null`（无限额）。不支持重复注册、提交到未注册组、运行时改额度、删除组或迁组。
 
 ```csharp
 const int workGroupId = 1; // 项目统一约定，初始化阶段注册一次。
@@ -90,15 +62,13 @@ var task = new WaitCallbackTask(done => done(true));
 LiteRuntime.Task.AddTask(task, groupId: workGroupId, priority: TaskPriority.High);
 ```
 
-同组父任务占满额度后再等待同组子任务，可能无法继续。仅编排或等待子任务的流程可显式放入 Flow；实际启动下载、计算等工作的任务使用有额度组。直接 UniTask / Handle 等待不占 TaskSystem 额度，无需额外包装。独立组不能消除依赖循环。
-
-Flow 不代表立即执行，也不限制每帧 CPU 耗时。额度统计已准入、尚未收尾的逻辑任务，不是底层原生操作的严格并发上限。`RunningTaskCount` / `PendingTaskCount` 包含所有组，仅用于观测。`StartCoroutine()` / `StopCoroutine()` 直接使用 Launcher，不经过组队列。
+父任务占满同组额度后等待同组子任务，可能卡住。仅编排或等待的任务可放入 Flow；直接等待 UniTask / Handle 不占额度。额度统计已准入、尚未收尾的逻辑任务，Flow 也不保证立即执行。`RunningTaskCount` / `PendingTaskCount` 统计所有组；`StartCoroutine()` / `StopCoroutine()` 不经过队列。
 
 ## 优先级与执行时序
 
-`TaskPriority` 为 Low、Normal、High、Urgent，只决定同组待执行任务的启动顺序，同级 FIFO。提交后不可更改优先级，不抢占运行任务，也不绕过额度；启动顺序不保证完成顺序，持续高优先级任务可能使低优先级任务饥饿。
+`TaskPriority` 的 Low / Normal / High / Urgent 只决定同组启动顺序，同级 FIFO。提交后优先级固定；不抢占、不绕过额度，也不保证完成顺序，持续高优先级任务可能推迟低优先级任务。
 
-AddTask 只登记，Execute 在后续调度中调用。每次 Tick 先推进已有任务并收尾，再补位；新启动任务从下一轮收到 Tick，同步完成会释放额度。回调提交的任务可能参与当前轮补位，新注册组下一轮参与；不承诺跨组启动顺序或每帧耗时预算。
+`AddTask` 只登记；调度时先推进和收尾，再启动待执行任务。新启动的任务下一轮才收到 Tick。组之间没有启动顺序或帧耗时预算保证。
 
 ## 自定义任务
 
@@ -111,20 +81,16 @@ AddTask 只登记，Execute 在后续调度中调用。每次 Tick 先推进已�
 | `OnTerminated()` | 终态已确定时停止操作或发送终态通知；此时 IsDone 已为 true，不能因此跳过清理 |
 | `OnDispose()` | 调度器移除任务时释放包装器资源，不改写已发布的 Result / Error |
 
-Complete 仅在 Running 时接受结果并返回 true；重复终态调用不重复通知，Fail(null) 抛参数异常。OnTerminated 在结束已有等待前执行，不用于补算结果。清理至多尝试一次，重入或清理异常不触发重试；通知和清理异常被记录，不覆盖原始失败。
+`Complete` 仅在 Running 时接受结果；`Fail(null)` 抛参数异常。`OnTerminated` 在结束等待前执行，清理异常会记录，不覆盖已发布结果或触发重试。
 
-Execute / Tick 的异常由调度器转为 Failed。自定义的异步或原生回调需自行捕获执行异常并调用 Fail，不用 SafeInvoke 吞掉执行失败。所有终态方法在主线程调用，后台回调先投递主线程；取消后的迟到结果仍须由任务适配器按其所有权规则处理。ITask 是观察和取消接口，internal 生命周期方法不是业务扩展点。
+调度器将 Execute / Tick 异常转为 Failed。自定义回调应先回到主线程，再通过 `Fail` 报告执行异常，并负责处置取消后迟到的结果。
 
 ## 主线程与关闭
 
-```csharp
-LiteRuntime.Task.PostMainThreadTask(_ => LLog.Info("Main thread"), null);
-```
-
-- `PostMainThreadTask(callback, state)` 投递到初始化时捕获的同步上下文。
+- `PostMainThreadTask(callback, state)` 异步投递到初始化时捕获的同步上下文。
 - `SendMainThreadTask(callback, state)` 同步发送，可能阻塞调用线程。
 - `AddMainThreadTask(func, param)` 加入 Flow，由后续调度执行。
 
-不要从后台线程访问 Unity 对象或修改任务队列，也不要让主线程等待正在等待主线程的工作。不递归调用 Tick，不在任务回调中释放 TaskSystem。关闭须先停止调度，清理回调不再提交任务；系统会停止 Launcher 上的协程并取消、释放登记任务。
+在主线程访问 Unity 对象、修改队列和取消任务。关闭时停止提交；系统停止 Launcher 上的协程并取消、清理任务。资源与场景的退场见[资源系统关闭](../../../Asset/README.md#系统关闭)。
 
 完整接口见 [TaskSystem.cs](TaskSystem.cs)，升级步骤见 [CHANGELOG](../../../../CHANGELOG.md)。

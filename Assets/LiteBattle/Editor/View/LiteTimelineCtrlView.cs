@@ -106,18 +106,18 @@ namespace LiteBattle.Editor
 
         private void DrawTransportToolbar()
         {
-            GotoBeginingSequenceGUI();
+            GoToBeginningSequenceGUI();
             PreviousEventButtonGUI();
             PlayButtonGUI();
             NextEventButtonGUI();
             GotoEndSequenceGUI();
         }
 
-        private void GotoBeginingSequenceGUI()
+        private void GoToBeginningSequenceGUI()
         {
             using (new EditorGUI.DisabledGroupScope(EditorApplication.isPlaying))
             {
-                if (GUILayout.Button(LiteEditorStyle.GotoBeginingContent, EditorStyles.toolbarButton))
+                if (GUILayout.Button(LiteEditorStyle.GoToBeginningContent, EditorStyles.toolbarButton))
                 {
                     SetFrameIndex(0);
                 }
