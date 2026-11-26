@@ -144,7 +144,6 @@ namespace LiteQuark.Runtime
         [Serializable]
         public class LogSetting
         {
-            [SerializeField] public bool SimpleLog = true;
             [InspectorName("Levels")] public BuildValue<LogLevel> LevelsByBuild = new(LogLevel.Error | LogLevel.Fatal, LogLevel.All);
             [InspectorName("Show Log Viewer")] public BuildValue<bool> ShowLogViewerByBuild;
 

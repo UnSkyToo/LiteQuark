@@ -189,13 +189,7 @@ namespace LiteQuark.Editor
 
         private sealed class OtherEndpointProbe : EndpointProbe { }
 
-        private sealed class FailingCloseAppender : ILogAppender
-        {
-            public string Name { get; set; }
-            public void Open() { }
-            public void DoAppend(LoggingEvent logEvent) { }
-            public void Close() => throw new InvalidOperationException(nameof(FailingCloseAppender));
-        }
+        private const string LogProbePrefix = "[Validation Log] ";
 
         private static async UniTask RuntimeSettingsProfiles(TaskSystem system)
         {
@@ -205,18 +199,29 @@ namespace LiteQuark.Editor
             var originalPreview = launcher.EditorPreview;
             var authored = new LiteLauncherSettings();
             var startupOrder = new List<string>();
-            void RecordStartup(string message, string stack, LogType type)
+            var logs = new List<(LogType Type, string Text)>();
+            void RecordLog(string message, string stack, LogType type)
             {
                 const string prefix = "Initialize ";
                 if (type == LogType.Log && message.StartsWith(prefix, StringComparison.Ordinal))
                     startupOrder.Add(message.Substring(prefix.Length));
+                if (message.Contains(LogProbePrefix, StringComparison.Ordinal))
+                    logs.Add((type, type == LogType.Exception ? message + "\n" + stack : message));
+            }
+            static void WriteLogs()
+            {
+                LLog.Info(LogProbePrefix + "{0}", "info");
+                LLog.Warning(LogProbePrefix + "warning");
+                LLog.Error(LogProbePrefix + "error");
+                LLog.Exception(new InvalidOperationException(LogProbePrefix + "exception"));
+                LLog.Exception(new InvalidOperationException(LogProbePrefix + "original cause"), LogProbePrefix + "{0}", "exception context");
             }
             static ISystem[] RegisteredSystems() => new ISystem[]
             {
-                LiteRuntime.Log, LiteRuntime.Event, LiteRuntime.Timer, LiteRuntime.Task, LiteRuntime.Asset,
+                LiteRuntime.Event, LiteRuntime.Timer, LiteRuntime.Task, LiteRuntime.Asset,
                 LiteRuntime.ObjectPool, LiteRuntime.Action, LiteRuntime.Get<EndpointProbe>(), LiteRuntime.Get<OtherEndpointProbe>()
             };
-            Application.logMessageReceived += RecordStartup;
+            Application.logMessageReceived += RecordLog;
             try
             {
                 if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
@@ -257,11 +262,19 @@ namespace LiteQuark.Editor
                 development.SystemList.RemoveAt(2);
                 await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Development settings startup");
                 var firstSystems = RegisteredSystems();
-                Check(firstSystems.All(s => s != null) && startupOrder.SequenceEqual(firstSystems.Select(s => s.GetType().AssemblyQualifiedName)),
+                Check(firstSystems.All(s => s != null) && startupOrder.SequenceEqual(
+                    firstSystems.Select(s => s.GetType().AssemblyQualifiedName).Prepend(typeof(LogSystem).AssemblyQualifiedName)),
                     "Startup creates all seven built-ins in order, then the enabled extensions from the original list, skipping duplicate types.");
                 Check(development.Environment == LiteBuildProfile.Development && development.Task.ConcurrencyLimit == 9 &&
-                    development.Asset.BundleRemoteUri == "https://dev.example/" && LiteRuntime.Log.GetLogger("Profile").IsInfoEnabled,
-                    "Development startup combines shared parameters, its CDN and its log policy.");
+                    development.Asset.BundleRemoteUri == "https://dev.example/",
+                    "Development startup combines shared parameters and its CDN.");
+                WriteLogs();
+                Check(logs.Count == 5 && logs[0] == (LogType.Log, LogProbePrefix + "info") &&
+                    logs[1] == (LogType.Warning, LogProbePrefix + "warning") && logs[2] == (LogType.Error, LogProbePrefix + "error") &&
+                    logs[3].Type == LogType.Exception && logs[3].Text.Contains(LogProbePrefix + "exception") &&
+                    logs[4].Type == LogType.Exception && logs[4].Text.Contains(LogProbePrefix + "original cause") &&
+                    logs[4].Text.Contains(LogProbePrefix + "exception context"),
+                    "Development emits formatted messages and one Unity Exception entry per call with its cause and context.");
                 development.Task.ConcurrencyLimit = 1;
                 Check(LiteRuntime.Get<UISystem>() == null && LiteRuntime.Get<EndpointProbe>().Timeout == 0 &&
                     LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
@@ -272,18 +285,20 @@ namespace LiteQuark.Editor
 
                 launcher.EditorPreview = LiteBuildProfile.Release;
                 startupOrder.Clear();
+                logs.Clear();
                 runtime.Restart();
                 runtime.Tick(0f);
                 await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running &&
                     LiteRuntime.Setting != development, "Fresh Release snapshot after restart");
                 var current = LiteRuntime.Setting;
-                var log = LiteRuntime.Log.GetLogger("Profile");
-                Check(current.Environment == LiteBuildProfile.Release && !LiteRuntime.IsDebugMode && !log.IsInfoEnabled &&
-                    log.IsWarnEnabled && !log.IsErrorEnabled && !log.IsFatalEnabled && current.Asset.BundleRemoteUri == "https://release.example/" &&
-                    startupOrder.Count == 0,
-                    "Release restart applies its CDN and log levels, filtering even the first startup log before LogSystem is published.");
+                WriteLogs();
+                Check(current.Environment == LiteBuildProfile.Release && !LiteRuntime.IsDebugMode &&
+                    current.Asset.BundleRemoteUri == "https://release.example/",
+                    "Release restart applies the new environment and CDN.");
+                Check(startupOrder.Count == 0 && logs.Count == 1 && logs[0] == (LogType.Warning, LogProbePrefix + "warning"),
+                    "Release restart filters the first startup Info and emits only the configured Warning probe.");
                 Check(RegisteredSystems().All(s => s != null && !firstSystems.Contains(s)),
-                    "Restart publishes fresh instances of every built-in and enabled extension.");
+                    "Restart publishes fresh instances of the public built-ins and enabled extensions.");
                 Check(LiteRuntime.Get<EndpointProbe>().Timeout == 15 && LiteRuntime.Get<OtherEndpointProbe>().Timeout == 60,
                     "Restart resolves each registration against Release.");
                 Check(current.Task.ConcurrencyLimit == 9 && ((UISystemSetting)current.SystemList[0].Setting).ResolutionWidth == 1600 &&
@@ -291,19 +306,25 @@ namespace LiteQuark.Editor
                     ui.ResolutionWidth == 1600,
                     "Runtime changes to profile, shared, nested retry and managed-reference Addon data do not write back to scene settings or leak across restart.");
 
-                ((LoggerBase)log.Logger).AddAppender(new FailingCloseAppender());
                 await runtime.Shutdown();
-                launcher.EditorPreview = LiteBuildProfile.Development;
+                logs.Clear();
+                LLog.Info(LogProbePrefix + "idle");
+                Check(logs.Count == 1 && logs[0] == (LogType.Log, LogProbePrefix + "idle"),
+                    "Logging outside an active Runtime does not inherit the ended profile's filters.");
+
+                authored.Log.LevelsByBuild.Release = LogLevel.None;
                 startupOrder.Clear();
+                logs.Clear();
                 runtime.Startup(launcher);
-                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup after appender close failure");
-                Check(_current.evidence.Any(line => line.Contains(nameof(FailingCloseAppender))) &&
-                    startupOrder.Contains(typeof(EndpointProbe).AssemblyQualifiedName),
-                    "After an appender fails to close, LLog emits the new profile's Info messages.");
+                await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup with framework logs disabled");
+                WriteLogs();
+                Debug.Log(LogProbePrefix + "Unity");
+                Check(startupOrder.Count == 0 && logs.Count == 1 && logs[0] == (LogType.Log, LogProbePrefix + "Unity"),
+                    "None suppresses all LLog output from startup onward and leaves direct Unity logging available.");
             }
             finally
             {
-                Application.logMessageReceived -= RecordStartup;
+                Application.logMessageReceived -= RecordLog;
                 if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
                 launcher.Settings = originalSettings;
                 launcher.EditorPreview = originalPreview;

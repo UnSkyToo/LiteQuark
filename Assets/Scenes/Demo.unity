@@ -231,7 +231,6 @@ MonoBehaviour:
     Action:
       SafetyMode: 0
     Log:
-      SimpleLog: 1
       LevelsByBuild:
         Release: 12
         OverrideInDevelopment: 1

@@ -85,7 +85,7 @@ namespace LiteQuark.Runtime
                     return false;
                 }
                 LLog.Info("Runtime: InitSystem duration {0}s", watch.Elapsed.TotalSeconds);
-                Log.OpenViewer();
+                Get<LogSystem>().OpenViewer();
                 if (ct.IsCancellationRequested)
                 {
                     return false;
@@ -302,7 +302,7 @@ namespace LiteQuark.Runtime
             }
             catch (System.Exception ex)
             {
-                // LogSystem 自身也可能正在释放。
+                // 释放失败即使在关闭框架日志时也要报告。
                 Debug.LogException(ex);
                 return false;
             }
@@ -399,7 +399,6 @@ namespace LiteQuark.Runtime
         public static LiteSetting Setting => Instance._setting;
 
         // frequently used system
-        public static LogSystem Log => Get<LogSystem>();
         public static EventSystem Event => Get<EventSystem>();
         public static TaskSystem Task => Get<TaskSystem>();
         public static TimerSystem Timer => Get<TimerSystem>();

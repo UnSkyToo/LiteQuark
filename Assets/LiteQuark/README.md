@@ -101,7 +101,9 @@ var tasks = LiteRuntime.Get<TaskSystem>();
 | [Timer](Runtime/Core/Async/Timer/README.md) | 时间回调、重复执行、暂停与取消 |
 | [Action](Runtime/Core/Async/Action/README.md) | Transform 补间、序列/并行、条件等待 |
 | [ObjectPool](Runtime/Core/ObjectPool/README.md) | GameObject、集合复用及预生成 |
-| Log | `LLog` 与 `LiteRuntime.Log`，由 `LiteRuntime.Setting.Log` 配置。`Levels` 过滤框架日志（None 关闭全部级别），`ShowLogViewer` 单独控制窗口；Development 和 Release 均使用所选策略，入口可留空 |
+| Log | 使用 `LLog.Info`、`Warning`、`Error` 和 `Exception` 输出到 Unity。当前环境的 `Log.Levels` 过滤 `LLog`，`Fatal` 控制异常，`None` 关闭全部级别。`ShowLogViewer` 单独控制游戏内窗口，入口可留空 |
+
+日志消息可自行添加 `[Asset]` 等前缀以便搜索。Unity 2022.2 或更新版本可以在 Console 菜单中启用 **Strip logging callstack** 隐藏 `LLog` 包装方法的栈帧，并通过日志详情中的源码链接定位调用点。
 
 UI、Audio、Effect、Network、Data、Config 属于可选的 `LiteQuark.Addons` 包，不会自动注册。安装并注册后使用 `LiteRuntime.Get<UISystem>()` 等泛型入口；网络入口为 `LiteRuntime.Get<NetworkSystem>().Http`。
 

@@ -39,6 +39,7 @@ Validation — LiteQuark 隔离验证
              场景设置的 Release 默认值、Development 继承只读与 Override 字段绑定，注册项创建、禁用、重排、保存重开与相机绑定。
              检查第三方同名泛型的只读边界、条件容器内的覆盖、注册项原位修复与撤销，以及生效环境的 Remote CDN 提示。
              环境选择、日志策略和重启隔离，可选游戏入口、Tick 与 LateTick 的顺序和时间、暂停、启动回滚、关闭顺序、重启、部分释放失败。
+             监听 Unity 日志验证启动首条日志、重启切换级别、异常输出、None 和 Idle 下的输出。
              通过 Editor 退出无入口且启用日志控制台的 Demo。真实战斗场景中移动玩家，并在同帧末验证相机与怪物血条投影。
              通过业务入口和系统的释放异常验证剩余系统继续退场，重启遇错回到 Idle 后可再次显式启动。
   loading    Asset/AssetLoadingValidationRunner.cs

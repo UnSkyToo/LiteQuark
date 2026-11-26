@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -9,30 +7,11 @@ using Object = UnityEngine.Object;
 namespace LiteQuark.Runtime
 {
     [LiteHideType]
-    public sealed class LogSystem : ISystem
+    internal sealed class LogSystem : ISystem
     {
-        private ILoggerRepository _repository = null;
-        private Dictionary<string, ILog> _logCache = null;
-        private ILog _commonLogger = null;
         private GameObject _viewer;
 
-        public LogSystem()
-        {
-        }
-
-        public UniTask<bool> Initialize(CancellationToken ct = default)
-        {
-            _repository = new DefaultLoggerRepository();
-            _logCache = new Dictionary<string, ILog>();
-            _commonLogger = GetLogger("Default");
-
-            UnityEngine.Debug.unityLogger.logEnabled = true;
-            var setting = LiteRuntime.Setting.Log;
-            _repository.EnableLevel(LogLevel.All, false);
-            _repository.EnableLevel(setting.Levels, true);
-
-            return UniTask.FromResult(true);
-        }
+        public UniTask<bool> Initialize(CancellationToken ct = default) => UniTask.FromResult(true);
 
         internal void OpenViewer()
         {
@@ -57,110 +36,13 @@ namespace LiteQuark.Runtime
 
         public UniTask DisposeAsync()
         {
-            try
+            if (_viewer != null)
             {
-                if (_viewer != null)
-                {
-                    Object.Destroy(_viewer);
-                }
-                _repository?.Dispose();
-            }
-            finally
-            {
-                _viewer = null;
-                _repository = null;
-                _logCache = null;
-                _commonLogger = null;
-                LLog.Reset();
+                Object.Destroy(_viewer);
             }
 
+            _viewer = null;
             return UniTask.CompletedTask;
-        }
-
-        public ILoggerRepository GetRepository()
-        {
-            return _repository;
-        }
-
-        public ILog GetLogger(Type type)
-        {
-            return GetLogger(type.FullName);
-        }
-
-        public ILog GetLogger(string name)
-        {
-            if (_logCache.TryGetValue(name, out var log))
-            {
-                return log;
-            }
-
-            var logger = _repository.GetLogger(name);
-            log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
-            _logCache.Add(name, log);
-            return log;
-        }
-
-        public ILog GetLogger(string name, ILoggerFactory loggerFactory)
-        {
-            if (_logCache.TryGetValue(name, out var log))
-            {
-                return log;
-            }
-
-            var logger = _repository.GetLogger(name, loggerFactory);
-            log = new LogImpl(logger, LiteRuntime.Setting.Log.SimpleLog);
-            _logCache.Add(name, log);
-            return log;
-        }
-
-        public void EnableLevel(LogLevel level, bool enabled)
-        {
-            _commonLogger.EnableLevel(level, enabled);
-        }
-
-        public void Info(string message)
-        {
-            _commonLogger.Info(message);
-        }
-
-        public void Info(string format, params object[] args)
-        {
-            _commonLogger.Info(format, args);
-        }
-
-        public void Warn(string message)
-        {
-            _commonLogger.Warn(message);
-        }
-
-        public void Warn(string format, params object[] args)
-        {
-            _commonLogger.Warn(format, args);
-        }
-
-        public void Error(string message)
-        {
-            _commonLogger.Error(message);
-        }
-
-        public void Error(string format, params object[] args)
-        {
-            _commonLogger.Error(format, args);
-        }
-
-        public void Fatal(string message)
-        {
-            _commonLogger.Fatal(message);
-        }
-
-        public void Fatal(Exception exception, string message)
-        {
-            _commonLogger.Fatal(exception, message);
-        }
-
-        public void Fatal(Exception exception, string format, params object[] args)
-        {
-            _commonLogger.Fatal(exception, format, args);
         }
     }
 }

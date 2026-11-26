@@ -198,7 +198,7 @@ namespace LiteQuark.Editor
                     await RuntimeShutdownDuringInitialization(system);
                 }, $"Initialize {typeof(ShutdownSystemTwo).AssemblyQualifiedName} failed", "InjectedValidation runtime initialization", "Enter <ErrorState>", "FrameworkError: Startup");
                 await RunAsync("tasks/ordered-shutdown", RuntimeShutdownOrder, "FrameworkError: Unknown");
-                await RunAsync("tasks/settings-profiles", RuntimeSettingsProfiles, nameof(FailingCloseAppender));
+                await RunAsync("tasks/settings-profiles", RuntimeSettingsProfiles, LogProbePrefix);
                 await RunAsync("tasks/late-tick", RuntimeLateTick);
                 await RunAsync("tasks/restart", async system =>
                 {

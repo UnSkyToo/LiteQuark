@@ -1,134 +1,103 @@
 using System;
+using System.Globalization;
+using UnityEngine;
 
 namespace LiteQuark.Runtime
 {
     public static class LLog
     {
-        private static ILog _log = null;
-
-        private static ILog GetLog()
+        private static bool IsEnabled(LogLevel level)
         {
-            if (_log == null)
-            {
-                _log = LiteRuntime.Log?.GetLogger(LiteConst.Tag);
-            }
-
-            return _log;
+            return LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle ||
+                (LiteRuntime.Setting.Log.Levels & level) != 0;
         }
 
-        private static bool FallbackEnabled(LogLevel level)
-        {
-            var setting = LiteRuntime.Setting;
-            return setting == null || LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Idle || (setting.Log.Levels & level) == level;
-        }
-
-        internal static void Reset()
-        {
-            _log = null;
-        }
-
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Info(string format, params object[] args)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Info))
             {
-                log.Info(format, args);
-            }
-            else if (FallbackEnabled(LogLevel.Info))
-            {
-                UnityEngine.Debug.LogFormat(format, args);
+                Debug.LogFormat(format, args);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Info(string msg)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Info))
             {
-                log.Info(msg);
-            }
-            else if (FallbackEnabled(LogLevel.Info))
-            {
-                UnityEngine.Debug.Log(msg);
+                Debug.Log(msg);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Warning(string format, params object[] args)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Warn))
             {
-                log.Warn(format, args);
-            }
-            else if (FallbackEnabled(LogLevel.Warn))
-            {
-                UnityEngine.Debug.LogWarningFormat(format, args);
+                Debug.LogWarningFormat(format, args);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Warning(string msg)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Warn))
             {
-                log.Warn(msg);
-            }
-            else if (FallbackEnabled(LogLevel.Warn))
-            {
-                UnityEngine.Debug.LogWarning(msg);
+                Debug.LogWarning(msg);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Error(string format, params object[] args)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Error))
             {
-                log.Error(format, args);
-            }
-            else if (FallbackEnabled(LogLevel.Error))
-            {
-                UnityEngine.Debug.LogErrorFormat(format, args);
+                Debug.LogErrorFormat(format, args);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Error(string msg)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Error))
             {
-                log.Error(msg);
-            }
-            else if (FallbackEnabled(LogLevel.Error))
-            {
-                UnityEngine.Debug.LogError(msg);
+                Debug.LogError(msg);
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Exception(Exception ex, string format, params object[] args)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Fatal))
             {
-                log.Fatal(ex, format, args);
-            }
-            else if (FallbackEnabled(LogLevel.Fatal))
-            {
-                UnityEngine.Debug.LogErrorFormat(format, args);
-                UnityEngine.Debug.LogException(ex);
+                var message = args.Length == 0 ? format : string.Format(CultureInfo.InvariantCulture, format, args);
+                Debug.LogException(new Exception(message, ex));
             }
         }
 
+#if UNITY_2022_2_OR_NEWER
+        [HideInCallstack]
+#endif
         public static void Exception(Exception ex)
         {
-            var log = GetLog();
-            if (log != null)
+            if (IsEnabled(LogLevel.Fatal))
             {
-                log.Fatal(ex, ex.Message);
-            }
-            else if (FallbackEnabled(LogLevel.Fatal))
-            {
-                UnityEngine.Debug.LogException(ex);
+                Debug.LogException(ex);
             }
         }
     }
