@@ -67,6 +67,7 @@
                 "tasks/coroutine-child",
                 "tasks/download-result",
                 "tasks/download-retry",
+                "tasks/timer-control",
                 "tasks/instantiate",
                 "tasks/startup-rollback",
                 "tasks/ordered-shutdown",

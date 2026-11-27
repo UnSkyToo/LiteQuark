@@ -189,6 +189,7 @@ namespace LiteQuark.Editor
                 await RunAsync("tasks/coroutine-child", FlowParent);
                 await RunAsync("tasks/download-result", WebGetSnapshots, "task-snapshot-missing.bin");
                 await RunAsync("tasks/download-retry", WebGetRetries, "UnityWebGetRequestTask failed:", "Enter <ErrorState>", "FrameworkError: Unknown");
+                await RunAsync("tasks/timer-control", TimerControl);
                 await RunAsync("tasks/instantiate", InstantiationResults, "The Object you want to instantiate is null");
                 launcher.enabled = true;
                 try { await RunAsync("tasks/pool-ownership", _ => PoolValidation.Exercise(_current)); }
@@ -679,6 +680,45 @@ namespace LiteQuark.Editor
                         await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup after download Error case");
                     }
                 }
+            }
+        }
+
+        private static async UniTask TimerControl(TaskSystem _)
+        {
+            var timers = new TimerSystem();
+            await timers.Initialize();
+            try
+            {
+                var ticks = 0;
+                var completions = 0;
+                ITimer timer = timers.AddTimer(1f, () => ticks++, () => completions++, totalTime: 1f);
+                Check(ReferenceEquals(timers.FindTimer(timer.ID), timer), "Creation returns the registered timer.");
+
+                timer.Pause();
+                timers.Tick(1f);
+                Check(timer.IsPaused && !timer.IsDone && ticks == 0, "The returned timer can pause its own updates.");
+                timer.Resume();
+                timers.Tick(1f);
+                timer.Cancel();
+                Check(timer.IsDone && ticks == 1 && completions == 1 && timers.FindTimer(timer.ID) == null,
+                    "Resuming allows natural completion and late cancellation leaves it intact.");
+
+                ITimer cancelled = null;
+                timers.NextFrame(() =>
+                {
+                    cancelled = timers.AddTimer(1f, () => ticks++, () => completions++, totalTime: 1f);
+                    cancelled.Cancel();
+                    cancelled.Cancel();
+                });
+                timers.Tick(0f);
+                Check(cancelled is { IsDone: true }, "A timer created during a callback can be cancelled immediately by reference.");
+                timers.Tick(1f);
+                Check(ticks == 1 && completions == 1 && timers.FindTimer(cancelled.ID) == null,
+                    "The cancelled timer sends no callbacks and is removed by the next tick.");
+            }
+            finally
+            {
+                await timers.DisposeAsync();
             }
         }
 

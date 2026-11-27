@@ -1,24 +1,25 @@
 # TimerSystem 定时器
 
-通过 `LiteRuntime.Timer` 创建时间回调，返回 `ulong` ID。定时器由框架 Tick 驱动，默认使用缩放后的时间。
+通过 `LiteRuntime.Timer` 创建定时器，返回 `ITimer`。定时器由框架 Tick 驱动，默认使用缩放后的时间。
 
 ## 常用操作
 
 以下片段在框架初始化后执行：
 
 ```csharp
-ulong timerId = LiteRuntime.Timer.AddTimer(
+ITimer timer = LiteRuntime.Timer.AddTimer(
     interval: 1f,
     onTick: () => LLog.Info("Tick"),
     repeatCount: TimerSystem.RepeatCountForever,
     delayTime: 0.5f);
 
-var timer = LiteRuntime.Timer.FindTimer(timerId);
-timer?.Pause();
-timer?.Resume();
+timer.Pause();
+timer.Resume();
 // 拥有者退出或不再需要定时器时：
-LiteRuntime.Timer.StopTimer(timerId);
+timer.Cancel();
 ```
+
+在 Unity 主线程通过返回的 `ITimer` 控制定时器。需要按 ID 查找时，可读取 `timer.ID`。
 
 | API | 行为 |
 | --- | --- |
@@ -38,7 +39,7 @@ LiteRuntime.Timer.StopTimer(timerId);
 - `AddTimerWithFrame` 使用创建 TimerSystem 时的 `max(0.01, 1 / TargetFrameRate)` 换算秒数，不是实际渲染帧计数。需要按 Tick 数等待时可使用 Action 的 `WaitFrame`。
 - `NextFrame` 在该定时器下一次获得 Tick 时执行；同帧是否发生取决于调用相对框架更新的位置，不是 Unity 帧边界保证。
 - 单个定时器每次 Tick 最多补发 10 次回调，达到上限后丢弃剩余累积时间。
-- `StopTimer`、`Cancel` 不触发 `onComplete`。保存 ID，并在拥有者释放时停止仍在运行的定时器。
+- `Cancel()` 立即标记定时器结束，系统在遍历时移除它。对已结束的定时器重复调用安全。`StopTimer` 和 `Cancel()` 只停止计时，`onComplete` 留给自然完成。
 - Unscaled 模式不受时间缩放影响，但框架整体暂停时仍不会更新。
 
 完整重载见 [TimerSystem.cs](TimerSystem.cs)，时间推进实现见 [BaseTimer.cs](BaseTimer.cs)。
