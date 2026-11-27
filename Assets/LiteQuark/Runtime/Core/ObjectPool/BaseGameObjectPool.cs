@@ -91,6 +91,10 @@ namespace LiteQuark.Runtime
             go.transform.SetParent(Parent, false);
         }
 
+        protected virtual void OnAlloc(GameObject go)
+        {
+        }
+
         protected virtual void OnDestroy(GameObject go)
         {
             Object.Destroy(go);
@@ -158,22 +162,26 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public virtual void Alloc(System.Action<GameObject> callback)
+        public void Alloc(Action<GameObjectLease> callback)
         {
             Alloc(null, callback);
         }
 
-        public virtual void Alloc(Transform parent, System.Action<GameObject> callback)
+        public void Alloc(Transform parent, Action<GameObjectLease> callback)
         {
+            if (callback == null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
             AllocWithCallbackAsync(parent, callback).Forget();
         }
 
-        private async UniTaskVoid AllocWithCallbackAsync(Transform parent, Action<GameObject> callback)
+        private async UniTaskVoid AllocWithCallbackAsync(Transform parent, Action<GameObjectLease> callback)
         {
-            GameObject go = null;
+            GameObjectLease lease = null;
             try
             {
-                go = await Alloc(parent);
+                lease = await Alloc(parent);
             }
             catch (OperationCanceledException)
             {
@@ -182,25 +190,35 @@ namespace LiteQuark.Runtime
             {
                 LLog.Exception(ex, "Allocate pool object failed: {0}", Key);
             }
-            LiteUtils.SafeInvoke(callback, go);
+            LiteUtils.SafeInvoke(callback, lease);
         }
 
-        public virtual void Recycle(GameObject value)
+        internal void Release(GameObject value)
         {
-            if (value == null)
+            try
             {
-                return;
+                if (value != null)
+                {
+                    Pool.Release(value);
+                }
             }
-            Pool.Release(value);
-            _countActive--;
+            catch
+            {
+                Object.Destroy(value);
+                throw;
+            }
+            finally
+            {
+                _countActive--;
+            }
         }
 
-        public virtual UniTask<GameObject> Alloc()
+        public UniTask<GameObjectLease> Alloc()
         {
             return Alloc(parent: null);
         }
 
-        public virtual async UniTask<GameObject> Alloc(Transform parent)
+        public async UniTask<GameObjectLease> Alloc(Transform parent)
         {
             if (!await WaitReadyAsync())
             {
@@ -211,15 +229,37 @@ namespace LiteQuark.Runtime
                 throw new OperationCanceledException();
             }
             var go = Pool.Get();
-            if (go != null && parent != null)
+            if (go == null)
             {
-                go.transform.SetParent(parent, false);
+                return null;
             }
-            if (go != null)
+
+            _countActive++;
+            try
             {
-                _countActive++;
+                if (parent != null)
+                {
+                    go.transform.SetParent(parent, false);
+                }
+
+                // Reparenting and activation can invoke Unity callbacks before delivery.
+                if (go != null)
+                {
+                    OnAlloc(go);
+                }
+                if (go == null)
+                {
+                    _countActive--;
+                    return null;
+                }
+                return new GameObjectLease(this, go);
             }
-            return go;
+            catch
+            {
+                _countActive--;
+                Object.Destroy(go);
+                throw;
+            }
         }
 
         protected void OnLoadTemplate(GameObject template)

@@ -9,7 +9,7 @@
 - **[UI](Runtime/UI/README.md)**：系统创建跨场景 Canvas，原先依赖场景根节点的代码改用 `CanvasRoot`。`OpenUI` 支持取消，系统关闭时在途打开会抛 `OperationCanceledException`；界面支持 `ILateTick`。
 - **[Data](Runtime/Data/README.md)**：关闭会等待已受理的异步读写和 Provider 切换。自定义 Provider 的 `Initialize` 增加 `CancellationToken ct = default`。
 - **[Network](Runtime/Network/README.md)**：关闭发出取消后立即返回，必须取得结果的请求应在关闭前等待。被取消的普通请求和上传返回失败响应，下载抛取消异常。
-- **[Audio](Runtime/Audio/README.md)**：音频使用独立的对象池，清理共享池后仍可播放。
+- **[Audio](Runtime/Audio/README.md)**：音频使用独立的对象池，清理共享池后仍可播放。`AudioObject.Unload()` 通过持有的 Lease 归还承载对象，调用时省略池参数。
 
 ## **[0.4.3] - 2026-03-03**
 - 修复：WebGL 上部分音效因状态问题无法播放。

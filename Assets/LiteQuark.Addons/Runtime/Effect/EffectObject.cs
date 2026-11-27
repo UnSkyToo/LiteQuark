@@ -9,9 +9,8 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"Effect<{UniqueID}>";
 
         private readonly EffectCreateInfo _info;
-        private readonly ActiveGameObjectPool _pool;
         private EffectState _state;
-        private GameObject _go;
+        private GameObjectLease _lease;
         private EffectBinder _binder;
 
         private float _curSpeed = 1f;
@@ -29,26 +28,23 @@ namespace LiteQuark.Runtime
             _info = info;
             _state = EffectState.Created;
 
-            _pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path);
-            LoadAsync().Forget();
+            var pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(_info.Path);
+            LoadAsync(pool).Forget();
         }
 
         public void Dispose()
         {
-            var go = _go;
-            _go = null;
+            var lease = _lease;
+            _lease = null;
             _binder = null;
             _state = EffectState.Destroyed;
 
-            if (go != null)
+            var go = lease?.Value;
+            if (go != null && _info.Order > 0)
             {
-                if (_info.Order > 0)
-                {
-                    UnityUtils.AddSortingOrder(go, -_info.Order);
-                }
-
-                _pool.Recycle(go);
+                UnityUtils.AddSortingOrder(go, -_info.Order);
             }
+            lease?.Dispose();
         }
 
         public void Tick(float deltaTime)
@@ -89,11 +85,11 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private async UniTaskVoid LoadAsync()
+        private async UniTaskVoid LoadAsync(ActiveGameObjectPool pool)
         {
             try
             {
-                await _pool.WaitReadyAsync();
+                await pool.WaitReadyAsync();
             }
             catch (OperationCanceledException)
             {
@@ -104,13 +100,13 @@ namespace LiteQuark.Runtime
             // Check before Alloc can instantiate or enable a prefab, not just in its callback.
             if (_state == EffectState.Created)
             {
-                _pool.Alloc(_info.Parent, OnLoad);
+                pool.Alloc(_info.Parent, OnLoad);
             }
         }
 
-        private void OnLoad(GameObject go)
+        private void OnLoad(GameObjectLease lease)
         {
-            if (go == null)
+            if (lease == null)
             {
                 if (_state != EffectState.Destroyed)
                 {
@@ -122,19 +118,18 @@ namespace LiteQuark.Runtime
             if (_state == EffectState.Created)
             {
                 _state = EffectState.Pause;
-                Setup(go);
+                _lease = lease;
+                Setup(lease.Value);
                 Play(_info.Speed);
             }
             else
             {
-                _pool.Recycle(go);
+                lease.Dispose();
             }
         }
 
         private void Setup(GameObject go)
         {
-            _go = go;
-
             SetupBinder(go);
             SetupTransform(go);
 

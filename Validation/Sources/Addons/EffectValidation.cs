@@ -108,7 +108,7 @@ namespace LiteQuark.Editor
                 Check(h.Pool.Borrows == h.Pool.Returns && h.Pool.CountActive == 0 && h.Parent.transform.childCount == 0,
                     "Stopped and disposed requests leave balanced pool ownership and no active instance under the caller.");
                 var control = await h.Pool.Alloc(h.Parent.transform);
-                h.Pool.Recycle(control);
+                control.Dispose();
                 Check(enables == 1 && h.Pool.Borrows == h.Pool.Returns && h.Pool.CountActive == 0,
                     "An independent accepted allocation really executes the observed OnEnable continuation and returns its instance.");
                 retained.Dispose();

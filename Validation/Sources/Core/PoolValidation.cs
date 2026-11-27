@@ -8,6 +8,14 @@ namespace LiteQuark.Editor
 {
     internal sealed class PoolValidation : BundleValidation
     {
+        private sealed class DestroyOnAllocPool : EmptyGameObjectPool
+        {
+            protected override void OnAlloc(GameObject go)
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
         private sealed class FailingPool : EmptyGameObjectPool
         {
             internal readonly InvalidOperationException Failure = new("Pool disposal failed.");
@@ -34,10 +42,32 @@ namespace LiteQuark.Editor
                 await Wait(() => warmup.Status.IsCompleted(), "Active pool native warmup");
                 Check(await warmup, "Active pool preloads a real Bundle prefab and completes generated instances.");
                 var pool = pools.GetActiveGameObjectPool(PrefabPath);
-                var go = await pool.Alloc();
-                Check(go != null && go.activeSelf && pool.CountInactive == 1, "Async allocation preserves Active pool activation.");
-                pool.Recycle(go);
-                Check(!go.activeSelf, "Recycling preserves Active pool deactivation.");
+                var lease = await pool.Alloc();
+                var go = lease.Value;
+                Check(go != null && go.activeSelf && pool.CountActive == 1 && pool.CountInactive == 1,
+                    "Async allocation preserves Active pool activation and records the borrow.");
+                lease.Dispose();
+                lease.Dispose();
+                Check(lease.Value == null && !go.activeSelf && pool.CountActive == 0 && pool.CountInactive == 2,
+                    "Repeated disposal returns the instance once and preserves Active pool deactivation.");
+
+                var nextLease = await pool.Alloc();
+                Check(!ReferenceEquals(lease, nextLease) && ReferenceEquals(go, nextLease.Value),
+                    "Reusing an instance issues a new lease.");
+                lease.Dispose();
+                Check(ReferenceEquals(go, nextLease.Value) && go.activeSelf && pool.CountActive == 1 && pool.CountInactive == 1,
+                    "Disposing the old lease leaves the new borrow active.");
+                nextLease.Dispose();
+
+                var invalidatingPool = pools.AddPool<DestroyOnAllocPool>("destroy-on-alloc", pools.GetPoolRoot());
+                Check(await invalidatingPool.Alloc() == null && invalidatingPool.CountActive == 0 && invalidatingPool.CountInactive == 0,
+                    "An instance destroyed during allocation produces no lease or remaining pool entry.");
+                var delivery = new UniTaskCompletionSource<GameObjectLease>();
+                invalidatingPool.Alloc(value => delivery.TrySetResult(value));
+                await Wait(() => delivery.Task.Status.IsCompleted(), "Destroyed instance callback");
+                Check(await delivery.Task == null && invalidatingPool.CountActive == 0 && invalidatingPool.CountInactive == 0,
+                    "Callback allocation reports a destroyed instance as null and restores the borrow count.");
+                pools.RemovePool(invalidatingPool);
 
                 var key = "assets/__session_validation/c.prefab";
                 var oldPool = pools.GetActiveGameObjectPool(key);
@@ -55,7 +85,7 @@ namespace LiteQuark.Editor
                 var borrower = new GameObject("External pool owner");
                 try
                 {
-                    var instance = await replacement.Alloc(borrower.transform);
+                    var instance = (await replacement.Alloc(borrower.transform)).Value;
                     var root = pools.GetPoolRoot();
                     var failing = pools.AddPool<FailingPool>("failing", root);
                     var sibling = pools.GetEmptyGameObjectPool("sibling");

@@ -1,4 +1,3 @@
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace LiteQuark.Runtime
@@ -21,18 +20,19 @@ namespace LiteQuark.Runtime
             base.OnRelease(go);
         }
 
-        public override async UniTask<GameObject> Alloc(Transform parent)
+        protected override void OnAlloc(GameObject go)
         {
-            var go = await base.Alloc(parent);
-            if (go != null)
+            base.OnAlloc(go);
+            if (go == null)
             {
-                var particles = go.GetComponentsInChildren<ParticleSystem>();
-                foreach (var particle in particles)
-                {
-                    particle.Play();
-                }
+                return;
             }
-            return go;
+
+            var particles = go.GetComponentsInChildren<ParticleSystem>();
+            foreach (var particle in particles)
+            {
+                particle.Play();
+            }
         }
     }
 }

@@ -17,16 +17,11 @@ namespace LiteQuark.Runtime
         UniTask<bool> WaitReadyAsync();
     }
 
-    public interface IObjectPool<T> : IBasePool
+    public interface IGameObjectPool : IBasePool
     {
-        void Alloc(System.Action<T> callback);
-        UniTask<T> Alloc();
-        void Recycle(T value);
-    }
-
-    public interface IGameObjectPool : IObjectPool<GameObject>
-    {
-        void Alloc(Transform parent, System.Action<GameObject> callback);
-        UniTask<GameObject> Alloc(Transform parent);
+        void Alloc(System.Action<GameObjectLease> callback);
+        void Alloc(Transform parent, System.Action<GameObjectLease> callback);
+        UniTask<GameObjectLease> Alloc();
+        UniTask<GameObjectLease> Alloc(Transform parent);
     }
 }

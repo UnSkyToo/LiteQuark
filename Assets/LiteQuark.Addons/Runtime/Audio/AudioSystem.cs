@@ -36,7 +36,7 @@ namespace LiteQuark.Runtime
         {
             foreach (var audio in _audioCache.Values)
             {
-                audio.Unload(_pool);
+                audio.Unload();
             }
             _audioCache.Clear();
             _removeList.Clear();
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
                 foreach (var audio in _removeList)
                 {
                     _audioCache.Remove(audio.UniqueID);
-                    audio.Unload(_pool);
+                    audio.Unload();
                 }
                 _removeList.Clear();
             }

@@ -11,11 +11,12 @@ namespace LiteQuark.Runtime
         public float Delay { get; private set; }
         public bool IsLoaded { get; private set; }
         public AudioSource Source { get; private set; }
-        public GameObject Carrier { get; private set; }
+        public GameObject Carrier => _carrierLease?.Value;
 
         public override string DebugName => $"AudioClip_{Source?.clip?.name}";
 
         private AssetHandle<AudioClip> _clipHandle;
+        private GameObjectLease _carrierLease;
 
         public AudioObject(AudioType type, string path)
             : base()
@@ -32,10 +33,10 @@ namespace LiteQuark.Runtime
                 return;
             }
 
-            pool.Alloc(parent, go =>
+            pool.Alloc(parent, lease =>
             {
-                Carrier = go;
-                if (Carrier == null)
+                _carrierLease = lease;
+                if (lease == null)
                 {
                     LiteUtils.SafeInvoke(callback, false);
                     return;
@@ -47,16 +48,16 @@ namespace LiteQuark.Runtime
                 }
                 catch (Exception ex)
                 {
-                    Unload(pool);
+                    Unload();
                     LLog.Error("load audio error : {0}, {1}", clipPath, ex.Message);
                     LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
-                LoadClipAsync(pool, clipPath, isLoop, volume, delay, _clipHandle, callback).Forget();
+                LoadClipAsync(clipPath, isLoop, volume, delay, _clipHandle, callback).Forget();
             });
         }
 
-        private async UniTaskVoid LoadClipAsync(EmptyGameObjectPool pool, string clipPath, bool isLoop, float volume, float delay,
+        private async UniTaskVoid LoadClipAsync(string clipPath, bool isLoop, float volume, float delay,
             AssetHandle<AudioClip> handle, System.Action<bool> callback)
         {
             try
@@ -71,7 +72,7 @@ namespace LiteQuark.Runtime
                 if (clip == null)
                 {
                     LLog.Warning("can't play audio : {0}", clipPath);
-                    Unload(pool);
+                    Unload();
                     LiteUtils.SafeInvoke(callback, false);
                     return;
                 }
@@ -91,20 +92,20 @@ namespace LiteQuark.Runtime
             }
             catch (Exception ex)
             {
-                Unload(pool);
+                Unload();
                 LLog.Error("load audio error : {0}, {1}", clipPath, ex.Message);
                 LiteUtils.SafeInvoke(callback, false);
             }
         }
 
-        public void Unload(EmptyGameObjectPool pool)
+        public void Unload()
         {
             var handle = _clipHandle;
             var source = Source;
-            var carrier = Carrier;
+            var carrierLease = _carrierLease;
             _clipHandle = null;
             Source = null;
-            Carrier = null;
+            _carrierLease = null;
             IsLoaded = false;
 
             if (source != null)
@@ -115,10 +116,7 @@ namespace LiteQuark.Runtime
 
             handle?.Dispose();
 
-            if (carrier != null)
-            {
-                pool.Recycle(carrier);
-            }
+            carrierLease?.Dispose();
         }
 
         public bool IsValid()

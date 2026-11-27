@@ -1,6 +1,6 @@
 # ObjectPoolSystem 对象池
 
-`LiteRuntime.ObjectPool` 管理 GameObject 池和集合池。模板型池自行持有 prefab 的 AssetHandle，归还实例使用池的 `Recycle()`。
+`LiteRuntime.ObjectPool` 管理 GameObject 池和集合池。模板型池自行持有 prefab 的 AssetHandle。借出的实例由 `GameObjectLease` 持有，释放 Lease 时归还原池。
 
 ## 获取与归还
 
@@ -13,16 +13,16 @@ if (!await pool.WaitReadyAsync())
     return; // 模板尚未成功加载
 }
 
-var bullet = await pool.Alloc();
-if (bullet == null)
+using var lease = await pool.Alloc();
+if (lease == null)
 {
     return;
 }
-// 使用 bullet；业务应保存它及所属池，直到回收。
-pool.Recycle(bullet);
+var bullet = lease.Value;
+// 在 Lease 有效期内使用 bullet。
 ```
 
-也可以使用 `pool.Alloc(parent, callback)`，与异步入口共用分配逻辑。模板加载失败时异步分配返回 null；关闭取消时 await 抛 `OperationCanceledException`。回调在失败或取消时均收到 null，必须先检查结果。池键同时作为模板资源路径，应包含扩展名。同一 key 只对应一个池，避免用不同池类型复用同一 key。
+也可以使用 `pool.Alloc(parent, callback)`，成功时由回调接收 `GameObjectLease`。模板加载失败或实例在交付前失效时，异步分配返回 null。关闭取消时 await 抛 `OperationCanceledException`。回调在失败或取消时均收到 null。池键同时作为模板资源路径，应包含扩展名。同一 key 只对应一个池，避免用不同池类型复用同一 key。
 
 ## 预加载与池类型
 
@@ -64,12 +64,13 @@ finally
 
 ## 清理责任
 
-- 每个实例只归还一次，并归还到原池；归还前重置业务状态、事件、计时器和外部引用。
+- 每次借出生成独立的 Lease。跨帧使用时保存 Lease，归还前重置业务状态、事件、计时器和外部引用，再调用 `Dispose()`。释放后 `Value` 为 null，重复释放安全。同一实例再次借出由新的 Lease 持有。
+- 归还时如果池的回收逻辑抛出异常，池会销毁该实例并传播异常，Lease 已结束。
 - 回收不会完整重置组件业务状态；不要依赖它自动清理脚本字段或动画。
 - `RemoveUnusedPools()` 移除没有活动实例的池，也会取消这些池尚未完成的加载等待和预生成。场景退出时先归还实例，再调用它。
 - `RemovePool(pool)` 会销毁池并释放模板引用，使用前应确认没有仍在使用的实例。
 - 业务操作在主线程执行，不要让拥有活动对象的父节点先销毁而遗忘池的借出记录。
 
-系统由 Runtime 关闭，关闭开始后拒绝获取或创建池。池的同步 Dispose 取消未完成请求、停止并同步等待自身原生实例化，再销毁闲置对象和池节点、释放模板。返回时 Destroy 可能尚未实际执行；挂到外部父节点的借出实例仍由业务负责，业务应在池关闭前归还。关闭不等待借出实例归还，也不保留旧池的可用性。
+系统由 Runtime 关闭，关闭开始后拒绝获取或创建池。池的同步 Dispose 取消未完成请求、停止并同步等待自身原生实例化，再销毁闲置对象和池节点、释放模板。返回时 Destroy 可能尚未实际执行。挂到外部父节点的借出实例仍由业务负责，业务应在池关闭前释放 Lease。关闭不等待借出实例归还，也不保留旧池的可用性。
 
 完整接口见 [ObjectPoolSystem.cs](ObjectPoolSystem.cs) 和 [BaseGameObjectPool.cs](BaseGameObjectPool.cs)。

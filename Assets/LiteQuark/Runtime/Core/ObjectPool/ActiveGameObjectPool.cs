@@ -61,14 +61,9 @@ namespace LiteQuark.Runtime
             go.transform.SetParent(Parent, false);
         }
 
-        public override async UniTask<GameObject> Alloc(Transform parent)
+        protected override void OnAlloc(GameObject go)
         {
-            var go = await base.Alloc(parent);
-            if (go != null)
-            {
-                go.SetActive(true);
-            }
-            return go;
+            go.SetActive(true);
         }
     }
 }

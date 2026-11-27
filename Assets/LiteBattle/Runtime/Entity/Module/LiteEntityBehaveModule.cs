@@ -8,12 +8,11 @@ namespace LiteBattle.Runtime
     public sealed class LiteEntityBehaveModule : LiteEntityModuleBase
     {
         private bool IsLoad_;
-        private GameObject Go_;
         private Transform TS_;
         private Animator Animator_;
         private int AnimationNameHash_;
         private LiteColliderBinder ColliderBinder_;
-        private ActiveGameObjectPool PrefabPool_;
+        private GameObjectLease PrefabLease_;
         private bool IsDisposed_;
         private UINameplateHUD HUD_;
         private Queue<(string, EffectCreateInfo)> CacheEffect_ = new();
@@ -42,7 +41,7 @@ namespace LiteBattle.Runtime
             }
             EffectList_.Clear();
 
-            RecyclePrefab();
+            ReleasePrefab();
         }
 
         public override void Tick(float deltaTime)
@@ -58,7 +57,7 @@ namespace LiteBattle.Runtime
 
         public GameObject GetInternalGo()
         {
-            return Go_;
+            return PrefabLease_?.Value;
         }
 
         private void UpdateTransform()
@@ -120,29 +119,29 @@ namespace LiteBattle.Runtime
         public void LoadPrefab(string prefabPath)
         {
             IsLoad_ = false;
-            RecyclePrefab();
+            ReleasePrefab();
             var pool = LiteRuntime.ObjectPool.GetActiveGameObjectPool(prefabPath);
-            PrefabPool_ = pool;
-            pool.Alloc(null, go =>
+            pool.Alloc(null, lease =>
             {
-                if (go == null)
+                if (lease == null)
                 {
                     return;
                 }
                 if (IsDisposed_)
                 {
-                    pool.Recycle(go);
+                    lease.Dispose();
                     return;
                 }
-                Go_ = go;
-                TS_ = Go_.transform;
+                PrefabLease_ = lease;
+                var go = lease.Value;
+                TS_ = go.transform;
                 TS_.localPosition = Vector3.zero;
                 TS_.localScale = Vector3.one;
                 TS_.localRotation = Quaternion.identity;
 
-                Animator_ = Go_.GetComponent<Animator>();
+                Animator_ = go.GetComponent<Animator>();
 
-                ColliderBinder_ = Go_.GetOrAddComponent<LiteColliderBinder>();
+                ColliderBinder_ = go.GetOrAddComponent<LiteColliderBinder>();
                 if (ColliderBinder_ != null)
                 {
                     ColliderBinder_.UniqueID = Entity.UniqueID;
@@ -156,16 +155,12 @@ namespace LiteBattle.Runtime
             });
         }
 
-        private void RecyclePrefab()
+        private void ReleasePrefab()
         {
             IsLoad_ = false;
-            if (Go_ != null)
-            {
-                PrefabPool_.Recycle(Go_);
-                Go_ = null;
-            }
-
-            PrefabPool_ = null;
+            var lease = PrefabLease_;
+            PrefabLease_ = null;
+            lease?.Dispose();
         }
     }
 }
