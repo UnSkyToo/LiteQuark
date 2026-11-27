@@ -25,7 +25,7 @@ namespace LiteQuark.Runtime
             _easeKind = easeKind;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             _currentTime += deltaTime;
             var step = Mathf.Clamp01(_currentTime / _totalTime);
@@ -34,7 +34,7 @@ namespace LiteQuark.Runtime
             var value = LerpUnclamped(_startValue, _endValue, v);
             _setter.Invoke(value);
 
-            if (step >= 1)
+            if (!IsDone && step >= 1)
             {
                 _setter.Invoke(_endValue);
                 IsDone = true;
@@ -43,7 +43,7 @@ namespace LiteQuark.Runtime
 
         protected abstract T LerpUnclamped(T start, T end, float t);
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (_getter == null || _setter == null)
             {
@@ -52,8 +52,8 @@ namespace LiteQuark.Runtime
             }
 
             _currentTime = 0;
-            _startValue = _getter.Invoke();
             IsDone = false;
+            _startValue = _getter.Invoke();
         }
     }
 

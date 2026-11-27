@@ -12,13 +12,13 @@ namespace LiteQuark.Runtime
             _waitTime = waitTime;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             _currentTime = _waitTime;
             IsDone = _currentTime <= 0f;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             _currentTime -= deltaTime;
             if (_currentTime <= 0f)

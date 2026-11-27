@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             _easeKind = easeKind;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             IsDone = false;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (!CheckSafety())
             {
@@ -94,7 +94,7 @@ namespace LiteQuark.Runtime
             IsLocal = isLocal;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             _currentTime = 0;
             _anglePerSecond = _totalAngle / _totalTime;
@@ -102,7 +102,7 @@ namespace LiteQuark.Runtime
             IsDone = false;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (!CheckSafety())
             {
@@ -161,7 +161,7 @@ namespace LiteQuark.Runtime
             _targetPosition = targetPosition;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (!CheckSafety())
             {

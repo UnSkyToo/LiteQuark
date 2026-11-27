@@ -11,7 +11,7 @@ namespace LiteQuark.Runtime
             _callback = callback;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = true;
             LiteUtils.SafeInvoke(_callback);
@@ -31,7 +31,7 @@ namespace LiteQuark.Runtime
             _param = param;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = true;
             LiteUtils.SafeInvoke(_callback, _param);
@@ -53,7 +53,7 @@ namespace LiteQuark.Runtime
             _param2 = param2;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = true;
             LiteUtils.SafeInvoke(_callback, _param1, _param2);
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
             _param3 = param3;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = true;
             LiteUtils.SafeInvoke(_callback, _param1, _param2, _param3);

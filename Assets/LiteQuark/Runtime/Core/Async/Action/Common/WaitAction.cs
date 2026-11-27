@@ -12,7 +12,7 @@ namespace LiteQuark.Runtime
             _waitTime = waitTime;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             _currentTime -= deltaTime;
             if (_currentTime <= 0f)
@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             _currentTime = _waitTime;
             IsDone = _currentTime <= 0f;
@@ -40,7 +40,7 @@ namespace LiteQuark.Runtime
             _waitFrame = waitFrame;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             _currentFrame--;
             if (_currentFrame <= 0)
@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             _currentFrame = _waitFrame;
             IsDone = _currentFrame <= 0;
@@ -67,14 +67,17 @@ namespace LiteQuark.Runtime
             _conditionFunc = conditionFunc;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = false;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
-            IsDone = _conditionFunc?.Invoke() ?? true;
+            if (_conditionFunc?.Invoke() ?? true)
+            {
+                IsDone = true;
+            }
         }
     }
 

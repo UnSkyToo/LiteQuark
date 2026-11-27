@@ -17,7 +17,7 @@ namespace LiteQuark.Runtime
             _volume = volume;
         }
 
-        public override void Execute()
+        protected override void Execute()
         {
             IsDone = true;
             LiteRuntime.Get<AudioSystem>().PlaySound(_path, _isLoop, _limit, _volume);
@@ -35,7 +35,7 @@ namespace LiteQuark.Runtime
             _isMute = isMute;
         }
 
-        public override void Execute()
+        protected override void Execute()
         {
             IsDone = true;
             LiteRuntime.Get<AudioSystem>().MuteAllSound(_isMute);
@@ -59,7 +59,7 @@ namespace LiteQuark.Runtime
             _isOnly = isOnly;
         }
 
-        public override void Execute()
+        protected override void Execute()
         {
             IsDone = true;
             LiteRuntime.Get<AudioSystem>().PlayMusic(_path, _isLoop, _volume, _isOnly);
@@ -77,7 +77,7 @@ namespace LiteQuark.Runtime
             _isMute = isMute;
         }
 
-        public override void Execute()
+        protected override void Execute()
         {
             IsDone = true;
             LiteRuntime.Get<AudioSystem>().MuteAllMusic(_isMute);

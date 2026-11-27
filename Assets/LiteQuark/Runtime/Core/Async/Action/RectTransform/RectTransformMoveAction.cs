@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             _easeKind = easeKind;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -37,7 +37,7 @@ namespace LiteQuark.Runtime
             IsDone = false;
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (!CheckSafety())
             {

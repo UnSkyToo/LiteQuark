@@ -7,7 +7,7 @@ namespace LiteBattle.Runtime
     public class UIFloatText : BaseUI
     {
         private LiteEntity Entity_;
-        private ulong ActionID_;
+        private IAction Action_;
 
         protected override void OnOpen(params object[] paramList)
         {
@@ -26,21 +26,18 @@ namespace LiteBattle.Runtime
                 .TransformFadeOut(RT, 0.5f)
                 .Callback(() =>
                 {
-                    ActionID_ = 0;
+                    Action_ = null;
                     LiteRuntime.Get<UISystem>().CloseUI(this);
                 });
-            ActionID_ = LiteRuntime.Action.AddAction(act.Flush());
+            Action_ = LiteRuntime.Action.AddAction(act.Flush());
         }
 
         protected override void OnClose()
         {
             base.OnClose();
 
-            if (ActionID_ != 0)
-            {
-                LiteRuntime.Action.StopAction(ActionID_);
-                ActionID_ = 0;
-            }
+            Action_?.Cancel();
+            Action_ = null;
         }
     }
 }

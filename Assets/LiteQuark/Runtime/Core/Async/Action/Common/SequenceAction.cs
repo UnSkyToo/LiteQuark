@@ -5,10 +5,10 @@ namespace LiteQuark.Runtime
         public override string DebugName => $"<Sequence - {Tag}>({_index}/{SubActionCount})";
 
         private int _currentCount;
-        private IAction _current;
+        private BaseAction _current;
         private int _index;
 
-        public SequenceAction(string tag, int repeatCount, IAction[] args)
+        public SequenceAction(string tag, int repeatCount, BaseAction[] args)
             : base(tag, repeatCount, args)
         {
             _index = -1;
@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             _current = null;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = SubActionCount == 0;
             _currentCount = 0;
@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             ActivateNextAction();
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (_current == null)
             {

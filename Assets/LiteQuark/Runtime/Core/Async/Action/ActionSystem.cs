@@ -6,7 +6,7 @@ namespace LiteQuark.Runtime
     [LiteHideType]
     public sealed class ActionSystem : ISystem, ITick
     {
-        private readonly SafeList<IAction> _actionList = new();
+        private readonly SafeList<BaseAction> _actionList = new();
 
         public ActionSystem()
         {
@@ -21,7 +21,7 @@ namespace LiteQuark.Runtime
         {
             foreach (var action in _actionList)
             {
-                action.Stop();
+                action.Cancel();
                 action.Dispose();
             }
 
@@ -37,20 +37,20 @@ namespace LiteQuark.Runtime
             {
                 try
                 {
-                    if (action.IsDone)
-                    {
-                        LiteUtils.SafeInvoke(action.FinalCallback, action);
-                        action.Dispose();
-                        _actionList.Remove(action);
-                    }
-                    else
+                    if (!action.IsDone)
                     {
                         action.Tick(action.IsUnscaled ? unscaledDeltaTime : deltaTime);
+                    }
+
+                    if (action.IsDone)
+                    {
+                        _actionList.Remove(action);
+                        action.Dispose();
                     }
                 }
                 catch
                 {
-                    action.Stop();
+                    action.Cancel();
                     throw;
                 }
             }
@@ -67,7 +67,7 @@ namespace LiteQuark.Runtime
             return action == null || action.IsDone;
         }
 
-        internal SafeList<IAction> GetActionList()
+        internal SafeList<BaseAction> GetActionList()
         {
             return _actionList;
         }
@@ -92,25 +92,10 @@ namespace LiteQuark.Runtime
 
         public void StopAction(ulong id)
         {
-            var action = FindAction(id);
-            if (action == null || action.IsDone)
-            {
-                return;
-            }
-            action.Stop();
-
-            try
-            {
-                LiteUtils.SafeInvoke(action.FinalCallback, action);
-                action.Dispose();
-            }
-            finally
-            {
-                _actionList.Remove(action);
-            }
+            FindAction(id)?.Cancel();
         }
 
-        public ulong AddAction(IAction action, bool isSafety = false)
+        public IAction AddAction(BaseAction action, bool isSafety = false)
         {
             if (isSafety || LiteRuntime.Setting.Action.SafetyMode)
             {
@@ -119,10 +104,10 @@ namespace LiteQuark.Runtime
 
             _actionList.Add(action);
             action.Execute();
-            return action.ID;
+            return action;
         }
 
-        public ulong AddBuilder(ActionBuilder builder, bool isSafety = false)
+        public IAction AddBuilder(ActionBuilder builder, bool isSafety = false)
         {
             return AddAction(builder.Flush(), isSafety);
         }

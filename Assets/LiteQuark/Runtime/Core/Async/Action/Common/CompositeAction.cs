@@ -4,19 +4,19 @@ namespace LiteQuark.Runtime
     {
         protected readonly string Tag;
         protected readonly int RepeatCount;
-        protected readonly IAction[] SubActions;
+        protected readonly BaseAction[] SubActions;
         protected readonly int SubActionCount;
 
-        protected CompositeAction(string tag, int repeatCount, IAction[] args)
+        protected CompositeAction(string tag, int repeatCount, BaseAction[] args)
         {
             Tag = string.IsNullOrEmpty(tag) ? "unknown" : tag;
             RepeatCount = repeatCount;
-            SubActions = args ?? System.Array.Empty<IAction>();
+            SubActions = args ?? System.Array.Empty<BaseAction>();
             SubActionCount = args?.Length ?? 0;
             IsDone = SubActionCount == 0;
         }
 
-        public override void Dispose()
+        protected internal override void Dispose()
         {
             foreach (var action in SubActions)
             {
@@ -26,7 +26,7 @@ namespace LiteQuark.Runtime
             base.Dispose();
         }
 
-        public override void MarkAsSafe()
+        protected internal override void MarkAsSafe()
         {
             base.MarkAsSafe();
 
@@ -36,17 +36,21 @@ namespace LiteQuark.Runtime
             }
         }
 
-        public override void Stop()
+        public override void Cancel()
         {
-            foreach (var action in SubActions)
+            if (IsDone)
             {
-                action.Stop();
+                return;
             }
 
-            base.Stop();
+            base.Cancel();
+            foreach (var action in SubActions)
+            {
+                action.Cancel();
+            }
         }
 
-        public IAction[] GetSubActions()
+        internal BaseAction[] GetSubActions()
         {
             return SubActions;
         }

@@ -11,6 +11,7 @@
 - **生命周期与日志**：自定义系统改用 `Initialize(CancellationToken ct = default)` 和 `UniTask DisposeAsync()`，集成层等待 `Shutdown()`，需要的数据由业务显式保存。新增 `ILateTick`；旧命名 Logger 和自定义日志后端改用 `LLog`。
 - **任务调度**：支持分组并发和优先级，提交使用 `BaseTask`。协程中的 `yield return task` 须改为 `yield return task.Task.ToCoroutine()`；WebGet 成功结果改为 `byte[]`。见 [Task 指南](Runtime/Core/Async/Task/README.md)。
 - **定时器**：`AddTimer`、`AddUnscaledTimer`、`AddTimerWithFrame` 和 `NextFrame` 返回 `ITimer`。需要停止时保存返回的对象并调用 `Cancel()`，仍使用 ID 的调用可读取 `timer.ID`。见 [Timer 指南](Runtime/Core/Async/Timer/README.md)。
+- **动作**：`AddAction` / `AddBuilder` 返回 `IAction`，将保存的 ID 改为动作引用并调用 `Cancel()`，按 ID 操作可继续使用 `action.ID`。`SetFinalCallback` 已移除。单次序列的自然结束逻辑放在末尾的 `Callback`。有限循环如果需要在所有轮次完成后只回调一次，把循环动作放进外层单次序列，并在外层末尾添加 `Callback`。取消时的清理由拥有者执行。自定义动作通过继承 `BaseAction` 参与提交与组合，跨程序集的驱动覆写使用 `protected override`。见 [Action 指南](Runtime/Core/Async/Action/README.md)。
 - **对象池**：预生成改用 `GenerateAsync(count)`，`WaitReadyAsync` 和 `PreloadPoolAsync` 返回 `UniTask<bool>`。见 [ObjectPool 指南](Runtime/Core/ObjectPool/README.md)。
 - **路径工具**：资源路径转换改用 `AssetPath.ToProjectPath`／`ToRootRelativePath`；URI 拼接使用 `ConcatUri`，普通文件和目录操作使用 `System.IO`。见[路径与文件操作](README.md#通用路径与文件操作)。
 - **编辑器命名**：将 `ProduceName`、`IncrementBuildModel`、`GotoBeginingContent` 的调用分别改为 `ProductName`、`IncrementalBuild`、`GoToBeginningContent`。

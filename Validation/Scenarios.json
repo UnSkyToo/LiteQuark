@@ -68,6 +68,7 @@
                 "tasks/download-result",
                 "tasks/download-retry",
                 "tasks/timer-control",
+                "tasks/action-cancel",
                 "tasks/instantiate",
                 "tasks/startup-rollback",
                 "tasks/ordered-shutdown",

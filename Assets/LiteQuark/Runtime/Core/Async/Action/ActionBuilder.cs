@@ -13,9 +13,8 @@ namespace LiteQuark.Runtime
         private readonly BuildType _buildType;
         private readonly string _tag;
         private readonly int _repeatCount;
-        private readonly List<IAction> _actionList;
+        private readonly List<BaseAction> _actionList;
         private ActionBuilder _parent;
-        private System.Action<IAction> _finalCallback;
         private bool _isUnscaled;
 
         private ActionBuilder(BuildType buildType, string tag, int repeatCount = 1)
@@ -23,9 +22,8 @@ namespace LiteQuark.Runtime
             _buildType = buildType;
             _tag = string.IsNullOrEmpty(tag) ? "unknown" : tag;
             _repeatCount = repeatCount;
-            _actionList = new List<IAction>();
+            _actionList = new List<BaseAction>();
             _parent = null;
-            _finalCallback = null;
             _isUnscaled = false;
         }
 
@@ -75,58 +73,25 @@ namespace LiteQuark.Runtime
             return _parent;
         }
 
-        public ActionBuilder SetFinalCallback(System.Action<IAction> callback)
-        {
-            _finalCallback = callback;
-            return this;
-        }
-
         public ActionBuilder SetUnscaled(bool isUnscaled = true)
         {
             _isUnscaled = isUnscaled;
             return this;
         }
 
-        public IAction Flush()
+        public BaseAction Flush()
         {
-            IAction action = null;
-
-            switch (_buildType)
-            {
-                case BuildType.Sequence:
-                    action = new SequenceAction(_tag, _repeatCount, _actionList.ToArray());
-                    break;
-                case BuildType.Parallel:
-                    action = new ParallelAction(_tag, _repeatCount, _actionList.ToArray());
-                    break;
-            }
-
-            if (_finalCallback != null)
-            {
-                action?.SetFinalCallback(_finalCallback);
-            }
-
-            if (_isUnscaled)
-            {
-                action?.SetUnscaled(_isUnscaled);
-            }
-
-            return action;
+            var subActions = _actionList.ToArray();
+            BaseAction action = _buildType == BuildType.Sequence
+                ? new SequenceAction(_tag, _repeatCount, subActions)
+                : new ParallelAction(_tag, _repeatCount, subActions);
+            return action.SetUnscaled(_isUnscaled);
         }
 
-        public ActionBuilder Add(IAction action)
+        public ActionBuilder Add(BaseAction action)
         {
             _actionList.Add(action);
             return this;
-        }
-    }
-
-    public static partial class ActionBuilderExtend
-    {
-        public static ActionBuilder Add(this ActionBuilder builder, IAction action)
-        {
-            builder.Add(action);
-            return builder;
         }
     }
 }

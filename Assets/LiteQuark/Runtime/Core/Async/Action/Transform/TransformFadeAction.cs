@@ -24,7 +24,7 @@ namespace LiteQuark.Runtime
             _easeKind = easeKind;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -32,11 +32,11 @@ namespace LiteQuark.Runtime
             }
 
             _currentTime = 0f;
-            _alphaBox.SetAlpha(_beginAlpha);
             IsDone = false;
+            _alphaBox.SetAlpha(_beginAlpha);
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             if (!CheckSafety())
             {

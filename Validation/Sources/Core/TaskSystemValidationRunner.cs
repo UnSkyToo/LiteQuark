@@ -190,6 +190,7 @@ namespace LiteQuark.Editor
                 await RunAsync("tasks/download-result", WebGetSnapshots, "task-snapshot-missing.bin");
                 await RunAsync("tasks/download-retry", WebGetRetries, "UnityWebGetRequestTask failed:", "Enter <ErrorState>", "FrameworkError: Unknown");
                 await RunAsync("tasks/timer-control", TimerControl);
+                await RunAsync("tasks/action-cancel", ActionCancellation);
                 await RunAsync("tasks/instantiate", InstantiationResults, "The Object you want to instantiate is null");
                 launcher.enabled = true;
                 try { await RunAsync("tasks/pool-ownership", _ => PoolValidation.Exercise(_current)); }
@@ -719,6 +720,53 @@ namespace LiteQuark.Editor
             finally
             {
                 await timers.DisposeAsync();
+            }
+        }
+
+        private static async UniTask ActionCancellation(TaskSystem _)
+        {
+            var actions = new ActionSystem();
+            await actions.Initialize();
+            try
+            {
+                IAction action = null;
+                var loopStarts = 0;
+                var siblingCalls = 0;
+                var doneInCallback = false;
+                var builder = ActionBuilder.Parallel(repeatCount: -1)
+                    .Callback(() => loopStarts++)
+                    .BeginSequence()
+                        .WaitFrame(1)
+                        .Callback(() =>
+                        {
+                            action.Cancel();
+                            doneInCallback = action.IsDone;
+                        })
+                    .EndSequence()
+                    .DelayCallback(1f, () => siblingCalls++);
+                action = actions.AddBuilder(builder);
+                Check(loopStarts == 1 && !action.IsDone && ReferenceEquals(actions.FindAction(action.ID), action),
+                    "Starting a parallel builder returns the registered action after the first loop has started.");
+
+                actions.Tick(1f);
+                Check(doneInCallback && action.IsDone && loopStarts == 1 && siblingCalls == 0,
+                    "Cancelling the root from a child callback stops the current loop and prevents the next loop starting.");
+                action.Cancel();
+                actions.Tick(1f);
+                Check(actions.IsIdle() && actions.FindAction(action.ID) == null && loopStarts == 1 && siblingCalls == 0,
+                    "The scheduler removes the cancelled group and a second cancellation leaves it stopped.");
+
+                var tailCalls = 0;
+                var sequence = ActionBuilder.Sequence().WaitFrame(1).Callback(() => tailCalls++).Flush();
+                IAction submitted = actions.AddAction(sequence);
+                Check(ReferenceEquals(sequence, submitted), "Submitting a BaseAction returns the same action for control.");
+                actions.Tick(0f);
+                Check(submitted.IsDone && tailCalls == 1 && actions.IsIdle(),
+                    "A naturally completed sequence still runs its tail callback and leaves the scheduler.");
+            }
+            finally
+            {
+                await actions.DisposeAsync();
             }
         }
 

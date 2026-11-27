@@ -16,7 +16,7 @@ namespace LiteQuark.Runtime
             _isLocal = isLocal;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -48,7 +48,7 @@ namespace LiteQuark.Runtime
             _scale = scale;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -74,7 +74,7 @@ namespace LiteQuark.Runtime
             _isLocal = isLocal;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -110,7 +110,7 @@ namespace LiteQuark.Runtime
             _angle = angle;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -136,7 +136,7 @@ namespace LiteQuark.Runtime
             _alpha = alpha;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -160,7 +160,7 @@ namespace LiteQuark.Runtime
             _value = value;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
@@ -186,7 +186,7 @@ namespace LiteQuark.Runtime
             _worldStay = worldStay;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {

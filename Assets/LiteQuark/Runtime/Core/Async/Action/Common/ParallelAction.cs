@@ -6,13 +6,13 @@ namespace LiteQuark.Runtime
 
         private int _currentCount;
 
-        public ParallelAction(string tag, int repeatCount, IAction[] args)
+        public ParallelAction(string tag, int repeatCount, BaseAction[] args)
             : base(tag, repeatCount, args)
         {
             _currentCount = 0;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             IsDone = SubActionCount == 0;
             _currentCount = 0;
@@ -20,7 +20,7 @@ namespace LiteQuark.Runtime
             ExecuteSubActions();
         }
 
-        public override void Tick(float deltaTime)
+        protected internal override void Tick(float deltaTime)
         {
             var endCount = 0;
 
@@ -33,6 +33,10 @@ namespace LiteQuark.Runtime
                 }
 
                 SubActions[index].Tick(deltaTime);
+                if (IsDone)
+                {
+                    return;
+                }
 
                 if (SubActions[index].IsDone)
                 {
@@ -56,9 +60,9 @@ namespace LiteQuark.Runtime
 
         private void ExecuteSubActions()
         {
-            foreach (var action in SubActions)
+            for (var index = 0; index < SubActionCount && !IsDone; ++index)
             {
-                action.Execute();
+                SubActions[index].Execute();
             }
         }
     }

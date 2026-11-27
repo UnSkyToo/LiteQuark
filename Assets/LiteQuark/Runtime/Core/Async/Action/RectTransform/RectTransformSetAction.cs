@@ -14,7 +14,7 @@ namespace LiteQuark.Runtime
             _position = position;
         }
 
-        public override void Execute()
+        protected internal override void Execute()
         {
             if (!CheckSafety())
             {
