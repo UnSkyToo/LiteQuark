@@ -1,5 +1,7 @@
 using System;
 using System.Globalization;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -15,7 +17,7 @@ namespace LiteQuark.Runtime
         private readonly bool _forceNoCache;
         private UnityWebRequest _request;
         private int _retryCount;
-        private ulong _retryTimerID;
+        private CancellationTokenSource _retryCancellation;
 
         protected UnityDownloadBaseTask(string uri, RetryParam retry, bool forceNoCache)
             : base()
@@ -25,14 +27,13 @@ namespace LiteQuark.Runtime
             _retryCount = Math.Max(retry.MaxRetries, 0);
             _retryInterval = Mathf.Max(retry.RetryInterval, 0.01f);
             _forceNoCache = forceNoCache;
-            _retryTimerID = 0;
         }
 
         protected override void OnTerminated()
         {
-            StopRetry();
             try
             {
+                _retryCancellation?.Cancel();
                 if (State == TaskState.Failed)
                 {
                     OnFailed();
@@ -48,13 +49,37 @@ namespace LiteQuark.Runtime
             }
         }
 
-        private void StopRetry()
+        private async UniTaskVoid RetryAsync()
         {
-            if (_retryTimerID != 0)
+            using var cancellation = new CancellationTokenSource();
+            _retryCancellation = cancellation;
+            try
             {
-                LiteRuntime.Timer.StopTimer(_retryTimerID);
-                _retryTimerID = 0;
+                await UniTask.Delay(TimeSpan.FromSeconds(_retryInterval), DelayType.Realtime,
+                    cancellationToken: cancellation.Token);
             }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Fail(ex);
+                return;
+            }
+            finally
+            {
+                _retryCancellation = null;
+            }
+
+            // PlayerLoop still runs after a framework error has stopped Runtime ticks.
+            if (LiteRuntime.Instance.State == LiteRuntime.RuntimeState.Error)
+            {
+                Cancel();
+                return;
+            }
+
+            StartDownload();
         }
 
         protected override void OnTick(float deltaTime)
@@ -90,8 +115,6 @@ namespace LiteQuark.Runtime
 
         private void StartDownload()
         {
-            _retryTimerID = 0;
-
             if (IsDone)
             {
                 return;
@@ -156,7 +179,7 @@ namespace LiteQuark.Runtime
                     if (_retryCount > 0 && RetryParam.IsCanRetryError(error ?? string.Empty))
                     {
                         _retryCount--;
-                        _retryTimerID = LiteRuntime.Timer.AddTimer(_retryInterval, StartDownload);
+                        RetryAsync().Forget();
                         return;
                     }
                     Fail(new InvalidOperationException(message));

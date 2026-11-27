@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using Cysharp.Threading.Tasks;
 using LiteQuark.Runtime;
 using UnityEditor;
@@ -186,6 +188,7 @@ namespace LiteQuark.Editor
                 await Run("tasks/terminal", TerminalContract, "Validation execution failure");
                 await RunAsync("tasks/coroutine-child", FlowParent);
                 await RunAsync("tasks/download-result", WebGetSnapshots, "task-snapshot-missing.bin");
+                await RunAsync("tasks/download-retry", WebGetRetries, "UnityWebGetRequestTask failed:", "Enter <ErrorState>", "FrameworkError: Unknown");
                 await RunAsync("tasks/instantiate", InstantiationResults, "The Object you want to instantiate is null");
                 launcher.enabled = true;
                 try { await RunAsync("tasks/pool-ownership", _ => PoolValidation.Exercise(_current)); }
@@ -605,6 +608,77 @@ namespace LiteQuark.Editor
             {
                 File.Delete(binaryPath);
                 File.Delete(emptyPath);
+            }
+        }
+
+        private static async UniTask WebGetRetries(TaskSystem system)
+        {
+            const float retryInterval = 1f;
+            var runtime = LiteRuntime.Instance;
+            var originalPause = runtime.IsPause;
+            var originalScale = Time.timeScale;
+            var scenarios = new (string Path, Action<UnityWebGetRequestTask> StopRetry, string Evidence)[]
+            {
+                ("limit", null, "One retry is sent while paused, then failure is published exactly once."),
+                ("cancel", task => task.Cancel(), "Cancelling during the wait prevents the retry and its callback."),
+                ("error", _ => runtime.EnterErrorState(FrameworkErrorCode.Unknown),
+                    "A retry due in Error cancels the task, completes its existing wait, and sends no request or callback.")
+            };
+            foreach (var (path, stopRetry, evidence) in scenarios)
+            {
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                UnityWebGetRequestTask task = null;
+                try
+                {
+                    listener.Start();
+                    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                    var url = $"http://127.0.0.1:{port}/retry/{path}";
+                    var callbacks = 0;
+                    task = system.AddUnityWebGetRequestTask(url, new RetryParam(1, 1, retryInterval),
+                        false, _ => callbacks++);
+                    system.Tick(0f);
+                    runtime.IsPause = true;
+                    Time.timeScale = 0f;
+
+                    // Holding both sockets open without a response triggers real request timeouts.
+                    await WaitForRuntimeCondition(listener.Pending, "Initial download connection");
+                    using var first = listener.AcceptTcpClient();
+                    await WaitForRuntimeCondition(() => _current.evidence.Any(line => line.Contains(url)), "Initial download timeout");
+                    Check(task.State == TaskState.Running && system.RunningTaskCount == 1 && callbacks == 0,
+                        "Waiting to retry retains the download slot and defers the callback.");
+
+                    var completion = task.Task;
+                    if (stopRetry != null)
+                    {
+                        stopRetry(task);
+                    }
+                    else
+                    {
+                        await WaitForRuntimeCondition(listener.Pending, "Retry while Runtime is paused and time scale is zero");
+                        using var retry = listener.AcceptTcpClient();
+                        await WaitDone(system, task);
+                    }
+
+                    await UniTask.Delay(TimeSpan.FromSeconds(retryInterval + 0.25f), DelayType.Realtime);
+                    system.Tick(0f);
+                    Check(!listener.Pending() && system.RunningTaskCount == 0 &&
+                          completion.Status == UniTaskStatus.Succeeded && await completion == null &&
+                          (stopRetry != null ? task.State == TaskState.Cancelled && callbacks == 0
+                                             : task.State == TaskState.Failed && task.Error != null && callbacks == 1), evidence);
+                }
+                finally
+                {
+                    task?.Cancel();
+                    listener.Stop();
+                    runtime.IsPause = originalPause;
+                    Time.timeScale = originalScale;
+                    if (runtime.State == LiteRuntime.RuntimeState.Error)
+                    {
+                        await runtime.Shutdown();
+                        runtime.Startup(runtime.Launcher);
+                        await WaitForRuntimeCondition(() => runtime.State == LiteRuntime.RuntimeState.Running, "Startup after download Error case");
+                    }
+                }
             }
         }
 

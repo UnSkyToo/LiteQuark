@@ -45,6 +45,8 @@ if (task.State == TaskState.Failed)
 
 `AddUnityWebGetRequestTask` 成功时返回 `byte[]` 快照（空响应返回空数组），回调和等待共享同一数组；按只读使用，无需 Dispose。失败回调收到 `null`，取消不发回调。
 
+下载重试按实际经过的时间等待，游戏暂停和时间缩放不影响重试间隔。任务在等待期间仍占用调度额度，终止时取消等待。重试到期时若 Runtime 处于 Error，任务进入 `Cancelled`。
+
 ## 分组与并发
 
 | 保留组常量（LiteConst.TaskGroupId） | ID | 额度 |
