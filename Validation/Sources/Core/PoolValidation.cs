@@ -85,7 +85,8 @@ namespace LiteQuark.Editor
                 var borrower = new GameObject("External pool owner");
                 try
                 {
-                    var instance = (await replacement.Alloc(borrower.transform)).Value;
+                    var borrowed = await replacement.Alloc(borrower.transform);
+                    var instance = borrowed.Value;
                     var root = pools.GetPoolRoot();
                     var failing = pools.AddPool<FailingPool>("failing", root);
                     var sibling = pools.GetEmptyGameObjectPool("sibling");
@@ -97,6 +98,13 @@ namespace LiteQuark.Editor
                     await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
                     Check(root == null && go == null && instance != null && instance.transform.parent == borrower.transform,
                         "Shutdown destroys the pool root and idle objects while an externally parented instance stays with its borrower.");
+
+                    borrowed.Dispose();
+                    borrowed.Dispose();
+                    Check(borrowed.Value == null && replacement.CountActive == 0 && replacement.CountInactive == 0,
+                        "A late lease release leaves the closed pool empty and its borrow count at zero.");
+                    await UniTask.NextFrame(PlayerLoopTiming.LastPostLateUpdate);
+                    Check(instance == null, "Releasing a lease after shutdown destroys the externally parented instance.");
                 }
                 finally { UnityEngine.Object.DestroyImmediate(borrower); }
                 await h.Shutdown();

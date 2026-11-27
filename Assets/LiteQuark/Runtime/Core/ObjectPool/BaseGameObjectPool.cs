@@ -195,6 +195,15 @@ namespace LiteQuark.Runtime
 
         internal void Release(GameObject value)
         {
+            if (_isDisposed)
+            {
+                if (value != null)
+                {
+                    Object.Destroy(value);
+                }
+                return;
+            }
+
             try
             {
                 if (value != null)
