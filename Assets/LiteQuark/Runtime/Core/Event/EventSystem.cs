@@ -30,6 +30,11 @@ namespace LiteQuark.Runtime
             return new EventModule(name);
         }
 
+        public EventSubscriptionScope CreateSubscriptionScope()
+        {
+            return _globalEvent.CreateSubscriptionScope();
+        }
+
         public void Send<T>(T msg) where T : IEventData
         {
             _globalEvent.Send(msg);
@@ -45,24 +50,9 @@ namespace LiteQuark.Runtime
             _globalEvent.Register(callback);
         }
 
-        public void Register<T>(int tag, Action<T> callback) where T : IEventData
-        {
-            _globalEvent.Register(tag, callback);
-        }
-
         public void UnRegister<T>(Action<T> callback) where T : IEventData
         {
             _globalEvent.UnRegister(callback);
-        }
-
-        public void UnRegister<T>(int tag, Action<T> callback) where T : IEventData
-        {
-            _globalEvent.UnRegister(tag, callback);
-        }
-
-        public void UnRegisterAll(int tag)
-        {
-            _globalEvent.UnRegisterAll(tag);
         }
 
         internal System.Collections.Generic.Dictionary<Type, int> GetEventDebugInfo()

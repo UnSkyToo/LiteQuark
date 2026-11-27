@@ -20,13 +20,7 @@ namespace LiteQuark.Runtime
 
         private GameObjectHandle _goHandle;
         private readonly List<AssetHandle<Sprite>> _spriteHandleList = new();
-        private readonly int _eventTag;
-
-        protected BaseUI()
-            : base()
-        {
-            _eventTag = (int)UniqueID;
-        }
+        private EventSubscriptionScope _eventSubscriptions;
 
         public void BindGo(GameObject go)
         {
@@ -82,7 +76,8 @@ namespace LiteQuark.Runtime
         internal void ReleaseResources()
         {
             UnloadSprites();
-            UnRegisterAllEvent();
+            _eventSubscriptions?.Dispose();
+            _eventSubscriptions = null;
         }
 
         public void Update(float deltaTime)
@@ -226,7 +221,8 @@ namespace LiteQuark.Runtime
         /// </summary>
         protected void RegisterEvent<T>(Action<T> callback) where T : IEventData
         {
-            LiteRuntime.Event.Register(_eventTag, callback);
+            _eventSubscriptions ??= LiteRuntime.Event.CreateSubscriptionScope();
+            _eventSubscriptions.Register(callback);
         }
 
         /// <summary>
@@ -234,12 +230,7 @@ namespace LiteQuark.Runtime
         /// </summary>
         protected void UnRegisterEvent<T>(Action<T> callback) where T : IEventData
         {
-            LiteRuntime.Event.UnRegister(_eventTag, callback);
-        }
-
-        private void UnRegisterAllEvent()
-        {
-            LiteRuntime.Event.UnRegisterAll(_eventTag);
+            _eventSubscriptions?.UnRegister(callback);
         }
     }
 }

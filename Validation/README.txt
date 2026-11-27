@@ -28,7 +28,7 @@ Validation — LiteQuark 隔离验证
   paths      宿主路径与 URI、过滤复制和文件改名。
   manifest   资源身份、依赖 ID、重复导出与 Hash/Flat 文件名。
   collector  收集、分包冲突、Viewer 数据、Play Mode 快照和真实 UPM 依赖构建。
-  tasks      任务调度与取消、对象池所有权、Launcher 配置、日志、Runtime 启停和重启；
+  tasks      Core Play Mode 验证，包括任务、Timer、Action、Event、对象池、Launcher、日志和 Runtime 生命周期。
              包含 Demo 退场及 LiteBattle 的同帧相机和 HUD 验证。
   loading    寻址、后端选择、清单启动与取消、Remote 回环下载和原生场景限制。
   lifecycle  资源 Handle、依赖、缓存、场景所有权、关闭与重载，以及优先级和并发额度。

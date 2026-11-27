@@ -73,7 +73,7 @@ uiSystem.CloseUI(menu);
 ## BaseUI 与生命周期
 
 - 状态包括 Opening、Opened、Closing、Closed 和 Error。
-- `RegisterEvent<T>(callback)` 使用每个 UI 实例自己的 Tag；关闭时自动注销。额外通过 `LiteRuntime.Event`（框架的 `LiteQuark.Runtime.EventSystem`）注册的监听需自行清理。
+- `RegisterEvent<T>(callback)` 使用当前 UI 的事件作用域，关闭时统一注销。通过 `UnRegisterEvent<T>(callback)` 可提前注销单条监听。额外通过 `LiteRuntime.Event` 注册的监听由注册方清理。
 - `LoadSprite(path, callback)`、`ReplaceSprite(childPath, resourcePath)` 持有 Sprite Handle，关闭时统一释放。
 - `GetComponent<T>(path)`、`FindChild(path)`、`SetActive(path, value)` 操作 prefab 子节点。
 - `autoAdapt` 在打开时按安全区调整锚点；不提供屏幕旋转后的持续监听。

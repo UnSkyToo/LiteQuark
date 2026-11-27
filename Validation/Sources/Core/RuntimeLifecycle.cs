@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace LiteQuark.Editor
 {
-    internal static partial class TaskSystemValidationRunner
+    internal static partial class CorePlayModeValidationRunner
     {
         private sealed class ShutdownFixture
         {
@@ -191,7 +191,7 @@ namespace LiteQuark.Editor
 
         private const string LogProbePrefix = "[Validation Log] ";
 
-        private static async UniTask RuntimeSettingsProfiles(TaskSystem system)
+        private static async UniTask RuntimeSettingsProfiles()
         {
             var runtime = LiteRuntime.Instance;
             var launcher = runtime.Launcher;
@@ -333,7 +333,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask RuntimeLateTick(TaskSystem system)
+        private static async UniTask RuntimeLateTick()
         {
             var runtime = LiteRuntime.Instance;
             var calls = new List<(string, float)>();
@@ -389,7 +389,7 @@ namespace LiteQuark.Editor
             finally { await FinishShutdownFixture(fixture, shutdown); }
         }
 
-        private static async UniTask RuntimeShutdownOrder(TaskSystem system)
+        private static async UniTask RuntimeShutdownOrder()
         {
             var fixture = new ShutdownFixture { EntryType = typeof(EntryWithoutTick) };
             UniTask? shutdown = null;
@@ -460,7 +460,7 @@ namespace LiteQuark.Editor
                 "Every probe is disposed exactly once and no released probe is ticked.");
         }
 
-        private static async UniTask RuntimeInitializationReturnsFalse(TaskSystem system)
+        private static async UniTask RuntimeInitializationReturnsFalse()
         {
             var fixture = new ShutdownFixture { FailedInitialization = "system 2" };
             fixture.SystemGate.TrySetResult();
@@ -479,7 +479,7 @@ namespace LiteQuark.Editor
             finally { await FinishShutdownFixture(fixture); }
         }
 
-        private static async UniTask RuntimeInitializationThrows(TaskSystem system)
+        private static async UniTask RuntimeInitializationThrows()
         {
             var fixture = new ShutdownFixture { FailedInitialization = "entry", ThrowOnInitialize = true };
             fixture.EntryGate.TrySetResult();
@@ -498,7 +498,7 @@ namespace LiteQuark.Editor
             finally { await FinishShutdownFixture(fixture); }
         }
 
-        private static async UniTask RuntimeShutdownDuringInitialization(TaskSystem system)
+        private static async UniTask RuntimeShutdownDuringInitialization()
         {
             await CheckShutdownDuringInitialization(quitting: false);
             await CheckShutdownDuringInitialization(quitting: true);
@@ -554,7 +554,7 @@ namespace LiteQuark.Editor
                 "In-flight initialization exits before exactly-once cleanup and no entry initialization follows.");
         }
 
-        private static async UniTask RuntimeRestartStates(TaskSystem system)
+        private static async UniTask RuntimeRestartStates()
         {
             var runtime = LiteRuntime.Instance;
             if (runtime.State != LiteRuntime.RuntimeState.Idle) await runtime.Shutdown();
@@ -688,7 +688,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask RuntimeRestartRequests(TaskSystem system)
+        private static async UniTask RuntimeRestartRequests()
         {
             var runtime = LiteRuntime.Instance;
             var previous = new ShutdownFixture();
@@ -766,7 +766,7 @@ namespace LiteQuark.Editor
             }
         }
 
-        private static async UniTask RuntimeShutdownFailure(TaskSystem system)
+        private static async UniTask RuntimeShutdownFailure()
         {
             var runtime = LiteRuntime.Instance;
             foreach (var failure in new[] { "system 2", "entry" })

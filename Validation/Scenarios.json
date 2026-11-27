@@ -59,7 +59,7 @@
         },
         {
             "name": "tasks",
-            "runner": "TaskSystemValidationRunner",
+            "runner": "CorePlayModeValidationRunner",
             "scenarios": [
                 "tasks/admission",
                 "tasks/cancel",
@@ -69,6 +69,7 @@
                 "tasks/download-retry",
                 "tasks/timer-control",
                 "tasks/action-cancel",
+                "tasks/event-scope",
                 "tasks/instantiate",
                 "tasks/startup-rollback",
                 "tasks/ordered-shutdown",

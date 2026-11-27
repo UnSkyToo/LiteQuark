@@ -13,6 +13,7 @@
 - **定时器**：`AddTimer`、`AddUnscaledTimer`、`AddTimerWithFrame` 和 `NextFrame` 返回 `ITimer`。需要停止时保存返回的对象并调用 `Cancel()`，仍使用 ID 的调用可读取 `timer.ID`。见 [Timer 指南](Runtime/Core/Async/Timer/README.md)。
 - **动作**：`AddAction` / `AddBuilder` 返回 `IAction`，将保存的 ID 改为动作引用并调用 `Cancel()`，按 ID 操作可继续使用 `action.ID`。`SetFinalCallback` 已移除。单次序列的自然结束逻辑放在末尾的 `Callback`。有限循环如果需要在所有轮次完成后只回调一次，把循环动作放进外层单次序列，并在外层末尾添加 `Callback`。取消时的清理由拥有者执行。自定义动作通过继承 `BaseAction` 参与提交与组合，跨程序集的驱动覆写使用 `protected override`。见 [Action 指南](Runtime/Core/Async/Action/README.md)。
 - **对象池**：GameObject 池的 `Alloc` 及其回调交付 `GameObjectLease`。保存 Lease，通过 `Value` 使用实例，以 `Dispose()` 归还，自定义池在 `OnAlloc(GameObject)` 中配置已取得的实例。预生成使用 `GenerateAsync(count)`，`WaitReadyAsync` 和 `PreloadPoolAsync` 返回 `UniTask<bool>`。见 [ObjectPool 指南](Runtime/Core/ObjectPool/README.md)。
+- **事件**：整数 Tag 注册改为 `CreateSubscriptionScope()` 创建 `EventSubscriptionScope`。通过作用域 `Register` / `UnRegister` 管理监听，使用 `Dispose()` 代替 `UnRegisterAll(tag)`。默认注册入口继续可用。见 [Event 指南](Runtime/Core/Event/README.md)。
 - **路径工具**：资源路径转换改用 `AssetPath.ToProjectPath`／`ToRootRelativePath`；URI 拼接使用 `ConcatUri`，普通文件和目录操作使用 `System.IO`。见[路径与文件操作](README.md#通用路径与文件操作)。
 - **编辑器命名**：将 `ProduceName`、`IncrementBuildModel`、`GotoBeginingContent` 的调用分别改为 `ProductName`、`IncrementalBuild`、`GoToBeginningContent`。
 

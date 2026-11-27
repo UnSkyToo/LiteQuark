@@ -7,16 +7,16 @@ namespace LiteQuark.Runtime
     {
         private abstract class EventListener
         {
-            public abstract void UnRegisterAll(int tag);
+            public abstract void RemoveScope(EventSubscriptionScope scope);
             public abstract int GetListenerCount();
 #if UNITY_EDITOR
-            public abstract void Check();
+            public abstract void Check(string moduleName);
 #endif
         }
 
         private class EventListener<T> : EventListener where T : IEventData
         {
-            private readonly Dictionary<int, List<Action<T>>> _callbackMap = new();
+            private readonly Dictionary<EventSubscriptionScope, List<Action<T>>> _callbackMap = new();
 
             public void Trigger(T msg)
             {
@@ -38,9 +38,9 @@ namespace LiteQuark.Runtime
                 UnityEngine.Pool.ListPool<Action<T>>.Release(snapshot);
             }
 
-            public void Register(int tag, Action<T> callback)
+            public void Register(EventSubscriptionScope scope, Action<T> callback)
             {
-                if (_callbackMap.TryGetValue(tag, out var callbackList))
+                if (_callbackMap.TryGetValue(scope, out var callbackList))
                 {
                     if (callbackList.Contains(callback))
                     {
@@ -54,26 +54,26 @@ namespace LiteQuark.Runtime
                 }
                 else
                 {
-                    _callbackMap.Add(tag, new List<Action<T>> { callback });
+                    _callbackMap.Add(scope, new List<Action<T>> { callback });
                 }
             }
 
-            public void UnRegister(int tag, Action<T> callback)
+            public void UnRegister(EventSubscriptionScope scope, Action<T> callback)
             {
-                if (_callbackMap.TryGetValue(tag, out var callbackList))
+                if (_callbackMap.TryGetValue(scope, out var callbackList))
                 {
                     callbackList.Remove(callback);
 
                     if (callbackList.Count == 0)
                     {
-                        UnRegisterAll(tag);
+                        RemoveScope(scope);
                     }
                 }
             }
 
-            public override void UnRegisterAll(int tag)
+            public override void RemoveScope(EventSubscriptionScope scope)
             {
-                _callbackMap.Remove(tag);
+                _callbackMap.Remove(scope);
             }
 
             public override int GetListenerCount()
@@ -87,13 +87,13 @@ namespace LiteQuark.Runtime
             }
 
 #if UNITY_EDITOR
-            public override void Check()
+            public override void Check(string moduleName)
             {
-                foreach (var (id, callbackList) in _callbackMap)
+                foreach (var callbackList in _callbackMap.Values)
                 {
                     foreach (var callback in callbackList)
                     {
-                        LLog.Warning("[EventSystem] {0}-{1}.{2} UnRegister", id, callback.Method.ReflectedType?.Name, callback.Method.Name);
+                        LLog.Warning("[EventSystem] {0}-{1}.{2} UnRegister", moduleName, callback.Method.ReflectedType?.Name, callback.Method.Name);
                     }
                 }
             }
@@ -102,15 +102,20 @@ namespace LiteQuark.Runtime
 
         public string Name { get; }
 
-        private readonly int _globalTag;
+        private readonly EventSubscriptionScope _defaultScope;
         private readonly Dictionary<Type, EventListener> _eventMap = new();
         private bool _disposed;
 
         public EventModule(string name)
         {
             Name = name;
-            _globalTag = $"{name}_Global".GetHashCode();
+            _defaultScope = new EventSubscriptionScope(this);
             _disposed = false;
+        }
+
+        public EventSubscriptionScope CreateSubscriptionScope()
+        {
+            return new EventSubscriptionScope(this);
         }
 
         public void Dispose()
@@ -124,7 +129,7 @@ namespace LiteQuark.Runtime
 #if UNITY_EDITOR
             foreach (var chunk in _eventMap)
             {
-                chunk.Value.Check();
+                chunk.Value.Check(Name);
             }
 #endif
             _eventMap.Clear();
@@ -149,10 +154,10 @@ namespace LiteQuark.Runtime
 
         public void Register<T>(Action<T> callback) where T : IEventData
         {
-            Register(_globalTag, callback);
+            Register(_defaultScope, callback);
         }
 
-        public void Register<T>(int tag, Action<T> callback) where T : IEventData
+        internal void Register<T>(EventSubscriptionScope scope, Action<T> callback) where T : IEventData
         {
             if (_disposed)
             {
@@ -172,30 +177,30 @@ namespace LiteQuark.Runtime
                 _eventMap.Add(eventType, listener);
             }
 
-            listener?.Register(tag, callback);
+            listener?.Register(scope, callback);
         }
 
         public void UnRegister<T>(Action<T> callback) where T : IEventData
         {
-            UnRegister(_globalTag, callback);
+            UnRegister(_defaultScope, callback);
         }
 
-        public void UnRegister<T>(int tag, Action<T> callback) where T : IEventData
+        internal void UnRegister<T>(EventSubscriptionScope scope, Action<T> callback) where T : IEventData
         {
             if (_eventMap.TryGetValue(typeof(T), out var value))
             {
                 if (value is EventListener<T> listener)
                 {
-                    listener.UnRegister(tag, callback);
+                    listener.UnRegister(scope, callback);
                 }
             }
         }
 
-        public void UnRegisterAll(int tag)
+        internal void RemoveScope(Type eventType, EventSubscriptionScope scope)
         {
-            foreach (var chunk in _eventMap)
+            if (_eventMap.TryGetValue(eventType, out var listener))
             {
-                chunk.Value.UnRegisterAll(tag);
+                listener.RemoveScope(scope);
             }
         }
 
