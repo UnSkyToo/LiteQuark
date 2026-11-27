@@ -25,9 +25,9 @@ namespace LiteQuark.Runtime
             ct.ThrowIfCancellationRequested();
             var task = bundleProvider.LoadVersionPack(AppUtils.GetVersionFileName());
             using var cancellation = ct.Register(task.Cancel);
-            var packInfo = await task.Task as VersionPackInfo;
+            await task.WaitForCompletionAsync();
             ct.ThrowIfCancellationRequested();
-            _packInfo = packInfo;
+            _packInfo = task.Result as VersionPackInfo;
             if (_packInfo == null)
             {
                 return false;

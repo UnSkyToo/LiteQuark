@@ -367,10 +367,10 @@ namespace LiteQuark.Editor
             bundleServer.ReleaseBody();
             var remote = new RemoteBundleProvider(new Uri(bundleServer.Url).GetLeftPart(UriPartial.Authority)) { DisableUnityWebCache = true };
             var download = remote.LoadBundle(TextBundle, string.Empty);
-            var completed = await download.Task;
+            await download.WaitForCompletionAsync();
             try
             {
-                Check(completed != null && ReferenceEquals(download.GetBundle(), completed) &&
+                Check(download.State == TaskState.Succeeded && download.Result != null && ReferenceEquals(download.GetBundle(), download.Result) &&
                     bundleServer.RequestLine.Contains(TextBundle),
                     "The remote task delivers the requested Bundle from the loopback server.");
             }
@@ -474,8 +474,9 @@ namespace LiteQuark.Editor
         {
             var versionTask = locator.LoadVersionPack(versionPath);
             await Wait(() => versionTask.IsDone, "BuiltIn version load");
+            await versionTask.WaitForCompletionAsync();
             var loadedPack = versionTask.Result as VersionPackInfo;
-            Check(loadedPack != null && loadedPack.Version == marker && ReferenceEquals(loadedPack, await versionTask.Task), "Public version load selects " + marker + ", forceStreaming=" + locator.EditorForceStreamingAssets);
+            Check(versionTask.State == TaskState.Succeeded && loadedPack != null && loadedPack.Version == marker, "Public version load selects " + marker + ", forceStreaming=" + locator.EditorForceStreamingAssets);
             Check(loadedPack.GetBundleInfoFromAssetPath(ProbePath)?.BundlePath == bundlePath, "Selected version file builds the full-path resource index.");
             var bundleTask = locator.LoadBundle(bundlePath, string.Empty);
             AssetBundle loadedBundle = null;

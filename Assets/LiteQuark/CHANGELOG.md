@@ -9,7 +9,7 @@
 - **资源构建**：将旧 Resource 资源纳入 Bundle，从源资源重建 Bundle 和版本清单并配套部署；旧相对路径清单不能通过读入再导出迁移。旧 `AssetMode`／`BundleLocater` 改用 `BundleMode`：Editor 模式改用 `Simulate=0`，旧 `BuiltIn=0` 和 `Remote=1` 分别迁为 `1` 和 `2`。
 - **资源加载**：统一使用 Handle，`await handle` 后读取 `Result`，用完后 `Dispose()`。业务场景固定 Additive，换关时释放旧 `SceneHandle`，保留启动场景。见 [Asset 指南](Runtime/Asset/README.md)。
 - **生命周期与日志**：自定义系统改用 `Initialize(CancellationToken ct = default)` 和 `UniTask DisposeAsync()`，集成层等待 `Shutdown()`，需要的数据由业务显式保存。新增 `ILateTick`；旧命名 Logger 和自定义日志后端改用 `LLog`。
-- **任务调度**：支持分组并发和优先级，提交使用 `BaseTask`。协程中的 `yield return task` 须改为 `yield return task.Task.ToCoroutine()`；WebGet 成功结果改为 `byte[]`。见 [Task 指南](Runtime/Core/Async/Task/README.md)。
+- **任务调度**：支持分组并发和优先级，提交使用 `BaseTask`。将 `await task.Task` 改为 `await task.WaitForCompletionAsync()`，等待后读取 `State`、`Result` 或 `Error`。协程在提交任务后用 `yield return task.WaitForCompletionAsync().ToCoroutine()` 等待终态。WebGet 成功结果为 `byte[]`。见 [Task 指南](Runtime/Core/Async/Task/README.md)。
 - **定时器**：`AddTimer`、`AddUnscaledTimer`、`AddTimerWithFrame` 和 `NextFrame` 返回 `ITimer`。需要停止时保存返回的对象并调用 `Cancel()`，仍使用 ID 的调用可读取 `timer.ID`。见 [Timer 指南](Runtime/Core/Async/Timer/README.md)。
 - **动作**：`AddAction` / `AddBuilder` 返回 `IAction`，将保存的 ID 改为动作引用并调用 `Cancel()`，按 ID 操作可继续使用 `action.ID`。`SetFinalCallback` 已移除。单次序列的自然结束逻辑放在末尾的 `Callback`。有限循环如果需要在所有轮次完成后只回调一次，把循环动作放进外层单次序列，并在外层末尾添加 `Callback`。取消时的清理由拥有者执行。自定义动作通过继承 `BaseAction` 参与提交与组合，跨程序集的驱动覆写使用 `protected override`。见 [Action 指南](Runtime/Core/Async/Action/README.md)。
 - **对象池**：预生成改用 `GenerateAsync(count)`，`WaitReadyAsync` 和 `PreloadPoolAsync` 返回 `UniTask<bool>`。见 [ObjectPool 指南](Runtime/Core/ObjectPool/README.md)。

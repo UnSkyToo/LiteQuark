@@ -415,15 +415,16 @@ namespace LiteQuark.Editor
         {
             var error = new InvalidOperationException("Expected task error");
             var failed = new ProbeTask();
-            var early = failed.Task.GetAwaiter();
+            var early = failed.WaitForCompletionAsync().GetAwaiter();
             failed.TerminalAction = task => Check(task.State == TaskState.Failed && ReferenceEquals(task.Error, error)
-                && task.Result == null, "The termination hook sees the complete failure snapshot.");
+                && task.Result == null && !early.IsCompleted, "The termination hook sees the failure snapshot before existing waiters resume.");
             failed.Fail(error);
             failed.Cancel(); failed.Fail(new Exception("Late error")); failed.Finish(); failed.Dispose();
             Check(failed.Terminations == 1 && failed.State == TaskState.Failed && ReferenceEquals(failed.Error, error)
                 && !failed.IsExecuted, "Pending failure is irreversible and survives Dispose.");
-            Check(early.IsCompleted && early.GetResult() == null && failed.Task.GetAwaiter().GetResult() == null,
-                "Failure keeps null-result await semantics before and after completion.");
+            Check(early.IsCompleted, "Failure finishes an existing wait.");
+            early.GetResult();
+            failed.WaitForCompletionAsync().GetAwaiter().GetResult();
 
             var executionError = new InvalidOperationException("Validation execution failure");
             var throwing = new ProbeTask { ExecuteAction = _ => throw executionError };
@@ -433,8 +434,10 @@ namespace LiteQuark.Editor
                 throwing.Disposals == 1, "Scheduler propagates execution failure and releases the occupied slot.");
 
             var late = new ProbeTask(); late.Fail(error);
-            Check(late.Task.GetAwaiter().GetResult() == null && ReferenceEquals(late.Error, error),
-                "A completion source first created after failure publishes the same result.");
+            var lateWait = late.WaitForCompletionAsync().GetAwaiter();
+            Check(lateWait.IsCompleted && ReferenceEquals(late.Error, error),
+                "A wait first requested after failure completes immediately with the original error available on the task.");
+            lateWait.GetResult();
             Throws<ArgumentNullException>(() => new ProbeTask().Fail(null), "Fail rejects a missing error.");
 
             var succeeded = new ProbeTask();
@@ -446,8 +449,9 @@ namespace LiteQuark.Editor
             Check(succeeded.State == TaskState.Succeeded && succeeded.Error == null && succeeded.Progress == 1f
                 && succeeded.Terminations == 1, "Success cannot be rewritten by late failure or cancellation.");
             var canceled = new ProbeTask(); canceled.Cancel(); canceled.Fail(error); canceled.Finish();
-            Check(canceled.State == TaskState.Cancelled && canceled.Error == null && canceled.Terminations == 1
-                && canceled.Task.GetAwaiter().GetResult() == null, "Cancellation is distinct from failure and remains final.");
+            canceled.WaitForCompletionAsync().GetAwaiter().GetResult();
+            Check(canceled.State == TaskState.Cancelled && canceled.Error == null && canceled.Result == null
+                && canceled.Terminations == 1, "Cancellation is distinct from failure and remains final.");
         }
 
         private static async UniTask FlowParent(TaskSystem system)
@@ -510,12 +514,13 @@ namespace LiteQuark.Editor
             {
                 var callbacks = 0;
                 var success = new InstantiateGameObjectTask(template, parent.transform, 2, _ => callbacks++);
-                var earlyWait = success.Task.GetAwaiter();
+                var earlyWait = success.WaitForCompletionAsync().GetAwaiter();
                 earlyWait.OnCompleted(() => success.Dispose());
                 system.AddTask(success); await WaitDone(system, success);
                 Check(success.State == TaskState.Succeeded && success.Error == null && callbacks == 1
                     && success.Result is GameObject[] { Length: 2 }, "Native success preserves result after scheduler disposal.");
-                Check(((GameObject[])earlyWait.GetResult()).All(go => go != null),
+                earlyWait.GetResult();
+                Check(((GameObject[])success.Result).All(go => go != null),
                     "Retiring the wrapper from the success continuation preserves both instances and callback delivery.");
                 var canceled = new InstantiateGameObjectTask(template, parent.transform, 2, _ => callbacks++);
                 system.AddTask(canceled); system.Tick(0);
@@ -587,9 +592,9 @@ namespace LiteQuark.Editor
                     "The factory delivers the requested binary data exactly once.");
 
                 await UniTask.Yield();
-                var late = (byte[])await task.Task;
-                Check(ReferenceEquals(late, delivered) && ReferenceEquals(late, task.Result) && late.SequenceEqual(expected),
-                    "The first await after cleanup and another frame returns the same readable snapshot.");
+                await task.WaitForCompletionAsync();
+                Check(task.Result is byte[] late && ReferenceEquals(late, delivered) && late.SequenceEqual(expected),
+                    "The same snapshot remains readable after cleanup, another frame, and a late wait.");
 
                 var empty = system.AddUnityWebGetRequestTask(new Uri(emptyPath).AbsoluteUri,
                     new RetryParam(1, 0, 0.01f), false, callback: null);
@@ -599,10 +604,11 @@ namespace LiteQuark.Editor
                 var absent = system.AddUnityWebGetRequestTask(new Uri(Path.Combine(scratch, "task-snapshot-missing.bin")).AbsoluteUri,
                     new RetryParam(1, 0, 0.01f), false, callback: null);
                 await WaitDone(system, absent);
-                Check(absent.State == TaskState.Failed && absent.Error != null && await absent.Task == null,
+                await absent.WaitForCompletionAsync();
+                Check(absent.State == TaskState.Failed && absent.Error != null && absent.Result == null,
                     "A missing file reports failure rather than an empty successful snapshot.");
-                var lateEmpty = (byte[])await empty.Task;
-                Check(lateEmpty.Length == 0 && ReferenceEquals(lateEmpty, empty.Result)
+                await empty.WaitForCompletionAsync();
+                Check(empty.Result is byte[] { Length: 0 }
                     && Snapshot(system).Count == 0 && system.RunningTaskCount == 0 && system.PendingTaskCount == 0,
                     "An unobserved empty success remains available to a late await without retaining a scheduler slot.");
             }
@@ -649,7 +655,7 @@ namespace LiteQuark.Editor
                     Check(task.State == TaskState.Running && system.RunningTaskCount == 1 && callbacks == 0,
                         "Waiting to retry retains the download slot and defers the callback.");
 
-                    var completion = task.Task;
+                    var completion = task.WaitForCompletionAsync();
                     if (stopRetry != null)
                     {
                         stopRetry(task);
@@ -664,9 +670,10 @@ namespace LiteQuark.Editor
                     await UniTask.Delay(TimeSpan.FromSeconds(retryInterval + 0.25f), DelayType.Realtime);
                     system.Tick(0f);
                     Check(!listener.Pending() && system.RunningTaskCount == 0 &&
-                          completion.Status == UniTaskStatus.Succeeded && await completion == null &&
+                          completion.Status == UniTaskStatus.Succeeded && task.Result == null &&
                           (stopRetry != null ? task.State == TaskState.Cancelled && callbacks == 0
                                              : task.State == TaskState.Failed && task.Error != null && callbacks == 1), evidence);
+                    await completion;
                 }
                 finally
                 {
@@ -786,7 +793,7 @@ namespace LiteQuark.Editor
         {
             system.AddTask(child);
             ITask view = child;
-            yield return view.Task.ToCoroutine();
+            yield return view.WaitForCompletionAsync().ToCoroutine();
             resumed();
         }
 
@@ -828,10 +835,11 @@ namespace LiteQuark.Editor
             system.Tick(0);
             Check(waiting.Executions == 0 && waiting.Disposals == 1 && running.Disposals == 1 && successor.IsExecuted,
                 "Queued cancellation starts no work and running cancellation releases exactly one slot.");
-            var completion = successor.Task;
+            var completion = successor.WaitForCompletionAsync();
             await system.DisposeAsync();
-            Check(completion.Status == UniTaskStatus.Succeeded && await completion == null &&
+            Check(completion.Status == UniTaskStatus.Succeeded && successor.Result == null &&
                 successor.State == TaskState.Cancelled && successor.Disposals == 1, "Shutdown settles the accepted task and releases it once.");
+            await completion;
         }
     }
 }

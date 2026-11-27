@@ -9,7 +9,7 @@
 ```csharp
 var task = new WaitCallbackTask(done => done(true));
 LiteRuntime.Task.AddTask(task, priority: TaskPriority.High);
-await task.Task;
+await task.WaitForCompletionAsync();
 if (task.State == TaskState.Failed)
 {
     LLog.Exception(task.Error);
@@ -28,7 +28,7 @@ if (task.State == TaskState.Failed)
 
 便利入口使用 Normal。指定组或优先级时构造 `BaseTask` 派生实例，再传给 `AddTask(task, groupId: ..., priority: ...)`，省略组时使用 Default。
 
-在异步方法中用 `await task.Task`；在协程中先提交，再用 `yield return task.Task.ToCoroutine()`。`ToCoroutine()` 只等待终态，不传播失败或接管取消；父协程取消时仍需按需取消该任务。
+在异步方法中用 `await task.WaitForCompletionAsync()`。在协程中先提交，再用 `yield return task.WaitForCompletionAsync().ToCoroutine()`。父协程取消时仍需按需取消该任务。
 
 ## 状态、结果与通知
 
@@ -39,11 +39,11 @@ if (task.State == TaskState.Failed)
 | Failed | Error 为非空异常，Result 为 null |
 | Cancelled | Error 和 Result 均为 null |
 
-`IsDone` 覆盖三个不可逆的终态。`Cancel()` 立即使未终结的任务进入 Cancelled，底层原生操作可能仍在进行。`Task` 为 `UniTask<object>`，**失败与取消均返回 `null`，不会因此抛异常**。检查 `State` / `Error`，不要用结果或进度判断成功。任务清理不会清空已发布的结果；结果不代表独立的 Unity 资源所有权。
+`IsDone` 覆盖三个不可逆的终态。`Cancel()` 立即使未终结的任务进入 Cancelled，底层原生操作可能仍在进行。`WaitForCompletionAsync()` 返回非泛型 `UniTask`，成功、失败和取消都正常结束等待。等待结束后通过 `State` 判断结果，并按需读取 `Result` 或 `Error`。任务清理保留已发布的结果。Unity 资源的所有权仍按相应 Handle 或任务的契约处理。
 
 框架提供的完成回调至多通知一次，取消或关闭时不保证通知；协程取消不会调用成功回调。`await` 只等待逻辑终态，回调与续体的先后因任务而异，续体可能同步重入。回调异常会记录，不改变终态。异步实例化失败时，回调收到空数组，`Result` 为 `null`。
 
-`AddUnityWebGetRequestTask` 成功时返回 `byte[]` 快照（空响应返回空数组），回调和等待共享同一数组；按只读使用，无需 Dispose。失败回调收到 `null`，取消不发回调。
+`AddUnityWebGetRequestTask` 成功时，`Result` 和回调提供同一份 `byte[]` 快照，空响应对应空数组。按只读使用，无需 Dispose。失败回调收到 `null`，取消不发回调。
 
 下载重试按实际经过的时间等待，游戏暂停和时间缩放不影响重试间隔。任务在等待期间仍占用调度额度，终止时取消等待。重试到期时若 Runtime 处于 Error，任务进入 `Cancelled`。
 
@@ -83,7 +83,9 @@ LiteRuntime.Task.AddTask(task, groupId: workGroupId, priority: TaskPriority.High
 | `OnTerminated()` | 终态已确定时停止操作或发送终态通知；此时 IsDone 已为 true，不能因此跳过清理 |
 | `OnDispose()` | 调度器移除任务时释放包装器资源，不改写已发布的 Result / Error |
 
-`Complete` 仅在 Running 时接受结果；`Fail(null)` 抛参数异常。`OnTerminated` 在结束等待前执行，清理异常会记录，不覆盖已发布结果或触发重试。
+`Complete` 仅在 Running 时接受结果。`Fail(null)` 抛参数异常。已登记的等待在 `OnTerminated()` 执行结束后恢复。终态发布后首次等待可能立即完成。清理异常会记录，不覆盖已发布结果或触发重试。
+
+调度器移除任务时单独调用 `Dispose()`，由它执行 `OnDispose()`。等待结束只表示任务已进入终态。
 
 调度器将 Execute / Tick 异常转为 Failed。自定义回调应先回到主线程，再通过 `Fail` 报告执行异常，并负责处置取消后迟到的结果。
 

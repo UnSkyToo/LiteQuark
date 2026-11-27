@@ -121,8 +121,9 @@ namespace LiteQuark.Runtime
             var index = 0;
             try
             {
-                // Task's await returns null on failure/cancellation; it does not throw for either state.
-                objects = (GameObject[])await task.Task;
+                await task.WaitForCompletionAsync();
+                // Keep the batch available to finally even if the pool has already been disposed.
+                objects = (GameObject[])task.Result;
                 if (_isDisposed || task.State == TaskState.Cancelled)
                 {
                     throw new OperationCanceledException();

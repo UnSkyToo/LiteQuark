@@ -85,9 +85,13 @@ namespace LiteQuark.Editor
                         var task = new LoadSimulateVersionPackTask();
                         try
                         {
-                            var waiting = task.Task.GetAwaiter();
+                            var waiting = task.WaitForCompletionAsync().GetAwaiter();
                             var published = false;
-                            waiting.OnCompleted(() => published = ReferenceEquals(waiting.GetResult(), task.Result) && task.AssetSourcePaths != null);
+                            waiting.OnCompleted(() =>
+                            {
+                                waiting.GetResult();
+                                published = task.Result is VersionPackInfo manifest && manifest.IsValid && task.AssetSourcePaths != null;
+                            });
                             task.Execute();
                             Check(published, "Version await continuation sees the manifest and its source paths.");
                             Check(task.State == TaskState.Succeeded && task.Result is VersionPackInfo pack && pack.IsValid && task.AssetSourcePaths != null,

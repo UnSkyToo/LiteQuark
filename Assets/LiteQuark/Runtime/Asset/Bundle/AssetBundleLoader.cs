@@ -49,7 +49,7 @@ namespace LiteQuark.Runtime
             if (task is LoadLocalBundleTask && task.State == TaskState.Running)
             {
                 // 已提交的本地读取由 Unity 自行完成，等结果交还后再卸包。
-                await task.Task;
+                await task.WaitForCompletionAsync();
             }
             else if (!task.IsDone)
             {

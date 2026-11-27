@@ -18,23 +18,18 @@ namespace LiteQuark.Runtime
 
         public bool IsDone => State is TaskState.Succeeded or TaskState.Failed or TaskState.Cancelled;
 
-        public UniTask<object> Task
+        public UniTask WaitForCompletionAsync()
         {
-            get
+            if (_completion == null && IsDone)
             {
-                if (_tcs == null)
-                {
-                    _tcs = new UniTaskCompletionSource<object>();
-                    if (IsDone)
-                    {
-                        PublishResult();
-                    }
-                }
-                return _tcs.Task;
+                return UniTask.CompletedTask;
             }
+
+            _completion ??= new UniTaskCompletionSource();
+            return _completion.Task;
         }
 
-        private UniTaskCompletionSource<object> _tcs;
+        private UniTaskCompletionSource _completion;
         private bool _isDisposed;
 
         protected BaseTask()
@@ -130,15 +125,10 @@ namespace LiteQuark.Runtime
             }
             finally
             {
-                PublishResult();
+                _completion?.TrySetResult();
             }
 
             return true;
-        }
-
-        private void PublishResult()
-        {
-            _tcs?.TrySetResult(Result);
         }
 
         protected abstract void OnExecute();

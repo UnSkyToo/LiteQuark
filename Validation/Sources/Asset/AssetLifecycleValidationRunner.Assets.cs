@@ -131,8 +131,9 @@ namespace LiteQuark.Editor
             Check(a.State == AssetHandleState.Cancelled && a.Error == null && b2.Error == null &&
                 h.AssetRefs("text.ab", TextPath) == 1 && h.Refs("text.ab") == 1,
                 "Old failure releases only A's Lease and leaves B2's ownership and state intact.");
-            Check(await oldTask.Task == null && oldTask.State == TaskState.Failed,
-                "Task failure still awaits to null instead of throwing.");
+            await oldTask.WaitForCompletionAsync();
+            Check(oldTask.State == TaskState.Failed && oldTask.Result == null && ReferenceEquals(oldTask.Error, original),
+                "Waiting for failure completes normally and leaves the original task error available.");
             Check(CachePriority(h, "text.ab") == AssetLoadPriority.Low, "Failed round does not retain its high priority on retry.");
             h.Finish("text.ab", true);
             await Wait(() => b2.IsDone, "Immediate shared retry success");

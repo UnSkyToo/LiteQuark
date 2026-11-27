@@ -12,8 +12,9 @@ namespace LiteQuark.Runtime
         public object Result { get; }
         public Exception Error { get; }
         public TaskState State { get; }
-        public UniTask<object> Task { get; }
 
+        /// <summary>等待任务进入任一终态。等待结束后通过 State、Result 和 Error 获取结果。</summary>
+        public UniTask WaitForCompletionAsync();
         public void Cancel();
     }
 }

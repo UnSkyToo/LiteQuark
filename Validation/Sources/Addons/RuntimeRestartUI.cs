@@ -189,7 +189,7 @@ namespace LiteQuark.Editor
 
                 var callbackTask = oldTask.AddTask(_ => { });
                 await WaitWithoutLoaderTick(() => callbackTask.State == TaskState.Running, "Old callback task starts");
-                var generationAtCompletion = callbackTask.Task.ContinueWith(_ => fixture.Systems.Count);
+                var generationAtCompletion = callbackTask.WaitForCompletionAsync().ContinueWith(() => fixture.Systems.Count);
                 fixture.RequestRestart = true;
                 await WaitWithoutLoaderTick(() => fixture.Events.Contains("system 1 disposing"), "Business Restart reaches asynchronous system disposal");
                 Check(fixture.Events.SequenceEqual(new[] { "system 1 constructed", "entry 1 initialized", "entry 1 restart requested", "entry 1 disposed", "system 1 disposing" }) &&
